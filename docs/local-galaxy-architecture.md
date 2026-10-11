@@ -1,0 +1,279 @@
+# The library galaxy — architecture
+
+Status: **proposal**, nothing built yet. Read `docs/ui-invariants.md` → "The genre
+galaxy" first. Every rule there applies to this map too, and this document
+assumes them rather than repeating them.
+
+## The idea in one table
+
+The genre galaxy is already three levels deep: genre → artist → track. The
+library galaxy is the same three levels over the music on the device:
+**artist → album → track**. Same renderer, same camera, same glass. The new
+part is where the data comes from.
+
+| Body | Genre galaxy (today) | Library galaxy (new) |
+|---|---|---|
+| **Star** | a genre | an artist (the album artist, else the track artist — the same name the Library's Artists tab groups by) |
+| Star size | how well known the genre is (`reach`) | how much of them you own: track count, log scale |
+| Star colour / arm | the genre's family | the family of the artist's main genre tag |
+| Where it sits (*Sound* layout) | the baked genre map | **next to its genre's star** from the genre map, scattered round it |
+| Where it sits (*Time* layout) | the year the genre began | the artist's earliest album year |
+| Links between stars | parent genre | collaborations: a track whose artist ≠ its album artist |
+| **Planet** | a charted artist (≤ 6) | an album |
+| Planet size | MusicBrainz catalogue | the album's track count |
+| Planet orbit | chart heat this week | release order: debut nearest the star (see *Decisions*) |
+| Planet texture | chart artwork URL | the album's cover (`artworkCacheKey`, through Coil) |
+| **Moon** | a charted track (≤ 4) | a track |
+| Moon size | its listens | its duration |
+| Extra albums / tracks | not shown | an **asteroid belt** past the last orbit / a **ring** round the planet |
+| Black hole | the core | kept: the same core, so both maps share one frame |
+
+Because the Sound layout puts each artist beside their genre, the two maps live in
+**one coordinate frame**. Switching between them can keep the camera where it is.
+Your library appears where it belongs in the galaxy you already know: your jazz
+sits where jazz is.
+
+## The shape of it
+
+```
+ local_tracks / local_albums / local_artists        play_events
+            │  (aggregate SQL, no full-table load)       │
+            ▼                                             ▼
+ ┌──────────────────── LocalGalaxyRepository (@Singleton) ───────────────────┐
+ │  observes library changes → debounce → builds off the main thread         │
+ │  starField: Flow<StarField>          system(starId): LocalSystemData      │
+ └────────────┬──────────────────────────────────────────┬───────────────────┘
+              │ pure, JVM-tested builders (domain)        │
+              ▼                                           ▼
+   LibraryStarField.build(...)                 LocalSystems.build(...)
+              │                                           │
+              ▼                                           ▼
+        StarField  ◄── GenreStarField.from(graph)    PlanetSystem (generalised)
+              │          (the genre map, unchanged)       │
+              ▼                                           ▼
+         GalaxyScene ──────────────► GalaxyStage (shared: camera, view, glass,
+                                      full screen, look sheet, pacer, lights)
+                                       ▲                    ▲
+                          GenreMapScreen            LibraryMapScreen
+                          (dock: Play/Radio/        (dock: Play/Albums/
+                           Top 100/History)          Artist page/collabs)
+```
+
+Three layers, each with one job:
+
+1. **Data**: `LocalGalaxyRepository`. It reads the database and decides when
+   to rebuild.
+2. **Model**: pure builders (`LibraryStarField`, `LocalSystems`). They take
+   plain rows and produce positions and sizes. They don't touch Android, so they
+   are unit-tested on the JVM like `GalaxyScene` and `PlanetSystem` already are.
+3. **Stage**: the existing renderer, opened up at a few seams so it draws any
+   `StarField` and any `PlanetSystem`, not just genres and charts.
+
+## Layer 3 first: the seams in the renderer
+
+Cut these before any library code exists, and prove that the genre galaxy is
+unchanged.
+
+### `StarField` (new, pure data)
+
+Everything `GalaxyScene` currently derives from `GenreGraph`:
+
+```kotlin
+class StarField(
+    val ids: List<String>,          // "genre:<id>" / "artist:<normalizedName>"
+    val names: List<String>,
+    val families: List<String>,     // fixed order; family[i] indexes into it
+    val family: IntArray,
+    val prominence: FloatArray,     // 0..1 → star radius
+    val startYear: IntArray,
+    val sound: FloatArray,          // xyz per star, precomputed
+    val time: FloatArray,           // xyz per star, precomputed
+    val links: IntArray,            // (a, b) pairs
+    val halo: BooleanArray,         // sits in the halo, not the disc (unknown genre)
+)
+```
+
+- `GalaxyScene(field: StarField)` keeps everything decorative: dust, core, halo
+  stars, sky, nebulae, flows. `GenreStarField.from(graph)` holds today's layout
+  code (`bundleArms`, `timeRadius`, the baked x/y).
+- **The genre galaxy must come out identical.** Today positions and dust share
+  one sequential `Random(977)`. The genre adapter has to draw from it in the same
+  order, or the dust reshuffles. `GalaxyMathTest` is the proof: it must pass
+  untouched.
+- The view's `scene.genres[i].id/name` reads become `scene.ids[i]` and
+  `scene.names[i]`. `explored` / `hearted` / `hereId` stay as plain id sets. On
+  the library map, *here* is the artist now playing and *hearted* is favourite
+  artists.
+
+### `PlanetSystem` (generalised, not forked)
+
+- `genreId` → `starId`. `Planet.artist` → `key` + `label`.
+- `Moon.entry: ChartEntry` → `Moon.ref: MoonRef`, a sealed type:
+  `Chart(entry)` | `Local(trackKey, title, artworkUri)`. Tapping a moon
+  dispatches on it.
+- The caps (`MAX_PLANETS = 6`, `MAX_MOONS = 4`) become a `SystemLimits`
+  parameter. `minOrbitGap` and `reachFor` are derived from it, so the "moons
+  never cross" rule holds for any limits.
+- New and optional: `Planet.ringCount` (tracks not shown as moons) and
+  `PlanetSystem.beltCount` (albums not shown as planets). The ring sits between
+  the planet's surface and its first moon orbit (`< 2.2 ×` the largest planet),
+  so it cannot touch a moon. The belt sits past the last planet's reach, and
+  `reachFor` includes it, so the camera frames it. Both are batched
+  `drawPoints`, so they cost almost nothing.
+- `PlanetSystem.from(chart…)` stays as the chart adapter, exactly as it is.
+
+### `GalaxyStage` (extracted from `GenreMapScreen`)
+
+`GenreMapScreen` is 1,700 lines, and most of it is not about genres: camera,
+glide, reserves, full screen, orientation, pacer, look sheet, lifecycle. Pull
+that into a `GalaxyStage` composable that takes a `StarField`, a system, and
+slots for the dock and sheets. Then the genre screen and the library screen are
+two thin screens over one stage.
+
+**Don't** build one screen with a mode flag threaded through it. The two docks
+have nothing in common (Top 100 / History / Radio vs Albums / Artist page), and a
+flag through 1,700 lines is how the invariants get undone.
+
+## Layer 2: the pure builders
+
+### `LibraryStarField.build(artists, artistGenres, collabs, graph)`
+
+1. **Main genre per artist**: the most frequent tag across their tracks that
+   `GenreGraph.resolve` recognises. Split multi-genre tags the same way
+   `MediaScanner` does (around `MediaScanner.kt:388`). No resolvable tag → the
+   artist goes in the **halo**, above and below the disc, instead of on it:
+   "genre unknown" is shown honestly rather than guessed. `resolve` returning
+   null instead of guessing is the same principle.
+2. **Sound position**: the genre star's sound position, plus a 3D Gaussian
+   scatter (fixed σ ≈ 60 units, flattened like the disc). The scatter is seeded
+   by the artist's own key, then pushed out radially to stay clear of
+   `DISK_OUTER`.
+3. **Time position**: the genre-map spiral, using the artist's first album year,
+   on their genre family's arm (`bundleArms`, reused).
+4. **Links**: collaboration pairs, deduplicated, kept only when both artists are
+   stars.
+
+**Stability is the rule this map adds.** The genre dataset is fixed, but a
+library grows. Every per-star value (position, twinkle phase, dust owner) is
+seeded by a **stable hash of that star's own key** (`PlanetSystem.stableHash`
+already exists), never by a shared sequential `Random`. Adding one artist must
+not move any other star. The test below pins that.
+
+### `LocalSystems.build(albums, tracks, plays, starRadius, limits)`
+
+- **Which albums are planets**: up to `limits.maxPlanets` (proposed 8), picked by
+  lifetime plays, ties broken by track count. They are laid out in release order
+  (year, then title), with the debut on the innermost orbit. The rest go into the
+  belt.
+- **Which tracks are moons**: up to `limits.maxMoons` (proposed 6), picked by
+  plays, ties broken by track number. Moon orbits follow the album's own running
+  order. The rest go into the ring.
+- **Heat** (plays in the last 30 days) is drawn as **glow**, not distance. An album
+  you have on repeat burns brighter, and nothing moves when you play it.
+- The phase, tilt and node of every body are hashed from its own key (album
+  `groupingKey`, track `filePath`), the same way `PlanetSystem.from` hashes names
+  today.
+
+## Layer 1: data
+
+### `LocalGalaxyRepository` (`data/local/galaxy/`, `@Singleton`)
+
+- **Aggregate SQL, never `getAllTracks()`.** Three new `LocalMediaDao` queries,
+  grouped by the artist key:
+  - per artist: track count, album count, `MIN(year)`, artwork key
+  - per (artist, genre tag): count, for the main genre
+  - per (album artist, track artist) where they differ: count, for links
+- **Plays**: a `PlayEventDao` query grouped by normalised (artist, album, title),
+  filtered to local plays (`PlayedFrom.LOCAL`). It joins on names because they
+  survive a full rescan, while row ids may not. Check before relying on it:
+  confirm what `trackId` a local play actually stores. If it's a stable hash of
+  the file path, join on that instead.
+- **When to rebuild**: observe `countTracks()` together with `scan_state`
+  (`lastFullScan` / `lastIncremental`), debounce, then build on
+  `Dispatchers.Default`. `LocalLibraryRevision` alone isn't enough, because it
+  doesn't bump on removals.
+- **Systems** are fetched when the camera settles on a star, like `mapSystem`.
+  It's a local query, so the wait can drop from 0.7 s to about 0.15 s. That's
+  only so flying past fifty artists doesn't run fifty queries.
+- **Fully offline.** No MusicBrainz, no charts, no network. It works in
+  airplane mode, and that is the point of a local map.
+
+### Identity
+
+| Body | Key | Why |
+|---|---|---|
+| Star | `artist:` + `local_artists.normalizedName` | unique-indexed and survives a rescan; autoincrement ids may not |
+| Planet | `local_albums.groupingKey` | already normalised title + artist + year |
+| Moon | `filePath` (or `musicbrainzTrack` when present) | unique per file |
+
+## Special cases
+
+- **Compilations** ("Various Artists", or an album where most tracks have
+  different artists): one *Compilations* star near the inner disc. Its planets
+  are the compilations, and it links to every track artist who is also a star.
+- **Unknown Artist**: one dim star in the halo.
+- **Empty library**: no scene. Show the Library's empty state with its scan
+  action, not an empty sky.
+- **Classical**: composer-as-star would read better for some libraries. Leave it
+  as a later option; it doesn't change the architecture, only the key the
+  builder groups by.
+
+## Performance budget
+
+The genre map is tuned for **771 stars**. A library can have 5,000 artists.
+
+- **Sprite budget about 800**: the most prominent stars get full sprites, rays
+  and labels, as today. The rest are drawn in the batched `drawPoints` that dust
+  already uses, and are **promoted** to sprites when the camera comes close,
+  eased in rather than popping (`pickStarLights` already does this kind of fade).
+- Stars-with-rays stay capped at `StarLights.MAX`. That is unchanged.
+- Building the scene is O(artists), off the main thread. The scene object is
+  immutable and swapped in whole.
+- Read `GalaxyFrameStats` (`GalaxyFx` in the debug log) on a 3,000-artist library
+  before and after, as the invariants ask.
+
+## Tests (the guarantee, not a formality)
+
+- `GalaxyMathTest`, `PlanetSystemTest`, `GalaxyFastPathsTest`: **pass unchanged**
+  after the seam refactor. That is the proof the genre galaxy didn't move.
+- `LibraryStarFieldTest`:
+  - deterministic
+  - **adding an artist leaves every other star's position unchanged**
+  - no star inside `DISK_OUTER`
+  - unresolved genres land in the halo
+  - links are deduplicated and only between stars
+- `LocalSystemsTest`:
+  - planets + belt = all albums; moons + ring = all tracks
+  - orbits in release order
+  - moons never cross under `SystemLimits(8, 6)`
+  - a play changes glow, never an orbit
+
+## Build order (each step its own commit, each green)
+
+1. **Seams**: `StarField`, `GenreStarField`, generalised `PlanetSystem`
+   (`MoonRef`, `SystemLimits`). Genre map pixel-identical; existing tests
+   untouched.
+2. **Stage**: extract `GalaxyStage` from `GenreMapScreen`. Still only the genre
+   map; the screen should look and behave exactly the same.
+3. **Model**: `LibraryStarField` + `LocalSystems` with their tests. No UI yet.
+4. **Data**: DAO aggregates, `LocalGalaxyRepository`, `LocalGalaxyViewModel`.
+5. **Screen**: `LibraryMapScreen` on the stage. Dock: Play (shuffle artist),
+   Albums (the system sheet), Artist page, and up to three collaborators as pills
+   (the "related genres" slot). Planet tap → Play album / Open album. Moon tap →
+   play the track.
+6. **Entry points**: a Galaxy button on the local Library tab, and a
+   *Genres · Mine* switch on the genre map that keeps the camera (it's the same
+   frame).
+7. **Polish**: ring and belt art, heat glow, compilations star, level-of-detail
+   promotion, then a "The library galaxy" section in `ui-invariants.md`.
+
+## Decisions to confirm
+
+1. **Orbits = release order (recommended) or = how much you play it.** Release
+   order is stable and reads as a career spiralling outwards. Plays-as-orbit is
+   livelier, but the system rearranges as you listen. Either way, heat shows as
+   glow.
+2. **Where it opens from**: the Library tab, the genre map's switch, or both
+   (recommended: both, since the shared frame makes the switch nearly free).
+3. **Caps**: 8 planets and 6 moons before the belt and ring take over. These are
+   easy to tune later; they are one `SystemLimits` value.
