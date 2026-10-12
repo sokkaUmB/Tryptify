@@ -14,6 +14,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroidSize
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -408,17 +409,34 @@ internal fun GenreGalaxyView(
                         awaitFirstDown(requireUnconsumed = false)
                         liveOnInteract.value()
                         var travelled = 0f
+                        // How far the fingers have spread or closed, px: a
+                        // pinch whose middle holds still is still a gesture.
+                        // Counting only the middle's travel, a clean pinch did
+                        // nothing until the fingers happened to drift.
+                        var spread = 0f
                         var dragging = false
+                        var pinchOnly = false
                         do {
                             val event = awaitPointerEvent()
                             val pressed = event.changes.count { it.pressed }
                             val pan = event.calculatePan()
+                            val zoom = event.calculateZoom()
                             travelled += pan.getDistance()
-                            if (!dragging && travelled > viewConfiguration.touchSlop) dragging = true
+                            if (pressed >= 2) spread += kotlin.math.abs(1f - zoom) * event.calculateCentroidSize(useCurrent = false)
+                            if (!dragging && (travelled > viewConfiguration.touchSlop || spread > viewConfiguration.touchSlop)) {
+                                dragging = true
+                                // Mostly a pinch, on a star or a planet the
+                                // camera is following: zoom on it and keep it.
+                                // Panning lets go of what is followed, and the
+                                // planet you were pinching toward orbited off.
+                                pinchOnly = pressed >= 2 && camera.follow >= 0 && spread > travelled
+                            }
                             if (dragging) {
                                 if (pressed >= 2) {
-                                    camera.zoom(event.calculateZoom())
-                                    camera.pan(pan.x, pan.y, frameFor(Size(size.width.toFloat(), size.height.toFloat())))
+                                    camera.zoom(GalaxyCamera.pinch(zoom))
+                                    if (!pinchOnly) {
+                                        camera.pan(pan.x, pan.y, frameFor(Size(size.width.toFloat(), size.height.toFloat())))
+                                    }
                                 } else {
                                     camera.orbit(pan.x, pan.y)
                                 }

@@ -3,6 +3,7 @@ package tf.monochrome.android.ui.discover
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import tf.monochrome.android.ui.navigation.switchSafe
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Search
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -248,6 +249,16 @@ fun GenreMapScreen(
     val bios = remember(facts) { facts.mapNotNull { (artist, f) -> f.bio?.let { artist to it } }.toMap() }
     val playing by playerViewModel.currentTrack.collectAsStateWithLifecycle()
 
+    // Finding a genre: a glass bar under the title, its matches as pills.
+    var searchOpen by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    fun closeSearch() {
+        searchOpen = false
+        query = ""
+        keyboard?.hide()
+    }
+
     /**
      * A star's music, and its planets as a list: what a long press on the star
      * does, and the dock's system glyph.
@@ -287,8 +298,14 @@ fun GenreMapScreen(
                 facts != null && stage.system != null && stage.visuals.planets ->
                     facts + "\n" + stringResource(R.string.galaxy_planets_caption)
                 facts != null -> facts
-                stage.timeline -> stringResource(R.string.galaxy_time_caption)
-                else -> stringResource(R.string.map_weight_popularity)
+                // What a star's place and size mean, and — now the panel that
+                // said them is two pills — how much is explored and what the
+                // dashed ring is.
+                else -> listOfNotNull(
+                    stringResource(if (stage.timeline) R.string.galaxy_time_caption else R.string.map_weight_popularity),
+                    stringResource(R.string.discover_galaxy_count, explored.size, graph.size),
+                    if (hearted.isNotEmpty()) stringResource(R.string.galaxy_legend_hearted_ring) else null,
+                ).joinToString("\n")
             }
         },
         emptyText = if (graph.size == 0) stringResource(R.string.genre_map_failed) else null,
@@ -298,6 +315,13 @@ fun GenreMapScreen(
         actions = { stage ->
             val node = selected
             buildList {
+                add(
+                    MapAction(
+                        Icons.Default.Search,
+                        stringResource(if (searchOpen) R.string.close_genre_search else R.string.search_genres),
+                        tint = if (searchOpen) MaterialTheme.colorScheme.primary else GALAXY_INK,
+                    ) { if (searchOpen) closeSearch() else searchOpen = true },
+                )
                 if (node == null) {
                     add(MapAction(Icons.Default.AutoAwesome, stringResource(R.string.galaxy_surprise)) { viewModel.surpriseMe() })
                 } else {
@@ -365,18 +389,18 @@ fun GenreMapScreen(
             val node = selected
             if (node == null) {
                 if (graph.size > 0) {
-                    GalaxyHud(
-                        timeline = stage.timeline,
-                        onTimeline = { stage.setTimeline(it) },
-                        exploredCount = explored.size,
-                        total = graph.size,
-                        hazeState = stage.hazeState,
-                        glass = stage.glass,
-                        onSurprise = { viewModel.surpriseMe() },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .then(stage.panelModifier),
-                    )
+                    CompositionLocalProvider(
+                        LocalPlayerGlass provides stage.glass,
+                        tf.monochrome.android.ui.components.LocalGlassBackdrop provides stage.hazeState,
+                    ) {
+                        GalaxyLayoutPills(
+                            timeline = stage.timeline,
+                            onTimeline = { stage.setTimeline(it) },
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .then(stage.panelModifier),
+                        )
+                    }
                 }
             } else {
                 val related = remember(graph, node.id) { relatedTo(graph, node) }
@@ -415,7 +439,41 @@ fun GenreMapScreen(
                 }
             }
         },
+        underTitle = { stage ->
+            // Over the map, not above it, so its glass frosts the sky.
+            AnimatedVisibility(
+                visible = searchOpen && graph.size > 0,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                CompositionLocalProvider(
+                    LocalPlayerGlass provides stage.glass,
+                    tf.monochrome.android.ui.components.LocalGlassBackdrop provides stage.hazeState,
+                ) {
+                    GalaxySearchBar(
+                        query = query,
+                        onQueryChange = { query = it },
+                        placeholder = stringResource(R.string.search_genres_hint),
+                        noMatch = stringResource(R.string.no_genre_match),
+                        // Its other names too: "dnb" is drum and bass.
+                        matches = remember(field, query) {
+                            field?.let { f -> matchStars(f, query) { i -> graph.allGenres[i].aka } }.orEmpty()
+                        },
+                        hazeState = stage.hazeState,
+                        glass = stage.glass,
+                        onPick = { id ->
+                            viewModel.selectOnMap(id)
+                            closeSearch()
+                        },
+                        onClose = { closeSearch() },
+                    )
+                }
+            }
+        },
     )
+
+    // Back closes the search before anything else on the map.
+    androidx.activity.compose.BackHandler(enabled = searchOpen) { closeSearch() }
 }
 
 /**
@@ -884,9 +942,6 @@ private fun HistoryFact(label: String, value: String, accent: Color) {
     }
 }
 
-/** Below this much room, dp at the listener's text size, the HUD's Surprise button is its glyph alone. */
-private const val HUD_WORDS_DP = 380f
-
 /** At most this many genres next to the selected one, as pills. */
 private const val MAX_RELATED_PILLS = 3
 
@@ -928,93 +983,4 @@ internal fun familyPalette(families: List<String>): Map<String, Color> {
     return families.associateWith { palette[it] ?: Color(0xFFBDBDBD) }
 }
 
-/** The dashes of a hearted genre's ring. */
-private val HEART_RING = PathEffect.dashPathEffect(floatArrayOf(6f, 5f))
 
-/**
- * The galaxy's controls, on the map's glass when no genre is open: Galaxy or
- * Timeline (the disc or the spiral), how much of it the listener has explored,
- * what lit, ringed and dark mean, and a way somewhere new.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun GalaxyHud(
-    timeline: Boolean,
-    onTimeline: (Boolean) -> Unit,
-    exploredCount: Int,
-    total: Int,
-    hazeState: HazeState,
-    glass: PlayerGlassSettings,
-    onSurprise: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    tf.monochrome.android.ui.components.GlassPanel(hazeState = hazeState, glass = glass, modifier = modifier) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(1f)) {
-                    listOf(false to R.string.galaxy_layout_galaxy, true to R.string.galaxy_layout_timeline)
-                        .forEachIndexed { index, (option, label) ->
-                            SegmentedButton(
-                                selected = timeline == option,
-                                onClick = { onTimeline(option) },
-                                shape = SegmentedButtonDefaults.itemShape(index, 2),
-                                label = { Text(stringResource(label), maxLines = 1) },
-                            )
-                        }
-                }
-                Spacer(Modifier.width(8.dp))
-                // On a narrow phone, or with large text, the button is its
-                // glyph alone, so the switch beside it keeps its words.
-                val room = LocalConfiguration.current.screenWidthDp / LocalDensity.current.fontScale.coerceAtLeast(1f)
-                if (room < HUD_WORDS_DP) {
-                    FilledTonalIconButton(onClick = onSurprise) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = stringResource(R.string.galaxy_surprise))
-                    }
-                } else {
-                    FilledTonalButton(onClick = onSurprise) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.galaxy_surprise), maxLines = 1)
-                    }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = stringResource(R.string.discover_galaxy_count, exploredCount, total),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.height(6.dp))
-            // Every star is lit, so the one mark left to explain is the heart's ring.
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                LegendMark()
-                LegendText(stringResource(R.string.galaxy_legend_hearted))
-            }
-        }
-    }
-}
-
-/** The hearted mark, drawn the way the map draws it: a dashed ring round the star. */
-@Composable
-private fun LegendMark() {
-    val color = MaterialTheme.colorScheme.primary
-    Canvas(modifier = Modifier.size(14.dp)) {
-        val c = Offset(size.width / 2f, size.height / 2f)
-        val r = size.minDimension * 0.24f
-        drawCircle(color.copy(alpha = 0.5f), radius = r * 0.85f, center = c)
-        drawCircle(color, radius = r + 3f, center = c, style = Stroke(width = 1.6f, pathEffect = HEART_RING))
-    }
-}
-
-@Composable
-private fun LegendText(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(start = 4.dp, end = 10.dp),
-    )
-}

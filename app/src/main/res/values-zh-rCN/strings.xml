@@ -2008,10 +2008,10 @@
     <string name="library_galaxy_open_album">打开专辑</string>
     <string name="library_galaxy_legend_halo">星盘上下方：未识别的流派</string>
     <string name="library_galaxy_uncharted">未识别的流派</string>
+    <string name="library_galaxy_search_hint">在星系中查找艺人</string>
+    <string name="library_galaxy_search_none">没有这个名字的艺人</string>
+    <string name="galaxy_legend_hearted_ring">虚线环：保留在你的流派中的流派</string>
     <string name="galaxy_switch_to_library">你的音乐库星系</string>
-    <plurals name="library_galaxy_artists">
-        <item quantity="other">音乐库中有 %1$d 位艺人</item>
-    </plurals>
     <plurals name="library_galaxy_albums">
         <item quantity="other">%1$d 张专辑</item>
     </plurals>

@@ -1,6 +1,21 @@
 package tf.monochrome.android.ui.library.galaxy
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import tf.monochrome.android.ui.discover.galaxy.GALAXY_INK
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -51,7 +66,10 @@ import tf.monochrome.android.ui.components.GlassPanel
 import tf.monochrome.android.ui.discover.DOCK_GAP_DP
 import tf.monochrome.android.ui.discover.DOCK_MARGIN_DP
 import tf.monochrome.android.ui.discover.GLYPH_PILL_WIDTH
+import tf.monochrome.android.ui.discover.GalaxyLayoutPills
+import tf.monochrome.android.ui.discover.GalaxySearchBar
 import tf.monochrome.android.ui.discover.GalaxyStage
+import tf.monochrome.android.ui.discover.matchStars
 import tf.monochrome.android.ui.discover.GalaxyStageScope
 import tf.monochrome.android.ui.discover.GlyphPill
 import tf.monochrome.android.ui.discover.MapAction
@@ -104,6 +122,16 @@ fun LibraryMapScreen(
     val artists = stars?.library?.artists.orEmpty()
     val anyUncharted = remember(field) { field?.families?.contains(LibraryStarField.UNCHARTED) == true }
 
+    // Finding an artist: a glass bar under the title, its matches as pills.
+    var searchOpen by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    val keyboard = LocalSoftwareKeyboardController.current
+    fun closeSearch() {
+        searchOpen = false
+        query = ""
+        keyboard?.hide()
+    }
+
     fun openSystem(stage: GalaxyStageScope, id: String) {
         if (id != selected) viewModel.select(id)
         viewModel.playArtist(id, playerViewModel)
@@ -144,10 +172,13 @@ fun LibraryMapScreen(
                     artist?.let { pluralStringResource(R.plurals.library_galaxy_tracks, it.trackCount, it.trackCount) },
                     artist?.firstYear?.let { stringResource(R.string.discover_genre_since, it) },
                 ).joinToString(" · ") + if (stage.system != null && stage.visuals.planets) "\n" + stringResource(R.string.library_galaxy_planets_caption) else ""
-            } else if (stage.timeline) {
-                stringResource(R.string.galaxy_time_caption)
             } else {
-                stringResource(R.string.library_galaxy_caption)
+                // What a star's place and size mean, and — when there are
+                // any — what the stars off the disc are.
+                listOfNotNull(
+                    stringResource(if (stage.timeline) R.string.galaxy_time_caption else R.string.library_galaxy_caption),
+                    if (anyUncharted) stringResource(R.string.library_galaxy_legend_halo) else null,
+                ).joinToString("\n")
             }
         },
         emptyText = when {
@@ -160,6 +191,13 @@ fun LibraryMapScreen(
         onPlayMoon = { viewModel.playMoon(it, playerViewModel) },
         actions = { stage ->
             buildList {
+                add(
+                    MapAction(
+                        Icons.Default.Search,
+                        stringResource(if (searchOpen) R.string.action_close_search else R.string.tab_search),
+                        tint = if (searchOpen) MaterialTheme.colorScheme.primary else GALAXY_INK,
+                    ) { if (searchOpen) closeSearch() else searchOpen = true },
+                )
                 val id = selected
                 if (id == null) {
                     add(MapAction(Icons.Default.AutoAwesome, stringResource(R.string.galaxy_surprise)) { viewModel.surprise() })
@@ -212,18 +250,18 @@ fun LibraryMapScreen(
             val i = selectedIndex
             if (id == null || i == null || field == null) {
                 if (field != null) {
-                    LibraryHud(
-                        timeline = stage.timeline,
-                        onTimeline = { stage.setTimeline(it) },
-                        artistCount = field.size,
-                        showHaloLegend = anyUncharted,
-                        hazeState = stage.hazeState,
-                        glass = stage.glass,
-                        onSurprise = { viewModel.surprise() },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .then(stage.panelModifier),
-                    )
+                    CompositionLocalProvider(
+                        LocalPlayerGlass provides stage.glass,
+                        tf.monochrome.android.ui.components.LocalGlassBackdrop provides stage.hazeState,
+                    ) {
+                        GalaxyLayoutPills(
+                            timeline = stage.timeline,
+                            onTimeline = { stage.setTimeline(it) },
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .then(stage.panelModifier),
+                        )
+                    }
                 }
             } else {
                 val collaborators = remember(field, id) { viewModel.collaborators(id, MAX_COLLAB_PILLS) }
@@ -255,7 +293,38 @@ fun LibraryMapScreen(
                 }
             }
         },
+        underTitle = { stage ->
+            // Over the map, not above it, so its glass frosts the sky.
+            AnimatedVisibility(
+                visible = searchOpen && field != null,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                CompositionLocalProvider(
+                    LocalPlayerGlass provides stage.glass,
+                    tf.monochrome.android.ui.components.LocalGlassBackdrop provides stage.hazeState,
+                ) {
+                    GalaxySearchBar(
+                        query = query,
+                        onQueryChange = { query = it },
+                        placeholder = stringResource(R.string.library_galaxy_search_hint),
+                        noMatch = stringResource(R.string.library_galaxy_search_none),
+                        matches = remember(field, query) { field?.let { matchStars(it, query) }.orEmpty() },
+                        hazeState = stage.hazeState,
+                        glass = stage.glass,
+                        onPick = { id ->
+                            viewModel.select(id)
+                            closeSearch()
+                        },
+                        onClose = { closeSearch() },
+                    )
+                }
+            }
+        },
     )
+
+    // Back closes the search before anything else on the map.
+    BackHandler(enabled = searchOpen) { closeSearch() }
 }
 
 /** An album's line in the system's list: its year and how long it is. */
@@ -343,76 +412,7 @@ private fun LibraryDock(
     }
 }
 
-/**
- * The library galaxy's controls when no artist is selected: Galaxy or
- * Timeline, how many artists the sky holds, what the halo means, and a way
- * to somewhere in the library you have not been lately.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun LibraryHud(
-    timeline: Boolean,
-    onTimeline: (Boolean) -> Unit,
-    artistCount: Int,
-    showHaloLegend: Boolean,
-    hazeState: HazeState,
-    glass: PlayerGlassSettings,
-    onSurprise: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    GlassPanel(hazeState = hazeState, glass = glass, modifier = modifier) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.weight(1f)) {
-                    listOf(false to R.string.galaxy_layout_galaxy, true to R.string.galaxy_layout_timeline)
-                        .forEachIndexed { index, (option, label) ->
-                            SegmentedButton(
-                                selected = timeline == option,
-                                onClick = { onTimeline(option) },
-                                shape = SegmentedButtonDefaults.itemShape(index, 2),
-                                label = { Text(stringResource(label), maxLines = 1) },
-                            )
-                        }
-                }
-                Spacer(Modifier.width(8.dp))
-                // Narrow, or large text: the button is its glyph alone, so the
-                // switch beside it keeps its words.
-                val room = LocalConfiguration.current.screenWidthDp / LocalDensity.current.fontScale.coerceAtLeast(1f)
-                if (room < HUD_WORDS_DP) {
-                    FilledTonalIconButton(onClick = onSurprise) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = stringResource(R.string.galaxy_surprise))
-                    }
-                } else {
-                    FilledTonalButton(onClick = onSurprise) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(R.string.galaxy_surprise), maxLines = 1)
-                    }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = pluralStringResource(R.plurals.library_galaxy_artists, artistCount, artistCount),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            if (showHaloLegend) {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.library_galaxy_legend_halo),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}
-
 /** At most this many collaborators beside a selected artist, as pills. */
 private const val MAX_COLLAB_PILLS = 3
 
-/** Below this much room, dp at the listener's text size, the HUD's Surprise button is its glyph alone. */
-private const val HUD_WORDS_DP = 380f
+

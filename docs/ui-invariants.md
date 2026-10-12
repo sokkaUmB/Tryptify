@@ -795,6 +795,17 @@ straight away from its star. The hole's shadow is *cleared*, not blacked out, or
 it casts a dark ring over its own disk. Do not add stripes or a starburst to fake
 rays: they come only from what is in the light's way.
 
+**A pinch zooms harder than the fingers move, and starts on the spread**
+(`GalaxyCamera.pinch`, `PINCH_GAIN`). Planets are a few hundredths of their
+star, and at one to one reaching one took pinch after pinch. The gesture
+starts when the fingers spread or close past the touch slop, not only when
+their middle moves: counted on the middle alone, a clean pinch did nothing.
+And a gesture that is mostly a pinch, while the camera follows a star or a
+planet, zooms without panning: a pan lets go of what is followed, so the planet
+you pinched toward orbited away. Arriving at a planet frames its third moon,
+not its last, so the world is big in the view; arriving at a star frames its
+planets, not the library's belt beyond them.
+
 **Every star is lit, always**, at full size and brightness; there is no "still
 dark" look for genres not listened to. **The star you are at is a sun** — the
 selected one, else the followed one, else the one whose system the camera sits
@@ -864,7 +875,7 @@ is dealt out again on a change: it is decoration, not a place.)
 
 **An artist whose genre is not recognised is in the halo, not guessed at.**
 `GenreGraph.resolve` returns null rather than guessing, and the galaxy keeps
-that honesty: such a star floats above or below the disc, and the HUD says why.
+that honesty: such a star floats above or below the disc, and the caption says why.
 
 **Orbits are release order; plays are glow.** The debut orbits nearest. A play
 never moves a planet: it brightens its atmosphere (`Planet.glow`). A system that
@@ -902,6 +913,25 @@ other way frames the whole galaxy.
 
 **The library map is full bleed**, like the genre map (`fullBleedRoute`). Its
 panels clear the bars themselves.
+
+**Both galaxies' controls are pills, not a panel** (`GalaxyControls.kt`, shared,
+so the two maps cannot drift apart). With nothing selected, the bottom is two
+glass pills, Galaxy and Timeline, the one showing lit; Surprise is in the title
+bar. A panel there covered a third of the sky to hold two choices. What it also
+said moved into the caption: on the genre map, how many genres are explored and,
+once any are kept, what the dashed ring means.
+
+**Both galaxies search with the app's search bar, under the title**
+(`GalaxySearchBar`, in `GalaxyStage`'s `underTitle`): `GlassSearchBar` over the
+map, frosting it, with the matching stars as a row of pills inside the same
+pane, the globe's arrangement, so the sky stays in view. Genres match on their
+other names too ("dnb"). It lives in the measured top chrome, so its height is
+in the camera's top reserve and no star's name is drawn under it. Back closes
+it first.
+
+**It opens from a tile under Folders** in the local Library tab
+(`LibraryIndexList`'s `onGalaxy`), drawn like the categories but not one of
+them: the categories open in place, this opens a screen.
 
 ### Discord presence
 

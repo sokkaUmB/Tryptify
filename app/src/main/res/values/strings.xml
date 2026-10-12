@@ -2065,11 +2065,10 @@
     <string name="library_galaxy_open_album">Open album</string>
     <string name="library_galaxy_legend_halo">Above and below the disc: genre not recognised</string>
     <string name="library_galaxy_uncharted">Genre not recognised</string>
+    <string name="library_galaxy_search_hint">Find an artist in your galaxy</string>
+    <string name="library_galaxy_search_none">No artist by that name</string>
+    <string name="galaxy_legend_hearted_ring">Dashed ring: a genre kept in your genres</string>
     <string name="galaxy_switch_to_library">Your library galaxy</string>
-    <plurals name="library_galaxy_artists">
-        <item quantity="one">%1$d artist in your library</item>
-        <item quantity="other">%1$d artists in your library</item>
-    </plurals>
     <plurals name="library_galaxy_albums">
         <item quantity="one">%1$d album</item>
         <item quantity="other">%1$d albums</item>

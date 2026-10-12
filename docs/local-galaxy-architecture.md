@@ -278,7 +278,7 @@ The genre map is tuned for **771 stars**. A library can have 5,000 artists.
    Albums (the system sheet), Artist page, and up to three collaborators as pills
    (the "related genres" slot). Planet tap → Play album / Open album. Moon tap →
    play the track.
-6. **Entry points**: a Galaxy button on the local Library tab, and a
+6. **Entry points**: a Library galaxy tile under Folders on the local Library tab, and a
    *Genres · Mine* switch on the genre map that keeps the camera (it's the same
    frame).
 7. **Polish**: ring and belt art, heat glow, compilations star, level-of-detail
@@ -288,8 +288,9 @@ The genre map is tuned for **771 stars**. A library can have 5,000 artists.
 
 1. **Orbits are release order.** The debut is nearest; heat (plays in the last
    30 days) is the atmosphere's glow, never a move.
-2. **It opens from both places**: a galaxy button in the local Library tab's
-   header, and a title-bar action on the genre map ("Your library galaxy"; the
+2. **It opens from both places**: a "Library galaxy" tile in the local Library
+   tab, the last one, under Folders (not a category: categories open in place,
+   this opens its own screen), and a title-bar action on the genre map ("Your library galaxy"; the
    library map has "Genre galaxy" back). The switch hands the camera and the
    layout over (`GalaxyHandoff`) and replaces the map on the back stack
    (`switchSafe`), so switching back and forth never piles maps up.

@@ -157,6 +157,7 @@ import tf.monochrome.android.ui.discover.galaxy.MoonRef
 import tf.monochrome.android.ui.discover.galaxy.StarField
 import tf.monochrome.android.domain.model.GalaxyVisualSettings
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Stable
 import kotlin.math.exp
 
@@ -210,6 +211,12 @@ internal fun GalaxyStage(
     sheet: @Composable BoxScope.(GalaxyStageScope, String) -> Unit,
     /** The panel at the bottom when nothing else is open: the HUD, or the selected star's dock. Use [GalaxyStageScope.panelModifier]. */
     panel: @Composable BoxScope.(GalaxyStageScope) -> Unit,
+    /**
+     * Under the title and its caption, in the top chrome: a search bar. Its
+     * height counts in the top reserve, so the camera centres a star below it
+     * and no name is drawn under its glass.
+     */
+    underTitle: @Composable ColumnScope.(GalaxyStageScope) -> Unit = {},
 ) {
     val density = LocalDensity.current
     val instant = reduceMotion()
@@ -511,7 +518,9 @@ internal fun GalaxyStage(
     // giant's system is wide, a dwarf's tight, so each is framed for its own.
     fun starDistance(i: Int): Float {
         val limits = scene?.starField?.systemLimits ?: tf.monochrome.android.ui.discover.galaxy.SystemLimits.CHART
-        return maxOf(GALAXY_ARRIVE_DISTANCE, PlanetSystem.reachFor(starRadiusOf(i), limits) * 1.1f / tanHalfWidth())
+        // The planets, not the belt past them: framed for the belt, every
+        // world came out smaller, and the belt's grains can run off the edge.
+        return maxOf(GALAXY_ARRIVE_DISTANCE, PlanetSystem.reachFor(starRadiusOf(i), limits.copy(belt = false)) * 1.1f / tanHalfWidth())
     }
 
     fun travelTo(id: String) {
@@ -535,12 +544,16 @@ internal fun GalaxyStage(
         val i = s.index[sys.starId] ?: return
         val planet = sys.planets.getOrNull(p) ?: return
         val centre = FloatArray(3)
+        // The planet and its nearest moons fill the view; the outer moons pass
+        // in and out of it. Framed for all of them, the world itself was a
+        // small disc in the middle of its orbits.
+        val framed = planet.moons.sortedBy { it.orbit }.getOrNull(PLANET_FRAME_MOON)?.let { it.orbit + it.radius } ?: planet.reach
         glide(
             goal = { out ->
                 s.position(i, morph.value, centre, 0)
                 sys.planetPosition(p, clock, centre[0], centre[1], centre[2], out, 0)
             },
-            toDistance = (planet.reach * 1.25f / tanHalfWidth()).coerceIn(planet.radius * PLANET_NEAR_RADII, 90f),
+            toDistance = (framed * 1.1f / tanHalfWidth()).coerceIn(planet.radius * PLANET_NEAR_RADII, 90f),
             arrive = {
                 camera.follow = i
                 camera.followPlanet = p
@@ -864,6 +877,7 @@ internal fun GalaxyStage(
                         bottom = MonoDimens.spacingSm,
                     ),
                 )
+                underTitle(stage)
             }
             }
 
@@ -1044,6 +1058,9 @@ private const val ACTION_DP = 48f
 /** The nearest a pinch brings the camera to a star, and to a planet, in their own radii. */
 private const val STAR_NEAR_RADII = 2.2f
 private const val PLANET_NEAR_RADII = 2.6f
+
+/** Arriving at a planet frames it out to this moon (0 the nearest): the planet big, the rest of its moons round the edges. */
+private const val PLANET_FRAME_MOON = 2
 
 /** How long full screen's one hint stays up. */
 private const val FULL_SCREEN_HINT_MILLIS = 3200L

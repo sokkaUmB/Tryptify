@@ -334,15 +334,6 @@ fun LocalLibraryTab(
             if (openCategory == LibraryCategory.FOLDERS) {
                 FolderSortButton(sort = folderSort, onChange = viewModel::setFolderSort, showSongs = false)
             }
-            // The library as a galaxy: every artist a star, beside their genre.
-            if (trackCount > 0) {
-                IconButton(onClick = { navController.navigateSafe(Screen.LibraryGalaxy.route) }) {
-                    Icon(
-                        tf.monochrome.android.ui.discover.galaxy.SystemGlyph,
-                        contentDescription = stringResource(R.string.library_galaxy),
-                    )
-                }
-            }
             IconButton(onClick = { showSearch = !showSearch; if (!showSearch) viewModel.setSearchQuery("") }) {
                 Icon(Icons.Default.Search, contentDescription = stringResource(R.string.tab_search))
             }
@@ -385,7 +376,11 @@ fun LocalLibraryTab(
         // so browsing one category runs one query: the other three are not
         // subscribed while their row sits unopened on the index.
         when (openCategory) {
-            null -> LibraryIndexList(onSelect = { openCategoryId = it.id })
+            null -> LibraryIndexList(
+                onSelect = { openCategoryId = it.id },
+                // The library as a galaxy: every artist a star, beside their genre.
+                onGalaxy = { navController.navigateSafe(Screen.LibraryGalaxy.route) },
+            )
 
             LibraryCategory.SONGS -> SongList(
                 tracks = pagedTracks,

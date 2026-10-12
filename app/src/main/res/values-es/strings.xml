@@ -2118,12 +2118,10 @@
     <string name="library_galaxy_open_album">Abrir álbum</string>
     <string name="library_galaxy_legend_halo">Por encima y por debajo del disco: género no reconocido</string>
     <string name="library_galaxy_uncharted">Género no reconocido</string>
+    <string name="library_galaxy_search_hint">Busca un artista en tu galaxia</string>
+    <string name="library_galaxy_search_none">Ningún artista con ese nombre</string>
+    <string name="galaxy_legend_hearted_ring">Anillo discontinuo: un género guardado en tus géneros</string>
     <string name="galaxy_switch_to_library">Tu galaxia de la biblioteca</string>
-    <plurals name="library_galaxy_artists">
-        <item quantity="one">%1$d artista en tu biblioteca</item>
-        <item quantity="many">%1$d artistas en tu biblioteca</item>
-        <item quantity="other">%1$d artistas en tu biblioteca</item>
-    </plurals>
     <plurals name="library_galaxy_albums">
         <item quantity="one">%1$d álbum</item>
         <item quantity="many">%1$d álbumes</item>

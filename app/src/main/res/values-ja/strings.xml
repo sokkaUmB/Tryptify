@@ -2008,10 +2008,10 @@
     <string name="library_galaxy_open_album">アルバムを開く</string>
     <string name="library_galaxy_legend_halo">円盤の上下：ジャンル不明</string>
     <string name="library_galaxy_uncharted">ジャンル不明</string>
+    <string name="library_galaxy_search_hint">銀河のアーティストを探す</string>
+    <string name="library_galaxy_search_none">その名前のアーティストはいません</string>
+    <string name="galaxy_legend_hearted_ring">破線の輪：マイジャンルに残したジャンル</string>
     <string name="galaxy_switch_to_library">ライブラリ銀河へ</string>
-    <plurals name="library_galaxy_artists">
-        <item quantity="other">ライブラリのアーティスト %1$d 組</item>
-    </plurals>
     <plurals name="library_galaxy_albums">
         <item quantity="other">アルバム %1$d 枚</item>
     </plurals>

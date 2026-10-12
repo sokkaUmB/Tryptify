@@ -2063,11 +2063,10 @@
     <string name="library_galaxy_open_album">Albümü aç</string>
     <string name="library_galaxy_legend_halo">Diskin üstünde ve altında: tür tanınmadı</string>
     <string name="library_galaxy_uncharted">Tür tanınmadı</string>
+    <string name="library_galaxy_search_hint">Galaksinde bir sanatçı bul</string>
+    <string name="library_galaxy_search_none">Bu adda sanatçı yok</string>
+    <string name="galaxy_legend_hearted_ring">Kesikli halka: türlerinizde tuttuğunuz bir tür</string>
     <string name="galaxy_switch_to_library">Kitaplık galaksin</string>
-    <plurals name="library_galaxy_artists">
-        <item quantity="one">Kitaplığında %1$d sanatçı</item>
-        <item quantity="other">Kitaplığında %1$d sanatçı</item>
-    </plurals>
     <plurals name="library_galaxy_albums">
         <item quantity="one">%1$d albüm</item>
         <item quantity="other">%1$d albüm</item>

@@ -2063,11 +2063,10 @@
     <string name="library_galaxy_open_album">Album öffnen</string>
     <string name="library_galaxy_legend_halo">Über und unter der Scheibe: Genre nicht erkannt</string>
     <string name="library_galaxy_uncharted">Genre nicht erkannt</string>
+    <string name="library_galaxy_search_hint">Künstler in deiner Galaxie finden</string>
+    <string name="library_galaxy_search_none">Kein Künstler mit diesem Namen</string>
+    <string name="galaxy_legend_hearted_ring">Gestrichelter Ring: ein Genre aus deinen Genres</string>
     <string name="galaxy_switch_to_library">Deine Bibliotheks-Galaxie</string>
-    <plurals name="library_galaxy_artists">
-        <item quantity="one">%1$d Künstler in deiner Bibliothek</item>
-        <item quantity="other">%1$d Künstler in deiner Bibliothek</item>
-    </plurals>
     <plurals name="library_galaxy_albums">
         <item quantity="one">%1$d Album</item>
         <item quantity="other">%1$d Alben</item>
