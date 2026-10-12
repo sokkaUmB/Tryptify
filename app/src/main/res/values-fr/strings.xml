@@ -2107,4 +2107,31 @@
         <item quantity="many">%1$d sous-genres</item>
         <item quantity="other">%1$d sous-genres</item>
     </plurals>
+    <string name="library_galaxy">Galaxie de la bibliothèque</string>
+    <string name="library_galaxy_caption">Vos artistes, chacun près de son genre · Plus l’étoile est grande, plus vous avez de leur musique</string>
+    <string name="library_galaxy_planets_caption">Planètes : leurs albums, le premier au plus près · Lunes : les titres · Touchez une lune pour la lire</string>
+    <string name="library_galaxy_loading">Cartographie de votre bibliothèque…</string>
+    <string name="library_galaxy_empty">Votre bibliothèque est encore vide. Analysez un dossier de musique dans Bibliothèque pour remplir le ciel.</string>
+    <string name="library_galaxy_open_artist">Ouvrir l’artiste</string>
+    <string name="library_galaxy_shuffle_artist">Lecture aléatoire de cet artiste</string>
+    <string name="library_galaxy_play_album">Lire l’album</string>
+    <string name="library_galaxy_open_album">Ouvrir l’album</string>
+    <string name="library_galaxy_legend_halo">Au-dessus et au-dessous du disque : genre non reconnu</string>
+    <string name="library_galaxy_uncharted">Genre non reconnu</string>
+    <string name="galaxy_switch_to_library">Votre galaxie de la bibliothèque</string>
+    <plurals name="library_galaxy_artists">
+        <item quantity="one">%1$d artiste dans votre bibliothèque</item>
+        <item quantity="many">%1$d artistes dans votre bibliothèque</item>
+        <item quantity="other">%1$d artistes dans votre bibliothèque</item>
+    </plurals>
+    <plurals name="library_galaxy_albums">
+        <item quantity="one">%1$d album</item>
+        <item quantity="many">%1$d albums</item>
+        <item quantity="other">%1$d albums</item>
+    </plurals>
+    <plurals name="library_galaxy_tracks">
+        <item quantity="one">%1$d titre</item>
+        <item quantity="many">%1$d titres</item>
+        <item quantity="other">%1$d titres</item>
+    </plurals>
 </resources>

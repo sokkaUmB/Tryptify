@@ -2107,4 +2107,31 @@
         <item quantity="many">%1$d subgéneros</item>
         <item quantity="other">%1$d subgéneros</item>
     </plurals>
+    <string name="library_galaxy">Galaxia de la biblioteca</string>
+    <string name="library_galaxy_caption">Tus artistas, cada uno junto a su género · Estrellas más grandes, más de su música</string>
+    <string name="library_galaxy_planets_caption">Planetas: sus álbumes, el primero más cerca · Lunas: las canciones · Toca una luna para reproducirla</string>
+    <string name="library_galaxy_loading">Cartografiando tu biblioteca…</string>
+    <string name="library_galaxy_empty">Tu biblioteca aún está vacía. Escanea una carpeta de música en Biblioteca para llenar el cielo.</string>
+    <string name="library_galaxy_open_artist">Abrir artista</string>
+    <string name="library_galaxy_shuffle_artist">Reproducir este artista en aleatorio</string>
+    <string name="library_galaxy_play_album">Reproducir álbum</string>
+    <string name="library_galaxy_open_album">Abrir álbum</string>
+    <string name="library_galaxy_legend_halo">Por encima y por debajo del disco: género no reconocido</string>
+    <string name="library_galaxy_uncharted">Género no reconocido</string>
+    <string name="galaxy_switch_to_library">Tu galaxia de la biblioteca</string>
+    <plurals name="library_galaxy_artists">
+        <item quantity="one">%1$d artista en tu biblioteca</item>
+        <item quantity="many">%1$d artistas en tu biblioteca</item>
+        <item quantity="other">%1$d artistas en tu biblioteca</item>
+    </plurals>
+    <plurals name="library_galaxy_albums">
+        <item quantity="one">%1$d álbum</item>
+        <item quantity="many">%1$d álbumes</item>
+        <item quantity="other">%1$d álbumes</item>
+    </plurals>
+    <plurals name="library_galaxy_tracks">
+        <item quantity="one">%1$d canción</item>
+        <item quantity="many">%1$d canciones</item>
+        <item quantity="other">%1$d canciones</item>
+    </plurals>
 </resources>

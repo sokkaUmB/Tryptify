@@ -838,6 +838,71 @@ render thread, the FFT taps, the loudness meter, the tilt sensor, projectM's
 audio feed — is held with `LifecycleStartEffect` or `rememberOnScreen()`, never
 a bare `DisposableEffect`, which holds it in the background too.
 
+### The library galaxy
+
+The music on the device as a sky: artists as stars, albums as planets, tracks
+as moons. How it is built, and why, is `docs/local-galaxy-architecture.md`.
+Everything under "The genre galaxy" above holds for it too.
+
+**The two galaxies are one stage** (`GalaxyStage`). The camera, the clock, the
+glides, full screen, the glass and the look sheet are the stage's; each map
+brings only its stars (`StarField`), its system and its panels through slots.
+Do not fork the stage for one map: a fix to one is a fix to both, and the rules
+above were each paid for once.
+
+**The genre galaxy draws from its stream in the order it always has**
+(`GenreStarField`). Its stars and the scene's dust share one seeded `Random`.
+Move a `gauss()` call, or draw a new number before the layout, and every dust
+grain and nebula moves, which looks like nothing until you compare. The split
+of `GalaxyScene` was proven against a fingerprint of every number in the scene.
+
+**Every library star is placed from its own key, never from a shared stream**
+(`LibraryStarField`). A library grows; the genre dataset does not. Seeded down
+the list, one new artist reshuffled the whole sky after every scan.
+`LibraryStarFieldTest` adds artists and checks no other star moved. (The dust
+is dealt out again on a change: it is decoration, not a place.)
+
+**An artist whose genre is not recognised is in the halo, not guessed at.**
+`GenreGraph.resolve` returns null rather than guessing, and the galaxy keeps
+that honesty: such a star floats above or below the disc, and the HUD says why.
+
+**Orbits are release order; plays are glow.** The debut orbits nearest. A play
+never moves a planet: it brightens its atmosphere (`Planet.glow`). A system that
+rearranged itself as you listened could not be learned. `LocalSystemsTest` pins
+both.
+
+**Nothing in the library is unreachable on the map.** Albums past the eighth are
+the belt and tracks past an album's sixth are its ring, and both are listed in
+full in the system's sheet. Drawn as grains, never dropped.
+
+**A library system keeps its planets' moons wholly apart** (`SystemLimits.apartMoons`),
+and its reach includes the belt (`PlanetSystem.reachFor`), so the camera frames
+all of it before it arrives. The genre map's spacing is unchanged.
+
+**Past 800 stars, the rest are points until you come near**
+(`GalaxyScene.STAR_SPRITE_BUDGET`, `drawStars`). The genre map has 771 and is
+under it, so it draws as it always did. Past it, each extra star's sprite fades
+in over its point as it grows on screen. Do not make it a hard cut: a hard top-N
+pops as the camera moves.
+
+**Nothing on it comes off the network.** `LocalGalaxyRepository` reads the
+library and the play history only, so the map works in airplane mode. A lookup
+added for a nicer planet breaks that.
+
+**The data layer returns records, not stars.** The repository hands back
+`LibraryArtist`/`LibraryAlbum` (domain); the ViewModel lays them out. The
+`data` package imports nothing from `ui`.
+
+**Genres ⇄ Mine swaps the map, and keeps the view** (`switchSafe`,
+`GalaxyHandoff`). Both maps are laid out in one frame, so the camera and the
+layout are handed over and the other map opens on the same part of the sky.
+The map being left comes off the back stack; otherwise switching back and forth
+stacked maps up behind Back. The handoff is taken once, and a map opened any
+other way frames the whole galaxy.
+
+**The library map is full bleed**, like the genre map (`fullBleedRoute`). Its
+panels clear the bars themselves.
+
 ### Discord presence
 
 The animated asset must stay under **~248 KB** or Discord's media proxy shows

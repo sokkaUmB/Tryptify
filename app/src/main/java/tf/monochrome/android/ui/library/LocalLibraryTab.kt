@@ -100,6 +100,8 @@ import tf.monochrome.android.ui.components.bounceClick
 import tf.monochrome.android.ui.components.bounceCombinedClick
 import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.navigation.openAlbum
+import tf.monochrome.android.ui.navigation.Screen
+import tf.monochrome.android.ui.navigation.navigateSafe
 import tf.monochrome.android.ui.navigation.openArtist
 import tf.monochrome.android.ui.player.PlayerViewModel
 import androidx.compose.material3.Surface
@@ -331,6 +333,15 @@ fun LocalLibraryTab(
             // The folders' half of the one folder sort every folder screen uses.
             if (openCategory == LibraryCategory.FOLDERS) {
                 FolderSortButton(sort = folderSort, onChange = viewModel::setFolderSort, showSongs = false)
+            }
+            // The library as a galaxy: every artist a star, beside their genre.
+            if (trackCount > 0) {
+                IconButton(onClick = { navController.navigateSafe(Screen.LibraryGalaxy.route) }) {
+                    Icon(
+                        tf.monochrome.android.ui.discover.galaxy.SystemGlyph,
+                        contentDescription = stringResource(R.string.library_galaxy),
+                    )
+                }
             }
             IconButton(onClick = { showSearch = !showSearch; if (!showSearch) viewModel.setSearchQuery("") }) {
                 Icon(Icons.Default.Search, contentDescription = stringResource(R.string.tab_search))

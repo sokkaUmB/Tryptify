@@ -2052,4 +2052,28 @@
         <item quantity="one">%1$d alt tür</item>
         <item quantity="other">%1$d alt tür</item>
     </plurals>
+    <string name="library_galaxy">Kitaplık galaksisi</string>
+    <string name="library_galaxy_caption">Sanatçıların, her biri kendi türünün yanında · Daha büyük yıldız, daha çok müzik</string>
+    <string name="library_galaxy_planets_caption">Gezegenler: albümleri, ilki en yakında · Uydular: parçalar · Çalmak için bir uyduya dokun</string>
+    <string name="library_galaxy_loading">Kitaplığın haritalanıyor…</string>
+    <string name="library_galaxy_empty">Kitaplığın henüz boş. Gökyüzünü doldurmak için Kitaplık’ta bir müzik klasörünü tara.</string>
+    <string name="library_galaxy_open_artist">Sanatçıyı aç</string>
+    <string name="library_galaxy_shuffle_artist">Bu sanatçıyı karışık çal</string>
+    <string name="library_galaxy_play_album">Albümü çal</string>
+    <string name="library_galaxy_open_album">Albümü aç</string>
+    <string name="library_galaxy_legend_halo">Diskin üstünde ve altında: tür tanınmadı</string>
+    <string name="library_galaxy_uncharted">Tür tanınmadı</string>
+    <string name="galaxy_switch_to_library">Kitaplık galaksin</string>
+    <plurals name="library_galaxy_artists">
+        <item quantity="one">Kitaplığında %1$d sanatçı</item>
+        <item quantity="other">Kitaplığında %1$d sanatçı</item>
+    </plurals>
+    <plurals name="library_galaxy_albums">
+        <item quantity="one">%1$d albüm</item>
+        <item quantity="other">%1$d albüm</item>
+    </plurals>
+    <plurals name="library_galaxy_tracks">
+        <item quantity="one">%1$d parça</item>
+        <item quantity="other">%1$d parça</item>
+    </plurals>
 </resources>

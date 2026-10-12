@@ -370,6 +370,53 @@ interface LocalMediaDao {
     @Query("DELETE FROM local_folders")
     suspend fun clearFolders()
 
+    // ── Galaxy ──────────────────────────────────────────────────────
+    //
+    // The library galaxy reads the library as a few grouped summaries, never
+    // the whole track table: a star needs its artist's size, first year,
+    // genre tags and collaborators, not their tracks.
+
+    @Query("SELECT * FROM local_artists")
+    suspend fun getArtistsOnce(): List<LocalArtistEntity>
+
+    /** Each artist's earliest tagged year: how far out their star sits on the timeline. */
+    @Query("SELECT artistId AS artistId, MIN(year) AS year FROM local_tracks WHERE artistId IS NOT NULL AND year > 0 GROUP BY artistId")
+    suspend fun galaxyFirstYears(): List<GalaxyArtistYear>
+
+    /** Each artist's genre tags, as written, and how many of their tracks carry each. */
+    @Query(
+        "SELECT artistId AS artistId, genre AS tag, COUNT(*) AS tracks FROM local_tracks " +
+            "WHERE artistId IS NOT NULL AND genre IS NOT NULL AND genre != '' GROUP BY artistId, genre"
+    )
+    suspend fun galaxyGenreTags(): List<GalaxyArtistTag>
+
+    /**
+     * Tracks whose own artist is not the album's: a feature or a
+     * collaboration, linking the album artist's star to the track artist's.
+     */
+    @Query(
+        "SELECT artistId AS artistId, artist AS other, COUNT(*) AS tracks FROM local_tracks " +
+            "WHERE artistId IS NOT NULL AND artist IS NOT NULL AND albumArtist IS NOT NULL AND artist != albumArtist " +
+            "GROUP BY artistId, artist"
+    )
+    suspend fun galaxyCollabs(): List<GalaxyArtistCollab>
+
+    @Query("SELECT * FROM local_tracks WHERE artistId = :artistId")
+    suspend fun getTracksByArtistOnce(artistId: Long): List<LocalTrackEntity>
+
+    @Query("SELECT * FROM local_albums WHERE id IN (:ids)")
+    suspend fun getAlbumsByIds(ids: List<Long>): List<LocalAlbumEntity>
+
+    /**
+     * Something that changes whenever a scan writes the library: what the
+     * galaxy rebuilds on. Room re-runs it when either table changes.
+     */
+    @Query(
+        "SELECT COUNT(*) AS tracks, (SELECT COUNT(*) FROM local_artists) AS artists, " +
+            "COALESCE(MAX(lastScannedAt), 0) AS lastScan FROM local_tracks"
+    )
+    fun observeGalaxyStamp(): Flow<GalaxyStamp>
+
     // ── Scan State ──────────────────────────────────────────────────
 
     @Query("SELECT * FROM scan_state WHERE id = 1")
@@ -465,3 +512,15 @@ fun folderRangeEnd(prefix: String): String {
 
 /** A folder and the newest file under it, from [LocalMediaDao.observeNewestInSubfolders]. */
 data class FolderNewest(val path: String, val newest: Long)
+
+/** An artist's earliest tagged year. */
+data class GalaxyArtistYear(val artistId: Long, val year: Int)
+
+/** One of an artist's genre tags, and on how many of their tracks. */
+data class GalaxyArtistTag(val artistId: Long, val tag: String, val tracks: Int)
+
+/** An album artist and a track artist on the same tracks. */
+data class GalaxyArtistCollab(val artistId: Long, val other: String, val tracks: Int)
+
+/** What the library galaxy watches to know the library changed. */
+data class GalaxyStamp(val tracks: Int, val artists: Int, val lastScan: Long)

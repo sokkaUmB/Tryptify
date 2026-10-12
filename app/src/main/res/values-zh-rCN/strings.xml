@@ -1997,4 +1997,25 @@
     <plurals name="galaxy_subgenres">
         <item quantity="other">%1$d 个子流派</item>
     </plurals>
+    <string name="library_galaxy">音乐库星系</string>
+    <string name="library_galaxy_caption">每位艺人都位于其流派旁 · 星越大，音乐越多</string>
+    <string name="library_galaxy_planets_caption">行星：专辑，最早的离得最近 · 卫星：曲目 · 轻触卫星即可播放</string>
+    <string name="library_galaxy_loading">正在绘制你的音乐库…</string>
+    <string name="library_galaxy_empty">音乐库还是空的。在“音乐库”中扫描音乐文件夹来点亮星空。</string>
+    <string name="library_galaxy_open_artist">打开艺人</string>
+    <string name="library_galaxy_shuffle_artist">随机播放该艺人</string>
+    <string name="library_galaxy_play_album">播放专辑</string>
+    <string name="library_galaxy_open_album">打开专辑</string>
+    <string name="library_galaxy_legend_halo">星盘上下方：未识别的流派</string>
+    <string name="library_galaxy_uncharted">未识别的流派</string>
+    <string name="galaxy_switch_to_library">你的音乐库星系</string>
+    <plurals name="library_galaxy_artists">
+        <item quantity="other">音乐库中有 %1$d 位艺人</item>
+    </plurals>
+    <plurals name="library_galaxy_albums">
+        <item quantity="other">%1$d 张专辑</item>
+    </plurals>
+    <plurals name="library_galaxy_tracks">
+        <item quantity="other">%1$d 首曲目</item>
+    </plurals>
 </resources>

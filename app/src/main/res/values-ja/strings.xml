@@ -1997,4 +1997,25 @@
     <plurals name="galaxy_subgenres">
         <item quantity="other">サブジャンル %1$d</item>
     </plurals>
+    <string name="library_galaxy">ライブラリ銀河</string>
+    <string name="library_galaxy_caption">アーティストはそれぞれのジャンルのそばに · 星が大きいほど曲が多い</string>
+    <string name="library_galaxy_planets_caption">惑星：アルバム（最初の作品が最も内側）· 衛星：収録曲 · 衛星をタップして再生</string>
+    <string name="library_galaxy_loading">ライブラリをマッピング中…</string>
+    <string name="library_galaxy_empty">ライブラリはまだ空です。ライブラリで音楽フォルダをスキャンして空を満たしましょう。</string>
+    <string name="library_galaxy_open_artist">アーティストを開く</string>
+    <string name="library_galaxy_shuffle_artist">このアーティストをシャッフル再生</string>
+    <string name="library_galaxy_play_album">アルバムを再生</string>
+    <string name="library_galaxy_open_album">アルバムを開く</string>
+    <string name="library_galaxy_legend_halo">円盤の上下：ジャンル不明</string>
+    <string name="library_galaxy_uncharted">ジャンル不明</string>
+    <string name="galaxy_switch_to_library">ライブラリ銀河へ</string>
+    <plurals name="library_galaxy_artists">
+        <item quantity="other">ライブラリのアーティスト %1$d 組</item>
+    </plurals>
+    <plurals name="library_galaxy_albums">
+        <item quantity="other">アルバム %1$d 枚</item>
+    </plurals>
+    <plurals name="library_galaxy_tracks">
+        <item quantity="other">%1$d 曲</item>
+    </plurals>
 </resources>

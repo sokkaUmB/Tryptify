@@ -2053,4 +2053,29 @@
         <item quantity="one">%1$d subgenre</item>
         <item quantity="other">%1$d subgenres</item>
     </plurals>
+    <!-- Library galaxy: the music on this device as a sky -->
+    <string name="library_galaxy">Library galaxy</string>
+    <string name="library_galaxy_caption">Your artists, each beside their genre · Bigger stars, more of their music</string>
+    <string name="library_galaxy_planets_caption">Planets: their albums, the first nearest · Moons: the tracks · Tap a moon to play</string>
+    <string name="library_galaxy_loading">Mapping your library…</string>
+    <string name="library_galaxy_empty">Nothing in your library yet. Scan a music folder in Library to fill the sky.</string>
+    <string name="library_galaxy_open_artist">Open artist</string>
+    <string name="library_galaxy_shuffle_artist">Shuffle this artist</string>
+    <string name="library_galaxy_play_album">Play album</string>
+    <string name="library_galaxy_open_album">Open album</string>
+    <string name="library_galaxy_legend_halo">Above and below the disc: genre not recognised</string>
+    <string name="library_galaxy_uncharted">Genre not recognised</string>
+    <string name="galaxy_switch_to_library">Your library galaxy</string>
+    <plurals name="library_galaxy_artists">
+        <item quantity="one">%1$d artist in your library</item>
+        <item quantity="other">%1$d artists in your library</item>
+    </plurals>
+    <plurals name="library_galaxy_albums">
+        <item quantity="one">%1$d album</item>
+        <item quantity="other">%1$d albums</item>
+    </plurals>
+    <plurals name="library_galaxy_tracks">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
 </resources>

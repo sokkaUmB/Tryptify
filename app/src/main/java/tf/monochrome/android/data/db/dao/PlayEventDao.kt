@@ -28,6 +28,19 @@ interface PlayEventDao {
     suspend fun clearAll()
 
     /**
+     * Plays of each track on [albums], ever and since [since]: for the library
+     * galaxy, which planets are played most and which glow. Matched on the
+     * album and track titles as the tags spell them, because a local play
+     * records those and not the file's row.
+     */
+    @Query(
+        "SELECT title AS title, albumTitle AS albumTitle, COUNT(*) AS plays, " +
+            "SUM(CASE WHEN playedAt >= :since THEN 1 ELSE 0 END) AS recent " +
+            "FROM play_events WHERE albumTitle IN (:albums) GROUP BY title, albumTitle"
+    )
+    suspend fun playsOnAlbums(albums: List<String>, since: Long): List<AlbumTrackPlays>
+
+    /**
      * Plays the cloud has never accepted, played before [before], in row order
      * after [afterRowId]. Walking by row id means a backfill always moves on,
      * even past a row it could not settle this time.
@@ -212,3 +225,11 @@ data class SourceAggregate(val source: String, val playCount: Int)
 data class DayAggregate(val dayEpoch: Long, val playCount: Int)
 data class HourAggregate(val hour: Int, val playCount: Int)
 data class WeekdayAggregate(val weekday: Int, val playCount: Int)
+
+/** A track's plays on an album, ever and lately. */
+data class AlbumTrackPlays(
+    val title: String,
+    val albumTitle: String?,
+    val plays: Int,
+    val recent: Int,
+)

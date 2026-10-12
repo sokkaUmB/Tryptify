@@ -1,8 +1,21 @@
 # The library galaxy — architecture
 
-Status: **proposal**, nothing built yet. Read `docs/ui-invariants.md` → "The genre
-galaxy" first. Every rule there applies to this map too, and this document
-assumes them rather than repeating them.
+Status: **built** (all seven steps below). Read `docs/ui-invariants.md` → "The
+genre galaxy" and "The library galaxy" first. Every rule there applies to this
+map too, and this document assumes them rather than repeating them.
+
+Where the code lives:
+
+| Piece | File |
+|---|---|
+| Star field seam | `ui/discover/galaxy/StarField.kt`, `GenreStarField.kt` |
+| Library stars | `ui/discover/galaxy/LibraryStarField.kt` |
+| Library systems | `ui/discover/galaxy/LocalSystems.kt` (and `PlanetSystem.kt`: `MoonRef`, `SystemLimits`) |
+| Input records | `domain/model/LibraryGalaxyModel.kt` |
+| Shared stage | `ui/discover/GalaxyStage.kt` (`GalaxyStage`, `GalaxyStageScope`, `GalaxyHandoff`) |
+| Data | `data/local/galaxy/LocalGalaxyRepository.kt`, galaxy queries in `LocalMediaDao` and `PlayEventDao` |
+| Screen | `ui/library/galaxy/LibraryMapScreen.kt`, `LibraryGalaxyViewModel.kt` |
+| Tests | `LibraryStarFieldTest`, `LocalSystemsTest` (plus the genre galaxy's own, unchanged in substance) |
 
 ## The idea in one table
 
@@ -40,10 +53,10 @@ sits where jazz is.
             │  (aggregate SQL, no full-table load)       │
             ▼                                             ▼
  ┌──────────────────── LocalGalaxyRepository (@Singleton) ───────────────────┐
- │  observes library changes → debounce → builds off the main thread         │
- │  starField: Flow<StarField>          system(starId): LocalSystemData      │
+ │  observes library changes → debounce → reads off the main thread          │
+ │  artists(): Flow<LibraryArtists>       music(artistId): ArtistMusic       │
  └────────────┬──────────────────────────────────────────┬───────────────────┘
-              │ pure, JVM-tested builders (domain)        │
+              │ LibraryGalaxyViewModel: pure, JVM-tested builders            │
               ▼                                           ▼
    LibraryStarField.build(...)                 LocalSystems.build(...)
               │                                           │
@@ -154,7 +167,7 @@ flag through 1,700 lines is how the invariants get undone.
    stars.
 
 **Stability is the rule this map adds.** The genre dataset is fixed, but a
-library grows. Every per-star value (position, twinkle phase, dust owner) is
+library grows. Every per-star value (position, twinkle phase) is
 seeded by a **stable hash of that star's own key** (`PlanetSystem.stableHash`
 already exists), never by a shared sequential `Random`. Adding one artist must
 not move any other star. The test below pins that.
@@ -178,23 +191,27 @@ not move any other star. The test below pins that.
 
 ### `LocalGalaxyRepository` (`data/local/galaxy/`, `@Singleton`)
 
-- **Aggregate SQL, never `getAllTracks()`.** Three new `LocalMediaDao` queries,
-  grouped by the artist key:
-  - per artist: track count, album count, `MIN(year)`, artwork key
-  - per (artist, genre tag): count, for the main genre
-  - per (album artist, track artist) where they differ: count, for links
-- **Plays**: a `PlayEventDao` query grouped by normalised (artist, album, title),
-  filtered to local plays (`PlayedFrom.LOCAL`). It joins on names because they
-  survive a full rescan, while row ids may not. Check before relying on it:
-  confirm what `trackId` a local play actually stores. If it's a stable hash of
-  the file path, join on that instead.
-- **When to rebuild**: observe `countTracks()` together with `scan_state`
-  (`lastFullScan` / `lastIncremental`), debounce, then build on
-  `Dispatchers.Default`. `LocalLibraryRevision` alone isn't enough, because it
-  doesn't bump on removals.
-- **Systems** are fetched when the camera settles on a star, like `mapSystem`.
-  It's a local query, so the wait can drop from 0.7 s to about 0.15 s. That's
-  only so flying past fifty artists doesn't run fifty queries.
+It returns plain records (`domain/model/LibraryGalaxyModel.kt`), never stars
+or planets: laying them out is the ViewModel's, through the pure builders, so
+the data layer imports nothing from the UI.
+
+- **Grouped SQL, never `getAllTracks()`.** The artists are the `local_artists`
+  rows (the scanner's own grouping: album artist, else artist, else "Unknown
+  Artist", which is what the Library's Artists tab lists), plus three
+  `LocalMediaDao` queries grouped by `artistId`:
+  - `galaxyFirstYears`: `MIN(year)`, for the timeline
+  - `galaxyGenreTags`: each (artist, genre tag) and its count, for the main genre
+  - `galaxyCollabs`: each (album artist, track artist) where they differ, for links
+- **Plays**: `PlayEventDao.playsOnAlbums`, grouped by album and track title,
+  ever and in the last 30 days. A local play records the tags' titles but not
+  the file's row and no source, so the titles are what joins.
+- **When to rebuild**: `observeGalaxyStamp` (track count, artist count, the
+  newest `lastScannedAt`; Room re-runs it whenever either table changes),
+  distinct, debounced 400 ms, read on `Dispatchers.Default`.
+  `LocalLibraryRevision` alone isn't enough, because it doesn't bump on removals.
+- **Systems** are read once the selection has rested on a star for 150 ms
+  (the genre map waits 0.7 s for a chart request; this is a local query). That
+  is only so flying past fifty artists doesn't run fifty queries.
 - **Fully offline.** No MusicBrainz, no charts, no network. It works in
   airplane mode, and that is the point of a local map.
 
@@ -256,7 +273,7 @@ The genre map is tuned for **771 stars**. A library can have 5,000 artists.
 2. **Stage**: extract `GalaxyStage` from `GenreMapScreen`. Still only the genre
    map; the screen should look and behave exactly the same.
 3. **Model**: `LibraryStarField` + `LocalSystems` with their tests. No UI yet.
-4. **Data**: DAO aggregates, `LocalGalaxyRepository`, `LocalGalaxyViewModel`.
+4. **Data**: DAO aggregates, `LocalGalaxyRepository`, `LibraryGalaxyViewModel`.
 5. **Screen**: `LibraryMapScreen` on the stage. Dock: Play (shuffle artist),
    Albums (the system sheet), Artist page, and up to three collaborators as pills
    (the "related genres" slot). Planet tap → Play album / Open album. Moon tap →
@@ -267,13 +284,33 @@ The genre map is tuned for **771 stars**. A library can have 5,000 artists.
 7. **Polish**: ring and belt art, heat glow, compilations star, level-of-detail
    promotion, then a "The library galaxy" section in `ui-invariants.md`.
 
-## Decisions to confirm
+## Decisions (settled)
 
-1. **Orbits = release order (recommended) or = how much you play it.** Release
-   order is stable and reads as a career spiralling outwards. Plays-as-orbit is
-   livelier, but the system rearranges as you listen. Either way, heat shows as
-   glow.
-2. **Where it opens from**: the Library tab, the genre map's switch, or both
-   (recommended: both, since the shared frame makes the switch nearly free).
-3. **Caps**: 8 planets and 6 moons before the belt and ring take over. These are
-   easy to tune later; they are one `SystemLimits` value.
+1. **Orbits are release order.** The debut is nearest; heat (plays in the last
+   30 days) is the atmosphere's glow, never a move.
+2. **It opens from both places**: a galaxy button in the local Library tab's
+   header, and a title-bar action on the genre map ("Your library galaxy"; the
+   library map has "Genre galaxy" back). The switch hands the camera and the
+   layout over (`GalaxyHandoff`) and replaces the map on the back stack
+   (`switchSafe`), so switching back and forth never piles maps up.
+3. **Caps**: `SystemLimits.LIBRARY` is 8 planets and 6 moons, with a belt, and
+   with moons kept wholly apart (`apartMoons`: neighbouring orbits at least two
+   moon systems' width apart).
+
+## Where the build differs from the plan above
+
+- **The dust reshuffles when the library changes.** Stars, their twinkle and
+  their places are keyed per artist and never move; the dust grains round them
+  are the scene's decoration and are dealt out again. Nothing you can find
+  your way by moves.
+- **Plays are matched by album and track title.** A local play records the
+  tags' titles and not the file's row (and no source), so
+  `PlayEventDao.playsOnAlbums` joins on those. Two albums with the same title
+  share their plays; tracks are matched within their album, so that only
+  matters for the planet's glow and its choice as a planet over the belt.
+- **The switch is a title-bar action, not a segmented control.** It has to be
+  there whatever is selected, and the HUD is only up with nothing selected.
+- **Hearts and "explored" are empty on the library map.** There is no local
+  equivalent yet; the renderer takes them as plain id sets if one comes.
+- **The panel reserve is one measured height** for whichever bottom panel is up
+  (HUD or dock), not one per kind. The camera's reserve eases either way.

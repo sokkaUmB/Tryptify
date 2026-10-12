@@ -35,7 +35,7 @@ class PlanetSystemTest {
     @Test
     fun `planets are artists, most listened first`() {
         val system = PlanetSystem.from("dubstep", chart)!!
-        assertEquals(listOf("Burial", "Four Tet", "Beyoncé"), system.planets.map { it.artist })
+        assertEquals(listOf("Burial", "Four Tet", "Beyoncé"), system.planets.map { it.label })
         assertEquals(1f, system.planets[0].share, 0f)
         assertTrue(system.planets.zipWithNext().all { (a, b) -> a.orbit < b.orbit && a.share >= b.share })
     }
@@ -43,14 +43,14 @@ class PlanetSystemTest {
     @Test
     fun `one artist spelt two ways is one planet`() {
         val system = PlanetSystem.from("dubstep", chart)!!
-        val beyonce = system.planets.single { it.artist.startsWith("Beyonc") }
-        assertEquals(listOf("Cuff It", "Break My Soul"), beyonce.moons.map { it.entry.title })
+        val beyonce = system.planets.single { it.label.startsWith("Beyonc") }
+        assertEquals(listOf("Cuff It", "Break My Soul"), beyonce.moons.map { it.title })
     }
 
     @Test
     fun `moons are the artist's tracks, in chart order`() {
         val system = PlanetSystem.from("dubstep", chart)!!
-        assertEquals(listOf("Archangel", "Near Dark", "Untrue"), system.planets[0].moons.map { it.entry.title })
+        assertEquals(listOf("Archangel", "Near Dark", "Untrue"), system.planets[0].moons.map { it.title })
     }
 
     @Test
@@ -58,8 +58,8 @@ class PlanetSystemTest {
         val ranked = chart.map { it.copy(listenCount = 0) }
         val system = PlanetSystem.from("dubstep", ranked)!!
         // Burial holds ranks 1, 3 and 7; Four Tet 2 and 6.
-        assertEquals("Burial", system.planets[0].artist)
-        assertEquals("Four Tet", system.planets[1].artist)
+        assertEquals("Burial", system.planets[0].label)
+        assertEquals("Four Tet", system.planets[1].label)
     }
 
     @Test
@@ -70,7 +70,7 @@ class PlanetSystemTest {
         assertTrue(system.planets.all { it.moons.size <= PlanetSystem.MAX_MOONS })
         for (planet in system.planets) {
             assertTrue(
-                "${planet.artist} reaches past the fit",
+                "${planet.label} reaches past the fit",
                 planet.orbit + planet.reach <= PlanetSystem.reachFor(system.starRadius) + 1e-3f,
             )
         }
@@ -110,7 +110,7 @@ class PlanetSystemTest {
         for (star in listOf(GalaxyScene.STAR_RADIUS_MIN, PlanetSystem.DEFAULT_STAR_RADIUS, GalaxyScene.STAR_RADIUS_MAX)) {
             val system = PlanetSystem.from("dubstep", chart, starRadius = star)!!
             for (planet in system.planets) {
-                assertTrue("${planet.artist} is not much smaller than its star", planet.radius <= star / 8f + 1e-4f)
+                assertTrue("${planet.label} is not much smaller than its star", planet.radius <= star / 8f + 1e-4f)
                 // Clear of the star, and of the planet inside it.
                 assertTrue(planet.orbit - planet.reach > star)
                 for (moon in planet.moons) {
@@ -151,7 +151,7 @@ class PlanetSystemTest {
     @Test
     fun `a planet is the size of its artist's catalogue`() {
         val sized = PlanetSystem.from("dubstep", chart, releases = mapOf("Burial" to 12, "Four Tet" to 160, "Beyoncé" to 2))!!
-        val byName = sized.planets.associateBy { it.artist }
+        val byName = sized.planets.associateBy { it.label }
         assertTrue(byName.getValue("Four Tet").radius > byName.getValue("Burial").radius)
         assertTrue(byName.getValue("Burial").radius > byName.getValue("Beyoncé").radius)
         // Unknown is middling, and the biggest catalogue tops out.

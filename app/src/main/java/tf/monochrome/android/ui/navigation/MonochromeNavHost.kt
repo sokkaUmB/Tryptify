@@ -118,6 +118,8 @@ sealed class Screen(val route: String) {
     data object Search : Screen("search")
     data object Discover : Screen("discover")
     data object GenreMap : Screen("discover/map")
+    /** The library galaxy: the music on this phone as a sky, artists as stars. */
+    data object LibraryGalaxy : Screen("library/galaxy")
     data object DiscoverDeck : Screen("discover/deck")
     data object DiscoverShelf : Screen("discover/shelf/{shelfId}") {
         fun createRoute(shelfId: String) = "discover/shelf/${android.net.Uri.encode(shelfId)}"
@@ -525,6 +527,7 @@ fun MonochromeNavHost(initialRoute: String? = null) {
         // World radio used to be here. It is a pager page now, and the pager
         // is already full-bleed — this list is only about NavHost destinations.
         val fullBleedRoute = currentDestination?.route == Screen.GenreMap.route ||
+            currentDestination?.route == Screen.LibraryGalaxy.route ||
             currentDestination?.route == Screen.NowPlaying.route
 
         // Every screen runs *under* the mini player. Reserving the bar's height
@@ -664,6 +667,14 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 composable(Screen.GenreMap.route) {
                     tf.monochrome.android.devedit.DevEditScreen("genre_map") {
                         GenreMapScreen(
+                            navController = navController,
+                            playerViewModel = playerViewModel,
+                        )
+                    }
+                }
+                composable(Screen.LibraryGalaxy.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("library_galaxy") {
+                        tf.monochrome.android.ui.library.galaxy.LibraryMapScreen(
                             navController = navController,
                             playerViewModel = playerViewModel,
                         )
