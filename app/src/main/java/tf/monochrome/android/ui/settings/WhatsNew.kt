@@ -122,11 +122,86 @@ object WhatsNew {
     /** Moving from one song to the next: crossfades and gapless. */
     private const val PLAYBACK = "Playback"
 
+    /** Where lyrics come from, and what they are searched by. */
+    private const val LYRICS = "Lyrics"
+
     /** The projectM visualizer, its preset browser and its rotation. */
     private const val VISUALIZER = "Visualizer"
 
     /** Newest first. */
     val releases: List<WhatsNewRelease> = listOf(
+        WhatsNewRelease(
+            versionCode = 194,
+            versionName = "1.9.4",
+            entries = listOf(
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Your library as a galaxy",
+                    body = "Library galaxy, under Folders in Library, shows every artist on your phone as a star beside their genre, their albums as planets and their tracks as moons. It works offline.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Albums in orbit",
+                    body = "An artist's first album orbits nearest and each later one further out. Albums you play a lot glow brighter. Tap a moon to play it; long-press a star to list every album and track.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = DISCOVER,
+                    title = "Search the galaxy",
+                    body = "A search button on both galaxies finds a genre, by any of its names, or an artist, and flies there.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = DISCOVER,
+                    title = "One sky, two galaxies",
+                    body = "Your library galaxy sits in the genre galaxy's sky. Switch between them from the title bar and the view stays where it was.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = DISCOVER,
+                    title = "Galaxy and Timeline are two pills",
+                    body = "The panel at the bottom of the map is now two glass pills. Surprise me is in the title bar, and how much you have explored is under the title.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = DISCOVER,
+                    title = "A stronger zoom",
+                    body = "A pinch zooms further, starts at once, and stays on the planet you are zooming toward. Tapping a planet or a star brings it closer.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = PLAYER,
+                    title = "Glass Visualizer and Waveform buttons",
+                    body = "They are real glass now, like Timer, Sound, Speed and Mixer above them.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = PLAYER,
+                    title = "Panels read in light themes",
+                    body = "With dynamic colour in a light theme, the Speed panel, the audio tools and the preset browser had dark text on dark glass and lost their outlines. Their text is light and their pills show.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = LYRICS,
+                    title = "Lyrics for songs named by number",
+                    body = "Untagged songs named like \"2-05 Song\" or \"CD1 - 05 - Song\" are searched without the number, and no longer get \"01\" or \"CD1\" as their artist. Refresh the library once to fix songs already scanned.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = LYRICS,
+                    title = "Lyrics for compilations",
+                    body = "Songs on a Various Artists album are searched under their own artist, so they find their lyrics.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = LYRICS,
+                    title = "The right lyrics for your own files",
+                    body = "Songs on your phone are no longer looked up on TIDAL by a made-up number, which could bring back another song's lyrics.",
+                ),
+            ),
+        ),
         WhatsNewRelease(
             versionCode = 193,
             versionName = "1.9.3",
