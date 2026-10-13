@@ -162,6 +162,7 @@ class AudioPipelineViewModel @Inject constructor(
                     append(" · ")
                     append(it.speedLabel())
                     if (it.hasFeedbackEndpoint) append(" · async feedback")
+                    it.hardwareVolumeLabel()?.let { hw -> append(" · "); append(hw) }
                 },
             )
         }

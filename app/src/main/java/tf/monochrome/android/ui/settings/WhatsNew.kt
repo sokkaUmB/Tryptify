@@ -200,6 +200,24 @@ object WhatsNew {
                     title = "The right lyrics for your own files",
                     body = "Songs on your phone are no longer looked up on TIDAL by a made-up number, which could bring back another song's lyrics.",
                 ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = USB_DAC,
+                    title = "More DACs in exclusive mode",
+                    body = "Exclusive mode now drives DACs that run in USB Audio 3.0's basic mode, like Apple's USB-C headphone adapter, which Android always puts in that mode. They play at 48 kHz, in 24-bit.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = USB_DAC,
+                    title = "DACs at their full output",
+                    body = "The DAC's own volume is unmuted and set to full when a song starts, so only the player's volume bar turns it down. The DAC card shows it as HW vol 0 dB.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = USB_DAC,
+                    title = "DACs that refused every song",
+                    body = "Some DACs, Apple's adapter among them, were turned away with \"no alt setting matches\" whatever played. A song at a rate the DAC can't take now says so, and plays through Android instead.",
+                ),
             ),
         ),
         WhatsNewRelease(
