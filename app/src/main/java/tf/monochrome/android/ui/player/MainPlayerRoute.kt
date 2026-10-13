@@ -633,6 +633,9 @@ fun MainPlayerRoute(
         ),
         // The transport buttons' refractive glass parameters (Studio › Player Glass).
         LocalPlayerGlass provides playerGlass,
+        // What the player's glass stands over: its own dark background, not the
+        // theme's. Every pane works its text colour out from this.
+        tf.monochrome.android.ui.components.LocalGlassGround provides playerGlassGround(blendedColors.dominant),
     ) {
     // topBar and hero are content, not chrome — the artwork, lyrics, queue and
     // visualizer are the same whichever layout is drawing around them. Hoisted
@@ -1578,6 +1581,7 @@ private fun BoxScope.SpeedPanel(
                 Switch(
                     checked = preservePitch,
                     onCheckedChange = onPreservePitchChange,
+                    colors = tf.monochrome.android.ui.components.glassSwitchColors(),
                 )
             }
 

@@ -392,6 +392,15 @@ tints its slab with the parent's original accent (`LocalGlassAccent`), not the
 readable one, so a chip on a sheet stays the sheet's material. `GlassInkTest`
 sweeps grounds, tints and opacities and asserts AA for the text everywhere.
 
+**The player says what its glass stands over** (`LocalGlassGround` provides
+`playerGlassGround`). The player paints its own dark background in every theme,
+so its panes — the Speed panel, the audio tools, the preset browser — work their
+ink out against that, never the theme's page. Against a light theme's page they
+decided they were light glass and drew dark text on dark red. `PlayerGlassGroundTest`
+sweeps covers from white to black. And a switch on glass takes its "off" colours
+from the ink too (`glassSwitchColors`): Material's own come from the theme's
+surface, which the ink does not move, and were a white pill on dark glass.
+
 **A selected chip's rim is `matchParentSize`, never `fillMaxSize`.** Filling made
 a selected chip as wide as the room offered: invisible in a scrolling row, but in
 a plain `Row` or a `FlowRow` it swallowed the line and squeezed its label to a
@@ -436,6 +445,12 @@ width) is for picking one icon out of a row, like the transport and dock.
 
 List rows keep the quieter scale squeeze; a full dome on a wide text row reads
 heavy.
+
+**Every button in the player's sheet is `PressableGlass`**: the four status
+cards and the Visualizer and Waveform buttons under them, one material and one
+corner. Those two stayed on the flat `liquidGlass` tint after the cards moved,
+and read as dark outlined tiles beside real glass. Their "on" is the accent
+and a ring, not a stronger tint: glass has none to switch to.
 
 **A press's swell is animated into `GlassPress.amount` by the animation
 itself** (`animate { press.amount = value }`). It must never be copied across

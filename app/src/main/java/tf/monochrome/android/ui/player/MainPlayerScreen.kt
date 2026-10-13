@@ -24,6 +24,7 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -1102,33 +1103,48 @@ private fun RowScope.OverlayAction(
     onClick: () -> Unit,
 ) {
     val tint = if (active) accent else Color.White.copy(alpha = 0.85f)
-    Column(
-        modifier = Modifier
-            .weight(1f)
-            .clip(RoundedCornerShape(PlayerDesignTokens.GlassCornerSmall))
-            .clickable(onClick = onClick)
-            .liquidGlass(
-                shape = RoundedCornerShape(PlayerDesignTokens.GlassCornerSmall),
-                tintAlpha = if (active) PlayerDesignTokens.GlassTintStrong else PlayerDesignTokens.GlassTintSoft,
-                borderAlpha = PlayerDesignTokens.GlassTintSoft,
-            )
-            .padding(vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+    val shape = RoundedCornerShape(PlayerDesignTokens.GlassCornerMedium)
+    // The same glass button as the status cards above it — real backdrop,
+    // the dome under a finger, the squeeze on press. It was a flat
+    // liquidGlass tint, which read as a dark outlined tile next to them. On
+    // is the accent and a ring, as a selected pill in the dock is: glass has
+    // no stronger tint to switch to.
+    tf.monochrome.android.ui.components.PressableGlass(
+        onClick = onClick,
+        modifier = Modifier.weight(1f),
+        shape = shape,
+        onClickLabel = label,
+        corner = PlayerDesignTokens.GlassCornerMedium,
+        glass = LocalPlayerGlass.current,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier.size(PlayerDesignTokens.ActionIconSize),
-            tint = tint,
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = tint,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (active) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .border(1.5.dp, accent.copy(alpha = 0.85f), shape),
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(PlayerDesignTokens.ActionIconSize),
+                tint = tint,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = tint,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -1186,9 +1202,9 @@ private fun ToggleRow(
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.Black,
-                    checkedTrackColor = accent,
+                colors = tf.monochrome.android.ui.components.glassSwitchColors(
+                    accent = accent,
+                    checkedThumb = Color.Black,
                 ),
             )
         }
