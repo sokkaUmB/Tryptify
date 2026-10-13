@@ -110,8 +110,13 @@ class LocalGalaxyRepository @Inject constructor(
                     trackNumber = t.trackNumber,
                     durationSeconds = t.durationSeconds,
                     plays = ever,
+                    bpm = t.bpm,
+                    camelotKey = t.camelotKey,
                 ) to recent
             }
+            // Tempo, key, loudness and dynamic range, from the rows already
+            // here: no query of its own.
+            val sums = AlbumAggregates.of(own)
             LibraryAlbum(
                 key = key,
                 title = title,
@@ -120,6 +125,10 @@ class LocalGalaxyRepository @Inject constructor(
                 tracks = items.map { it.first },
                 plays = items.sumOf { it.first.plays },
                 recentPlays = items.sumOf { it.second },
+                bpm = sums.bpm,
+                camelotKey = sums.camelotKey,
+                lufs = sums.lufs,
+                dynamicRange = sums.dynamicRange,
             )
         }
         return ArtistMusic(library, albumTracks, albumIds)

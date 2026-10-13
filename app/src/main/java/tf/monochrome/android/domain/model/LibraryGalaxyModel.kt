@@ -42,7 +42,18 @@ data class LibraryAlbum(
     /** Plays of its tracks, ever, and lately. */
     val plays: Int = 0,
     val recentPlays: Int = 0,
-)
+    /** Its tracks' median tempo, beats per minute, where any is tagged. */
+    val bpm: Float? = null,
+    /** Its commonest key, as a Camelot code (1..12 minor, 13..24 major), where any is tagged. */
+    val camelotKey: Int? = null,
+    /** How loud it was mastered, LUFS, from its ReplayGain or R128 tags. */
+    val lufs: Float? = null,
+    /** Its tracks' median dynamic range, dB, where any has been measured. */
+    val dynamicRange: Float? = null,
+) {
+    /** Its running time, seconds: every track's, added up. */
+    val durationSeconds: Int get() = tracks.sumOf { it.durationSeconds.coerceAtLeast(0) }
+}
 
 data class LibraryTrack(
     /** Its `local_tracks` row: what a tap plays. */
@@ -54,4 +65,8 @@ data class LibraryTrack(
     val trackNumber: Int?,
     val durationSeconds: Int,
     val plays: Int = 0,
+    /** Its tempo, beats per minute, where tagged. */
+    val bpm: Float? = null,
+    /** Its key as a Camelot code, where tagged. */
+    val camelotKey: Int? = null,
 )

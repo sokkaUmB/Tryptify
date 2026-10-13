@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.discover.galaxy
 
+import tf.monochrome.android.data.local.tags.Camelot
 import tf.monochrome.android.domain.model.LibraryAlbum
 import tf.monochrome.android.domain.model.LibraryTrack
 import kotlin.math.ln
@@ -21,9 +22,16 @@ import kotlin.math.sqrt
  * the album's own order; the rest are its ring ([PlanetSystem.Planet.ring]).
  * Belt and ring are still listed in full in the system's sheet.
  *
- * A planet's size is the album's length in tracks, a moon's its track's
- * running time. Everything round a body (phase, tilt, colour) comes from its
- * own key, so a rescan leaves the system as it was.
+ * **A planet is its album's sound.** Its size is the album's running time;
+ * its colour is its key, round the Camelot wheel, deeper for minor and lighter
+ * for major; a haze widens round it the louder it was mastered; its cover
+ * turns once every 32 beats of its tempo; and its night side is as deep as
+ * the dynamic range the master kept. An album without a value looks as every
+ * planet did before: the colour of its own key, no haze, still, full shadow.
+ * A moon's size is its track's running time.
+ *
+ * Everything round a body (phase, tilt, the colour of an album with no key)
+ * comes from its own key, so a rescan leaves the system as it was.
  */
 object LocalSystems {
 
@@ -37,7 +45,12 @@ object LocalSystems {
         if (real.isEmpty()) return null
 
         val chosen = real
-            .sortedWith(compareByDescending<LibraryAlbum> { it.plays }.thenByDescending { it.tracks.size }.thenBy { it.key })
+            .sortedWith(
+                compareByDescending<LibraryAlbum> { it.plays }
+                    .thenByDescending { it.durationSeconds }
+                    .thenByDescending { it.tracks.size }
+                    .thenBy { it.key },
+            )
             .take(limits.maxPlanets)
         val inOrbit = chosen.sortedWith(releaseOrder)
         val belt = (real - chosen.toSet()).sortedWith(releaseOrder)
@@ -58,12 +71,68 @@ object LocalSystems {
     /** Oldest first; undated last; then by title, then key, so the order is the same every time. */
     private val releaseOrder = compareBy<LibraryAlbum>({ it.year ?: Int.MAX_VALUE }, { it.title.lowercase() }, { it.key })
 
-    /** How long an album has to be, in tracks, to be as big as a planet gets. */
+    /** How long an album has to run, in minutes, to be as big as a planet gets: a full CD. */
+    const val ALBUM_FULL_MINUTES = 80f
+
+    /** How big an album of [seconds] is, 0..1, on a log scale up to [ALBUM_FULL_MINUTES]. */
+    fun lengthShare(seconds: Int): Float =
+        (ln(1f + seconds.coerceAtLeast(0) / 60f) / ln(1f + ALBUM_FULL_MINUTES)).coerceIn(0f, 1f)
+
+    /** How long an album has to be, in tracks, to be as big as a planet gets, when no length is known. */
     const val ALBUM_FULL = 24
 
     /** How big an album of [tracks] tracks is, 0..1, on a log scale up to [ALBUM_FULL]. */
     fun albumShare(tracks: Int): Float =
         (ln(1f + tracks.coerceAtLeast(0)) / ln(1f + ALBUM_FULL)).coerceIn(0f, 1f)
+
+    /** How big [album]'s planet is, 0..1: its running time, or its track count when no track has a length. */
+    fun sizeShare(album: LibraryAlbum): Float =
+        if (album.durationSeconds > 0) lengthShare(album.durationSeconds) else albumShare(album.tracks.size)
+
+    /**
+     * A key's colour, degrees: its number on the Camelot wheel, a twelfth of
+     * the way round per step. Neighbours on the wheel, a fifth apart, are
+     * neighbouring colours, and a key and its relative (8A, 8B) share one.
+     */
+    fun keyHue(camelotKey: Int): Float = (Camelot.number(camelotKey) - 1) % 12 * 30f
+
+    /** -1 for a minor key, 1 for a major one, 0 for none known: [PlanetSystem.Planet.tone]. */
+    fun keyTone(camelotKey: Int?): Float = when {
+        camelotKey == null -> 0f
+        Camelot.isMinor(camelotKey) -> -1f
+        else -> 1f
+    }
+
+    /**
+     * How hazy a master of [lufs] is, 0..1: none at -20 LUFS and quieter, a
+     * full haze at -6 and louder, where a brickwalled master sits.
+     */
+    fun hazeOf(lufs: Float?): Float =
+        lufs?.takeIf { it.isFinite() }?.let { ((it - HAZE_QUIET_LUFS) / HAZE_SPAN_LU).coerceIn(0f, 1f) } ?: 0f
+
+    /**
+     * Seconds per turn of a cover at [bpm]: once every [BEATS_PER_TURN] beats,
+     * so 120 BPM turns once in 16 s. Still (0) without a tempo.
+     */
+    fun spinPeriodOf(bpm: Float?): Float =
+        bpm?.takeIf { it.isFinite() && it > 0f }?.let { BEATS_PER_TURN * 60f / it } ?: 0f
+
+    /**
+     * How deep the night side is for a dynamic range of [dr] dB, 0.55..1: a
+     * master squashed to DR4 is lit flat, one that kept DR16 or more is the
+     * full depth. Without a measurement, the full depth every planet had.
+     */
+    fun shadeOf(dr: Float?): Float {
+        val depth = dr?.takeIf { it.isFinite() }?.let { ((it - SHADE_FLAT_DR) / SHADE_SPAN_DR).coerceIn(0f, 1f) } ?: return 1f
+        return SHADE_FLATTEST + (1f - SHADE_FLATTEST) * depth
+    }
+
+    private const val HAZE_QUIET_LUFS = -20f
+    private const val HAZE_SPAN_LU = 14f
+    private const val BEATS_PER_TURN = 32f
+    private const val SHADE_FLAT_DR = 4f
+    private const val SHADE_SPAN_DR = 12f
+    private const val SHADE_FLATTEST = 0.55f
 
     private fun planet(
         album: LibraryAlbum,
@@ -74,7 +143,8 @@ object LocalSystems {
         glow: Float,
     ): PlanetSystem.Planet {
         val seed = PlanetSystem.stableHash(album.key)
-        val radius = starRadius * (PlanetSystem.PLANET_MIN_SHARE + PlanetSystem.PLANET_SPAN_SHARE * albumShare(album.tracks.size))
+        val musicalKey = album.camelotKey?.takeIf { it in 1..24 }
+        val radius = starRadius * (PlanetSystem.PLANET_MIN_SHARE + PlanetSystem.PLANET_SPAN_SHARE * sizeShare(album))
         val running = compareBy<LibraryTrack>({ it.discNumber ?: 1 }, { it.trackNumber ?: Int.MAX_VALUE }, { it.title.lowercase() }, { it.key })
         val moonTracks = album.tracks
             .sortedWith(compareByDescending<LibraryTrack> { it.plays }.then(running))
@@ -92,7 +162,7 @@ object LocalSystems {
             tilt = (PlanetSystem.unit(seed ushr 8) - 0.5f) * 0.36f,
             node = PlanetSystem.unit(seed ushr 24) * PlanetSystem.TAU,
             radius = radius,
-            hue = PlanetSystem.unit(seed ushr 16) * 360f,
+            hue = musicalKey?.let(::keyHue) ?: (PlanetSystem.unit(seed ushr 16) * 360f),
             artworkUrl = album.artworkUri,
             moons = moonTracks.mapIndexed { m, track ->
                 val moonSeed = PlanetSystem.stableHash(track.key)
@@ -110,6 +180,10 @@ object LocalSystems {
             glow = glow,
             ring = ring.map { it.ref() },
             subtitle = album.year?.toString(),
+            tone = keyTone(musicalKey),
+            haze = hazeOf(album.lufs),
+            spinPeriod = spinPeriodOf(album.bpm),
+            shade = shadeOf(album.dynamicRange),
         )
     }
 

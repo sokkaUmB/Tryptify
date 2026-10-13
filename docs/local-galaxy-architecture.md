@@ -33,7 +33,8 @@ part is where the data comes from.
 | Where it sits (*Time* layout) | the year the genre began | the artist's earliest album year |
 | Links between stars | parent genre | collaborations: a track whose artist ≠ its album artist |
 | **Planet** | a charted artist (≤ 6) | an album |
-| Planet size | MusicBrainz catalogue | the album's track count |
+| Planet size | MusicBrainz catalogue | the album's running time, log scale, full at 80 minutes (its track count when no track has a length) |
+| Planet colour | the artist's name, hashed | the album's key, round the Camelot wheel: its commonest track key, tagged TKEY / INITIALKEY; the album's own key hashed when none is tagged |
 | Planet orbit | chart heat this week | release order: debut nearest the star (see *Decisions*) |
 | Planet texture | chart artwork URL | the album's cover (`artworkCacheKey`, through Coil) |
 | **Moon** | a charted track (≤ 4) | a track |
@@ -175,7 +176,7 @@ not move any other star. The test below pins that.
 ### `LocalSystems.build(albums, tracks, plays, starRadius, limits)`
 
 - **Which albums are planets**: up to `limits.maxPlanets` (proposed 8), picked by
-  lifetime plays, ties broken by track count. They are laid out in release order
+  lifetime plays, ties broken by running time. They are laid out in release order
   (year, then title), with the debut on the innermost orbit. The rest go into the
   belt.
 - **Which tracks are moons**: up to `limits.maxMoons` (proposed 6), picked by

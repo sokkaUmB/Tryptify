@@ -79,7 +79,7 @@ class PlanetSystem(
          */
         val node: Float,
         val radius: Float,
-        /** Hue for a planet with no artwork, 0..360. */
+        /** Its colour, 0..360: a planet with no artwork, and its atmosphere. */
         val hue: Float,
         val artworkUrl: String?,
         val moons: List<Moon>,
@@ -91,6 +91,21 @@ class PlanetSystem(
         val ring: List<MoonRef> = emptyList(),
         /** A line under its name in the system's list, when it has one: an album's year. */
         val subtitle: String? = null,
+        /**
+         * Minor or major, for its atmosphere: -1 for a minor key, drawn deeper,
+         * 1 for a major one, drawn lighter, 0 for none known. An album's key.
+         */
+        val tone: Float = 0f,
+        /** How loud it was mastered, 0..1: a wider haze round its atmosphere. An album's LUFS. */
+        val haze: Float = 0f,
+        /** Seconds for its cover to turn once, 0 for still: one turn per 32 beats of an album's tempo. */
+        val spinPeriod: Float = 0f,
+        /**
+         * How deep its night side's shadow is, a share of the full depth, 0..1.
+         * 1 is the depth every planet had; an album mastered flat (little
+         * dynamic range) is lit flatter, down to 0.55.
+         */
+        val shade: Float = 1f,
     ) {
         val ringCount: Int get() = ring.size
 
@@ -113,7 +128,7 @@ class PlanetSystem(
 
         private fun copy(releases: Int? = this.releases, radius: Float = this.radius, moons: List<Moon> = this.moons) = Planet(
             label, share, releases, orbit, period, phase, tilt, node, radius, hue, artworkUrl, moons,
-            key, glow, ring, subtitle,
+            key, glow, ring, subtitle, tone, haze, spinPeriod, shade,
         )
     }
 
@@ -197,7 +212,9 @@ class PlanetSystem(
     fun withBodySize(size: Float): PlanetSystem {
         val k = size / bodyScale
         if (k == 1f || !k.isFinite() || k <= 0f) return this
-        return PlanetSystem(starId, planets.map { it.scaled(k) }, starRadius, size, limits, belt)
+        // The belt's albums too: drawn as grains, but listed in the sheet at
+        // their size against the star at this scale, as the planets are.
+        return PlanetSystem(starId, planets.map { it.scaled(k) }, starRadius, size, limits, belt.map { it.scaled(k) })
     }
 
     companion object {

@@ -17,7 +17,18 @@ class LocalSystemsTest {
 
     private var nextId = 0L
 
-    private fun album(title: String, year: Int?, tracks: Int, plays: Int = 0, recent: Int = 0) = LibraryAlbum(
+    private fun album(
+        title: String,
+        year: Int?,
+        tracks: Int,
+        plays: Int = 0,
+        recent: Int = 0,
+        trackSeconds: Int? = null,
+        bpm: Float? = null,
+        key: Int? = null,
+        lufs: Float? = null,
+        dr: Float? = null,
+    ) = LibraryAlbum(
         key = "${title.lowercase()}|artist|${year ?: 0}",
         title = title,
         year = year,
@@ -29,11 +40,15 @@ class LocalSystemsTest {
                 title = "$title $n",
                 discNumber = 1,
                 trackNumber = n,
-                durationSeconds = 120 + n * 10,
+                durationSeconds = trackSeconds ?: (120 + n * 10),
             )
         },
         plays = plays,
         recentPlays = recent,
+        bpm = bpm,
+        camelotKey = key,
+        lufs = lufs,
+        dynamicRange = dr,
     )
 
     private fun allTracks(sys: PlanetSystem) = (sys.planets + sys.belt).sumOf { it.moons.size + it.ringCount }
@@ -142,6 +157,105 @@ class LocalSystemsTest {
         val again = FloatArray(3)
         two.moonPosition(0, 0, 12.5f, 0f, 0f, 0f, again)
         assertTrue(hypot(spot[0] - again[0], spot[2] - again[2]) < 1e-5f)
+    }
+
+    @Test
+    fun `a planet's size is its album's running time, not its count of tracks`() {
+        // Six long movements outweigh twenty short tracks.
+        val sys = LocalSystems.build(
+            "artist:x",
+            listOf(album("Suite", 2000, 6, trackSeconds = 720), album("Shorts", 2001, 20, trackSeconds = 90)),
+        )!!
+        val suite = sys.planets.first { it.label == "Suite" }
+        val shorts = sys.planets.first { it.label == "Shorts" }
+        assertTrue(suite.radius > shorts.radius)
+        // A full CD is as big as a planet gets; longer is no bigger.
+        assertEquals(1f, LocalSystems.lengthShare(80 * 60), 1e-6f)
+        assertEquals(1f, LocalSystems.lengthShare(140 * 60), 0f)
+        assertEquals(0f, LocalSystems.lengthShare(0), 0f)
+        assertTrue(LocalSystems.lengthShare(20 * 60) < LocalSystems.lengthShare(40 * 60))
+    }
+
+    @Test
+    fun `with no track lengths known, size falls back to the track count`() {
+        val sys = LocalSystems.build("artist:x", listOf(album("EP", 2000, 4, trackSeconds = 0), album("LP", 2001, 14, trackSeconds = 0)))!!
+        assertTrue(sys.planets.first { it.label == "LP" }.radius > sys.planets.first { it.label == "EP" }.radius)
+    }
+
+    @Test
+    fun `a key colours a planet round the Camelot wheel, minor deeper and major lighter`() {
+        // 8A (A minor) and 8B (C major) are relatives: one colour, two tones.
+        val sys = LocalSystems.build(
+            "artist:x",
+            listOf(album("Minor", 2000, 8, key = 8), album("Major", 2001, 8, key = 20), album("Next", 2002, 8, key = 9)),
+        )!!
+        val minor = sys.planets.first { it.label == "Minor" }
+        val major = sys.planets.first { it.label == "Major" }
+        val next = sys.planets.first { it.label == "Next" }
+        assertEquals(210f, minor.hue, 0f)
+        assertEquals(210f, major.hue, 0f)
+        assertEquals(240f, next.hue, 0f)
+        assertEquals(-1f, minor.tone, 0f)
+        assertEquals(1f, major.tone, 0f)
+        for (code in 1..24) assertTrue(LocalSystems.keyHue(code) in 0f..330f)
+        assertEquals(0f, LocalSystems.keyHue(1), 0f)
+        assertEquals(330f, LocalSystems.keyHue(24), 0f)
+    }
+
+    @Test
+    fun `loudness is haze, tempo is spin, dynamic range is shadow`() {
+        val sys = LocalSystems.build("artist:x", listOf(album("Loud", 2000, 8, bpm = 128f, lufs = -6f, dr = 4f)))!!
+        val p = sys.planets.single()
+        assertEquals(1f, p.haze, 0f)
+        assertEquals(15f, p.spinPeriod, 1e-4f)
+        assertEquals(0.55f, p.shade, 1e-6f)
+
+        assertEquals(0f, LocalSystems.hazeOf(-23f), 0f)
+        assertEquals(0.5f, LocalSystems.hazeOf(-13f), 1e-6f)
+        assertEquals(1f, LocalSystems.hazeOf(-2f), 0f)
+        assertEquals(16f, LocalSystems.spinPeriodOf(120f), 1e-4f)
+        assertEquals(0f, LocalSystems.spinPeriodOf(0f), 0f)
+        assertEquals(0f, LocalSystems.spinPeriodOf(Float.NaN), 0f)
+        assertEquals(1f, LocalSystems.shadeOf(20f), 0f)
+        assertEquals(0.775f, LocalSystems.shadeOf(10f), 1e-6f)
+    }
+
+    @Test
+    fun `an album without the values looks as every planet did`() {
+        val plain = LocalSystems.build("artist:x", listOf(album("Plain", 2000, 8)))!!.planets.single()
+        assertEquals(PlanetSystem.unit(PlanetSystem.stableHash(plain.key) ushr 16) * 360f, plain.hue, 0f)
+        assertEquals(0f, plain.tone, 0f)
+        assertEquals(0f, plain.haze, 0f)
+        assertEquals(0f, plain.spinPeriod, 0f)
+        assertEquals(1f, plain.shade, 0f)
+        // A stored key outside the wheel is no key at all.
+        val odd = LocalSystems.build("artist:x", listOf(album("Odd", 2000, 8, key = 99)))!!.planets.single()
+        assertEquals(0f, odd.tone, 0f)
+        assertEquals(PlanetSystem.unit(PlanetSystem.stableHash(odd.key) ushr 16) * 360f, odd.hue, 0f)
+    }
+
+    @Test
+    fun `a planet keeps its colour, haze, spin and shadow at any body size`() {
+        val sys = LocalSystems.build("artist:x", listOf(album("Loud", 2000, 8, bpm = 128f, key = 8, lufs = -9f, dr = 7f)))!!
+        val before = sys.planets.single()
+        for (resized in listOf(sys.withBodySize(2f), sys.withBodySize(0.5f), sys.sizedBy(mapOf("Loud" to 40)))) {
+            val after = resized.planets.single()
+            assertEquals(before.hue, after.hue, 0f)
+            assertEquals(before.tone, after.tone, 0f)
+            assertEquals(before.haze, after.haze, 0f)
+            assertEquals(before.spinPeriod, after.spinPeriod, 0f)
+            assertEquals(before.shade, after.shade, 0f)
+        }
+    }
+
+    @Test
+    fun `belt albums scale with the planets, so the sheet sizes them alike`() {
+        val albums = (1..10).map { album("Album $it", 1990 + it, 10, plays = 10 - it) }
+        val sys = LocalSystems.build("artist:x", albums)!!
+        val big = sys.withBodySize(2.5f)
+        assertEquals(2, sys.belt.size)
+        for (b in sys.belt.indices) assertEquals(sys.belt[b].radius * 2.5f, big.belt[b].radius, 1e-4f)
+        assertEquals(sys.belt.map { it.label }, big.belt.map { it.label })
     }
 
     private companion object {

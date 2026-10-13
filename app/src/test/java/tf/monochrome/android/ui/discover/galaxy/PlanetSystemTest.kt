@@ -28,6 +28,24 @@ class PlanetSystemTest {
     )
 
     @Test
+    fun `chart planets look as they always have, at any size`() {
+        // The library's album metadata (key, loudness, tempo, dynamic range)
+        // never reaches a chart planet: its colour is its artist's hash, and
+        // it has no haze, no spin and its full shadow, however it is resized.
+        val sys = PlanetSystem.from("dubstep", chart)!!
+        for (s in listOf(sys, sys.withBodySize(2f), sys.sizedBy(mapOf("Burial" to 50, "Four Tet" to 9)))) {
+            for (p in s.planets) {
+                assertEquals(PlanetSystem.unit(PlanetSystem.stableHash(p.label) ushr 16) * 360f, p.hue, 0f)
+                assertEquals(0f, p.glow, 0f)
+                assertEquals(0f, p.tone, 0f)
+                assertEquals(0f, p.haze, 0f)
+                assertEquals(0f, p.spinPeriod, 0f)
+                assertEquals(1f, p.shade, 0f)
+            }
+        }
+    }
+
+    @Test
     fun `an empty chart has no planets`() {
         assertNull(PlanetSystem.from("dubstep", emptyList()))
     }
