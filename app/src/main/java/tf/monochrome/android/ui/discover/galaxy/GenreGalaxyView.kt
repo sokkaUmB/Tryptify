@@ -1798,11 +1798,36 @@ private class SystemArt {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) blendMode = BlendMode.PLUS
         else xfermode = PorterDuffXfermode(PorterDuff.Mode.ADD)
     }
-    private val filters = HashMap<Int, android.graphics.ColorFilter>()
+    // Keyed by the colour itself, as an int: a HashMap boxed the key on every
+    // lookup, three a body a frame.
+    private val filters = android.util.SparseArray<android.graphics.ColorFilter>()
 
     /** A white mask multiplied into [argb]. Cached: a system has a handful of colours. */
     fun tint(argb: Int): android.graphics.ColorFilter =
-        filters.getOrPut(argb) { android.graphics.LightingColorFilter(argb and 0xFFFFFF, 0) }
+        filters.get(argb) ?: android.graphics.LightingColorFilter(argb and 0xFFFFFF, 0).also { filters.put(argb, it) }
+
+    private var atmospheresFor: PlanetSystem? = null
+    private var atmospheres: Array<android.graphics.ColorFilter> = emptyArray()
+
+    /**
+     * Planet [p]'s atmosphere, as the filter that tints the glow: its hue, at
+     * the saturation and brightness of its key's tone ([PlanetLook]). Made
+     * once a system, where it was a colour built per planet per frame.
+     */
+    fun atmosphere(system: PlanetSystem, p: Int): android.graphics.ColorFilter {
+        if (atmospheresFor !== system) {
+            atmospheresFor = system
+            val hsv = FloatArray(3)
+            atmospheres = Array(system.planets.size) { i ->
+                val planet = system.planets[i]
+                hsv[0] = planet.hue
+                hsv[1] = PlanetLook.atmosphereSaturation(planet.tone)
+                hsv[2] = PlanetLook.atmosphereValue(planet.tone)
+                tint(android.graphics.Color.HSVToColor(hsv))
+            }
+        }
+        return atmospheres[p]
+    }
 
     /** A moon: pale rock, a little lighter where the star is. */
     val moon: Bitmap = Bitmap.createBitmap(SPRITE / 2, SPRITE / 2, Bitmap.Config.ARGB_8888).also { b ->
@@ -2107,14 +2132,17 @@ private fun DrawScope.drawSystem(
         val toward = kotlin.math.atan2(-(lx * f.ux + ly * f.uy + lz * f.uz), lx * f.rx + ly * f.ry + lz * f.rz)
         val phase = SystemArt.phaseOf(-(lx * f.fx + ly * f.fy + lz * f.fz))
         art.rect.set(x - r, y - r, x + r, y + r)
-        // The atmosphere's scatter, behind the body, in its own colour.
-        val bodyColor = if (mi < 0) android.graphics.Color.HSVToColor(floatArrayOf(sys.planets[p].hue, 0.45f, 1f)) else starLight
+        val planet = if (mi < 0) sys.planets[p] else null
+        // The atmosphere's scatter, behind the body, in its own colour: a
+        // library album's key, deeper for minor and paler for major.
+        bodies.tinted.colorFilter = if (planet != null) bodies.atmosphere(sys, p) else bodies.tint(starLight)
         // A planet played a lot lately burns brighter and wider: heat is the
-        // atmosphere, never the orbit. Nothing has any on the genre map.
-        val heat = if (mi < 0) sys.planets[p].glow.coerceIn(0f, 1f) else 0f
-        bodies.tinted.colorFilter = bodies.tint(bodyColor)
+        // atmosphere, never the orbit. A loud master hazes it wider still.
+        // Nothing has either on the genre map.
+        val heat = planet?.glow?.coerceIn(0f, 1f) ?: 0f
+        val haze = planet?.haze?.coerceIn(0f, 1f) ?: 0f
         bodies.tinted.alpha = (GLOW_ALPHA * (1f + HEAT_GLOW_GAIN * heat) * fade * 255).toInt().coerceAtMost(255)
-        val g = r * (1.55f + HEAT_GLOW_SPREAD * heat)
+        val g = r * (1.55f + HEAT_GLOW_SPREAD * heat + PlanetLook.HAZE_SPREAD * haze)
         bodies.src.set(x - g, y - g, x + g, y + g)
         canvas.drawBitmap(bodies.glow, null, bodies.src, bodies.tinted)
         if (mi < 0 && sys.planets[p].ringCount > 0) drawRing(bodies, sys.planets[p], x, y, r, fade, dp)
@@ -2124,6 +2152,12 @@ private fun DrawScope.drawSystem(
             if (shader != null && cover != null) {
                 bodies.src.set(0f, 0f, cover.width.toFloat(), cover.height.toFloat())
                 bodies.matrix.setRectToRect(bodies.src, art.rect, android.graphics.Matrix.ScaleToFit.FILL)
+                // The cover turns with the album's tempo, once every 32
+                // beats. Only the cover: the light and shadow masks below
+                // stay turned toward the star.
+                if (planet != null && planet.spinPeriod > 0f) {
+                    bodies.matrix.postRotate(PlanetLook.spinDegrees(t, planet.spinPeriod, planet.phase), x, y)
+                }
                 shader.setLocalMatrix(bodies.matrix)
                 bodies.cover.shader = shader
                 bodies.cover.alpha = alpha
@@ -2138,7 +2172,9 @@ private fun DrawScope.drawSystem(
         }
         canvas.save()
         canvas.rotate(Math.toDegrees(toward.toDouble()).toFloat(), x, y)
-        bodies.sprite.alpha = alpha
+        // The night side as deep as the dynamic range the master kept: an
+        // album squashed flat is lit flat. Moons, and chart planets, full.
+        bodies.sprite.alpha = if (planet != null) PlanetLook.shadeAlpha(alpha, planet.shade) else alpha
         canvas.drawBitmap(bodies.shade[phase], null, art.rect, bodies.sprite)
         bodies.tinted.colorFilter = bodies.tint(starLight)
         bodies.tinted.alpha = alpha

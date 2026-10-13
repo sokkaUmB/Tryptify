@@ -897,6 +897,20 @@ never moves a planet: it brightens its atmosphere (`Planet.glow`). A system that
 rearranged itself as you listened could not be learned. `LocalSystemsTest` pins
 both.
 
+**A library planet is its album's sound; a chart planet is untouched by it.**
+Its size is the album's running time (full at 80 minutes), its colour its key
+round the Camelot wheel, deeper for minor and paler for major, its haze how loud
+it was mastered, its cover's turn one per 32 beats of its tempo, and its night
+side as deep as the dynamic range the master kept. Every one has a default that
+is the old look exactly (tone 0, haze 0, no spin, shade 1), which is all a chart
+planet ever has: `PlanetSystemTest` pins chart planets at every size and
+`PlanetLookTest` pins each default to the old numbers. An album missing a value
+keeps the old look for that one thing; nothing is guessed. Only the cover turns:
+the light and shadow masks stay turned toward the star, or the planet's lit side
+would spin with it. All of it is drawn with what each body was already drawn
+with, and the atmosphere colours are made once a system (`SystemArt.atmosphere`),
+not per planet per frame.
+
 **Nothing in the library is unreachable on the map.** Albums past the eighth are
 the belt and tracks past an album's sixth are its ring, and both are listed in
 full in the system's sheet. Drawn as grains, never dropped.

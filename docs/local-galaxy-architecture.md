@@ -37,6 +37,9 @@ part is where the data comes from.
 | Planet colour | the artist's name, hashed | the album's key, round the Camelot wheel: its commonest track key, tagged TKEY / INITIALKEY; the album's own key hashed when none is tagged |
 | Planet orbit | chart heat this week | release order: debut nearest the star (see *Decisions*) |
 | Planet texture | chart artwork URL | the album's cover (`artworkCacheKey`, through Coil) |
+| Planet atmosphere | the colour, no tone | the key's colour, deeper for minor and paler for major; hazed wider the louder the master (ReplayGain / R128 as LUFS, -20 to -6) |
+| Planet spin | none | the cover turns once every 32 beats of the album's median tempo (TBPM / BPM tags) |
+| Planet shadow | full depth | as deep as the album's median dynamic range: lit flat at DR4, full depth from DR16 |
 | **Moon** | a charted track (≤ 4) | a track |
 | Moon size | its listens | its duration |
 | Extra albums / tracks | not shown | an **asteroid belt** past the last orbit / a **ring** round the planet |
