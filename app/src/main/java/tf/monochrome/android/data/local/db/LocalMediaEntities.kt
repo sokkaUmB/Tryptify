@@ -97,9 +97,15 @@ data class LocalTrackEntity(
     val firstScannedAt: Long = System.currentTimeMillis(),
     val lastScannedAt: Long = System.currentTimeMillis()
 ) {
-    /** Display title - falls back to filename without extension */
+    /**
+     * Display title - falls back to filename without extension, and without
+     * the track or disc number it starts with ("2-05 Jolene" is "Jolene"):
+     * lyrics are searched by this, and no source knows a song as "2-05 Jolene".
+     */
     val displayTitle: String
-        get() = title ?: filePath.substringAfterLast('/').substringBeforeLast('.')
+        get() = title ?: tf.monochrome.android.data.local.tags.TrackNames.withoutNumberPrefix(
+            filePath.substringAfterLast('/').substringBeforeLast('.'),
+        )
 }
 
 @Entity(

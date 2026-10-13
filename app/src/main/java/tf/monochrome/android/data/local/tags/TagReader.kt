@@ -335,8 +335,11 @@ class TagReader @Inject constructor(
      * `(null, originalTitle)` when nothing can be confidently derived.
      */
     private fun deriveArtistFromTitle(rawTitle: String?, filePath: String): Pair<String?, String?> {
+        // A file name is numbered by its place on the release ("01 - Song",
+        // "CD1 - 05 - Song"); the numbering comes off first, or the track or
+        // disc number is taken for the artist.
         val base = rawTitle?.takeIf { it.isNotBlank() }
-            ?: File(filePath).nameWithoutExtension.takeIf { it.isNotBlank() }
+            ?: File(filePath).nameWithoutExtension.takeIf { it.isNotBlank() }?.let(TrackNames::withoutNumberPrefix)
             ?: return null to rawTitle
         return splitArtistTitle(base) ?: (null to rawTitle)
     }

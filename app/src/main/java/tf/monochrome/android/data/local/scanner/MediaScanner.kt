@@ -624,6 +624,11 @@ class MediaScanner @Inject constructor(
             if (!titleFromFileName && existing.artist == null &&
                 existing.title?.let { tf.monochrome.android.data.local.tags.splitArtistTitle(it) } != null
             ) return true
+            // Re-read rows an older scan gave a track or disc number for an
+            // artist ("01 - Song" split at its dash into "01" and "Song"). The
+            // split now takes the numbering off first, so the re-read heals the
+            // row and the next scan skips it.
+            if (tf.monochrome.android.data.local.tags.TrackNames.looksLikeNumbering(existing.artist)) return true
             return false
         }
 
