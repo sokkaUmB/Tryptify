@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
+#include <map>
 #include <string>
 #include <thread>
 #include <vector>
@@ -42,8 +43,32 @@ void check(bool ok, const char* what) {
 libusb_config_descriptor* gConfig = nullptr;
 int gSpeed = LIBUSB_SPEED_FULL;
 std::deque<libusb_transfer*> gPending;   // submitted, not yet completed
-int gSetCurCount = 0;
+int gClockSetCount = 0;
 int gLastAlt = -1;
+
+// Feature Units the fake DAC answers for, by unit ID. Each starts the
+// way a DAC left by Android might: attenuated and muted.
+struct FakeUnit {
+    int16_t minDb256 = -127 * 256, maxDb256 = 0;
+    std::map<int, int16_t> volume;   // by channel
+    std::map<int, uint8_t> muted;
+    bool touched = false;
+    bool stalls = false;   // a DAC that STALLs every request to it
+};
+std::map<int, FakeUnit> gUnits;
+
+void resetUnits(std::initializer_list<std::pair<int, int16_t>> units) {
+    gUnits.clear();
+    for (const auto& u : units) {
+        FakeUnit fu;
+        fu.maxDb256 = u.second;
+        for (int c = 0; c <= 2; ++c) {
+            fu.volume[c] = -20 * 256;
+            fu.muted[c] = 1;
+        }
+        gUnits[u.first] = fu;
+    }
+}
 
 } // namespace
 
@@ -65,12 +90,54 @@ void LIBUSB_CALL libusb_free_config_descriptor(libusb_config_descriptor*) {}
 int LIBUSB_CALL libusb_claim_interface(libusb_device_handle*, int) { return 0; }
 int LIBUSB_CALL libusb_release_interface(libusb_device_handle*, int) { return 0; }
 int LIBUSB_CALL libusb_set_interface_alt_setting(libusb_device_handle*, int, int alt) { gLastAlt = alt; return 0; }
-// SET requests are accepted, GET requests stall.
-int LIBUSB_CALL libusb_control_transfer(libusb_device_handle*, uint8_t type, uint8_t, uint16_t,
-                                        uint16_t, unsigned char*, uint16_t len, unsigned int) {
-    if (type & 0x80) return LIBUSB_ERROR_PIPE;
-    ++gSetCurCount;
-    return len;
+// Feature Unit requests go to gUnits. Any other SET (a clock's rate, a
+// UAC1 endpoint's rate) is accepted and any other GET stalls.
+int LIBUSB_CALL libusb_control_transfer(libusb_device_handle*, uint8_t type, uint8_t req,
+                                        uint16_t value, uint16_t index, unsigned char* data,
+                                        uint16_t len, unsigned int) {
+    const bool get = (type & 0x80) != 0;
+    const bool toInterface = (type & 0x1F) == 0x01;
+    auto unit = gUnits.find(index >> 8);
+    if (!toInterface || unit == gUnits.end()) {
+        if (get) return LIBUSB_ERROR_PIPE;
+        ++gClockSetCount;
+        return len;
+    }
+    FakeUnit& fu = unit->second;
+    if (fu.stalls) return LIBUSB_ERROR_PIPE;
+    const int selector = value >> 8, channel = value & 0xFF;
+    auto put16 = [](unsigned char* q, int16_t v) { q[0] = v & 0xFF; q[1] = (v >> 8) & 0xFF; };
+    if (selector == 0x01) {                       // mute
+        if (get) { data[0] = fu.muted[channel]; return 1; }
+        fu.muted[channel] = data[0];
+        fu.touched = true;
+        return 1;
+    }
+    if (selector != 0x02) return LIBUSB_ERROR_PIPE;
+    if (!get && req == 0x01) {                    // SET_CUR volume
+        int16_t v = static_cast<int16_t>(data[0] | (data[1] << 8));
+        if (v < fu.minDb256 || v > fu.maxDb256) return LIBUSB_ERROR_PIPE;
+        fu.volume[channel] = v;
+        fu.touched = true;
+        return 2;
+    }
+    switch (req) {
+        case 0x01: case 0x81:                     // CUR (UAC2/3), GET_CUR (UAC1)
+            put16(data, fu.volume[channel]);
+            return 2;
+        case 0x02:                                // RANGE: one subrange
+            if (len < 8) return LIBUSB_ERROR_OVERFLOW;
+            put16(data, 1);
+            put16(data + 2, fu.minDb256);
+            put16(data + 4, fu.maxDb256);
+            put16(data + 6, 256);
+            return 8;
+        case 0x83:                                // UAC1 GET_MAX
+            put16(data, fu.maxDb256);
+            return 2;
+        default:
+            return LIBUSB_ERROR_PIPE;
+    }
 }
 const char* LIBUSB_CALL libusb_strerror(int) { return "stub"; }
 libusb_transfer* LIBUSB_CALL libusb_alloc_transfer(int packets) {
@@ -177,12 +244,18 @@ libusb_config_descriptor* appleBadd() {
     });
 }
 
-// UAC2 AudioControl: clock source 9 feeding IT 1 and OT 3.
+// UAC2 AudioControl: clock source 9; playback IT 1 -> FU 2 (mute on
+// the master channel, volume per channel) -> OT 3; and a microphone
+// IT 4 -> FU 5 -> USB streaming OT 6, which playback must not touch.
 Bytes uac2Control() {
     return {
         9, 0x24, 0x01, 0x00, 0x02, 0x04, 0x3D, 0x00, 0x00,             // HEADER, bcdADC 2.00
         17, 0x24, 0x02, 1, 0x01, 0x01, 0, 9, 2, 3, 0, 0, 0, 0, 0, 0, 0, // INPUT_TERMINAL 1
+        18, 0x24, 0x06, 2, 1, 0x03, 0, 0, 0, 0x0C, 0, 0, 0, 0x0C, 0, 0, 0, 0, // FEATURE_UNIT 2
         12, 0x24, 0x03, 3, 0x02, 0x03, 0, 2, 9, 0, 0, 0,                // OUTPUT_TERMINAL 3
+        17, 0x24, 0x02, 4, 0x01, 0x02, 0, 9, 1, 0, 0, 0, 0, 0, 0, 0, 0, // INPUT_TERMINAL 4 (mic)
+        14, 0x24, 0x06, 5, 4, 0x0F, 0, 0, 0, 0x0F, 0, 0, 0, 0,          // FEATURE_UNIT 5 (mic)
+        12, 0x24, 0x03, 6, 0x01, 0x01, 0, 5, 9, 0, 0, 0,                // OUTPUT_TERMINAL 6
         8, 0x24, 0x0A, 9, 0x01, 0x07, 0, 0,                             // CLOCK_SOURCE 9
     };
 }
@@ -211,6 +284,24 @@ libusb_config_descriptor* appleFullUac3() {
         {alt(0, 0, 1, 1, 0x30, header, {ep(0x81, kInterrupt, 6, 1)})},
         {alt(1, 0, 1, 2, 0x30, {}, {}),
          alt(1, 1, 1, 2, 0x30, {23, 0x24, 0x01, 1}, {ep(0x02, kIsoSyncOut, 0x0120, 1)})},
+    });
+}
+
+// A UAC1 DAC (adaptive, full speed, 48 kHz/16-bit) whose volume goes
+// up to +6 dB: IT 1 -> FU 2 (mute master, volume per channel) -> OT 3.
+libusb_config_descriptor* uac1Dac() {
+    Bytes ac = {
+        9, 0x24, 0x01, 0x00, 0x01, 0x28, 0x00, 1, 1,     // HEADER, bcdADC 1.00
+        12, 0x24, 0x02, 1, 0x01, 0x01, 0, 2, 3, 0, 0, 0, // INPUT_TERMINAL 1
+        10, 0x24, 0x06, 2, 1, 1, 0x01, 0x02, 0x02, 0,    // FEATURE_UNIT 2
+        9, 0x24, 0x03, 3, 0x02, 0x03, 0, 2, 0,           // OUTPUT_TERMINAL 3
+    };
+    Bytes as = {7, 0x24, 0x01, 1, 1, 0x01, 0x00,                     // AS_GENERAL
+                11, 0x24, 0x02, 1, 2, 2, 16, 1, 0x80, 0xBB, 0x00};    // FORMAT_TYPE_I, 48k
+    return config({}, {
+        {alt(0, 0, 1, 1, 0x00, ac, {})},
+        {alt(1, 0, 1, 2, 0x00, {}, {}),
+         alt(1, 1, 1, 2, 0x00, as, {ep(0x01, 0x09, 0x00C0, 1)})},
     });
 }
 
@@ -270,7 +361,7 @@ struct Session {
         gConfig = cfg;
         gSpeed = speed;
         gPending.clear();
-        gSetCurCount = 0;
+        gClockSetCount = 0;
         gLastAlt = -1;
         driver.open(3);
         started = driver.start(rate, bits, 2);
@@ -295,12 +386,18 @@ bool contains(const std::string& s, const char* what) { return s.find(what) != s
 int main() {
     std::printf("-- Apple adapter, BADD configuration (what Android selects)\n");
     {
+        resetUnits({{2, 0}});
         Session s(appleBadd(), LIBUSB_SPEED_FULL, 48000, 24);
         const auto& f = s.driver.currentFormat();
         check(s.started, "48 kHz/24-bit starts");
         check(f.altSetting == 1 && f.bytesPerSample == 3, "24-bit is alt 1, 3-byte subslots (from mps 288)");
         check(f.badd && f.uacVersion == 0x0300, "negotiated as UAC3 BADD");
-        check(gSetCurCount == 0, "no clock request: BADD has no clock entity");
+        check(gClockSetCount == 0, "no clock request: BADD has no clock entity");
+        const FakeUnit& fu = gUnits[2];
+        check(fu.muted.at(0) == 0, "BADD playback unit 2 unmuted (master channel)");
+        check(fu.volume.at(1) == 0 && fu.volume.at(2) == 0,
+              "BADD volume raised from -20 dB to 0 dB on both channels");
+        check(s.driver.currentFormat().hwVolumeDb256 == 0, "reports HW volume 0 dB");
         auto rates = s.driver.supportedRates();
         check(rates.size() == 1 && rates[0].minHz == 48000 && rates[0].maxHz == 48000,
               "supported rates list just 48 kHz");
@@ -327,7 +424,12 @@ int main() {
 
     std::printf("-- Apple adapter, UAC2 configuration\n");
     {
+        resetUnits({{2, 0}, {5, 0}});
         Session s(appleUac2(), LIBUSB_SPEED_FULL, 48000, 24);
+        check(gUnits[2].muted.at(0) == 0, "playback unit 2 unmuted");
+        check(gUnits[2].volume.at(1) == 0 && gUnits[2].volume.at(2) == 0,
+              "playback volume at 0 dB on both channels");
+        check(!gUnits[5].touched, "the microphone's unit is left alone");
         check(s.started && s.driver.currentFormat().altSetting == 1,
               "48 kHz/24-bit fits its exactly-sized 288-byte endpoint");
         check(!s.driver.currentFormat().badd, "not BADD");
@@ -338,6 +440,23 @@ int main() {
         Session s(appleUac2(), LIBUSB_SPEED_FULL, 48000, 16);
         check(s.started && s.driver.currentFormat().altSetting == 2,
               "48 kHz/16-bit fits its 192-byte endpoint");
+    }
+
+    std::printf("-- UAC1 DAC with gain past full scale\n");
+    {
+        resetUnits({{2, 6 * 256}});
+        Session s(uac1Dac(), LIBUSB_SPEED_FULL, 48000, 16);
+        check(s.started, "48 kHz/16-bit starts");
+        check(gUnits[2].muted.at(0) == 0, "unmuted");
+        check(gUnits[2].volume.at(1) == 0 && gUnits[2].volume.at(2) == 0,
+              "volume capped at 0 dB, not its +6 dB maximum");
+    }
+    {
+        resetUnits({{2, 0}});
+        gUnits[2].stalls = true;
+        Session s(appleUac2(), LIBUSB_SPEED_FULL, 48000, 24);
+        check(s.started && s.driver.currentFormat().hwVolumeDb256 == monotrypt::usb::kHwVolumeNone,
+              "a DAC that refuses volume requests still plays, reporting none");
     }
 
     std::printf("-- Apple adapter, full UAC3 configuration\n");

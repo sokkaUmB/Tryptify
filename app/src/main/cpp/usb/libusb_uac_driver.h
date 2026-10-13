@@ -16,6 +16,7 @@
 #pragma once
 
 #include <atomic>
+#include <climits>
 #include <cstdint>
 #include <mutex>
 #include <string>
@@ -56,6 +57,20 @@ struct ClockRateRange {
     uint32_t maxHz = 0;
     uint32_t resHz = 0;
 };
+
+// One channel of a Feature Unit on the playback path, with the
+// controls the host may set on it (UAC1 §4.3.2.5, UAC2 §4.7.2.8).
+// Channel 0 is the master channel.
+struct HwFeatureControl {
+    uint8_t unitId = 0;
+    uint8_t channel = 0;
+    bool volume = false;
+    bool mute = false;
+};
+
+// StreamFormat::hwVolumeDb256 when the playback path has no settable
+// volume, or the DAC refused every request.
+constexpr int32_t kHwVolumeNone = INT32_MIN;
 
 // Negotiated PCM stream parameters (output of UAC2 enumeration).
 struct StreamFormat {
@@ -109,6 +124,16 @@ struct StreamFormat {
     // devices' Selector / Multiplier resolution is non-obvious and
     // it's cheaper to just try them all than misparse the graph.
     std::vector<uint8_t> candidateClockIds;
+    // Volume and mute controls between the streaming terminal and the
+    // output, set to full scale and unmuted at every start() the way
+    // USB Audio Player Pro does: the bypass skips Android's mixer, so
+    // nothing else ever raises a DAC that the framework, the kernel or
+    // its own power-on default left attenuated or muted. The level
+    // heard is the app's own (BypassVolumeController), on the PCM.
+    std::vector<HwFeatureControl> featureControls;
+    // The DAC's own volume after that, in 1/256 dB (0 = full scale),
+    // read back where the DAC answers. kHwVolumeNone if it has none.
+    int32_t hwVolumeDb256 = kHwVolumeNone;
 };
 
 class LibusbUacDriver {
@@ -218,6 +243,10 @@ private:
     // control transfer to the clock source entity. UAC2 puts the rate
     // on a clock-source unit, not on the endpoint like UAC1 did.
     bool setSampleRate(uint32_t hz);
+    // Unmutes every playback-path Feature Unit channel and sets its
+    // volume to the top of its range, capped at 0 dB. Best effort:
+    // a DAC that refuses still plays, at whatever level it was at.
+    void applyHardwareVolume();
 
     // Issues GET_RANGE on the given clock entity and appends decoded
     // (min, max, res) subranges into supportedRates_. No-op if the

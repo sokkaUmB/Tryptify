@@ -29,6 +29,12 @@ data class BypassDiagnostics(
     val feedbackEndpointAddress: Int,
     val isHighSpeed: Boolean,
     val bytesPerSample: Int,
+    /**
+     * The DAC's own volume in 1/256 dB after the driver set it to full
+     * scale at stream start (0 = full); null when the DAC has no
+     * settable volume or didn't answer.
+     */
+    val hardwareVolumeDb256: Int?,
 ) {
     val hasFeedbackEndpoint: Boolean get() = feedbackEndpointAddress != 0
     val isUac2: Boolean get() = uacVersion >= 0x0200
@@ -47,6 +53,12 @@ data class BypassDiagnostics(
     fun speedLabel(): String =
         if (isHighSpeed) "USB 2.0 HS" else "USB 1.1 FS"
 
+    /** "HW vol 0 dB" / "HW vol -6.5 dB"; null when the DAC has no volume of its own. */
+    fun hardwareVolumeLabel(): String? = hardwareVolumeDb256?.let { v ->
+        val db = v / 256.0
+        if (v % 256 == 0) "HW vol ${v / 256} dB" else "HW vol %.1f dB".format(db)
+    }
+
     /** "UAC3 BADD" / "UAC2" / "UAC1" — what spec version the device negotiated under. */
     fun uacLabel(): String = when {
         uacVersion >= 0x0300 -> "UAC3 BADD"
@@ -55,7 +67,10 @@ data class BypassDiagnostics(
     }
 
     companion object {
-        /** Field count in the long[] returned by nativeActiveStream. */
+        /** kHwVolumeNone in libusb_uac_driver.h (INT32_MIN). */
+        private const val HW_VOLUME_NONE = Int.MIN_VALUE.toLong()
+
+        /** Field count in the long[] returned by nativeActiveStream; [13] is read when present. */
         private const val FIELD_COUNT = 13
 
         fun fromLongArray(packed: LongArray?): BypassDiagnostics? {
@@ -74,6 +89,8 @@ data class BypassDiagnostics(
                 feedbackEndpointAddress = packed[10].toInt(),
                 isHighSpeed = packed[11] != 0L,
                 bytesPerSample = packed[12].toInt(),
+                hardwareVolumeDb256 = packed.getOrNull(13)
+                    ?.takeIf { it != HW_VOLUME_NONE }?.toInt(),
             )
         }
     }

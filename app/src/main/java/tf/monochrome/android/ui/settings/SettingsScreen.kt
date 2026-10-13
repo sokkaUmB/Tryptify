@@ -2199,6 +2199,10 @@ private fun BypassDiagnosticsCard(
                                 "async feedback ✓"
                             else "no feedback EP (open-loop)"
                         )
+                        diagnostics.hardwareVolumeLabel()?.let {
+                            append(" · ")
+                            append(it)
+                        }
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

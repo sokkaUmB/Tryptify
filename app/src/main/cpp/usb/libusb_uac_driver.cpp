@@ -30,6 +30,7 @@ constexpr uint8_t AC_OUTPUT_TERMINAL    = 0x03;
 constexpr uint8_t AC_CLOCK_SOURCE       = 0x0A;
 constexpr uint8_t AC_CLOCK_SELECTOR     = 0x0B;
 constexpr uint8_t AC_CLOCK_MULTIPLIER   = 0x0C;
+constexpr uint8_t AC_FEATURE_UNIT       = 0x06;
 constexpr uint8_t AS_GENERAL            = 0x01;
 constexpr uint8_t AS_FORMAT_TYPE        = 0x02;
 constexpr uint8_t FORMAT_TYPE_I         = 0x01;
@@ -44,6 +45,19 @@ constexpr uint8_t IP_VERSION_03_00      = 0x30;
 constexpr uint8_t DT_INTERFACE_ASSOC    = 0x0B;
 constexpr uint8_t UAC3_BADD_PROFILE_MIN = 0x20;
 constexpr int     UAC3_BADD_RATE_HZ     = 48000;
+// BADD fixes its topology instead of describing it: every profile's
+// playback path is IT 1 -> FU 2 -> OT 3, mute on the master channel
+// and volume on each logical channel (kernel: UAC3_BADD_FU_ID2).
+constexpr uint8_t UAC3_BADD_PLAYBACK_FU = 2;
+
+// Feature Unit control selectors and the requests that address them.
+// UAC2/UAC3 have one CUR and one RANGE request for every control;
+// UAC1 has GET_MIN / GET_MAX / GET_RES instead of RANGE.
+constexpr uint8_t FU_MUTE_CONTROL      = 0x01;
+constexpr uint8_t FU_VOLUME_CONTROL    = 0x02;
+constexpr uint8_t REQ_RANGE            = 0x02;
+constexpr uint8_t REQ_UAC1_GET_CUR     = 0x81;
+constexpr uint8_t REQ_UAC1_GET_MAX     = 0x83;
 
 // UAC2: SET_CUR on Sample Rate (CS_SAM_FREQ_CONTROL) of a clock
 // source entity. UAC1: SET_CUR on SAMPLING_FREQ_CONTROL of the iso
@@ -297,6 +311,11 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
     // rate) and CLOCK_MULTIPLIER (derived from another clock).
     struct ClockEntity { uint8_t id; uint8_t subtype; uint8_t baseId; };
     std::vector<ClockEntity> clockEntities;
+    // Feature Units, decoded once the UAC version is known (the
+    // bmaControls layout differs between UAC1 and UAC2). Points into
+    // `config`, which outlives every use below.
+    struct RawUnit { uint8_t id; uint8_t sourceId; const uint8_t* p; int len; };
+    std::vector<RawUnit> featureUnits;
 
     for (uint8_t i = 0; i < config->bNumInterfaces; ++i) {
         const libusb_interface& iface = config->interface[i];
@@ -324,6 +343,8 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                         clockEntities.push_back({p[3], AC_CLOCK_SELECTOR, p[5]});
                     } else if (isClassDescriptor(p, len, CS_INTERFACE, AC_CLOCK_MULTIPLIER) && len >= 5) {
                         clockEntities.push_back({p[3], AC_CLOCK_MULTIPLIER, p[4]});
+                    } else if (isClassDescriptor(p, len, CS_INTERFACE, AC_FEATURE_UNIT) && len >= 7) {
+                        featureUnits.push_back({p[3], p[4], p, len});
                     } else if (isClassDescriptor(p, len, CS_INTERFACE, AC_INPUT_TERMINAL) && len >= 8) {
                         // UAC2 IT: bTerminalID @p[3], bCSourceID @p[7].
                         terminals.push_back({p[3], p[7]});
@@ -355,6 +376,7 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
         // descriptors; none of it means anything here.
         clockEntities.clear();
         terminals.clear();
+        featureUnits.clear();
         int profile = audioFunctionSubclass(config, controlIface);
         badd = profile >= UAC3_BADD_PROFILE_MIN || (profile < 0 && !sawHeader);
         LOGI("AudioControl iface %u, UAC3 (function subclass %d)%s",
@@ -400,10 +422,15 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
 
             int altChannels = 0, altBits = 0, altSubslot = 0;
             uint8_t altTerminalLink = 0;
+            // bTerminalLink sits at the same offset in UAC1's
+            // AS_GENERAL; altTerminalLink stays UAC2-only because the
+            // clock resolution below reads UAC2 terminals with it.
+            uint8_t streamTerminal = 0;
             bool rateSupportedByDescriptor = (uacVersion >= 0x0200);
             walkExtra(alt.extra, alt.extra_length,
                 [&](const uint8_t* p, int len) {
                     if (isClassDescriptor(p, len, CS_INTERFACE, AS_GENERAL)) {
+                        if (len >= 4) streamTerminal = p[3];
                         // UAC2 AS_GENERAL is 16 bytes and carries
                         // bTerminalLink @p[3] (which terminal this AS
                         // is paired with) and bNrChannels @p[10].
@@ -692,6 +719,60 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                 out_fmt->feedbackMaxPacketSize = feedback->wMaxPacketSize;
                 out_fmt->feedbackInterval = feedback->bInterval;
             }
+            // The volume and mute this stream passes through: BADD's
+            // fixed unit, or every Feature Unit downstream of the
+            // streaming terminal (a capture path's units hang off a
+            // microphone terminal instead, so they're never reached).
+            out_fmt->featureControls.clear();
+            if (badd) {
+                out_fmt->featureControls.push_back(
+                    {UAC3_BADD_PLAYBACK_FU, 0, false, true});
+                for (int c = 1; c <= channels; ++c) {
+                    out_fmt->featureControls.push_back(
+                        {UAC3_BADD_PLAYBACK_FU, static_cast<uint8_t>(c), true, false});
+                }
+            } else if (streamTerminal != 0) {
+                std::vector<uint8_t> reached{streamTerminal};
+                for (int hop = 0; hop < 8; ++hop) {
+                    bool grew = false;
+                    for (const auto& fu : featureUnits) {
+                        if (std::find(reached.begin(), reached.end(), fu.id) != reached.end()) continue;
+                        if (std::find(reached.begin(), reached.end(), fu.sourceId) == reached.end()) continue;
+                        reached.push_back(fu.id);
+                        grew = true;
+                        const uint8_t* p = fu.p;
+                        if (uacVersion >= 0x0200) {
+                            // bmaControls: 4 bytes per channel from p[5],
+                            // two bits per control, 0b11 = host-settable.
+                            int n = (fu.len - 6) / 4;
+                            for (int c = 0; c < n; ++c) {
+                                uint32_t bm = static_cast<uint32_t>(p[5 + c * 4]) |
+                                              (static_cast<uint32_t>(p[6 + c * 4]) << 8);
+                                bool mute = (bm & 0x3) == 0x3;
+                                bool vol = ((bm >> 2) & 0x3) == 0x3;
+                                if (mute || vol) {
+                                    out_fmt->featureControls.push_back(
+                                        {fu.id, static_cast<uint8_t>(c), vol, mute});
+                                }
+                            }
+                        } else if (fu.len >= 7 && p[5] > 0) {
+                            // UAC1: bControlSize @p[5], then one
+                            // bitmap per channel; D0 mute, D1 volume.
+                            int size = p[5];
+                            int n = (fu.len - 7) / size;
+                            for (int c = 0; c < n; ++c) {
+                                uint8_t bm = p[6 + c * size];
+                                if (bm & 0x3) {
+                                    out_fmt->featureControls.push_back(
+                                        {fu.id, static_cast<uint8_t>(c),
+                                         (bm & 0x2) != 0, (bm & 0x1) != 0});
+                                }
+                            }
+                        }
+                    }
+                    if (!grew) break;
+                }
+            }
             found = true;
             LOGI("matched alt %u on iface %u: %dch %d-bit, data ep 0x%02x "
                  "mps=%d (real %d) bInterval=%u clockId=%u%s",
@@ -940,6 +1021,77 @@ bool LibusbUacDriver::setSampleRate(uint32_t hz) {
     return true;
 }
 
+void LibusbUacDriver::applyHardwareVolume() {
+    format_.hwVolumeDb256 = kHwVolumeNone;
+    if (format_.featureControls.empty()) {
+        LOGI("hw volume: no settable volume or mute on the playback path");
+        return;
+    }
+    const bool uac1 = format_.uacVersion < 0x0200;
+    const uint8_t iface = format_.controlInterfaceNum;
+    auto request = [&](uint8_t type, uint8_t req, uint8_t selector,
+                       const HwFeatureControl& c, uint8_t* data, uint16_t len) {
+        return libusb_control_transfer(
+            device_, type, req,
+            static_cast<uint16_t>((selector << 8) | c.channel),
+            static_cast<uint16_t>((c.unitId << 8) | iface),
+            data, len, 1000);
+    };
+    auto rd16 = [](const uint8_t* q) {
+        return static_cast<int16_t>(q[0] | (q[1] << 8));
+    };
+
+    for (const auto& c : format_.featureControls) {
+        if (c.mute) {
+            uint8_t off = 0;
+            int r = request(0x21, REQ_SET_CUR, FU_MUTE_CONTROL, c, &off, 1);
+            LOGI("hw volume: unit %u ch %u unmute -> %d", c.unitId, c.channel, r);
+        }
+        if (!c.volume) continue;
+
+        // The top of the range, but never above 0 dB: a DAC that
+        // offers gain past full scale would clip the digital signal.
+        int max = 0;
+        bool haveMax = false;
+        uint8_t buf[2 + 6 * 8] = {0};
+        if (uac1) {
+            if (request(0xA1, REQ_UAC1_GET_MAX, FU_VOLUME_CONTROL, c, buf, 2) == 2) {
+                max = rd16(buf);
+                haveMax = true;
+            }
+        } else {
+            int got = request(0xA1, REQ_RANGE, FU_VOLUME_CONTROL, c, buf, sizeof(buf));
+            if (got >= 8) {
+                int n = rd16(buf);
+                for (int i = 0; i < n && 2 + (i + 1) * 6 <= got; ++i) {
+                    int hi = rd16(buf + 2 + i * 6 + 2);
+                    if (!haveMax || hi > max) max = hi;
+                    haveMax = true;
+                }
+            }
+        }
+        int target = haveMax ? std::min(max, 0) : 0;
+        uint8_t set[2] = {static_cast<uint8_t>(target & 0xFF),
+                          static_cast<uint8_t>((target >> 8) & 0xFF)};
+        int r = request(0x21, REQ_SET_CUR, FU_VOLUME_CONTROL, c, set, 2);
+
+        uint8_t cur[2] = {0, 0};
+        int g = request(0xA1, uac1 ? REQ_UAC1_GET_CUR : REQ_SET_CUR,
+                        FU_VOLUME_CONTROL, c, cur, 2);
+        int now = (g == 2) ? rd16(cur) : (r == 2 ? target : kHwVolumeNone);
+        LOGI("hw volume: unit %u ch %u max %s%.2f dB -> set %.2f dB (%d), now %s",
+             c.unitId, c.channel, haveMax ? "" : "unknown, assuming ",
+             max / 256.0, target / 256.0, r,
+             now == kHwVolumeNone ? "unknown" : std::to_string(now / 256.0).c_str());
+        // Report the quietest channel: that's the one a listener hears
+        // as "not at full".
+        if (now != kHwVolumeNone &&
+            (format_.hwVolumeDb256 == kHwVolumeNone || now < format_.hwVolumeDb256)) {
+            format_.hwVolumeDb256 = now;
+        }
+    }
+}
+
 bool LibusbUacDriver::start(int sampleRateHz, int bitsPerSample, int channels) {
     std::lock_guard<std::mutex> lock(mutex_);
     ErrorSink err{&lastError_, &errorMutex_, &lastErrorDetail_};
@@ -1067,6 +1219,8 @@ bool LibusbUacDriver::start(int sampleRateHz, int bitsPerSample, int channels) {
             "clock supports.");
         return false;
     }
+
+    applyHardwareVolume();
 
     // Resize the ring to ~250 ms of audio at the negotiated format
     // (see kRingMinBytes above). Safe here: the iso pump is either
