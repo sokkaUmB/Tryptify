@@ -21,7 +21,7 @@ data class BypassDiagnostics(
     val maxPacketSize: Int,
     /** Iso transfer interval. HS: 2^(bInterval-1) microframes; FS: ms. */
     val bInterval: Int,
-    /** 0x0100 = UAC1, 0x0200 = UAC2. */
+    /** 0x0100 = UAC1, 0x0200 = UAC2, 0x0300 = UAC3 (BADD profile only). */
     val uacVersion: Int,
     /** UAC2 clock-source entity ID that accepted SET_CUR. 0 = UAC1 / unset. */
     val clockSourceId: Int,
@@ -47,8 +47,12 @@ data class BypassDiagnostics(
     fun speedLabel(): String =
         if (isHighSpeed) "USB 2.0 HS" else "USB 1.1 FS"
 
-    /** "UAC2" / "UAC1" — what spec version the device negotiated under. */
-    fun uacLabel(): String = if (isUac2) "UAC2" else "UAC1"
+    /** "UAC3 BADD" / "UAC2" / "UAC1" — what spec version the device negotiated under. */
+    fun uacLabel(): String = when {
+        uacVersion >= 0x0300 -> "UAC3 BADD"
+        isUac2 -> "UAC2"
+        else -> "UAC1"
+    }
 
     companion object {
         /** Field count in the long[] returned by nativeActiveStream. */

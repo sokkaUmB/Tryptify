@@ -80,11 +80,20 @@ struct StreamFormat {
     // pitch-shifted distorted stream.
     uint8_t bInterval = 1;
     // UAC version, decoded from bcdADC in the AudioControl Header
-    // class-specific descriptor (UAC1 = 0x0100, UAC2 = 0x0200).
+    // class-specific descriptor (UAC1 = 0x0100, UAC2 = 0x0200), or
+    // 0x0300 when the AudioControl interface's bInterfaceProtocol is
+    // IP_VERSION_03_00 (UAC3 has no bcdADC field).
     // Different rate-set wire format and different AS_FORMAT_TYPE
     // layout — Focal Bathys is UAC1; most newer hi-res DACs are
     // UAC2.
     uint16_t uacVersion = 0x0200;
+    // UAC3 Basic Audio Device (BADD) profile. Such a configuration
+    // carries no class-specific descriptors at all: the format is
+    // implied by the endpoint's wMaxPacketSize and the rate is fixed
+    // at 48 kHz with no programmable clock. Apple's USB-C headphone
+    // adapter runs in this mode on Android, because the kernel picks
+    // the first UAC3 configuration over the UAC2 one.
+    bool badd = false;
     // Async iso feedback IN endpoint (UAC2 §3.16.2.2). Zero if the
     // device is adaptive/sync — most quality DACs (incl. Focal Bathys)
     // are async and expose one. The host reads a 16.16 fixed-point
@@ -328,6 +337,10 @@ private:
     // errorMutex_ — readers and the start() writer don't race on the
     // hot path.
     std::vector<ClockRateRange> supportedRates_;
+    // Why the last selectAltSetting() found nothing, when there is
+    // something more useful to say than "no match" (e.g. a BADD
+    // device's fixed 48 kHz). Guarded by errorMutex_.
+    std::string selectHint_;
 };
 
 } // namespace monotrypt::usb

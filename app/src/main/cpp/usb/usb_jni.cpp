@@ -188,7 +188,7 @@ Java_tf_monochrome_android_audio_usb_LibusbUacDriver_nativeSupportedRates(
 //   [5] endpointAddress
 //   [6] maxPacketSize
 //   [7] bInterval
-//   [8] uacVersion (0x0100 = UAC1, 0x0200 = UAC2)
+//   [8] uacVersion (0x0100 = UAC1, 0x0200 = UAC2, 0x0300 = UAC3 BADD)
 //   [9] clockSourceId (0 if UAC1 / no resolved clock)
 //   [10] feedbackEndpointAddress (0 if absent)
 //   [11] isHighSpeed (1/0)

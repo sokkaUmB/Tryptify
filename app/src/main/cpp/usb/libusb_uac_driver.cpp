@@ -34,6 +34,17 @@ constexpr uint8_t AS_GENERAL            = 0x01;
 constexpr uint8_t AS_FORMAT_TYPE        = 0x02;
 constexpr uint8_t FORMAT_TYPE_I         = 0x01;
 
+// bInterfaceProtocol of an audio interface: IP_VERSION_02_00 /
+// IP_VERSION_03_00. UAC3's AC Header has no bcdADC, so this is the
+// only place the version shows up.
+constexpr uint8_t IP_VERSION_03_00      = 0x30;
+// Interface Association descriptor; its bFunctionSubClass carries the
+// UAC3 BADD profile (0x20 generic I/O .. 0x2F), 0x01 for a full UAC3
+// function and 0x00 before UAC3.
+constexpr uint8_t DT_INTERFACE_ASSOC    = 0x0B;
+constexpr uint8_t UAC3_BADD_PROFILE_MIN = 0x20;
+constexpr int     UAC3_BADD_RATE_HZ     = 48000;
+
 // UAC2: SET_CUR on Sample Rate (CS_SAM_FREQ_CONTROL) of a clock
 // source entity. UAC1: SET_CUR on SAMPLING_FREQ_CONTROL of the iso
 // data endpoint, 3-byte LE rate. Both share bRequest = 0x01.
@@ -84,6 +95,54 @@ void walkExtra(const uint8_t* extra, int extraLen, Cb&& cb) {
         if (cb(extra + i, len)) return;
         i += len;
     }
+}
+
+// UAC3 BADD §4 fixes every AS endpoint's wMaxPacketSize by channel
+// count, sample size and sync type (48 kHz, 1 ms service interval;
+// async adds one frame of headroom). A BADD configuration carries no
+// AS_GENERAL / FORMAT_TYPE descriptors, so this table is the format.
+// Same values as the kernel's UAC3_BADD_EP_MAXPSIZE_* constants.
+bool baddFormatFromMaxPacket(uint16_t mps, int* channels, int* subslot) {
+    switch (mps & 0x07FF) {
+        case 0x0060: case 0x0062: *channels = 1; *subslot = 2; return true;
+        case 0x0090: case 0x0093: *channels = 1; *subslot = 3; return true;
+        case 0x00C0: case 0x00C4: *channels = 2; *subslot = 2; return true;
+        case 0x0120: case 0x0126: *channels = 2; *subslot = 3; return true;
+        default: return false;
+    }
+}
+
+// bFunctionSubClass of the audio Interface Association that covers
+// `ifaceNum`, or -1 if there is none. libusb leaves an IAD in whatever
+// `extra` blob precedes the function's first interface: the config's
+// own for interface 0, otherwise the previous interface's or
+// endpoint's, so look everywhere.
+int audioFunctionSubclass(const libusb_config_descriptor* config,
+                          uint8_t ifaceNum) {
+    int found = -1;
+    auto scan = [&](const unsigned char* extra, int len) {
+        walkExtra(extra, len, [&](const uint8_t* p, int l) {
+            if (l >= 8 && p[1] == DT_INTERFACE_ASSOC &&
+                p[4] == USB_CLASS_AUDIO &&
+                ifaceNum >= p[2] && ifaceNum < p[2] + p[3]) {
+                found = p[5];
+                return true;
+            }
+            return false;
+        });
+    };
+    scan(config->extra, config->extra_length);
+    for (uint8_t i = 0; i < config->bNumInterfaces && found < 0; ++i) {
+        const libusb_interface& iface = config->interface[i];
+        for (int a = 0; a < iface.num_altsetting && found < 0; ++a) {
+            const libusb_interface_descriptor& alt = iface.altsetting[a];
+            scan(alt.extra, alt.extra_length);
+            for (int e = 0; e < alt.bNumEndpoints && found < 0; ++e) {
+                scan(alt.endpoint[e].extra, alt.endpoint[e].extra_length);
+            }
+        }
+    }
+    return found;
 }
 
 } // namespace
@@ -226,6 +285,8 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
     uint8_t controlIface = 0xFF;
     uint16_t uacVersion = 0x0200;
     bool foundControl = false;
+    bool sawHeader = false;
+    uint8_t controlProtocol = 0;
 
     // Per-terminal: (terminalID -> bCSourceID).
     struct TermClock { uint8_t termId; uint8_t clockId; };
@@ -244,9 +305,11 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
             if (alt.bInterfaceClass != USB_CLASS_AUDIO ||
                 alt.bInterfaceSubClass != SUBCLASS_AUDIOCONTROL) continue;
             controlIface = alt.bInterfaceNumber;
+            controlProtocol = alt.bInterfaceProtocol;
             walkExtra(alt.extra, alt.extra_length,
                 [&](const uint8_t* p, int len) {
                     if (isClassDescriptor(p, len, CS_INTERFACE, AC_HEADER) && len >= 5) {
+                        sawHeader = true;
                         uacVersion = static_cast<uint16_t>(p[3]) |
                                      (static_cast<uint16_t>(p[4]) << 8);
                     } else if (isClassDescriptor(p, len, CS_INTERFACE, AC_CLOCK_SOURCE) && len >= 4) {
@@ -280,10 +343,36 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
         libusb_free_config_descriptor(config);
         return false;
     }
-    LOGI("AudioControl iface %u, UAC version 0x%04x%s — %zu clock entities, %zu terminals",
-         controlIface, uacVersion,
-         (uacVersion < 0x0200) ? " (UAC1)" : " (UAC2)",
-         clockEntities.size(), terminals.size());
+    // UAC3 has no bcdADC (its AC Header starts with bCategory), so the
+    // version comes from the interface protocol instead. A BADD
+    // function says so in its IAD; a configuration with no AC Header
+    // at all can only be BADD too, since every other UAC3 topology
+    // has to describe itself.
+    bool badd = false;
+    if (controlProtocol == IP_VERSION_03_00) {
+        uacVersion = 0x0300;
+        // Anything before this point read UAC2 offsets out of UAC3
+        // descriptors; none of it means anything here.
+        clockEntities.clear();
+        terminals.clear();
+        int profile = audioFunctionSubclass(config, controlIface);
+        badd = profile >= UAC3_BADD_PROFILE_MIN || (profile < 0 && !sawHeader);
+        LOGI("AudioControl iface %u, UAC3 (function subclass %d)%s",
+             controlIface, profile, badd ? " — BADD profile" : "");
+        if (!badd) {
+            LOGE("full UAC3 topology (cluster descriptors) is not supported");
+            std::lock_guard<std::mutex> elock(errorMutex_);
+            selectHint_ = "This DAC is running a full USB Audio 3.0 "
+                          "configuration, which the bypass can't drive yet.";
+            libusb_free_config_descriptor(config);
+            return false;
+        }
+    } else {
+        LOGI("AudioControl iface %u, UAC version 0x%04x%s — %zu clock entities, %zu terminals",
+             controlIface, uacVersion,
+             (uacVersion < 0x0200) ? " (UAC1)" : " (UAC2)",
+             clockEntities.size(), terminals.size());
+    }
     for (const auto& ce : clockEntities) {
         const char* kind =
             ce.subtype == AC_CLOCK_SOURCE ? "SOURCE" :
@@ -437,6 +526,31 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                     }
                     return false;
                 });
+            if (badd) {
+                // No AS descriptors to read: the OUT data endpoint's
+                // wMaxPacketSize is the format, and the rate is 48 kHz.
+                altChannels = altBits = altSubslot = 0;
+                for (int e = 0; e < alt.bNumEndpoints; ++e) {
+                    const libusb_endpoint_descriptor& ep = alt.endpoint[e];
+                    if ((ep.bmAttributes & 0x03) != LIBUSB_TRANSFER_TYPE_ISOCHRONOUS ||
+                        (ep.bEndpointAddress & 0x80) != 0) continue;
+                    if (baddFormatFromMaxPacket(ep.wMaxPacketSize,
+                                                &altChannels, &altSubslot)) {
+                        altBits = altSubslot * 8;
+                    }
+                    break;
+                }
+                if (altChannels == 0) continue;   // capture alt, or not a BADD size
+                LOGI("BADD alt %u: %dch %d-bit @ %d Hz (mps-implied)",
+                     alt.bAlternateSetting, altChannels, altBits,
+                     UAC3_BADD_RATE_HZ);
+                rateSupportedByDescriptor = (sampleRateHz == UAC3_BADD_RATE_HZ);
+                std::lock_guard<std::mutex> elock(errorMutex_);
+                if (supportedRates_.empty()) {
+                    supportedRates_.push_back(
+                        {0, UAC3_BADD_RATE_HZ, UAC3_BADD_RATE_HZ, 0});
+                }
+            }
 
             if (altChannels != channels || altBits != bitsPerSample) continue;
             if (!rateSupportedByDescriptor) {
@@ -482,10 +596,15 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                 ? microframesPerSecond / microframesPerInterval
                 : microframesPerSecond;
             int frameStride = (altSubslot ? altSubslot : bitsPerSample / 8) * channels;
-            // Required packet bytes = ceil(rate / packetsPerSec) * stride,
-            // plus one frame of headroom for fractional-rate jitter.
+            // Required packet bytes = ceil(rate / packetsPerSec) * stride:
+            // the largest packet the open-loop pacer ever sends. The
+            // extra frame an async device's feedback may ask for is
+            // headroom, not a requirement — startIsoPump() takes it
+            // only where the endpoint has room. Demanding it here
+            // rejected every synchronous alt sized exactly to its
+            // rate, e.g. 48 kHz/24-bit/2ch at full speed = 288 bytes.
             int reqBytesPerPacket = ((sampleRateHz + packetsPerSec - 1)
-                                     / packetsPerSec + 1) * frameStride;
+                                     / packetsPerSec) * frameStride;
             int actualMps = iso->wMaxPacketSize & 0x07FF;
             int extraTransactions = ((iso->wMaxPacketSize >> 11) & 0x3) + 1;
             int realMps = actualMps * extraTransactions;
@@ -567,6 +686,7 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                 libusb_get_device_speed(dev) >= LIBUSB_SPEED_HIGH;
             out_fmt->bInterval = iso->bInterval;
             out_fmt->uacVersion = uacVersion;
+            out_fmt->badd = badd;
             if (feedback) {
                 out_fmt->feedbackEndpointAddress = feedback->bEndpointAddress;
                 out_fmt->feedbackMaxPacketSize = feedback->wMaxPacketSize;
@@ -587,6 +707,11 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
     if (!found) {
         LOGE("no AS alt setting matches %dHz/%d-bit/%dch",
              sampleRateHz, bitsPerSample, channels);
+        if (badd && sampleRateHz != UAC3_BADD_RATE_HZ) {
+            std::lock_guard<std::mutex> elock(errorMutex_);
+            selectHint_ = "This DAC runs in USB Audio 3.0 basic mode, "
+                          "which is fixed at 48 kHz.";
+        }
     }
     return found;
 }
@@ -628,6 +753,14 @@ void LibusbUacDriver::captureRangeForClock(uint8_t clockId) {
 }
 
 bool LibusbUacDriver::setSampleRate(uint32_t hz) {
+    if (format_.badd) {
+        // BADD has no clock entity to address; the rate is fixed by
+        // the profile and selectAltSetting already refused any other.
+        if (hz == static_cast<uint32_t>(UAC3_BADD_RATE_HZ)) return true;
+        LOGE("UAC3 BADD runs at %d Hz only, refusing %u Hz",
+             UAC3_BADD_RATE_HZ, hz);
+        return false;
+    }
     if (format_.uacVersion >= 0x0200) {
         // UAC2 §5.2.5.1.1 — SET_CUR(SAM_FREQ_CONTROL) on a clock
         // entity, 32-bit LE.
@@ -819,6 +952,7 @@ bool LibusbUacDriver::start(int sampleRateHz, int bitsPerSample, int channels) {
         // Drop the previous start's rate inventory — we'll repopulate
         // on this start (or leave empty if the device returns nothing).
         supportedRates_.clear();
+        selectHint_.clear();
     }
     if (!device_) {
         err(StartError::NoDevice, "start() called before open() — "
@@ -836,12 +970,19 @@ bool LibusbUacDriver::start(int sampleRateHz, int bitsPerSample, int channels) {
 
     StreamFormat fmt{};
     if (!selectAltSetting(sampleRateHz, bitsPerSample, channels, &fmt)) {
+        std::string hint;
+        {
+            std::lock_guard<std::mutex> elock(errorMutex_);
+            hint = selectHint_;
+        }
         err(StartError::NoMatchingAlt,
             "no AS alt setting matches " +
             std::to_string(sampleRateHz) + " Hz / " +
             std::to_string(bitsPerSample) + "-bit / " +
-            std::to_string(channels) + "ch — DAC may not support "
-            "this rate at this bit depth");
+            std::to_string(channels) + "ch — " +
+            (hint.empty()
+                 ? std::string("DAC may not support this rate at this bit depth")
+                 : hint));
         return false;
     }
 
@@ -1049,21 +1190,33 @@ bool LibusbUacDriver::startIsoPump() {
     framesPerUframe_q16_.store(seed_q16, std::memory_order_relaxed);
     fracAccumulator_q16_ = 0;
     isoCallbacks_ = 0;
-    maxFramesPerPacket_ = baseFrames + (rateRemainder > 0 ? 1 : 0)
-                          // +1 headroom for feedback over-asks.
-                          + 1;
+    // The open-loop pacer never sends more than ceil(rate / pps)
+    // frames; that much has to fit. One more frame of headroom lets
+    // an async device's feedback over-ask, but only when the endpoint
+    // has room for it — a synchronous alt is often sized exactly to
+    // its rate, and onIso caps every packet at this value anyway.
+    int nominalFrames = baseFrames + (rateRemainder > 0 ? 1 : 0);
+    maxFramesPerPacket_ = nominalFrames + 1;
 
     int frameStride = format_.channels * format_.bytesPerSample;
-    int maxBytesPerPacket = maxFramesPerPacket_ * frameStride;
 
     // Hard-cap at the endpoint's max packet size to stay spec-legal.
-    int maxPacket = libusb_get_max_iso_packet_size(
-        libusb_get_device(device_), format_.endpointAddress);
-    if (maxPacket > 0 && maxBytesPerPacket > maxPacket) {
-        LOGE("computed packet %d > endpoint max %d",
-             maxBytesPerPacket, maxPacket);
-        return false;
+    // Taken from the matched alt itself: libusb's
+    // get_max_iso_packet_size answers from the first alt that uses the
+    // endpoint address, which on a device with one alt per bit depth
+    // is the wrong one for every alt but the first.
+    int maxPacket = (format_.maxPacketSize & 0x07FF) *
+                    (((format_.maxPacketSize >> 11) & 0x3) + 1);
+    if (maxPacket > 0) {
+        int fitFrames = maxPacket / frameStride;
+        if (nominalFrames > fitFrames) {
+            LOGE("computed packet %d > endpoint max %d",
+                 nominalFrames * frameStride, maxPacket);
+            return false;
+        }
+        maxFramesPerPacket_ = std::min(maxFramesPerPacket_, fitFrames);
     }
+    int maxBytesPerPacket = maxFramesPerPacket_ * frameStride;
 
     transfers_.reserve(kNumTransfers);
     transferBuffers_.reserve(kNumTransfers);
