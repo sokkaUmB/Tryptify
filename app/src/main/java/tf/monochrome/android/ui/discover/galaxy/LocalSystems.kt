@@ -127,6 +127,20 @@ object LocalSystems {
         return SHADE_FLATTEST + (1f - SHADE_FLATTEST) * depth
     }
 
+    /**
+     * Seconds for moon [m] (0 innermost) to go round once: one orbit per
+     * [BEATS_PER_MOON_ORBIT] beats of its track's [bpm], so a 174 BPM track's
+     * moon races and a ballad's drifts; each slot further out a little slower,
+     * as without a tempo. Without one, the period every moon had.
+     */
+    fun moonPeriodOf(m: Int, bpm: Float?): Float {
+        val slot = 1f + m * 0.55f
+        val beat = bpm?.takeIf { it.isFinite() && it > 0f }?.let { 60f / it }
+            ?: return PlanetSystem.MOON_PERIOD * slot
+        return BEATS_PER_MOON_ORBIT * beat * slot
+    }
+
+    private const val BEATS_PER_MOON_ORBIT = 16f
     private const val HAZE_QUIET_LUFS = -20f
     private const val HAZE_SPAN_LU = 14f
     private const val BEATS_PER_TURN = 32f
@@ -166,14 +180,17 @@ object LocalSystems {
             artworkUrl = album.artworkUri,
             moons = moonTracks.mapIndexed { m, track ->
                 val moonSeed = PlanetSystem.stableHash(track.key)
+                val trackKey = track.camelotKey?.takeIf { it in 1..24 }
                 PlanetSystem.Moon(
                     ref = track.ref(),
                     orbit = PlanetSystem.moonOrbit(starRadius, m),
-                    period = PlanetSystem.MOON_PERIOD * (1f + m * 0.55f),
+                    period = moonPeriodOf(m, track.bpm),
                     phase = PlanetSystem.unit(moonSeed) * PlanetSystem.TAU,
                     tilt = (PlanetSystem.unit(moonSeed ushr 8) - 0.5f) * 1.1f,
                     node = PlanetSystem.unit(moonSeed ushr 24) * PlanetSystem.TAU,
                     radius = radius * (0.16f + 0.12f * sqrt(track.durationSeconds.coerceAtLeast(0) / longest.toFloat())),
+                    keyHue = trackKey?.let(::keyHue) ?: PlanetSystem.NO_KEY_HUE,
+                    tone = keyTone(trackKey),
                 )
             },
             key = album.key,

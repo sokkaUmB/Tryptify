@@ -41,6 +41,12 @@ class PlanetSystemTest {
                 assertEquals(0f, p.haze, 0f)
                 assertEquals(0f, p.spinPeriod, 0f)
                 assertEquals(1f, p.shade, 0f)
+                // And their moons: the star's light, at the pace they always went.
+                p.moons.forEachIndexed { m, moon ->
+                    assertEquals(PlanetSystem.NO_KEY_HUE, moon.keyHue, 0f)
+                    assertEquals(0f, moon.tone, 0f)
+                    assertEquals(PlanetSystem.MOON_PERIOD * (1f + m * 0.55f), moon.period, 0f)
+                }
             }
         }
     }

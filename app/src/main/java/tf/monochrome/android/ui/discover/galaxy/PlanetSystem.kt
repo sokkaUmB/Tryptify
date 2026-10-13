@@ -141,11 +141,21 @@ class PlanetSystem(
         val tilt: Float,
         val node: Float,
         val radius: Float,
+        /**
+         * Its glow's colour, 0..360, from its track's key; [NO_KEY_HUE] for
+         * none, which glows in its star's light as every moon did.
+         */
+        val keyHue: Float = NO_KEY_HUE,
+        /** -1 a minor key (deeper), 1 a major one (paler), 0 none: as a planet's [Planet.tone]. */
+        val tone: Float = 0f,
     ) {
         val title: String get() = ref.title
 
+        /** Whether its glow takes its own key's colour rather than its star's light. */
+        val hasKeyHue: Boolean get() = keyHue >= 0f
+
         internal fun copy(orbit: Float = this.orbit, radius: Float = this.radius) =
-            Moon(ref, orbit, period, phase, tilt, node, radius)
+            Moon(ref, orbit, period, phase, tilt, node, radius, keyHue, tone)
     }
 
     /** Planet [p] at [time] s, around a star at ([cx], [cy], [cz]), written to [out] at [at]. */
@@ -340,6 +350,9 @@ class PlanetSystem(
         /** The nearest planet's year, in seconds; further out is slower, as Kepler has it. */
         internal const val FIRST_PERIOD = 26f
         internal const val MOON_PERIOD = 7f
+
+        /** A moon's [Moon.keyHue] when its track has no key. */
+        const val NO_KEY_HUE = -1f
 
         /**
          * A system from a genre's chart, or null when it has no artists.

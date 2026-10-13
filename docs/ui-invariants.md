@@ -911,6 +911,11 @@ would spin with it. All of it is drawn with what each body was already drawn
 with, and the atmosphere colours are made once a system (`SystemArt.atmosphere`),
 not per planet per frame.
 
+A library moon is its track the same way: it goes round once every 16 beats of
+the track's tempo (outer slots slower, as before), and its glow is the track's
+key. Without a tempo it keeps its slot's pace, without a key its star's light,
+which is all a chart moon has; `PlanetSystemTest` pins chart moons too.
+
 **Nothing in the library is unreachable on the map.** Albums past the eighth are
 the belt and tracks past an album's sixth are its ring, and both are listed in
 full in the system's sheet. Drawn as grains, never dropped.

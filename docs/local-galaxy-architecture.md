@@ -42,6 +42,8 @@ part is where the data comes from.
 | Planet shadow | full depth | as deep as the album's median dynamic range: lit flat at DR4, full depth from DR16 |
 | **Moon** | a charted track (≤ 4) | a track |
 | Moon size | its listens | its duration |
+| Moon orbit pace | by its slot | its track's tempo: once round per 16 beats, outer slots slower; by its slot without a tempo |
+| Moon glow | the star's light | its track's key, as a planet's (deeper for minor, paler for major); the star's light without a key |
 | Extra albums / tracks | not shown | an **asteroid belt** past the last orbit / a **ring** round the planet |
 | Black hole | the core | kept: the same core, so both maps share one frame |
 

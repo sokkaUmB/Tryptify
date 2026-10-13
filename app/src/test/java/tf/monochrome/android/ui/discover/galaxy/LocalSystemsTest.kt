@@ -258,6 +258,59 @@ class LocalSystemsTest {
         assertEquals(sys.belt.map { it.label }, big.belt.map { it.label })
     }
 
+    /** One album whose tracks have the given tempos and keys, in running order. */
+    private fun albumOfTracks(vararg tracks: Pair<Float?, Int?>) = LibraryAlbum(
+        key = "tracks|artist|2000",
+        title = "Tracks",
+        year = 2000,
+        artworkUri = null,
+        tracks = tracks.mapIndexed { n, (bpm, key) ->
+            LibraryTrack(
+                id = nextId++, key = "/music/tracks/$n.flac", title = "Track $n", discNumber = 1,
+                trackNumber = n + 1, durationSeconds = 200, bpm = bpm, camelotKey = key,
+            )
+        },
+    )
+
+    @Test
+    fun `a moon goes round once every 16 beats of its track, outer ones a little slower`() {
+        val moons = LocalSystems.build("artist:x", listOf(albumOfTracks(120f to null, 240f to null, null to null)))!!
+            .planets.single().moons
+        assertEquals(8f, moons[0].period, 1e-4f)                                // 16 beats at 120 BPM, innermost
+        assertEquals(4f * 1.55f, moons[1].period, 1e-4f)                        // twice the tempo, one slot out
+        assertEquals(PlanetSystem.MOON_PERIOD * 2.1f, moons[2].period, 1e-4f)   // no tempo: as every moon was
+        assertEquals(PlanetSystem.MOON_PERIOD, LocalSystems.moonPeriodOf(0, null), 0f)
+        assertEquals(PlanetSystem.MOON_PERIOD, LocalSystems.moonPeriodOf(0, Float.NaN), 0f)
+        assertEquals(PlanetSystem.MOON_PERIOD, LocalSystems.moonPeriodOf(0, 0f), 0f)
+    }
+
+    @Test
+    fun `a moon glows in its track's key, or its star's light without one`() {
+        val moons = LocalSystems.build("artist:x", listOf(albumOfTracks(null to 8, null to 20, null to null, null to 77)))!!
+            .planets.single().moons
+        assertEquals(210f, moons[0].keyHue, 0f)
+        assertEquals(-1f, moons[0].tone, 0f)
+        assertEquals(210f, moons[1].keyHue, 0f)
+        assertEquals(1f, moons[1].tone, 0f)
+        for (plain in listOf(moons[2], moons[3])) {
+            assertEquals(PlanetSystem.NO_KEY_HUE, plain.keyHue, 0f)
+            assertEquals(0f, plain.tone, 0f)
+            assertTrue(!plain.hasKeyHue)
+        }
+    }
+
+    @Test
+    fun `a moon keeps its key and its pace at any body size`() {
+        val sys = LocalSystems.build("artist:x", listOf(albumOfTracks(128f to 8, 90f to 20)))!!
+        val before = sys.planets.single().moons
+        for (resized in listOf(sys.withBodySize(2f), sys.withBodySize(0.5f))) {
+            val after = resized.planets.single().moons
+            assertEquals(before.map { it.keyHue }, after.map { it.keyHue })
+            assertEquals(before.map { it.tone }, after.map { it.tone })
+            assertEquals(before.map { it.period }, after.map { it.period })
+        }
+    }
+
     private companion object {
         /** The ring's outer edge, in its planet's radii: as the map draws it. */
         const val RING_OUTER_RADII = 1.9f

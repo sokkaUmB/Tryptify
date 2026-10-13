@@ -1808,6 +1808,7 @@ private class SystemArt {
 
     private var atmospheresFor: PlanetSystem? = null
     private var atmospheres: Array<android.graphics.ColorFilter> = emptyArray()
+    private var moonAtmospheres: Array<Array<android.graphics.ColorFilter?>> = emptyArray()
 
     /**
      * Planet [p]'s atmosphere, as the filter that tints the glow: its hue, at
@@ -1815,18 +1816,34 @@ private class SystemArt {
      * once a system, where it was a colour built per planet per frame.
      */
     fun atmosphere(system: PlanetSystem, p: Int): android.graphics.ColorFilter {
-        if (atmospheresFor !== system) {
-            atmospheresFor = system
-            val hsv = FloatArray(3)
-            atmospheres = Array(system.planets.size) { i ->
-                val planet = system.planets[i]
-                hsv[0] = planet.hue
-                hsv[1] = PlanetLook.atmosphereSaturation(planet.tone)
-                hsv[2] = PlanetLook.atmosphereValue(planet.tone)
-                tint(android.graphics.Color.HSVToColor(hsv))
-            }
-        }
+        atmospheresOf(system)
         return atmospheres[p]
+    }
+
+    /**
+     * Moon [m] of planet [p]'s glow in its track's key, made the same way, or
+     * null for a moon with no key, which glows in its star's light.
+     */
+    fun moonAtmosphere(system: PlanetSystem, p: Int, m: Int): android.graphics.ColorFilter? {
+        atmospheresOf(system)
+        return moonAtmospheres[p][m]
+    }
+
+    private fun atmospheresOf(system: PlanetSystem) {
+        if (atmospheresFor === system) return
+        atmospheresFor = system
+        val hsv = FloatArray(3)
+        fun filter(hue: Float, tone: Float): android.graphics.ColorFilter {
+            hsv[0] = hue
+            hsv[1] = PlanetLook.atmosphereSaturation(tone)
+            hsv[2] = PlanetLook.atmosphereValue(tone)
+            return tint(android.graphics.Color.HSVToColor(hsv))
+        }
+        atmospheres = Array(system.planets.size) { i -> system.planets[i].let { filter(it.hue, it.tone) } }
+        moonAtmospheres = Array(system.planets.size) { i ->
+            val moons = system.planets[i].moons
+            Array(moons.size) { m -> moons[m].takeIf { it.hasKeyHue }?.let { filter(it.keyHue, it.tone) } }
+        }
     }
 
     /** A moon: pale rock, a little lighter where the star is. */
@@ -2134,8 +2151,13 @@ private fun DrawScope.drawSystem(
         art.rect.set(x - r, y - r, x + r, y + r)
         val planet = if (mi < 0) sys.planets[p] else null
         // The atmosphere's scatter, behind the body, in its own colour: a
-        // library album's key, deeper for minor and paler for major.
-        bodies.tinted.colorFilter = if (planet != null) bodies.atmosphere(sys, p) else bodies.tint(starLight)
+        // library album's key, deeper for minor and paler for major; a moon's
+        // its track's key, or its star's light without one.
+        bodies.tinted.colorFilter = if (planet != null) {
+            bodies.atmosphere(sys, p)
+        } else {
+            bodies.moonAtmosphere(sys, p, mi) ?: bodies.tint(starLight)
+        }
         // A planet played a lot lately burns brighter and wider: heat is the
         // atmosphere, never the orbit. A loud master hazes it wider still.
         // Nothing has either on the genre map.
