@@ -405,6 +405,7 @@ class PreferencesManager @Inject constructor(
         // Library / Local Media
         private val EXCLUDED_PATHS_JSON = stringPreferencesKey("excluded_paths_json")
         private val FOLDER_TREE_REBUILD = intPreferencesKey("folder_tree_rebuild_version")
+        private val MUSICAL_TAGS_BACKFILL = intPreferencesKey("musical_tags_backfill_version")
         private val USER_FOLDER_ROOTS_JSON = stringPreferencesKey("user_folder_roots_json")
         // Device-local, not in SETTINGS_SYNC_KEYS: the titles are written into
         // this device's library by its scanner, so the switch has to stay next
@@ -2066,6 +2067,37 @@ class PreferencesManager @Inject constructor(
     suspend fun setFolderTreeRebuildVersion(version: Int) {
         dataStore.edit { it[FOLDER_TREE_REBUILD] = version }
     }
+
+    /**
+     * Which build last filled in the library's tempo, key and ReplayGain tags.
+     *
+     * A scan reads them now, but it only reads a file that changed, so every
+     * track scanned before would have stayed without them. Bumping
+     * MUSICAL_TAGS_VERSION (ScanCoordinator) makes the next launch read them
+     * once, tags only.
+     */
+    val musicalTagsBackfillVersion: Flow<Int> = dataStore.data.map { it[MUSICAL_TAGS_BACKFILL] ?: 0 }
+
+    /**
+     * Where backfill [version] got to, a track id, so a run cut short resumes
+     * there. Kept per version: a later backfill starts from the beginning,
+     * not from where an earlier one stopped.
+     */
+    fun musicalTagsBackfillCursor(version: Int): Flow<Long> =
+        dataStore.data.map { it[musicalTagsCursorKey(version)] ?: 0L }
+    suspend fun setMusicalTagsBackfillCursor(version: Int, resumeAfter: Long) {
+        dataStore.edit { it[musicalTagsCursorKey(version)] = resumeAfter }
+    }
+
+    /** Marks backfill [version] done and drops its resume point, in one write. */
+    suspend fun finishMusicalTagsBackfill(version: Int) {
+        dataStore.edit {
+            it[MUSICAL_TAGS_BACKFILL] = version
+            it.remove(musicalTagsCursorKey(version))
+        }
+    }
+
+    private fun musicalTagsCursorKey(version: Int) = longPreferencesKey("musical_tags_backfill_cursor_v$version")
 
     val userFolderRoots: Flow<Set<String>> = dataStore.data
         .map { it[USER_FOLDER_ROOTS_JSON] }

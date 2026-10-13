@@ -1,6 +1,7 @@
 package tf.monochrome.android.data.local.scanner
 
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -8,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -50,7 +52,7 @@ class ScanCoordinator @Inject constructor(
      * ScanWorker: dropped, as it was when busy, the first library was not
      * built if a LibraryWatcher refresh happened to be running.
      */
-    suspend fun runFullScan() = runGuarded { mediaScanner.fullScan() }
+    suspend fun runFullScan() = runGuarded { fullScan() }
 
     private val fullScanQueued = AtomicBoolean(false)
 
@@ -69,7 +71,7 @@ class ScanCoordinator @Inject constructor(
             try {
                 runGuarded {
                     fullScanQueued.set(false)
-                    mediaScanner.fullScan()
+                    fullScan()
                 }
             } finally {
                 fullScanQueued.set(false)
@@ -147,6 +149,48 @@ class ScanCoordinator @Inject constructor(
         }
     }
 
+    private val musicalTagsBackfill = AtomicBoolean(false)
+
+    /**
+     * Fills in the tempo, key and ReplayGain tags of tracks scanned before the
+     * scanner read them, once. Returns at once; the work runs here, in the
+     * background, and if the app is closed partway the next launch resumes it.
+     *
+     * Not a scan: it reads tag blocks only and writes those columns alone, so
+     * it takes no scan lock and a scan may run beside it, both writing what the
+     * file says. A file that changes later is read by the scan as usual.
+     */
+    fun backfillMusicalTagsIfStale() {
+        if (!musicalTagsBackfill.compareAndSet(false, true)) return
+        scope.launch {
+            try {
+                if (preferences.musicalTagsBackfillVersion.first() >= MUSICAL_TAGS_VERSION) return@launch
+                val from = preferences.musicalTagsBackfillCursor(MUSICAL_TAGS_VERSION).first()
+                val complete = mediaScanner.backfillMusicalTags(from) {
+                    preferences.setMusicalTagsBackfillCursor(MUSICAL_TAGS_VERSION, it)
+                }
+                if (complete) preferences.finishMusicalTagsBackfill(MUSICAL_TAGS_VERSION)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "tag backfill stopped; the next launch resumes it", e)
+            } finally {
+                musicalTagsBackfill.set(false)
+            }
+        }
+    }
+
+    /**
+     * A full scan. On a library that was empty, every row it writes has had
+     * its tags read, so the tag backfill has nothing left to do.
+     */
+    private suspend fun fullScan(): kotlinx.coroutines.flow.Flow<ScanProgress> {
+        val fresh = mediaScanner.isLibraryEmpty()
+        return mediaScanner.fullScan().onEach {
+            if (fresh && it is ScanProgress.Complete) preferences.finishMusicalTagsBackfill(MUSICAL_TAGS_VERSION)
+        }
+    }
+
     /** Runs [scan] with its progress published, after any scan already holding the lock. */
     private suspend inline fun runGuarded(
         scan: () -> kotlinx.coroutines.flow.Flow<ScanProgress>
@@ -171,5 +215,8 @@ class ScanCoordinator @Inject constructor(
 
         /** Bump to make every install rebuild its folder tree once. */
         const val FOLDER_TREE_REBUILD_VERSION = 1
+
+        /** Bump to make every install read its tracks' tempo, key and gain tags once. */
+        const val MUSICAL_TAGS_VERSION = 1
     }
 }

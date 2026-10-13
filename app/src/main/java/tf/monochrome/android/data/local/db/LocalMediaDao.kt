@@ -281,6 +281,14 @@ interface LocalMediaDao {
     @Update
     suspend fun updateTracks(tracks: List<LocalTrackEntity>)
 
+    /**
+     * Points track [id] at its album, artist and art, and writes nothing
+     * else: a scan regrouping the library from rows it read earlier must not
+     * put back their other columns as they were then.
+     */
+    @Query("UPDATE local_tracks SET albumId = :albumId, artistId = :artistId, artworkCacheKey = :artworkCacheKey WHERE id = :id")
+    suspend fun updateTrackGrouping(id: Long, albumId: Long?, artistId: Long?, artworkCacheKey: String?)
+
     @Query("SELECT * FROM local_tracks")
     suspend fun getAllTracksSnapshot(): List<LocalTrackEntity>
 
@@ -308,6 +316,33 @@ interface LocalMediaDao {
 
     @Query("SELECT filePath, lastModified, artworkCacheKey, hasEmbeddedArt, artist, title FROM local_tracks")
     suspend fun getAllTrackScanInfo(): List<TrackScanInfo>
+
+    /** The next [limit] tracks after id [afterId], in id order: a walk over the table that can stop and resume. */
+    @Query("SELECT id, filePath FROM local_tracks WHERE id > :afterId ORDER BY id LIMIT :limit")
+    suspend fun trackPathsAfter(afterId: Long, limit: Int): List<TrackPath>
+
+    /**
+     * Writes the tempo, key and gain tags of the track at [filePath] and
+     * nothing else: not a row rewrite, so its id, its groupings and its
+     * dynamic range stay as they are.
+     */
+    @Query(
+        """
+        UPDATE local_tracks SET bpm = :bpm, camelotKey = :camelotKey,
+            rgTrackGain = :rgTrackGain, rgAlbumGain = :rgAlbumGain,
+            r128TrackGain = :r128TrackGain, r128AlbumGain = :r128AlbumGain
+        WHERE filePath = :filePath
+        """
+    )
+    suspend fun updateMusicalTags(
+        filePath: String,
+        bpm: Float?,
+        camelotKey: Int?,
+        rgTrackGain: Float?,
+        rgAlbumGain: Float?,
+        r128TrackGain: Int?,
+        r128AlbumGain: Int?,
+    )
 
     // ── Albums ──────────────────────────────────────────────────────
 
@@ -485,6 +520,9 @@ interface LocalMediaDao {
         clearFolders()
     }
 }
+
+/** A track's row id and file. */
+data class TrackPath(val id: Long, val filePath: String)
 
 /**
  * Lightweight projection of the columns the scanner's re-read heuristics
