@@ -93,4 +93,18 @@ class ReReadHeuristicsTest {
         )
         assertEquals("v1.2 mix", MediaScanner.titleFromPath("/m/v1.2 mix.flac"))
     }
+
+    @Test
+    fun `a measured dynamic range survives a re-read of the same file, not a changed one`() {
+        val measured = TrackScanInfo(
+            filePath = "/music/a.flac", lastModified = 1_000L, artworkCacheKey = null,
+            hasEmbeddedArt = false, artist = "A", title = "Song", dynamicRange = 9.4f,
+        )
+        // Re-read for its art, or a title setting: same file, same value.
+        assertEquals(9.4f, MediaScanner.keptDynamicRange(measured, 1_000L))
+        // Rewritten since: new audio, measured again.
+        assertEquals(null, MediaScanner.keptDynamicRange(measured, 2_000L))
+        // A file new to the library has none.
+        assertEquals(null, MediaScanner.keptDynamicRange(null, 1_000L))
+    }
 }

@@ -314,8 +314,20 @@ interface LocalMediaDao {
     @Query("SELECT filePath FROM local_tracks")
     suspend fun getAllTrackPaths(): List<String>
 
-    @Query("SELECT filePath, lastModified, artworkCacheKey, hasEmbeddedArt, artist, title FROM local_tracks")
+    @Query("SELECT filePath, lastModified, artworkCacheKey, hasEmbeddedArt, artist, title, dynamicRange FROM local_tracks")
     suspend fun getAllTrackScanInfo(): List<TrackScanInfo>
+
+    /** [getAllTrackScanInfo] for just [paths]: at most a few hundred, under SQLite's bound-variable limit. */
+    @Query("SELECT filePath, lastModified, artworkCacheKey, hasEmbeddedArt, artist, title, dynamicRange FROM local_tracks WHERE filePath IN (:paths)")
+    suspend fun scanInfoFor(paths: List<String>): List<TrackScanInfo>
+
+    /** What the player needs to measure track [id]'s dynamic range: its file, its length, and whether it has one. */
+    @Query("SELECT filePath, durationSeconds, dynamicRange FROM local_tracks WHERE id = :id")
+    suspend fun dynamicRangeTarget(id: Long): DynamicRangeTarget?
+
+    /** A dynamic range the player measured, written to that file's row alone. */
+    @Query("UPDATE local_tracks SET dynamicRange = :dynamicRange WHERE filePath = :filePath")
+    suspend fun updateDynamicRange(filePath: String, dynamicRange: Float)
 
     /** The next [limit] tracks after id [afterId], in id order: a walk over the table that can stop and resume. */
     @Query("SELECT id, filePath FROM local_tracks WHERE id > :afterId ORDER BY id LIMIT :limit")
@@ -524,6 +536,9 @@ interface LocalMediaDao {
 /** A track's row id and file. */
 data class TrackPath(val id: Long, val filePath: String)
 
+/** A track the player may measure: its file, its length, and the dynamic range it has, if any. */
+data class DynamicRangeTarget(val filePath: String, val durationSeconds: Int, val dynamicRange: Float?)
+
 /**
  * Lightweight projection of the columns the scanner's re-read heuristics
  * need, so a full scan can prefetch the whole table in one query instead
@@ -535,7 +550,9 @@ data class TrackScanInfo(
     val artworkCacheKey: String?,
     val hasEmbeddedArt: Boolean,
     val artist: String?,
-    val title: String?
+    val title: String?,
+    /** Measured by the player, not read from the file: carried over when the file is read again unchanged. */
+    val dynamicRange: Float? = null,
 )
 
 /**

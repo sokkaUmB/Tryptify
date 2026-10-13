@@ -264,7 +264,7 @@ class MediaScanner @Inject constructor(
             pending += entities
             added += entities.size
             if (pending.size >= INSERT_BATCH_SIZE) {
-                localMediaDao.insertTracks(pending.toList())
+                insertKeepingDynamicRange(pending.toList())
                 pending.clear()
             }
 
@@ -276,9 +276,26 @@ class MediaScanner @Inject constructor(
             ))
         }
         if (pending.isNotEmpty()) {
-            localMediaDao.insertTracks(pending)
+            insertKeepingDynamicRange(pending)
         }
         return added
+    }
+
+    /**
+     * Writes [tracks] (a re-read replaces its row whole), each keeping the
+     * dynamic range its row holds now while its file is the same one
+     * ([keptDynamicRange]): the player measures it, so a read cannot give it
+     * back. The rows are read and written in one transaction, so a value the
+     * player saves while the scan runs is kept too, where a copy read when the
+     * scan began would have put back an empty one.
+     */
+    private suspend fun insertKeepingDynamicRange(tracks: List<LocalTrackEntity>) {
+        musicDatabase.withTransaction {
+            val now = localMediaDao.scanInfoFor(tracks.map { it.filePath }).associateBy { it.filePath }
+            localMediaDao.insertTracks(
+                tracks.map { t -> keptDynamicRange(now[t.filePath], t.lastModified)?.let { t.copy(dynamicRange = it) } ?: t },
+            )
+        }
     }
 
     /**
@@ -642,6 +659,17 @@ class MediaScanner @Inject constructor(
 
         /** Files read at once by the tag backfill: background work, not a scan. */
         private const val BACKFILL_PARALLELISM = 2
+
+        /**
+         * The dynamic range to keep for a file read again: what the player
+         * measured, if the file is unchanged since ([existing]'s modified time
+         * is [mediaStoreDateModified]). A file rewritten is new audio, so it
+         * starts without one. A re-read happens for other reasons too (missing
+         * art, a title setting), and a rescan replaces the row, so without this
+         * every measurement went with it.
+         */
+        fun keptDynamicRange(existing: TrackScanInfo?, mediaStoreDateModified: Long): Float? =
+            existing?.takeIf { it.lastModified == mediaStoreDateModified }?.dynamicRange
 
         /**
          * Decide whether a MediaStore file needs its tags (re-)read or the

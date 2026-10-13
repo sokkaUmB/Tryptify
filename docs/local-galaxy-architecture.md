@@ -191,6 +191,30 @@ not move any other star. The test below pins that.
   `groupingKey`, track `filePath`), the same way `PlanetSystem.from` hashes names
   today.
 
+### Dynamic range, measured as a track plays
+
+No tag carries dynamic range, and decoding the whole library to measure it is
+not light, so each local track is measured the first time it plays through.
+
+- **Where**: `DynamicRangeTapProcessor`, a passive tap next to the tempo tap at
+  the head of all three chains (the main sink, USB exclusive, the hi-res path).
+  It hears the track as decoded, before the mixer, the effects, the volume and the
+  speed change, so the value is the file's own whatever the output. It passes
+  audio through untouched: no latency, no gain.
+- **How**: `cpp/dsp/meter/dynamic_range_meter.h`, the DR meter's method: 3 s
+  blocks, RMS as sqrt(2 · mean x²), loudness the RMS of the loudest 20 % of
+  blocks, peak the second highest block peak, averaged over the channels with the
+  LFE left out. Header-only, fixed arrays, nothing allocated on the audio thread;
+  `dynamic_range_meter_test` holds it to signals whose DR is known by hand.
+- **When it is kept**: `DynamicRangeRecorder` turns the meter on only for a
+  library track with no value yet, and keeps the reading only for a whole, clean
+  play (`DynamicRangeRules`): the length measured within 2 s (or 2 %) of the
+  track's, no seek on the way. A skip, a seek or a crossfade (whose last seconds
+  play on another player) leaves the track unmeasured until a clean play.
+- **Where it is kept**: `local_tracks.dynamicRange`, by a one-column UPDATE on the
+  file's path. A rescan carries it over while the file is unchanged
+  (`MediaScanner.keptDynamicRange`); a rewritten file is measured again.
+
 ## Layer 1: data
 
 ### `LocalGalaxyRepository` (`data/local/galaxy/`, `@Singleton`)

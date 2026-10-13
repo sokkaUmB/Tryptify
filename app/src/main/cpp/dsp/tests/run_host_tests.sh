@@ -57,6 +57,12 @@ echo "== loudness_meter_test"
 $cxx $flags -ffast-math "$here/loudness_meter_test.cpp" -o "$out/loudness_meter_test"
 "$out/loudness_meter_test"
 
+# The dynamic range meter against signals whose DR is known by hand, with
+# -ffast-math as on the phone: its no-reading value must survive it.
+echo "== dynamic_range_meter_test"
+$cxx $flags -ffast-math "$here/dynamic_range_meter_test.cpp" -o "$out/dynamic_range_meter_test"
+"$out/dynamic_range_meter_test"
+
 # The spectrum waterfall's geometry: inside the box at every angle, the fade
 # where it was set, a fixed line count whatever the depth.
 echo "== spectrum_waterfall_test"

@@ -77,6 +77,10 @@ class PlaybackService : MediaSessionService() {
     @Inject lateinit var upmixProcessor: tf.monochrome.android.audio.dsp.UpmixProcessor
     // The playing track's tempo, for the speed control's BPM unit.
     @Inject lateinit var bpmTap: tf.monochrome.android.audio.tempo.BpmTapProcessor
+    // Each local track's dynamic range, measured once as it plays through, for
+    // the library galaxy: the tap at the head of the chain, and what keeps it.
+    @Inject lateinit var dynamicRangeTap: tf.monochrome.android.audio.meter.DynamicRangeTapProcessor
+    @Inject lateinit var dynamicRangeRecorder: DynamicRangeRecorder
     // The Oxford post-chain, injected so a blend's DSP copy can be seeded with
     // whatever these are set to right now.
     @Inject lateinit var inflatorEffect: tf.monochrome.android.audio.dsp.oxford.InflatorEffect
@@ -268,6 +272,8 @@ class PlaybackService : MediaSessionService() {
                 if (reason == Player.DISCONTINUITY_REASON_SEEK) {
                     // A seek is a new run at the end of the track.
                     crossfadeArmed = true
+                    // ...and a dynamic range measured across it is not the track's.
+                    dynamicRangeRecorder.seeked(newPosition.positionMs)
                     queueManager.currentTrack.value?.let { pushDiscordPresence(it) }
                     playbackState.savePosition(player.currentPosition, player.duration, flush = true)
                 }
@@ -276,6 +282,8 @@ class PlaybackService : MediaSessionService() {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 when (playbackState) {
                     Player.STATE_ENDED -> {
+                        // Played to its end: its dynamic range is whole.
+                        dynamicRangeRecorder.trackEnded()
                         val currentTrack = queueManager.currentTrack.value
                         // For a live station this is not "the song finished" —
                         // it is the server hanging up, which Icecast does
@@ -397,6 +405,13 @@ class PlaybackService : MediaSessionService() {
                 // A new track gets its own blend at its own end, and its own tempo.
                 crossfadeArmed = true
                 bpmTap.newTrack()
+                // The one before ran into this one (gapless, or a repeat) only
+                // on an automatic move: then its dynamic range is whole.
+                dynamicRangeRecorder.trackChanged(
+                    mediaItem,
+                    previousPlayedThrough = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                        reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT,
+                )
                 // Integrated loudness and range are per track. The tap runs a
                 // buffer ahead of what is heard, so this lands a moment into
                 // the new track rather than exactly on it — a few hundred ms of
@@ -980,6 +995,7 @@ class PlaybackService : MediaSessionService() {
                                 arrayOf(
                                 channelDetectorProcessor, // Passive tap: reports source channel count/layout + per-channel activity
                                 bpmTap,                 // Passive tap: the track's own tempo, before the mixer and the speed change
+                                dynamicRangeTap,        // Passive tap: the track's dynamic range, for the galaxy; off unless measuring
                                 atmosAudioProcessor,    // Atmos: multichannel bed → object render → binaural stereo or speakers; inactive for ≤2ch
                                 // The mixer before the fold, so it sees the song's own layout: a
                                 // 9.1.6 bed spreads one channel group per bus (nine of them), and
@@ -1045,6 +1061,7 @@ class PlaybackService : MediaSessionService() {
                             tf.monochrome.android.audio.usb.ToFloatPcmAudioProcessor(),
                             channelDetectorProcessor,
                             bpmTap,
+                            dynamicRangeTap,
                             atmosAudioProcessor,
                             upmixProcessor,
                             // Mixer before the fold, as in the chain above.
@@ -1106,6 +1123,7 @@ class PlaybackService : MediaSessionService() {
                             tf.monochrome.android.audio.usb.ToFloatPcmAudioProcessor(),
                             channelDetectorProcessor,
                             bpmTap,
+                            dynamicRangeTap,
                             atmosAudioProcessor,
                             upmixProcessor,
                             // Mixer before the fold, as in the chain above.
