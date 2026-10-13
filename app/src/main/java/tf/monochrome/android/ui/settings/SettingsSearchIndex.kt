@@ -176,7 +176,11 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
     entry("TIDAL Dolby Atmos", R.string.atmos_tidal_dolby_atmos, "Audio", listOf("atmos", "dolby", "spatial", "e-ac-3", "joc", "surround")),
     entry("Preserve Pitch", R.string.settings_preserve_pitch, "Audio", listOf("speed", "tempo", "key", "chipmunk", "semitone")),
     entry("Never Resample Between Tracks", R.string.settings_never_resample_between_tracks, "Audio", listOf("sample rate", "gap", "dac", "bit perfect")),
-    entry("USB DAC bit-perfect routing", R.string.settings_usb_dac_bit_perfect_routing, "Audio", listOf("usb", "dac", "exclusive", "bit perfect", "output")),
+    entry(
+        "Exclusive USB DAC (bypass Android audio)", R.string.settings_exclusive_usb_dac_bypass_android_audio,
+        "Audio",
+        listOf("usb", "dac", "exclusive", "bit perfect", "bitperfect", "libusb", "uapp", "output"),
+    ),
     entry(
         "Hi-res output (Bluetooth & speaker)", R.string.settings_hi_res_output_bluetooth_speaker,
         "Audio",

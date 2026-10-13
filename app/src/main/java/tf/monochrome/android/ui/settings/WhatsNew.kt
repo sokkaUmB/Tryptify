@@ -218,6 +218,12 @@ object WhatsNew {
                     title = "DACs that refused every song",
                     body = "Some DACs, Apple's adapter among them, were turned away with \"no alt setting matches\" whatever played. A song at a rate the DAC can't take now says so, and plays through Android instead.",
                 ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.REMOVED,
+                    section = USB_DAC,
+                    title = "USB DAC bit-perfect routing",
+                    body = "It pointed Android's output at a USB DAC, still through Android's own mixer. Exclusive USB DAC is the bit-perfect path, so it is the one switch now.",
+                ),
             ),
         ),
         WhatsNewRelease(

@@ -612,7 +612,7 @@
     <string name="bitperfect_subtitle">Sesi bir USB DAC’a olduğu gibi gönderin — yeniden örnekleme yok, sistem mikseri yok.</string>
     <string name="maybe_later">Belki sonra</string>
     <string name="dac_detected">Algılandı: %1$s</string>
-    <string name="enable_bitperfect_question">Bit-perfect çıkış etkinleştirilsin mi?</string>
+    <string name="dac_exclusive_hint">Bit-perfect çıkış için Ayarlar → Ses’te Özel USB DAC’ı açın.</string>
     <string name="no_dac">Bağlı DAC yok</string>
     <string name="no_dac_detail">İstediğiniz zaman takın — Tryptify otomatik olarak algılar; bit-perfect modu Ayarlar → Ses’te.</string>
     <string name="streaming">Akış</string>
@@ -637,7 +637,6 @@
     <string name="downloads_to_app_storage">İndirilenler → uygulama depolaması</string>
     <string name="downloads_to_custom_folder">İndirilenler → özel klasör</string>
     <string name="spotify_connected">Spotify bağlandı</string>
-    <string name="usb_bitperfect_enabled">USB bit-perfect çıkış etkin</string>
     <plurals name="found_tracks_in_folder">
         <item quantity="one">Bu klasörde %1$s parça bulundu</item>
         <item quantity="other">Bu klasörde %1$s parça bulundu</item>
@@ -819,7 +818,6 @@
     <string name="settings_downmix_multichannel_to_stereo">Çok kanallıyı stereoya indir</string>
     <string name="settings_channel_detector">Kanal algılayıcı</string>
     <string name="settings_idle_play_a_track_to_detect_its_channel_layout">Boşta. Kanal düzenini algılamak için bir parça çalın.</string>
-    <string name="settings_usb_dac_bit_perfect_routing">USB DAC bit-perfect yönlendirme</string>
     <string name="settings_hi_res_output_bluetooth_speaker">Yüksek çözünürlüklü çıkış (Bluetooth ve hoparlör)</string>
     <string name="settings_exclusive_usb_dac_bypass_android_audio">Özel USB DAC (Android sesini atla)</string>
     <string name="settings_active_stream">Etkin akış</string>
@@ -1027,9 +1025,6 @@
     <string name="settings_debug_recording_active">Kaydediliyor… yerel çözünürlük/fps, stereo medya sesi. Durdurmak için dokunun.</string>
     <string name="settings_debug_recording_saved">Kaydedildi: %1$s. Yeniden kaydetmek için dokunun.</string>
     <string name="settings_debug_recording_idle">Yerel çözünürlük ve fps, stereo dahili ses (mikrofonsuz) → Movies/Tryptify.</string>
-    <string name="settings_usb_off">Kapalı. Sistem ses çıkışını kullanır.</string>
-    <string name="settings_usb_on_device">Açık → %1$s</string>
-    <string name="settings_usb_on_waiting">Açık. Yönlendirmeyi başlatmak için bir USB DAC takın.</string>
     <string name="settings_hires_on">Açık. 24 bit ve kayan noktalı dosyalar DSP’den Android çıkışına kadar tam çözünürlüğünü korur; böylece LDAC/aptX HD 24 bit alır. Hızı değiştirmek 16 bite döner.</string>
     <string name="settings_hires_off">Kapalı. Bluetooth’ta ve hoparlörde yüksek çözünürlüklü dosyalar DSP’den önce 16 bite düşürülür.</string>
     <string name="settings_play_alongside_other_apps">Diğer uygulamalarla birlikte çal</string>

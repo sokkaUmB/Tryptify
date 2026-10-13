@@ -58,7 +58,6 @@ class SettingsViewModel @Inject constructor(
     private val discordPresence: tf.monochrome.android.data.presence.DiscordPresenceManager,
     private val spectrumAnalyzerTap: SpectrumAnalyzerTap,
     private val channelDetectorProcessor: tf.monochrome.android.audio.dsp.ChannelDetectorProcessor,
-    private val usbAudioRouter: tf.monochrome.android.audio.UsbAudioRouter,
     private val usbExclusiveController: tf.monochrome.android.audio.usb.UsbExclusiveController,
     private val scanCoordinator: tf.monochrome.android.data.local.scanner.ScanCoordinator,
     private val downloadDao: tf.monochrome.android.data.db.dao.DownloadDao,
@@ -283,8 +282,6 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1024)
     val dspBlockSizes: List<Int> = tf.monochrome.android.data.preferences.PreferencesManager.DSP_BLOCK_SIZES
 
-    val usbBitPerfectEnabled: StateFlow<Boolean> = preferences.usbBitPerfectEnabled
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val usbExclusiveBitPerfectEnabled: StateFlow<Boolean> = preferences.usbExclusiveBitPerfectEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val hiResHalOutputEnabled: StateFlow<Boolean> = preferences.hiResHalOutputEnabled
@@ -297,11 +294,6 @@ class SettingsViewModel @Inject constructor(
     fun setIgnoreAudioFocus(enabled: Boolean) { viewModelScope.launch {
         preferences.setIgnoreAudioFocus(enabled)
     } }
-    /** Human-readable name of the attached USB DAC, or null when nothing is plugged in. */
-    val usbOutputDeviceName: StateFlow<String?> =
-        usbAudioRouter.usbOutputDevice
-            .map { it?.let(usbAudioRouter::describe) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     val multichannelDownmixEnabled: StateFlow<Boolean> = preferences.multichannelDownmixEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val crossfadeDuration: StateFlow<Int> = preferences.crossfadeDuration
@@ -551,18 +543,8 @@ class SettingsViewModel @Inject constructor(
     fun setNormalizationEnabled(enabled: Boolean) { viewModelScope.launch { preferences.setNormalizationEnabled(enabled) } }
     fun setSystemWideAutoEq(enabled: Boolean) { viewModelScope.launch { preferences.setSystemWideAutoEqEnabled(enabled) } }
     fun setDspBlockSize(value: Int) { viewModelScope.launch { preferences.setDspBlockSize(value) } }
-    // The two USB toggles are mutually exclusive — they fight for
-    // the device. The framework router (usbBitPerfectEnabled) pins
-    // Android's audio HAL to the USB device; libusb (exclusive) needs
-    // libusb_claim_interface to win. Turning either on auto-flips
-    // the other off so the user never accidentally has both.
-    fun setUsbBitPerfectEnabled(enabled: Boolean) { viewModelScope.launch {
-        preferences.setUsbBitPerfectEnabled(enabled)
-        if (enabled) preferences.setUsbExclusiveBitPerfectEnabled(false)
-    } }
     fun setUsbExclusiveBitPerfectEnabled(enabled: Boolean) { viewModelScope.launch {
         preferences.setUsbExclusiveBitPerfectEnabled(enabled)
-        if (enabled) preferences.setUsbBitPerfectEnabled(false)
     } }
     fun setMultichannelDownmixEnabled(enabled: Boolean) { viewModelScope.launch {
         preferences.setMultichannelDownmixEnabled(enabled)

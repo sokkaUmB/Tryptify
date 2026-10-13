@@ -1729,7 +1729,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         DspBlockSizeSelector(viewModel)
 
         Spacer(modifier = Modifier.height(8.dp))
-        UsbBitPerfectToggle(viewModel)
+        OutputToggles(viewModel)
 
         Spacer(modifier = Modifier.height(8.dp))
         SettingItem(
@@ -2032,25 +2032,12 @@ private fun ChannelDetectorCard(viewModel: SettingsViewModel) {
 }
 
 /**
- * Settings switch that pins the player's output to an attached USB Audio
- * Class DAC via setPreferredAudioDevice. The device-name line below the
- * switch updates live as the DAC plugs / unplugs.
+ * Where the audio goes: hi-res on Android's own output, and the exclusive USB
+ * DAC path that bypasses it. (A third switch pinned Android's output to a USB
+ * DAC; exclusive mode is the bit-perfect path, so it went.)
  */
 @Composable
-private fun UsbBitPerfectToggle(viewModel: SettingsViewModel) {
-    val enabled by viewModel.usbBitPerfectEnabled.collectAsStateWithLifecycle()
-    val deviceName by viewModel.usbOutputDeviceName.collectAsStateWithLifecycle()
-    SettingSwitchItem(
-        title = stringResource(R.string.settings_usb_dac_bit_perfect_routing),
-        subtitle = when {
-            !enabled -> stringResource(R.string.settings_usb_off)
-            deviceName != null -> stringResource(R.string.settings_usb_on_device, deviceName!!)
-            else -> stringResource(R.string.settings_usb_on_waiting)
-        },
-        checked = enabled,
-        onCheckedChange = { viewModel.setUsbBitPerfectEnabled(it) },
-    )
-
+private fun OutputToggles(viewModel: SettingsViewModel) {
     val hiResHal by viewModel.hiResHalOutputEnabled.collectAsStateWithLifecycle()
     SettingSwitchItem(
         title = stringResource(R.string.settings_hi_res_output_bluetooth_speaker),

@@ -639,7 +639,7 @@
     <string name="bitperfect_subtitle">Envía el audio intacto a un DAC USB: sin remuestreo ni mezclador del sistema.</string>
     <string name="maybe_later">Quizá más tarde</string>
     <string name="dac_detected">Detectado: %1$s</string>
-    <string name="enable_bitperfect_question">¿Activar la salida bit-perfect?</string>
+    <string name="dac_exclusive_hint">Para una salida bit-perfect, activa DAC USB exclusivo en Ajustes → Audio.</string>
     <string name="no_dac">No hay ningún DAC conectado</string>
     <string name="no_dac_detail">Conecta uno cuando quieras: Tryptify lo detecta solo, y el modo bit-perfect está en Ajustes → Audio.</string>
     <string name="streaming">Streaming</string>
@@ -664,7 +664,6 @@
     <string name="downloads_to_app_storage">Descargas → almacenamiento de la app</string>
     <string name="downloads_to_custom_folder">Descargas → carpeta personalizada</string>
     <string name="spotify_connected">Spotify conectado</string>
-    <string name="usb_bitperfect_enabled">Salida USB bit-perfect activada</string>
     <plurals name="found_tracks_in_folder">
         <item quantity="one">%1$s canción encontrada en esta carpeta</item>
         <item quantity="many">%1$s canciones encontradas en esta carpeta</item>
@@ -856,7 +855,6 @@
     <string name="settings_downmix_multichannel_to_stereo">Hacer downmix del multicanal a estéreo</string>
     <string name="settings_channel_detector">Detector de canales</string>
     <string name="settings_idle_play_a_track_to_detect_its_channel_layout">Inactivo. Reproduce una canción para detectar su disposición de canales.</string>
-    <string name="settings_usb_dac_bit_perfect_routing">Enrutamiento bit-perfect al DAC USB</string>
     <string name="settings_hi_res_output_bluetooth_speaker">Salida de alta resolución (Bluetooth y altavoz)</string>
     <string name="settings_exclusive_usb_dac_bypass_android_audio">DAC USB exclusivo (sin pasar por el audio de Android)</string>
     <string name="settings_active_stream">Flujo activo</string>
@@ -1064,9 +1062,6 @@
     <string name="settings_debug_recording_active">Grabando… resolución y FPS nativos, audio multimedia estéreo. Toca para detener.</string>
     <string name="settings_debug_recording_saved">Guardado: %1$s. Toca para volver a grabar.</string>
     <string name="settings_debug_recording_idle">Resolución y FPS nativos, audio interno estéreo (sin micrófono) → Movies/Tryptify.</string>
-    <string name="settings_usb_off">Desactivado. Usa la salida de audio del sistema.</string>
-    <string name="settings_usb_on_device">Activado → %1$s</string>
-    <string name="settings_usb_on_waiting">Activado. Conecta un DAC USB para empezar el enrutamiento.</string>
     <string name="settings_hires_on">Activado. Los archivos de 24 bits y coma flotante conservan toda su resolución del DSP a la salida de Android, así que LDAC/aptX HD reciben 24 bits. Cambiar la velocidad vuelve a 16 bits.</string>
     <string name="settings_hires_off">Desactivado. En Bluetooth y altavoz, los archivos de alta resolución se recortan a 16 bits antes del DSP.</string>
     <string name="settings_play_alongside_other_apps">Reproducir junto con otras apps</string>

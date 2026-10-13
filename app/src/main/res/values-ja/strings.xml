@@ -585,7 +585,7 @@
     <string name="bitperfect_subtitle">オーディオを USB DAC へそのまま送ります。リサンプリングもシステムミキサーもありません。</string>
     <string name="maybe_later">あとで</string>
     <string name="dac_detected">検出：%1$s</string>
-    <string name="enable_bitperfect_question">ビットパーフェクト出力を有効にしますか？</string>
+    <string name="dac_exclusive_hint">ビットパーフェクトで出力するには、「設定 → オーディオ」で USB DAC の排他使用をオンにしてください。</string>
     <string name="no_dac">DAC が接続されていません</string>
     <string name="no_dac_detail">いつでも接続できます。Tryptify が自動で認識し、ビットパーフェクトモードは「設定 → オーディオ」にあります。</string>
     <string name="streaming">ストリーミング</string>
@@ -610,7 +610,6 @@
     <string name="downloads_to_app_storage">ダウンロード → アプリのストレージ</string>
     <string name="downloads_to_custom_folder">ダウンロード → カスタムフォルダ</string>
     <string name="spotify_connected">Spotify に接続済み</string>
-    <string name="usb_bitperfect_enabled">USB ビットパーフェクト出力が有効</string>
     <plurals name="found_tracks_in_folder">
         <item quantity="other">このフォルダで %1$s 曲見つかりました</item>
     </plurals>
@@ -782,7 +781,6 @@
     <string name="settings_downmix_multichannel_to_stereo">マルチチャンネルをステレオにダウンミックス</string>
     <string name="settings_channel_detector">チャンネル検出</string>
     <string name="settings_idle_play_a_track_to_detect_its_channel_layout">待機中です。曲を再生するとチャンネル構成を検出します。</string>
-    <string name="settings_usb_dac_bit_perfect_routing">USB DAC ビットパーフェクト出力</string>
     <string name="settings_hi_res_output_bluetooth_speaker">ハイレゾ出力（Bluetooth とスピーカー）</string>
     <string name="settings_exclusive_usb_dac_bypass_android_audio">USB DAC の排他使用（Android のオーディオを経由しない）</string>
     <string name="settings_active_stream">アクティブなストリーム</string>
@@ -990,9 +988,6 @@
     <string name="settings_debug_recording_active">録画中…ネイティブの解像度/fps、ステレオのメディア音声。タップで停止します。</string>
     <string name="settings_debug_recording_saved">保存しました：%1$s。タップでもう一度録画します。</string>
     <string name="settings_debug_recording_idle">ネイティブの解像度と fps、ステレオの内部音声（マイクなし）→ Movies/Tryptify。</string>
-    <string name="settings_usb_off">オフ。システムの音声出力を使います。</string>
-    <string name="settings_usb_on_device">オン → %1$s</string>
-    <string name="settings_usb_on_waiting">オン。USB DAC を接続すると出力が始まります。</string>
     <string name="settings_hires_on">オン。24 ビットと浮動小数点のファイルは DSP から Android の出力まで解像度を保つため、LDAC/aptX HD は 24 ビットになります。速度を変えると 16 ビットに戻ります。</string>
     <string name="settings_hires_off">オフ。Bluetooth とスピーカーでは、ハイレゾファイルは DSP の前に 16 ビットに切り詰められます。</string>
     <string name="settings_play_alongside_other_apps">他のアプリと同時に再生</string>

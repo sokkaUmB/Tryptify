@@ -613,7 +613,7 @@
     <string name="bitperfect_subtitle">Send audio to a USB DAC untouched — no resampling, no system mixer.</string>
     <string name="maybe_later">Maybe later</string>
     <string name="dac_detected">Detected: %1$s</string>
-    <string name="enable_bitperfect_question">Enable bit-perfect output?</string>
+    <string name="dac_exclusive_hint">For bit-perfect output, turn on Exclusive USB DAC in Settings → Audio.</string>
     <string name="no_dac">No DAC connected</string>
     <string name="no_dac_detail">Plug one in any time — Tryptify picks it up automatically, and bit-perfect mode lives in Settings → Audio.</string>
     <string name="streaming">Streaming</string>
@@ -638,7 +638,6 @@
     <string name="downloads_to_app_storage">Downloads → app storage</string>
     <string name="downloads_to_custom_folder">Downloads → custom folder</string>
     <string name="spotify_connected">Spotify connected</string>
-    <string name="usb_bitperfect_enabled">USB bit-perfect output enabled</string>
     <plurals name="found_tracks_in_folder">
         <item quantity="one">Found %1$s track in this folder</item>
         <item quantity="other">Found %1$s tracks in this folder</item>
@@ -820,7 +819,6 @@
     <string name="settings_downmix_multichannel_to_stereo">Downmix multichannel to stereo</string>
     <string name="settings_channel_detector">Channel detector</string>
     <string name="settings_idle_play_a_track_to_detect_its_channel_layout">Idle. Play a track to detect its channel layout.</string>
-    <string name="settings_usb_dac_bit_perfect_routing">USB DAC bit-perfect routing</string>
     <string name="settings_hi_res_output_bluetooth_speaker">Hi-res output (Bluetooth &amp; speaker)</string>
     <string name="settings_exclusive_usb_dac_bypass_android_audio">Exclusive USB DAC (bypass Android audio)</string>
     <string name="settings_active_stream">Active stream</string>
@@ -1028,9 +1026,6 @@
     <string name="settings_debug_recording_active">Recording… native resolution/fps, stereo media audio. Tap to stop.</string>
     <string name="settings_debug_recording_saved">Saved: %1$s. Tap to record again.</string>
     <string name="settings_debug_recording_idle">Native resolution &amp; fps, stereo internal audio (no mic) → Movies/Tryptify.</string>
-    <string name="settings_usb_off">Off. Uses system audio output.</string>
-    <string name="settings_usb_on_device">On → %1$s</string>
-    <string name="settings_usb_on_waiting">On. Plug in a USB DAC to start routing.</string>
     <string name="settings_hires_on">On. 24-bit and float files keep full resolution through the DSP to Android\'s output, so LDAC/aptX HD get 24-bit. Changing speed falls back to 16-bit.</string>
     <string name="settings_hires_off">Off. Hi-res files are cut to 16-bit before the DSP on Bluetooth and the speaker.</string>
     <string name="settings_play_alongside_other_apps">Play alongside other apps</string>

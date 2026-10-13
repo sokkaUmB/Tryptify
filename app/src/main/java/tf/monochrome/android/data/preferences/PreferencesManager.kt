@@ -426,7 +426,6 @@ class PreferencesManager @Inject constructor(
         // filesystem, and syncing it would tell a fresh device the move had
         // already happened there.
         private val ARTWORK_STORE_MIGRATED = booleanPreferencesKey("artwork_store_migrated")
-        private val USB_BIT_PERFECT_ENABLED = booleanPreferencesKey("usb_bit_perfect_enabled")
         private val USB_EXCLUSIVE_BIT_PERFECT_ENABLED =
             booleanPreferencesKey("usb_exclusive_bit_perfect_enabled")
         private val MULTICHANNEL_DOWNMIX_ENABLED =
@@ -1135,8 +1134,9 @@ class PreferencesManager @Inject constructor(
 
     /**
      * Drops the stored values of settings whose features are gone: Google and
-     * PocketBase sign-in, AI radio and its Gemini key, and the API instance
-     * cache. Without this they would sit in every existing install for ever,
+     * PocketBase sign-in, AI radio and its Gemini key, the API instance cache,
+     * and the switch that pinned Android's output to a USB DAC (exclusive
+     * mode is the bit-perfect path). Without this they would sit in every existing install for ever,
      * the Gemini key and the PocketBase token among them, read by nothing.
      *
      * Writes only when one is still there, so after the first launch it costs
@@ -1155,6 +1155,7 @@ class PreferencesManager @Inject constructor(
             booleanPreferencesKey("ai_radio_enabled"),
             stringPreferencesKey("instances_cache"),
             longPreferencesKey("instances_cache_timestamp"),
+            booleanPreferencesKey("usb_bit_perfect_enabled"),
         )
         val stored = dataStore.data.first()
         if (retired.none { it in stored }) return
@@ -1945,22 +1946,9 @@ class PreferencesManager @Inject constructor(
     }
 
     /**
-     * When on, PlaybackService pins the player's output to the
-     * currently-attached USB Audio Class DAC (if any) via
-     * setPreferredAudioDevice, bypassing the system's mix-rate downsampler
-     * for sample rates the DAC supports natively. No-op when no USB output
-     * is attached.
-     */
-    val usbBitPerfectEnabled: Flow<Boolean> = dataStore.data.map { it[USB_BIT_PERFECT_ENABLED] ?: false }
-    suspend fun setUsbBitPerfectEnabled(enabled: Boolean) {
-        dataStore.edit { it[USB_BIT_PERFECT_ENABLED] = enabled }
-    }
-
-    /**
      * Exclusive UAC2 path — libusb-backed, bypasses Android's audio
-     * framework entirely (UAPP-style). Distinct from
-     * [usbBitPerfectEnabled] which only pins routing inside the
-     * framework. Default false; requires the user to also have
+     * framework entirely (UAPP-style): the bit-perfect path to a USB DAC.
+     * Default false; requires the user to also have
      * "Disable USB audio routing" on in Developer Options for the
      * libusb claim to succeed on most non-rooted devices.
      */

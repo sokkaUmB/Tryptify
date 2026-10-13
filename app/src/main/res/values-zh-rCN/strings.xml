@@ -585,7 +585,7 @@
     <string name="bitperfect_subtitle">将音频原样发送到 USB DAC——不重采样，不经过系统混音器。</string>
     <string name="maybe_later">以后再说</string>
     <string name="dac_detected">已检测到：%1$s</string>
-    <string name="enable_bitperfect_question">启用比特级精确输出吗？</string>
+    <string name="dac_exclusive_hint">要获得比特级精确输出，请在“设置 → 音频”中打开独占 USB DAC。</string>
     <string name="no_dac">未连接 DAC</string>
     <string name="no_dac_detail">随时都可以插入——Tryptify 会自动识别，比特级精确模式在“设置 → 音频”中。</string>
     <string name="streaming">流媒体</string>
@@ -610,7 +610,6 @@
     <string name="downloads_to_app_storage">下载 → 应用存储空间</string>
     <string name="downloads_to_custom_folder">下载 → 自定义文件夹</string>
     <string name="spotify_connected">已连接 Spotify</string>
-    <string name="usb_bitperfect_enabled">已启用 USB 比特级精确输出</string>
     <plurals name="found_tracks_in_folder">
         <item quantity="other">在此文件夹中找到 %1$s 首歌曲</item>
     </plurals>
@@ -782,7 +781,6 @@
     <string name="settings_downmix_multichannel_to_stereo">将多声道缩混为立体声</string>
     <string name="settings_channel_detector">声道检测</string>
     <string name="settings_idle_play_a_track_to_detect_its_channel_layout">空闲。播放一首歌以检测其声道布局。</string>
-    <string name="settings_usb_dac_bit_perfect_routing">USB DAC 比特级精确路由</string>
     <string name="settings_hi_res_output_bluetooth_speaker">高解析度输出（蓝牙和扬声器）</string>
     <string name="settings_exclusive_usb_dac_bypass_android_audio">独占 USB DAC（绕过 Android 音频系统）</string>
     <string name="settings_active_stream">当前音频流</string>
@@ -990,9 +988,6 @@
     <string name="settings_debug_recording_active">正在录制…原生分辨率/帧率，立体声媒体音频。点按即可停止。</string>
     <string name="settings_debug_recording_saved">已保存：%1$s。点按可再次录制。</string>
     <string name="settings_debug_recording_idle">原生分辨率和帧率，立体声内部音频（不含麦克风）→ Movies/Tryptify。</string>
-    <string name="settings_usb_off">关闭。使用系统音频输出。</string>
-    <string name="settings_usb_on_device">开 → %1$s</string>
-    <string name="settings_usb_on_waiting">开启。插入 USB DAC 即可开始路由。</string>
     <string name="settings_hires_on">开启。24 位和浮点文件经 DSP 到 Android 输出全程保持完整分辨率，因此 LDAC/aptX HD 能获得 24 位。更改速度时会回退到 16 位。</string>
     <string name="settings_hires_off">关闭。在蓝牙和扬声器上，高解析度文件在进入 DSP 前会被截为 16 位。</string>
     <string name="settings_play_alongside_other_apps">与其他应用同时播放</string>

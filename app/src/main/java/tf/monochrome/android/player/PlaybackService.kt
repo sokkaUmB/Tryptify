@@ -100,7 +100,6 @@ class PlaybackService : MediaSessionService() {
     @Inject lateinit var audioPipelineMonitor: tf.monochrome.android.audio.pipeline.AudioPipelineMonitor
     @Inject lateinit var qobuzCache: tf.monochrome.android.data.cache.QobuzStreamCacheManager
     @Inject lateinit var deezerCache: tf.monochrome.android.data.cache.DeezerStreamCacheManager
-    @Inject lateinit var usbAudioRouter: tf.monochrome.android.audio.UsbAudioRouter
     @Inject lateinit var libusbDriver: tf.monochrome.android.audio.usb.LibusbUacDriver
     @Inject lateinit var bypassVolumeController: tf.monochrome.android.audio.usb.BypassVolumeController
     // Atmos: the sample tap preserves raw E-AC-3 frames (which carry the JOC/OAMD
@@ -482,20 +481,6 @@ class PlaybackService : MediaSessionService() {
                 }
             }
         })
-
-        // Bit-perfect USB DAC routing — when the user has the toggle on
-        // and a USB Audio Class device is attached, pin ExoPlayer's
-        // output to it via setPreferredAudioDevice. Reverts to system
-        // default whenever the toggle goes off or the DAC is unplugged.
-        serviceScope.launch {
-            preferences.usbBitPerfectEnabled
-                .combine(usbAudioRouter.usbOutputDevice) { enabled, device ->
-                    if (enabled) device else null
-                }
-                .collect { preferred ->
-                    runCatching { player.setPreferredAudioDevice(preferred) }
-                }
-        }
 
         // Wrap the ExoPlayer so Media3's notification + lock-screen surface
         // working next / previous controls. The wrapper routes those commands
