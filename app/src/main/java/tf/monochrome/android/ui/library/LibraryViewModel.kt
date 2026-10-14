@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import tf.monochrome.android.data.db.entity.UserPlaylistEntity
 import tf.monochrome.android.data.repository.LibraryRepository
 import tf.monochrome.android.domain.model.Album
@@ -57,6 +59,35 @@ class LibraryViewModel @Inject constructor(
                 return@launch
             }
             playlistImportService.importTracks(name, description, parsedPlaylist.tracks, strictAlbumMatch)
+        }
+    }
+
+    /**
+     * A playlist, or every playlist, exported with Exportify inside the app
+     * (ExportifyScreen): each CSV in it is matched into a playlist of its own,
+     * one after another, as a picked CSV file is.
+     */
+    fun importExportify(message: tf.monochrome.android.data.import_.ExportifyFiles.Message, strictAlbumMatch: Boolean) {
+        viewModelScope.launch {
+            playlistImportService.reportFetching("Exportify")
+            val exported = withContext(Dispatchers.Default) {
+                runCatching { tf.monochrome.android.data.import_.ExportifyFiles.playlists(message) }
+            }.getOrElse {
+                playlistImportService.reportFailure(it.message.orEmpty())
+                return@launch
+            }
+            for (playlist in exported) {
+                val parsed = withContext(Dispatchers.Default) {
+                    runCatching {
+                        tf.monochrome.android.data.import_.PlaylistCsv.parse(playlist.csv, fallbackTitle = playlist.title)
+                    }
+                }.getOrElse {
+                    playlistImportService.reportFailure(it.message.orEmpty())
+                    return@launch
+                }
+                if (parsed.tracks.isEmpty()) continue
+                playlistImportService.importTracks(playlist.title, null, parsed.tracks, strictAlbumMatch)
+            }
         }
     }
 

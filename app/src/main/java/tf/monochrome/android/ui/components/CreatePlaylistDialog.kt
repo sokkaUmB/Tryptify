@@ -84,6 +84,11 @@ fun CreatePlaylistDialog(
      * takes the playlist's own.
      */
     onImportLink: ((url: String, strictMatch: Boolean, name: String, description: String) -> Unit)? = null,
+    /**
+     * Open Exportify inside the app, for what a link cannot bring: private
+     * playlists, Liked Songs, and playlists past 100 songs.
+     */
+    onOpenExportify: ((strictMatch: Boolean) -> Unit)? = null,
     initialName: String = "",
     initialDescription: String = "",
     title: String = stringResource(R.string.create_playlist_title),
@@ -171,6 +176,7 @@ fun CreatePlaylistDialog(
                     importTab = importTab,
                     onImportTabChange = { importTab = it },
                     preview = preview,
+                    onOpenExportify = onOpenExportify?.let { open -> { open(strictAlbumMatch); onDismiss() } },
                     selectedFormat = selectedFormat,
                     onFormatChange = { selectedFormat = it },
                     selectedSource = ImportSource.entries
@@ -279,6 +285,7 @@ private fun ImportPanel(
     importTab: String,
     onImportTabChange: (String) -> Unit,
     preview: LinkPreview,
+    onOpenExportify: (() -> Unit)?,
     selectedFormat: String,
     onFormatChange: (String) -> Unit,
     selectedSource: ImportSource,
@@ -332,6 +339,13 @@ private fun ImportPanel(
                 )
             }
             LinkPreviewCard(preview)
+            if (onOpenExportify != null) {
+                // What a link cannot bring, Exportify can: it signs in to
+                // Spotify for any account, inside the app.
+                TextButton(onClick = onOpenExportify) {
+                    Text(stringResource(R.string.import_open_exportify))
+                }
+            }
         } else {
             // Where the export comes from. Equal shapes: one of these was a
             // circle and the other two were rounded rectangles, which read as

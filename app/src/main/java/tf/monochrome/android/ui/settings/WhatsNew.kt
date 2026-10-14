@@ -172,6 +172,12 @@ object WhatsNew {
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
+                    section = PLAYLISTS,
+                    title = "Exportify inside the app",
+                    body = "For a private playlist, Liked Songs or one over 100 songs, Create playlist opens Exportify inside the app. Sign in with any Spotify account, Free included, tap Export, and the playlist comes straight into your library.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
                     section = DISCOVER,
                     title = "Search the galaxy",
                     body = "A search button on both galaxies finds a genre, by any of its names, or an artist, and flies there.",

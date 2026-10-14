@@ -346,6 +346,8 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.core.splashscreen)
     implementation(libs.browser)
+    // Exportify inside the app: a web message listener only exportify.net can post to.
+    implementation(libs.webkit)
 
     // Media (Android Auto)
     implementation(libs.media)

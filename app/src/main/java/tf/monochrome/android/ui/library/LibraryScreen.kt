@@ -246,6 +246,19 @@ fun LibraryScreen(
     }
 
     val importLinkContext = androidx.compose.ui.platform.LocalContext.current
+    // Exportify inside the app: what it exports is imported as it arrives.
+    var showExportify by remember { mutableStateOf(false) }
+    var exportifyStrict by remember { mutableStateOf(false) }
+    if (showExportify) {
+        ExportifyScreen(
+            onDismiss = { showExportify = false },
+            onExported = { message ->
+                viewModel.resetImportProgress()
+                viewModel.importExportify(message, exportifyStrict)
+                showExportify = false
+            },
+        )
+    }
     if (showCreatePlaylistDialog) {
         CreatePlaylistDialog(
             onDismiss = { showCreatePlaylistDialog = false },
@@ -255,6 +268,11 @@ fun LibraryScreen(
             },
             onImportCsv = { uri, strict, name, description ->
                 viewModel.importCsvPlaylist(uri, strict, name, description)
+                showCreatePlaylistDialog = false
+            },
+            onOpenExportify = { strict ->
+                exportifyStrict = strict
+                showExportify = true
                 showCreatePlaylistDialog = false
             },
             // A pasted Spotify link: read and matched in the import service,
