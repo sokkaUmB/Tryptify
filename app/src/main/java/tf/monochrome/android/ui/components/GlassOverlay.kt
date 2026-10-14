@@ -60,6 +60,7 @@ class GlassOverlayHost {
     internal class Entry(
         val content: @Composable BoxScope.() -> Unit,
         val onDismiss: () -> Unit,
+        val alignment: Alignment = Alignment.Center,
     )
 
     internal var entry by mutableStateOf<Entry?>(null)
@@ -94,6 +95,12 @@ val LocalGlassOverlayHost = staticCompositionLocalOf<GlassOverlayHost?> { null }
 @Composable
 fun GlassOverlay(
     onDismiss: () -> Unit,
+    /**
+     * Where the pane sits: centred, as a dialog, or at [Alignment.BottomCenter]
+     * for a menu that used to be a bottom sheet and should still be in reach
+     * of the thumb.
+     */
+    alignment: Alignment = Alignment.Center,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val host = LocalGlassOverlayHost.current
@@ -121,10 +128,11 @@ fun GlassOverlay(
     val latestDismiss by rememberUpdatedState(onDismiss)
     // Keyed on the host alone: the entry reads both lambdas through state, so it
     // never needs re-registering when the caller recomposes.
-    val entry = remember(host) {
+    val entry = remember(host, alignment) {
         GlassOverlayHost.Entry(
             content = { latestContent() },
             onDismiss = { latestDismiss() },
+            alignment = alignment,
         )
     }
     DisposableEffect(host, entry) {
@@ -171,7 +179,7 @@ fun BoxScope.GlassOverlayLayer(
             // covers the one being typed into.
             .imePadding()
             .padding(horizontal = 8.dp, vertical = 12.dp),
-        contentAlignment = Alignment.Center,
+        contentAlignment = entry.alignment,
     ) {
         GlassPanel(
             hazeState = hazeState,

@@ -19,14 +19,16 @@ import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,11 +36,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import tf.monochrome.android.domain.model.Track
-import tf.monochrome.android.ui.theme.MonoDimens
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * A song's menu (a long-press or its ⋮): what to do with it, and its Track
+ * info.
+ *
+ * Glass, so not a `ModalBottomSheet`: that opens its own window, and glass
+ * cannot blur a page in another window (docs/ui-invariants.md, Glass). It is
+ * drawn in the app's [GlassOverlay] slot instead, at the bottom where the
+ * sheet was, over the page it blurs.
+ *
+ * Track info turns the same pane into the song's tags ([TrackInfoPane]); Back
+ * returns to the actions. [filePath] is the song's file where the screen knows
+ * it (the library's own tracks); otherwise its download or a cached stream is
+ * looked for, and without either it shows what the app knows of the song.
+ */
 @Composable
 fun TrackContextMenu(
     track: Track,
@@ -56,15 +70,21 @@ fun TrackContextMenu(
     onShareFile: (() -> Unit)? = null,
     onGoToAlbum: (() -> Unit)? = null,
     onGoToArtist: (() -> Unit)? = null,
-    onShowTrackInfo: (() -> Unit)? = null
+    filePath: String? = null,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    // Outside the overlay's content, which is composed in the overlay host:
+    // state there would not survive the caller's recompositions.
+    var showingInfo by remember(track.id) { mutableStateOf(false) }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = MonoDimens.cardAlpha)
-    ) {
+    GlassOverlay(onDismiss = onDismiss, alignment = Alignment.BottomCenter) {
+        // Back from Track info returns to the actions rather than closing.
+        BackHandler(enabled = showingInfo) { showingInfo = false }
+        if (showingInfo) {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                TrackInfoPane(track = track, filePath = filePath, onBack = { showingInfo = false })
+            }
+            return@GlassOverlay
+        }
         Column(
             modifier = Modifier
                 // Scrollable so the bottom actions (Go to album/artist) stay
@@ -178,13 +198,12 @@ fun TrackContextMenu(
                     onClick = { onGoToArtist(); onDismiss() }
                 )
             }
-            if (onShowTrackInfo != null) {
-                ContextMenuItem(
-                    icon = Icons.Default.Info,
-                    label = stringResource(R.string.action_track_info),
-                    onClick = { onShowTrackInfo(); onDismiss() }
-                )
-            }
+            // Opens in this pane; the menu stays open behind it.
+            ContextMenuItem(
+                icon = Icons.Default.Info,
+                label = stringResource(R.string.action_track_info),
+                onClick = { showingInfo = true }
+            )
         }
     }
 }

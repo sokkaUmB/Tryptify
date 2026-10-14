@@ -142,6 +142,13 @@ window's haze source: `MainPlayerScreen`'s `overlay` slot exists for exactly
 this, and the speed panel goes through it. The cost is owning the scrim, the
 slide and Back by hand, and that is the cheaper half of the trade.
 
+**The song menu is a `GlassOverlay`, not a `ModalBottomSheet`.** `TrackContextMenu`
+(a long-press or a row's ⋮, from every list) draws in the nav host's overlay slot
+at `Alignment.BottomCenter`, where the sheet was, so it blurs the list it was opened
+from. Its Track info turns the same pane into the song's tags and Back returns to
+the actions. Put back in a `ModalBottomSheet` it is a solid slab, for the reason
+above; outside the nav host it falls back to a plain dialog, never to nothing.
+
 **A `GlassPanel` inside a scrolling list passes `blockTouchesBelow = false`.**
 Its backstop consumes every touch its content does not handle, drags included.
 Over a map that is the point — a tap on the pane must not select the nearest

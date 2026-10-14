@@ -565,12 +565,12 @@ class TagReader @Inject constructor(
          * What jaudiotagger can open, WAV aside (read on its own above).
          * AudioFileIO throws on anything else, so it is not asked.
          */
-        private val JAUDIOTAGGER_EXTENSIONS = setOf(
+        internal val JAUDIOTAGGER_EXTENSIONS = setOf(
             "mp3", "flac", "m4a", "m4b", "mp4", "aif", "aiff", "aifc", "wma", "dsf",
         )
 
         /** Read by [OggComments]: jaudiotagger has no Opus reader at all. */
-        private val OGG_EXTENSIONS = setOf("ogg", "oga", "opus")
+        internal val OGG_EXTENSIONS = setOf("ogg", "oga", "opus")
 
         private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp")
         private val COVER_STEMS = setOf(

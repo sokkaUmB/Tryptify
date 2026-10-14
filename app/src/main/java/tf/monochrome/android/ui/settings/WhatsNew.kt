@@ -155,6 +155,12 @@ object WhatsNew {
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
                     section = LIBRARY,
+                    title = "Track info",
+                    body = "A song's menu (long-press, or its ⋮) has Track info: its file's format, sample rate, bit depth and bitrate, and every tag in it, ready to copy. The menu itself is glass.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
                     title = "Choose a song row's badges",
                     body = "Settings › Appearance › Song row badges turns off the source, quality, format, download and length marks on every song list, one by one or all at once, so a song's artist and album get the whole line.",
                 ),
