@@ -3,6 +3,8 @@ package tf.monochrome.android.ui.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Text
@@ -37,7 +39,8 @@ import kotlinx.coroutines.delay
  *
  * The slide is a layer translation read at draw time, so a moving title does
  * not recompose its screen every frame. A new [text] starts again from the
- * start.
+ * start, and so does a tap on it: back to the start, and the slide begins at
+ * once rather than after the usual rest.
  */
 @Composable
 fun BackAndForthText(
@@ -47,6 +50,7 @@ fun BackAndForthText(
     modifier: Modifier = Modifier,
 ) {
     var room by remember { mutableIntStateOf(0) }
+    var taps by remember(text) { mutableIntStateOf(0) }
     var width by remember(text) { mutableIntStateOf(0) }
     val offset = remember(text) { Animatable(0f) }
     val overflow = (width - room).coerceAtLeast(0)
@@ -54,12 +58,14 @@ fun BackAndForthText(
     // Toward the end of the line: left in a left-to-right layout.
     val toward = if (LocalLayoutDirection.current == LayoutDirection.Rtl) 1f else -1f
 
-    LaunchedEffect(text, overflow, toward) {
+    LaunchedEffect(text, overflow, toward, taps) {
         offset.snapTo(0f)
         if (overflow <= 0 || room <= 0) return@LaunchedEffect
         val slide = slideMillis(overflow, pxPerSecond)
+        var rest = if (taps > 0) REST_AFTER_TAP_MS else REST_AT_START_MS
         while (true) {
-            delay(REST_AT_START_MS)
+            delay(rest)
+            rest = REST_AT_START_MS
             offset.animateTo(toward * overflow, tween(slide, easing = LinearEasing))
             delay(REST_AT_END_MS)
             offset.animateTo(0f, tween(slide, easing = LinearEasing))
@@ -69,7 +75,13 @@ fun BackAndForthText(
     Box(
         modifier = modifier
             .clipToBounds()
-            .onSizeChanged { room = it.width },
+            .onSizeChanged { room = it.width }
+            // A tap starts it over. No ripple: the title is not a button.
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClickLabel = null,
+            ) { taps++ },
     ) {
         Text(
             text = text,
@@ -95,4 +107,5 @@ internal fun slideMillis(overflowPx: Int, pxPerSecond: Float): Int =
 private const val SLIDE_DP_PER_SECOND = 30f
 private const val REST_AT_START_MS = 2_000L
 private const val REST_AT_END_MS = 1_500L
+private const val REST_AFTER_TAP_MS = 300L
 private const val MIN_SLIDE_MS = 600
