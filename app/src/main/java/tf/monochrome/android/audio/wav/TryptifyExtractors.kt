@@ -1,5 +1,7 @@
 package tf.monochrome.android.audio.wav
 
+import androidx.media3.extractor.mp4.FragmentedMp4Extractor
+import tf.monochrome.android.audio.mp4.IndexedFragmentedMp4Extractor
 import android.net.Uri
 import androidx.media3.common.C
 import androidx.media3.common.DataReader
@@ -35,11 +37,18 @@ object TryptifyExtractors {
 
     }
 
-    /** [extractors] with the WAV one wrapped; everything else as it was. */
+    /**
+     * [extractors] with the WAV one and the fragmented-MP4 one wrapped;
+     * everything else as it was. The fragmented-MP4 wrapper indexes a file
+     * that has no `sidx` (Apple's ALAC), which Media3 could not seek in.
+     */
     internal fun wrap(extractors: Array<Extractor>): Array<Extractor> =
         Array(extractors.size) { i ->
-            val e = extractors[i]
-            if (e is WavExtractor) FloatAwareWavExtractor(e) else e
+            when (val e = extractors[i]) {
+                is WavExtractor -> FloatAwareWavExtractor(e)
+                is FragmentedMp4Extractor -> IndexedFragmentedMp4Extractor(e)
+                else -> e
+            }
         }
 }
 
