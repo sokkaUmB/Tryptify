@@ -88,6 +88,10 @@
     <string name="import_open_exportify">Private playlist, Liked Songs or over 100 songs? Open Exportify</string>
     <string name="exportify_hint">Log in with Spotify, then tap Export beside a playlist (or Export All): it comes straight into your library. Inside apps, Spotify\'s Google and Apple sign-in may not work; use your Spotify email and password.</string>
     <string name="exportify_webview_too_old">Exportify needs a newer Android System WebView. Update it from the Play Store, or export from exportify.net in a browser and use the File tab.</string>
+    <string name="exportify_failed">Exportify didn’t load (%1$s).</string>
+    <string name="exportify_stalled">Exportify hasn’t appeared. Check your connection, and any ad blocker or private DNS, then try again. Or export from exportify.net in a browser and use the File tab.</string>
+    <string name="exportify_stopped">Exportify’s page stopped. Try again.</string>
+    <string name="exportify_open_browser">Open in browser</string>
     <string name="import_spotify_preview_partial">Spotify shares the first %1$d without signing in.</string>
     <plurals name="import_spotify_preview_songs">
         <item quantity="one">%d song</item>

@@ -88,6 +88,10 @@
     <string name="import_open_exportify">Playlist privée, Titres likés ou plus de 100 titres ? Ouvrir Exportify</string>
     <string name="exportify_hint">Connectez-vous avec Spotify, puis touchez Export à côté d’une playlist (ou Export All) : elle arrive directement dans votre bibliothèque. Dans les applis, la connexion Spotify via Google ou Apple peut ne pas fonctionner ; utilisez votre e-mail et mot de passe Spotify.</string>
     <string name="exportify_webview_too_old">Exportify nécessite une version plus récente d’Android System WebView. Mettez-la à jour depuis le Play Store, ou exportez sur exportify.net dans un navigateur et utilisez l’onglet Fichier.</string>
+    <string name="exportify_failed">Exportify ne s’est pas chargé (%1$s).</string>
+    <string name="exportify_stalled">Exportify ne s’affiche pas. Vérifiez votre connexion ainsi que tout bloqueur de publicité ou DNS privé, puis réessayez. Ou exportez sur exportify.net dans un navigateur et utilisez l’onglet Fichier.</string>
+    <string name="exportify_stopped">La page d’Exportify s’est arrêtée. Réessayez.</string>
+    <string name="exportify_open_browser">Ouvrir dans le navigateur</string>
     <string name="import_spotify_preview_partial">Sans connexion, Spotify partage les %1$d premiers.</string>
     <plurals name="import_spotify_preview_songs">
         <item quantity="one">%d titre</item>

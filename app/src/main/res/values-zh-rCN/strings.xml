@@ -86,6 +86,10 @@
     <string name="import_open_exportify">私密歌单、已点赞的歌曲或超过 100 首？打开 Exportify</string>
     <string name="exportify_hint">用 Spotify 登录，然后点歌单旁边的 Export（或 Export All）：歌单会直接进入你的音乐库。在应用内，Spotify 的 Google 和 Apple 登录可能无法使用；请使用 Spotify 邮箱和密码。</string>
     <string name="exportify_webview_too_old">Exportify 需要更新版本的 Android System WebView。请在 Play 商店更新，或在浏览器中从 exportify.net 导出后使用“文件”标签页。</string>
+    <string name="exportify_failed">Exportify 未能加载（%1$s）。</string>
+    <string name="exportify_stalled">Exportify 没有显示。请检查网络连接，以及广告拦截器或私人 DNS，然后重试。或在浏览器中从 exportify.net 导出后使用“文件”标签页。</string>
+    <string name="exportify_stopped">Exportify 页面已停止。请重试。</string>
+    <string name="exportify_open_browser">在浏览器中打开</string>
     <string name="import_spotify_preview_partial">未登录时，Spotify 只提供前 %1$d 首。</string>
     <plurals name="import_spotify_preview_songs">
         <item quantity="other">%d 首歌曲</item>

@@ -88,6 +88,10 @@
     <string name="import_open_exportify">¿Playlist privada, Canciones que te gustan o más de 100 canciones? Abre Exportify</string>
     <string name="exportify_hint">Inicia sesión con Spotify y toca Export junto a una playlist (o Export All): entra directamente en tu biblioteca. Dentro de las apps, el inicio de sesión de Spotify con Google o Apple puede no funcionar; usa tu correo y contraseña de Spotify.</string>
     <string name="exportify_webview_too_old">Exportify necesita una versión más reciente de Android System WebView. Actualízala desde Play Store, o exporta en exportify.net desde un navegador y usa la pestaña Archivo.</string>
+    <string name="exportify_failed">Exportify no se cargó (%1$s).</string>
+    <string name="exportify_stalled">Exportify no aparece. Revisa tu conexión y cualquier bloqueador de anuncios o DNS privado, y vuelve a intentarlo. O exporta en exportify.net desde un navegador y usa la pestaña Archivo.</string>
+    <string name="exportify_stopped">La página de Exportify se detuvo. Vuelve a intentarlo.</string>
+    <string name="exportify_open_browser">Abrir en el navegador</string>
     <string name="import_spotify_preview_partial">Sin iniciar sesión, Spotify comparte las primeras %1$d.</string>
     <plurals name="import_spotify_preview_songs">
         <item quantity="one">%d canción</item>

@@ -86,6 +86,10 @@
     <string name="import_open_exportify">非公開プレイリスト、お気に入りの曲、100 曲以上の場合は Exportify を開く</string>
     <string name="exportify_hint">Spotify でログインし、プレイリストの横の Export（または Export All）をタップすると、そのままライブラリに取り込まれます。アプリ内では Spotify の Google・Apple ログインが使えない場合があります。Spotify のメールアドレスとパスワードを使ってください。</string>
     <string name="exportify_webview_too_old">Exportify には新しい Android System WebView が必要です。Play ストアで更新するか、ブラウザで exportify.net からエクスポートして「ファイル」タブを使ってください。</string>
+    <string name="exportify_failed">Exportify を読み込めませんでした（%1$s）。</string>
+    <string name="exportify_stalled">Exportify が表示されません。接続や、広告ブロッカー・プライベート DNS を確認してから再試行してください。または、ブラウザで exportify.net からエクスポートして「ファイル」タブを使ってください。</string>
+    <string name="exportify_stopped">Exportify のページが停止しました。再試行してください。</string>
+    <string name="exportify_open_browser">ブラウザで開く</string>
     <string name="import_spotify_preview_partial">サインインしていないため、Spotify が共有するのは最初の %1$d 曲です。</string>
     <plurals name="import_spotify_preview_songs">
         <item quantity="other">%d 曲</item>

@@ -87,6 +87,10 @@
     <string name="import_open_exportify">Gizli liste, Beğenilen Şarkılar ya da 100\'den fazla şarkı mı? Exportify\'ı açın</string>
     <string name="exportify_hint">Spotify ile giriş yapın, ardından bir çalma listesinin yanındaki Export\'a (veya Export All\'a) dokunun: doğrudan kitaplığınıza gelir. Uygulamaların içinde Spotify\'ın Google ve Apple ile girişi çalışmayabilir; Spotify e-postanızı ve şifrenizi kullanın.</string>
     <string name="exportify_webview_too_old">Exportify daha yeni bir Android System WebView gerektiriyor. Play Store\'dan güncelleyin ya da bir tarayıcıda exportify.net\'ten dışa aktarıp Dosya sekmesini kullanın.</string>
+    <string name="exportify_failed">Exportify yüklenemedi (%1$s).</string>
+    <string name="exportify_stalled">Exportify görünmüyor. Bağlantınızı ve varsa reklam engelleyiciyi ya da özel DNS’i kontrol edip tekrar deneyin. Ya da bir tarayıcıda exportify.net’ten dışa aktarıp Dosya sekmesini kullanın.</string>
+    <string name="exportify_stopped">Exportify sayfası durdu. Tekrar deneyin.</string>
+    <string name="exportify_open_browser">Tarayıcıda aç</string>
     <string name="import_spotify_preview_partial">Oturum açmadan Spotify ilk %1$d şarkıyı paylaşır.</string>
     <plurals name="import_spotify_preview_songs">
         <item quantity="one">%d şarkı</item>
