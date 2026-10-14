@@ -75,6 +75,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -966,19 +967,26 @@ private fun StatusOverlayPanel(
             )
         }
         if (useGlass) {
-            // The mini player's slab: a tint rectangle relit by the playerGlass
-            // shader (bevel, refraction, rim — all from the Studio's mini
-            // player settings). Offscreen so the shader only sees the slab.
+            // The mini player's slab, relit by the playerGlass shader (bevel,
+            // refraction, rim — all from the Studio's mini player settings).
+            // Offscreen so the shader only sees the slab.
+            //
+            // Rounded at the sheet's own corner, and the shader told that
+            // corner. It used to be a square drawRect with no lensCorner: the
+            // shader lit the rectangle's square edges, the sheet's clip cut the
+            // corners off, and the rim stopped short of every corner while the
+            // pills beside it ran theirs all the way round.
             androidx.compose.foundation.Canvas(
                 modifier = Modifier
                     .matchParentSize()
-                    .playerGlass(tint = glassTint)
+                    .playerGlass(tint = glassTint, lensCorner = tf.monochrome.android.ui.theme.MonoDimens.radiusLg)
                     .graphicsLayer {
                         compositingStrategy =
                             androidx.compose.ui.graphics.CompositingStrategy.Offscreen
                     },
             ) {
-                drawRect(color = glassTint)
+                val r = tf.monochrome.android.ui.theme.MonoDimens.radiusLg.toPx()
+                drawRoundRect(color = glassTint, cornerRadius = CornerRadius(r, r))
             }
         }
         Column(

@@ -41,7 +41,7 @@ The reason it was ever faint: on a device where the shader silently no-ops
 compile it), a solid fill is left on screen as an opaque rounded rectangle. Ask
 `rememberLiquidGlassAvailable()` rather than hedging with a low alpha.
 
-**A rounded-rect slab passes its corner as `lensCorner`.** The alpha
+**A rounded-rect slab passes its corner as `lensCorner`.** And the slab itself is drawn rounded at that corner, never a square `drawRect`: the player's audio sheet drew one, the shader lit its square edges, the sheet's clip cut the corners off, and its rim stopped short of every corner (`GlassSlabCornerTest` reads every `.playerGlass(` for both). The alpha
 heightfield alone gives a solid fill a bevel 2–4px wide: the fill steps from 0
 to 1 across one anti-aliased pixel, so everything inside it is flat and
 `refract()` bends nothing. The pane then reads as a tinted sheet with a
