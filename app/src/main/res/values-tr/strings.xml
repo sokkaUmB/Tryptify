@@ -300,6 +300,7 @@
     <string name="playlists_empty">Müziğinizi düzenlemek için bir çalma listesi oluşturun.</string>
     <string name="download_all">Tümünü indir</string>
     <string name="search_liked_songs">Beğenilen şarkılarda ara</string>
+    <string name="search_downloads">İndirilenlerde ara</string>
     <string name="liked_albums">Beğenilen albümler</string>
     <string name="liked_artists">Beğenilen sanatçılar</string>
     <string name="favorites_empty">Burada görmek için parçaları, albümleri ve sanatçıları beğenin.</string>

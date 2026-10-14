@@ -310,6 +310,7 @@
     <string name="playlists_empty">Créez une playlist pour organiser votre musique.</string>
     <string name="download_all">Tout télécharger</string>
     <string name="search_liked_songs">Rechercher dans les titres aimés</string>
+    <string name="search_downloads">Rechercher dans les téléchargements</string>
     <string name="liked_albums">Albums aimés</string>
     <string name="liked_artists">Artistes aimés</string>
     <string name="favorites_empty">Aimez des titres, des albums et des artistes pour les retrouver ici.</string>

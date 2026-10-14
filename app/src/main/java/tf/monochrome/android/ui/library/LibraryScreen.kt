@@ -213,6 +213,9 @@ fun LibraryScreen(
     val visibleFavorites = remember(favoriteTracks, likedQuery, likedSort) {
         favoriteTracks.applySearchAndSort(likedQuery, likedSort)
     }
+    // The Downloads list keeps its own query and order; only whether its bar
+    // is open lives here, because the button for it is in this app bar.
+    var downloadsSearchOpen by rememberSaveable { mutableStateOf(false) }
 
     val selection = rememberTrackSelectionState<Long>()
     // The "back returns to the first page" handler lives in the nav host now,
@@ -353,6 +356,11 @@ fun LibraryScreen(
                         SearchAction(open = likedSearchOpen, onToggle = {
                             likedSearchOpen = !likedSearchOpen
                             if (!likedSearchOpen) likedQuery = ""
+                        })
+                    }
+                    if (sectionId == "downloads") {
+                        SearchAction(open = downloadsSearchOpen, onToggle = {
+                            downloadsSearchOpen = !downloadsSearchOpen
                         })
                     }
                     IconButton(onClick = { navController.navigateTool(Screen.Settings, Screen.Settings.createRoute()) }) {
@@ -697,7 +705,13 @@ fun LibraryScreen(
                 }
 
             "downloads" ->
-                DownloadsScreen(navController = navController)
+                DownloadsScreen(
+                    navController = navController,
+                    // Embedded there is no app bar to hold the button, so the
+                    // screen falls back to its own.
+                    searchOpen = if (embedded) null else downloadsSearchOpen,
+                    onSearchOpenChange = { downloadsSearchOpen = it },
+                )
         }
     }
 }

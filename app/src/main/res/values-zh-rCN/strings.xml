@@ -290,6 +290,7 @@
     <string name="playlists_empty">创建歌单来整理你的音乐。</string>
     <string name="download_all">全部下载</string>
     <string name="search_liked_songs">搜索喜欢的歌曲</string>
+    <string name="search_downloads">搜索下载</string>
     <string name="liked_albums">喜欢的专辑</string>
     <string name="liked_artists">喜欢的艺人</string>
     <string name="favorites_empty">喜欢歌曲、专辑和艺人后，它们会显示在这里。</string>

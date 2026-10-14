@@ -301,6 +301,7 @@
     <string name="playlists_empty">Create a playlist to organize your music.</string>
     <string name="download_all">Download all</string>
     <string name="search_liked_songs">Search liked songs</string>
+    <string name="search_downloads">Search downloads</string>
     <string name="liked_albums">Liked albums</string>
     <string name="liked_artists">Liked artists</string>
     <string name="favorites_empty">Like tracks, albums, and artists to see them here.</string>

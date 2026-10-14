@@ -300,6 +300,7 @@
     <string name="playlists_empty">Erstelle eine Playlist, um deine Musik zu ordnen.</string>
     <string name="download_all">Alle herunterladen</string>
     <string name="search_liked_songs">Lieblingssongs durchsuchen</string>
+    <string name="search_downloads">Downloads durchsuchen</string>
     <string name="liked_albums">Lieblingsalben</string>
     <string name="liked_artists">Lieblingskünstler</string>
     <string name="favorites_empty">Markiere Titel, Alben und Künstler mit „Gefällt mir“, um sie hier zu sehen.</string>

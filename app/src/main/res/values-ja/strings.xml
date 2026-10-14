@@ -290,6 +290,7 @@
     <string name="playlists_empty">プレイリストを作成して音楽を整理しましょう。</string>
     <string name="download_all">すべてダウンロード</string>
     <string name="search_liked_songs">お気に入りの曲を検索</string>
+    <string name="search_downloads">ダウンロードを検索</string>
     <string name="liked_albums">お気に入りのアルバム</string>
     <string name="liked_artists">お気に入りのアーティスト</string>
     <string name="favorites_empty">曲、アルバム、アーティストをお気に入りに追加すると、ここに表示されます。</string>
