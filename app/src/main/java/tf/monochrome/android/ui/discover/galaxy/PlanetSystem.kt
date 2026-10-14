@@ -149,7 +149,11 @@ class PlanetSystem(
         /** -1 a minor key (deeper), 1 a major one (paler), 0 none: as a planet's [Planet.tone]. */
         val tone: Float = 0f,
     ) {
+        /** [MoonRef.title]: what it is matched by, not what it is labelled. */
         val title: String get() = ref.title
+
+        /** What it is labelled: [MoonRef.label]. */
+        val label: String get() = ref.label
 
         /** Whether its glow takes its own key's colour rather than its star's light. */
         val hasKeyHue: Boolean get() = keyHue >= 0f
@@ -501,7 +505,14 @@ data class SystemLimits(
 
 /** What a moon is: the track it plays. */
 sealed interface MoonRef {
+    /**
+     * The track's own title, as its chart or library has it: what a
+     * library moon is matched to the track playing by.
+     */
     val title: String
+
+    /** What its moon is labelled, on the map and in the system's sheet. */
+    val label: String get() = title
 
     /** A track off a genre's chart, matched to a catalogue when tapped. */
     class Chart(val entry: ChartEntry) : MoonRef {
@@ -509,7 +520,12 @@ sealed interface MoonRef {
     }
 
     /** A file in the library: [trackId] is its `local_tracks` row, [key] its path. */
-    class Local(val trackId: Long, val key: String, override val title: String) : MoonRef
+    class Local(
+        val trackId: Long,
+        val key: String,
+        override val title: String,
+        override val label: String = title,
+    ) : MoonRef
 }
 
 /** How far from a star the camera comes to rest, at the least, in scene units. */

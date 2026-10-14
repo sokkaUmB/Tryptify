@@ -370,7 +370,7 @@ private fun MoonTree(
             .padding(start = 20.dp),
     ) {
         (planet.moons.map { it.ref } + planet.ring).forEach { ref ->
-            MoonRow(ref.title, isPlaying(ref), onClick = { onPlayMoon(ref) })
+            MoonRow(ref.label, isPlaying(ref), onClick = { onPlayMoon(ref) })
         }
     }
 }

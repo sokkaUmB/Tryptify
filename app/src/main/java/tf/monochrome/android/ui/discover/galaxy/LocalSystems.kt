@@ -204,5 +204,5 @@ object LocalSystems {
         )
     }
 
-    private fun LibraryTrack.ref() = MoonRef.Local(trackId = id, key = key, title = title)
+    private fun LibraryTrack.ref() = MoonRef.Local(trackId = id, key = key, title = title, label = label)
 }

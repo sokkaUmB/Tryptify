@@ -311,6 +311,28 @@ class LocalSystemsTest {
         }
     }
 
+    @Test
+    fun `a moon and a ring track are labelled by their label, and matched by their title`() {
+        val raw = { n: Int -> "%02d Bioweapon, Audiofreq, Code Black - Song %d".format(n, n) }
+        val count = SystemLimits.LIBRARY.maxMoons + 1
+        val album = LibraryAlbum(
+            key = "time capsule|bioweapon|2025", title = "Time Capsule", year = 2025, artworkUri = null,
+            tracks = (1..count).map { n ->
+                LibraryTrack(
+                    id = nextId++, key = "/music/tc/$n.flac", title = raw(n), discNumber = 1,
+                    trackNumber = n, durationSeconds = 200, label = "Song $n",
+                )
+            },
+        )
+        val planet = LocalSystems.build("artist:bioweapon", listOf(album))!!.planets.single()
+        val moon = planet.moons.first()
+        assertEquals("Song 1", moon.label)
+        assertEquals(raw(1), moon.title)
+        val ring = planet.ring.single() as MoonRef.Local
+        assertEquals("Song $count", ring.label)
+        assertEquals(raw(count), ring.title)
+    }
+
     private companion object {
         /** The ring's outer edge, in its planet's radii: as the map draws it. */
         const val RING_OUTER_RADII = 1.9f

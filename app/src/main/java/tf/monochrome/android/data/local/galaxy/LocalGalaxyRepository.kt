@@ -12,6 +12,7 @@ import tf.monochrome.android.data.local.db.LocalAlbumEntity
 import tf.monochrome.android.data.local.db.LocalMediaDao
 import tf.monochrome.android.data.local.db.LocalTrackEntity
 import tf.monochrome.android.data.local.scanner.MediaScanner
+import tf.monochrome.android.data.local.tags.TrackNames
 import tf.monochrome.android.domain.model.LibraryAlbum
 import tf.monochrome.android.domain.model.LibraryArtist
 import tf.monochrome.android.domain.model.LibraryCollab
@@ -112,6 +113,7 @@ class LocalGalaxyRepository @Inject constructor(
                     plays = ever,
                     bpm = t.bpm,
                     camelotKey = t.camelotKey,
+                    label = t.moonLabel(),
                 ) to recent
             }
             // Tempo, key, loudness and dynamic range, from the rows already
@@ -188,4 +190,17 @@ class ArtistMusic(
     val albumTracks: Map<String, List<LocalTrackEntity>>,
     /** Each album's `local_albums` row, by the album's key, where it has one. */
     val albumIds: Map<String, Long>,
+)
+
+/**
+ * What this track's moon is labelled ([TrackNames.label]). Only a row with no
+ * title at all has lost its numbering already, in [LocalTrackEntity.displayTitle];
+ * a stored title, from its tag or from its file name by the scan setting that
+ * names tracks so, is checked against the track's own number.
+ */
+internal fun LocalTrackEntity.moonLabel(): String = TrackNames.label(
+    displayTitle,
+    trackNumber = trackNumber.takeIf { title != null },
+    discNumber = discNumber,
+    artists = listOf(artist, albumArtist),
 )

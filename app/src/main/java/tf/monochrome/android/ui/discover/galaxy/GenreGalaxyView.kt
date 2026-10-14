@@ -2394,7 +2394,7 @@ private fun DrawScope.drawLabels(
                 if (!bodies.shown[k]) continue
                 if (bodies.shown[pk] && hypot(bodies.x[k] - bodies.x[pk], bodies.y[k] - bodies.y[pk]) < bodies.r[pk] + MOON_LABEL_GAP_DP * dp) continue
                 place(
-                    sys.planets[p].moons[mi].title, moonStyle, GALAXY_INK.copy(alpha = 0.85f),
+                    sys.planets[p].moons[mi].label, moonStyle, GALAXY_INK.copy(alpha = 0.85f),
                     bodies.x[k] + bodies.r[k] + 4f * dp, bodies.y[k], centred = false, alpha = 0.9f,
                 )
             }

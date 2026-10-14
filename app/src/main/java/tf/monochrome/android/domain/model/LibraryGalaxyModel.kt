@@ -60,6 +60,10 @@ data class LibraryTrack(
     val id: Long,
     /** Its file's path: what keeps its moon's place the same between scans. */
     val key: String,
+    /**
+     * As the library has it: what the track playing is matched to its moon
+     * by, and its running order's last tie-break.
+     */
     val title: String,
     val discNumber: Int?,
     val trackNumber: Int?,
@@ -69,4 +73,6 @@ data class LibraryTrack(
     val bpm: Float? = null,
     /** Its key as a Camelot code, where tagged. */
     val camelotKey: Int? = null,
+    /** What its moon is labelled: [title] without numbering or its artist's name before it. */
+    val label: String = title,
 )
