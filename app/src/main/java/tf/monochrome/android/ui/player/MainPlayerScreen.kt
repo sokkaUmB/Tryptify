@@ -1235,12 +1235,13 @@ private fun PlayerTrackInfo(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
+            // A title too long for the line shows the rest of itself and
+            // comes back, rather than ending in "…".
+            tf.monochrome.android.ui.components.BackAndForthText(
                 text = track?.title ?: stringResource(R.string.no_track_playing),
                 style = MaterialTheme.typography.titleLarge,
                 color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(),
             )
             if (track != null) {
                 // Prefer the UnifiedTrack credits (carry per-artist ids incl. local
