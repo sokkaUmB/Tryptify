@@ -79,6 +79,21 @@
     <string name="action_see_all">Ver todo</string>
     <string name="action_retry">Reintentar</string>
     <string name="import_spotify_instructions">Abre exportify.net, inicia sesión y exporta la playlist en CSV. También puedes conectar Spotify en Ajustes › Sistema para importarla sin ningún archivo.</string>
+    <string name="action_paste">Pegar</string>
+    <string name="import_spotify_link_hint">Pega el enlace de una playlist de Spotify</string>
+    <string name="import_spotify_link_detail">Cualquier playlist pública se importa directamente desde su enlace, sin archivos. Sin iniciar sesión, Spotify comparte las primeras 100 canciones de una playlist; conecta Spotify en Ajustes › Sistema para traer todas las tuyas.</string>
+    <string name="import_tab_link">Enlace de Spotify</string>
+    <string name="import_tab_file">Archivo</string>
+    <string name="import_spotify_looking_up">Buscando la playlist…</string>
+    <string name="import_spotify_preview_partial">Sin iniciar sesión, Spotify comparte las primeras %1$d.</string>
+    <plurals name="import_spotify_preview_songs">
+        <item quantity="one">%d canción</item>
+        <item quantity="many">%d canciones</item>
+        <item quantity="other">%d canciones</item>
+    </plurals>
+    <string name="import_spotify_partial">Sin iniciar sesión, Spotify comparte %1$d de las %2$d canciones de esta playlist.</string>
+    <string name="import_spotify_not_found">Spotify no encontró esta playlist. Puede ser privada o haberse eliminado.</string>
+    <string name="import_spotify_unreachable">No se pudo conectar con Spotify. Revisa tu conexión e inténtalo de nuevo.</string>
     <string name="import_apple_music_instructions">En la app Música del Mac: Archivo › Biblioteca › Exportar playlist, con el formato Texto. El .txt resultante se lee aquí tal cual.</string>
     <string name="import_youtube_music_instructions">Exporta la playlist con Google Takeout o con un conversor como TuneMyMusic y elige el .csv que genere.</string>
     <string name="create_playlist_title">Crear playlist</string>

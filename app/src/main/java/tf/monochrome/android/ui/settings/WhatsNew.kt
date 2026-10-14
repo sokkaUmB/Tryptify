@@ -166,6 +166,12 @@ object WhatsNew {
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
+                    section = PLAYLISTS,
+                    title = "Import a Spotify playlist from its link",
+                    body = "In Create playlist, paste a Spotify playlist link: it shows the playlist's cover, name and length, then imports it. No file and no account needed; without one, Spotify shares a playlist's first 100 songs.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
                     section = DISCOVER,
                     title = "Search the galaxy",
                     body = "A search button on both galaxies finds a genre, by any of its names, or an artist, and flies there.",

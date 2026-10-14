@@ -79,6 +79,21 @@
     <string name="action_see_all">Tout afficher</string>
     <string name="action_retry">Réessayer</string>
     <string name="import_spotify_instructions">Ouvrez exportify.net, connectez-vous et exportez la playlist au format CSV. Vous pouvez aussi connecter Spotify dans Paramètres › Système pour importer sans fichier.</string>
+    <string name="action_paste">Coller</string>
+    <string name="import_spotify_link_hint">Collez le lien d’une playlist Spotify</string>
+    <string name="import_spotify_link_detail">Toute playlist publique s’importe directement depuis son lien, sans fichier. Sans connexion, Spotify partage les 100 premiers titres d’une playlist ; connectez Spotify dans Réglages › Système pour importer toutes les vôtres.</string>
+    <string name="import_tab_link">Lien Spotify</string>
+    <string name="import_tab_file">Fichier</string>
+    <string name="import_spotify_looking_up">Recherche de la playlist…</string>
+    <string name="import_spotify_preview_partial">Sans connexion, Spotify partage les %1$d premiers.</string>
+    <plurals name="import_spotify_preview_songs">
+        <item quantity="one">%d titre</item>
+        <item quantity="many">%d titres</item>
+        <item quantity="other">%d titres</item>
+    </plurals>
+    <string name="import_spotify_partial">Sans connexion, Spotify partage %1$d des %2$d titres de cette playlist.</string>
+    <string name="import_spotify_not_found">Spotify n’a pas trouvé cette playlist. Elle est peut-être privée ou supprimée.</string>
+    <string name="import_spotify_unreachable">Impossible de joindre Spotify. Vérifiez votre connexion et réessayez.</string>
     <string name="import_apple_music_instructions">Dans l’app Musique sur Mac : Fichier › Bibliothèque › Exporter la playlist, avec le format Texte. Le fichier .txt obtenu est lu ici tel quel.</string>
     <string name="import_youtube_music_instructions">Exportez la playlist avec Google Takeout ou un convertisseur comme TuneMyMusic, puis choisissez le fichier .csv obtenu.</string>
     <string name="create_playlist_title">Créer une playlist</string>

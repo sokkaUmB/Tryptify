@@ -78,6 +78,20 @@
     <string name="action_see_all">Alle anzeigen</string>
     <string name="action_retry">Erneut versuchen</string>
     <string name="import_spotify_instructions">Öffne exportify.net, melde dich an und exportiere die Playlist als CSV. Oder verbinde Spotify unter Einstellungen › System, dann geht der Import ganz ohne Datei.</string>
+    <string name="action_paste">Einfügen</string>
+    <string name="import_spotify_link_hint">Spotify-Playlist-Link einfügen</string>
+    <string name="import_spotify_link_detail">Jede öffentliche Playlist lässt sich direkt über ihren Link importieren, ohne Datei. Ohne Anmeldung teilt Spotify die ersten 100 Titel einer Playlist; verbinde Spotify unter Einstellungen › System, um deine eigenen vollständig zu übernehmen.</string>
+    <string name="import_tab_link">Spotify-Link</string>
+    <string name="import_tab_file">Datei</string>
+    <string name="import_spotify_looking_up">Playlist wird gesucht …</string>
+    <string name="import_spotify_preview_partial">Ohne Anmeldung teilt Spotify die ersten %1$d.</string>
+    <plurals name="import_spotify_preview_songs">
+        <item quantity="one">%d Titel</item>
+        <item quantity="other">%d Titel</item>
+    </plurals>
+    <string name="import_spotify_partial">Ohne Anmeldung teilt Spotify %1$d der %2$d Titel dieser Playlist.</string>
+    <string name="import_spotify_not_found">Spotify hat diese Playlist nicht gefunden. Sie ist vielleicht privat oder gelöscht.</string>
+    <string name="import_spotify_unreachable">Spotify ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.</string>
     <string name="import_apple_music_instructions">In der Musik-App auf dem Mac: Ablage › Mediathek › Playlist exportieren, mit dem Format „Text“. Die erzeugte .txt-Datei wird hier unverändert gelesen.</string>
     <string name="import_youtube_music_instructions">Exportiere die Playlist mit Google Takeout oder einem Konverter wie TuneMyMusic und wähle die erzeugte .csv-Datei.</string>
     <string name="create_playlist_title">Playlist erstellen</string>

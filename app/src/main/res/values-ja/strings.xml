@@ -77,6 +77,19 @@
     <string name="action_see_all">すべて表示</string>
     <string name="action_retry">再試行</string>
     <string name="import_spotify_instructions">exportify.net を開いてサインインし、プレイリストを CSV で書き出してください。または「設定 › システム」で Spotify に接続すれば、ファイルなしで読み込めます。</string>
+    <string name="action_paste">貼り付け</string>
+    <string name="import_spotify_link_hint">Spotify のプレイリストのリンクを貼り付け</string>
+    <string name="import_spotify_link_detail">公開プレイリストはリンクからそのまま取り込めます。ファイルは不要です。サインインしない場合、Spotify が共有するのはプレイリストの最初の 100 曲です。自分のプレイリストをすべて取り込むには、設定 › システムで Spotify を接続してください。</string>
+    <string name="import_tab_link">Spotify のリンク</string>
+    <string name="import_tab_file">ファイル</string>
+    <string name="import_spotify_looking_up">プレイリストを確認しています…</string>
+    <string name="import_spotify_preview_partial">サインインしていないため、Spotify が共有するのは最初の %1$d 曲です。</string>
+    <plurals name="import_spotify_preview_songs">
+        <item quantity="other">%d 曲</item>
+    </plurals>
+    <string name="import_spotify_partial">サインインしていないため、Spotify はこのプレイリストの %2$d 曲のうち %1$d 曲だけを共有しています。</string>
+    <string name="import_spotify_not_found">Spotify でこのプレイリストが見つかりません。非公開か削除された可能性があります。</string>
+    <string name="import_spotify_unreachable">Spotify に接続できません。接続を確認してもう一度お試しください。</string>
     <string name="import_apple_music_instructions">Mac の「ミュージック」App で「ファイル › ライブラリ › プレイリストを書き出す」を選び、フォーマットを「テキスト」にします。書き出された .txt はそのまま読み込めます。</string>
     <string name="import_youtube_music_instructions">Google データエクスポート（Takeout）や TuneMyMusic などの変換ツールでプレイリストを書き出し、作成された .csv を選んでください。</string>
     <string name="create_playlist_title">プレイリストを作成</string>

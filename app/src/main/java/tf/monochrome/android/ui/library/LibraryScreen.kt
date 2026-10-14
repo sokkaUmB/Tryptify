@@ -245,6 +245,7 @@ fun LibraryScreen(
         )
     }
 
+    val importLinkContext = androidx.compose.ui.platform.LocalContext.current
     if (showCreatePlaylistDialog) {
         CreatePlaylistDialog(
             onDismiss = { showCreatePlaylistDialog = false },
@@ -255,7 +256,17 @@ fun LibraryScreen(
             onImportCsv = { uri, strict, name, description ->
                 viewModel.importCsvPlaylist(uri, strict, name, description)
                 showCreatePlaylistDialog = false
-            }
+            },
+            // A pasted Spotify link: read and matched in the import service,
+            // with its progress notification, so it carries on if the screen
+            // is left. The toast below reports it like a file import.
+            onImportLink = { url, strict, name, description ->
+                viewModel.resetImportProgress()
+                tf.monochrome.android.data.import_.SpotifyImportForegroundService.importUrl(
+                    importLinkContext, url, strict, name, description,
+                )
+                showCreatePlaylistDialog = false
+            },
         )
     }
 
@@ -266,13 +277,18 @@ fun LibraryScreen(
     LaunchedEffect(importProgressState.value) {
         when (val p = importProgressState.value) {
             is tf.monochrome.android.data.import_.ImportProgress.Done -> {
+                val done = importMsgContext.getString(
+                    R.string.import_done_toast,
+                    importMsgContext.resources.getQuantityString(R.plurals.tracks_of_total, p.total, p.matched, p.total),
+                    p.playlistName,
+                )
+                // Only part of a long public Spotify playlist could be read.
+                val partial = p.sourceTotal?.let {
+                    importMsgContext.getString(R.string.import_spotify_partial, p.total, it)
+                }
                 android.widget.Toast.makeText(
                     importMsgContext,
-                    importMsgContext.getString(
-                        R.string.import_done_toast,
-                        importMsgContext.resources.getQuantityString(R.plurals.tracks_of_total, p.total, p.matched, p.total),
-                        p.playlistName,
-                    ),
+                    listOfNotNull(done, partial).joinToString("\n"),
                     android.widget.Toast.LENGTH_LONG
                 ).show()
                 viewModel.resetImportProgress()

@@ -77,6 +77,19 @@
     <string name="action_see_all">查看全部</string>
     <string name="action_retry">重试</string>
     <string name="import_spotify_instructions">打开 exportify.net，登录后将歌单导出为 CSV。也可以在“设置 › 系统”中连接 Spotify，无需文件即可导入。</string>
+    <string name="action_paste">粘贴</string>
+    <string name="import_spotify_link_hint">粘贴 Spotify 歌单链接</string>
+    <string name="import_spotify_link_detail">任何公开歌单都能直接通过链接导入，无需文件。未登录时，Spotify 只提供歌单的前 100 首歌曲；在 设置 › 系统 中连接 Spotify，即可完整导入你自己的歌单。</string>
+    <string name="import_tab_link">Spotify 链接</string>
+    <string name="import_tab_file">文件</string>
+    <string name="import_spotify_looking_up">正在查找歌单…</string>
+    <string name="import_spotify_preview_partial">未登录时，Spotify 只提供前 %1$d 首。</string>
+    <plurals name="import_spotify_preview_songs">
+        <item quantity="other">%d 首歌曲</item>
+    </plurals>
+    <string name="import_spotify_partial">未登录时，Spotify 只提供了此歌单 %2$d 首歌曲中的 %1$d 首。</string>
+    <string name="import_spotify_not_found">Spotify 找不到这个歌单，它可能是私密的或已被删除。</string>
+    <string name="import_spotify_unreachable">无法连接 Spotify。请检查网络连接后重试。</string>
     <string name="import_apple_music_instructions">在 Mac 上的“音乐”App 中：选择“文件 › 资料库 › 导出播放列表”，格式选“文本”。导出的 .txt 文件可直接在此读取。</string>
     <string name="import_youtube_music_instructions">使用 Google Takeout 或 TuneMyMusic 等转换工具导出歌单，然后选择生成的 .csv 文件。</string>
     <string name="create_playlist_title">创建歌单</string>

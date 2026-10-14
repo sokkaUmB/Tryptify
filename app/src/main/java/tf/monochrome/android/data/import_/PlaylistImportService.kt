@@ -1,6 +1,11 @@
 package tf.monochrome.android.data.import_
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import tf.monochrome.android.domain.model.Track
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import tf.monochrome.android.data.repository.LibraryRepository
@@ -24,6 +29,11 @@ sealed interface ImportProgress {
         val total: Int,
         /** "Title — Artist" strings for tracks with no catalog match. */
         val unmatched: List<String>,
+        /**
+         * The source playlist's full length when only part of it could be
+         * read (Spotify's public embed lists the first 100); else null.
+         */
+        val sourceTotal: Int? = null,
     ) : ImportProgress
 
     data class Failed(val message: String) : ImportProgress
@@ -65,44 +75,43 @@ class PlaylistImportService @Inject constructor(
         description: String?,
         tracks: List<CsvTrack>,
         strictAlbumMatch: Boolean,
+        /** See [ImportProgress.Done.sourceTotal]. */
+        sourceTotal: Int? = null,
     ): ImportProgress.Done {
         val playlistId = libraryRepository.createPlaylist(name, description)
         val unmatched = mutableListOf<String>()
         var matched = 0
-
-        tracks.forEachIndexed { index, csvTrack ->
-            _progress.value = ImportProgress.Matching(
-                current = index + 1,
-                total = tracks.size,
-                matched = matched,
-            )
-
-            val query = "${csvTrack.title} ${csvTrack.artist}"
-            // Qobuz first: searchQobuz registers every hit in QobuzIdRegistry,
-            // which is what routes the stored id to Qobuz playback later.
-            // Tidal is the per-track fallback when Qobuz has no result (or no
-            // Qobuz instance is configured, in which case it returns nothing).
-            val results = musicRepository.searchQobuz(query).getOrNull()?.tracks
-                ?.takeIf { it.isNotEmpty() }
-                ?: musicRepository.searchTracks(query).getOrNull().orEmpty()
-
-            val bestMatch = if (strictAlbumMatch && csvTrack.album.isNotBlank()) {
-                // Truly strict: if no result's album matches, leave the row
-                // unmatched rather than substituting an arbitrary same-named
-                // track from a different album. Titles are normalized (edition
-                // suffixes, punctuation) so "(Remastered)" etc. don't cause
-                // false misses.
-                val wanted = normalizeAlbum(csvTrack.album)
-                results.find { normalizeAlbum(it.album?.title.orEmpty()) == wanted }
-            } else {
-                results.firstOrNull()
+        // Searched [MATCH_PARALLELISM] at a time. Matching is a network wait
+        // per song, one or two searches each, so one at a time made a
+        // 100-song playlist a hundred round trips back to back. The playlist
+        // is still filled in its own order: each song is added once it and
+        // every song before it have been searched, and the adds stay on this
+        // coroutine, one by one.
+        val completed = java.util.concurrent.atomic.AtomicInteger(0)
+        val found = java.util.concurrent.atomic.AtomicInteger(0)
+        _progress.value = ImportProgress.Matching(current = 0, total = tracks.size, matched = 0)
+        coroutineScope {
+            val permits = Semaphore(MATCH_PARALLELISM)
+            val searches = tracks.map { csvTrack ->
+                async {
+                    permits.withPermit { bestMatchFor(csvTrack, strictAlbumMatch) }.also { hit ->
+                        if (hit != null) found.incrementAndGet()
+                        _progress.value = ImportProgress.Matching(
+                            current = completed.incrementAndGet(),
+                            total = tracks.size,
+                            matched = found.get(),
+                        )
+                    }
+                }
             }
-
-            if (bestMatch != null) {
-                libraryRepository.addTrackToPlaylist(playlistId, bestMatch)
-                matched++
-            } else {
-                unmatched += "${csvTrack.title} — ${csvTrack.artist}"
+            searches.forEachIndexed { index, search ->
+                val bestMatch = search.await()
+                if (bestMatch != null) {
+                    libraryRepository.addTrackToPlaylist(playlistId, bestMatch)
+                    matched++
+                } else {
+                    unmatched += "${tracks[index].title} — ${tracks[index].artist}"
+                }
             }
         }
 
@@ -112,9 +121,41 @@ class PlaylistImportService @Inject constructor(
             matched = matched,
             total = tracks.size,
             unmatched = unmatched,
+            sourceTotal = sourceTotal?.takeIf { it > tracks.size },
         )
         _progress.value = done
         return done
+    }
+
+    /** The catalog track [csvTrack] is, or null. */
+    private suspend fun bestMatchFor(csvTrack: CsvTrack, strictAlbumMatch: Boolean): Track? {
+        val query = "${csvTrack.title} ${csvTrack.artist}"
+        // Qobuz first: searchQobuz registers every hit in QobuzIdRegistry,
+        // which is what routes the stored id to Qobuz playback later.
+        // Tidal is the per-track fallback when Qobuz has no result (or no
+        // Qobuz instance is configured, in which case it returns nothing).
+        val results = musicRepository.searchQobuz(query).getOrNull()?.tracks
+            ?.takeIf { it.isNotEmpty() }
+            ?: musicRepository.searchTracks(query).getOrNull().orEmpty()
+        return if (strictAlbumMatch && csvTrack.album.isNotBlank()) {
+            // Truly strict: if no result's album matches, leave the row
+            // unmatched rather than substituting an arbitrary same-named
+            // track from a different album. Titles are normalized (edition
+            // suffixes, punctuation) so "(Remastered)" etc. don't cause
+            // false misses.
+            val wanted = normalizeAlbum(csvTrack.album)
+            results.find { normalizeAlbum(it.album?.title.orEmpty()) == wanted }
+        } else {
+            results.firstOrNull()
+        }
+    }
+
+    private companion object {
+        /**
+         * Searches in flight at once: enough to hide most of each round
+         * trip, few enough not to flood the instance being searched.
+         */
+        const val MATCH_PARALLELISM = 6
     }
 
     /**

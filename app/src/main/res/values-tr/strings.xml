@@ -78,6 +78,20 @@
     <string name="action_see_all">Tümünü gör</string>
     <string name="action_retry">Tekrar dene</string>
     <string name="import_spotify_instructions">exportify.net’i açın, oturum açın ve çalma listesini CSV olarak dışa aktarın. Ya da hiç dosya kullanmadan içe aktarmak için Spotify’ı Ayarlar › Sistem’den bağlayın.</string>
+    <string name="action_paste">Yapıştır</string>
+    <string name="import_spotify_link_hint">Bir Spotify çalma listesi bağlantısı yapıştırın</string>
+    <string name="import_spotify_link_detail">Herkese açık her çalma listesi, dosyaya gerek kalmadan doğrudan bağlantısından içe aktarılır. Oturum açmadan Spotify bir listenin ilk 100 şarkısını paylaşır; kendi listelerinizin tamamını almak için Ayarlar › Sistem\'den Spotify\'ı bağlayın.</string>
+    <string name="import_tab_link">Spotify bağlantısı</string>
+    <string name="import_tab_file">Dosya</string>
+    <string name="import_spotify_looking_up">Çalma listesi aranıyor…</string>
+    <string name="import_spotify_preview_partial">Oturum açmadan Spotify ilk %1$d şarkıyı paylaşır.</string>
+    <plurals name="import_spotify_preview_songs">
+        <item quantity="one">%d şarkı</item>
+        <item quantity="other">%d şarkı</item>
+    </plurals>
+    <string name="import_spotify_partial">Oturum açmadan Spotify bu listenin %2$d şarkısından %1$d tanesini paylaşıyor.</string>
+    <string name="import_spotify_not_found">Spotify bu çalma listesini bulamadı. Gizli ya da silinmiş olabilir.</string>
+    <string name="import_spotify_unreachable">Spotify\'a ulaşılamadı. Bağlantınızı kontrol edip yeniden deneyin.</string>
     <string name="import_apple_music_instructions">Mac’teki Müzik uygulamasında: Dosya › Arşiv › Çalma Listesini Dışa Aktar’ı seçin ve biçimi Metin olarak ayarlayın. Oluşan .txt dosyası burada olduğu gibi okunur.</string>
     <string name="import_youtube_music_instructions">Çalma listesini Google Takeout veya TuneMyMusic gibi bir dönüştürücüyle dışa aktarın ve oluşan .csv dosyasını seçin.</string>
     <string name="create_playlist_title">Çalma listesi oluştur</string>
