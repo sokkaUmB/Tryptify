@@ -211,6 +211,8 @@ class LibusbAudioSink(
     private var lastPlayedAdvanceNs = 0L
     private var watchdogTripped = false
     private var firstWriteLogged = false
+    // Once per sink: samples that were not audio reached the packer.
+    private var notAudioLogged = false
     private var partialWriteLogged = false
 
     private var gainScratch: ByteBuffer = AudioProcessor.EMPTY_BUFFER
@@ -1397,9 +1399,10 @@ class LibusbAudioSink(
             tailPeeked = mix.peek(tailScratch, frames, outChannels)
             // The tail's own gain is its fade times the player's volume; the
             // DAC level goes on top, as it does for the song coming in.
-            tailGain = mix.gain * volumeController.getDacGain()
+            tailGain = mix.gain.coerceIn(0f, 1f) * volumeController.getDacGain()
         }
         val mixing = tailPeeked > 0
+        var notAudio = false
 
         val widen16 = sourceIs16Widened
         var o = 0
@@ -1407,7 +1410,13 @@ class LibusbAudioSink(
         var channel = 0
         var frame = 0
         for (i in 0 until samples) {
-            val tail = if (mixing) tailScratch[i] * tailGain else 0f
+            // Every sample is bounded before its level, not after: clamped
+            // after, a value far past full scale (a decoder's 16-bit samples
+            // read as float, a filter blowing up) came out at full scale
+            // whatever the volume, as a burst between songs. See safeTailSample.
+            val rawTail = if (mixing) tailScratch[i] else 0f
+            if (mixing && !looksLikeAudio(rawTail, TAIL_LIMIT)) notAudio = true
+            val tail = if (mixing) safeTailSample(rawTail) * tailGain else 0f
             val sample = if (widen16) {
                 // Little-endian by hand, like applyGainPcmInt: with no DSP
                 // running, src is the renderer's own buffer, whose ByteBuffer
@@ -1416,7 +1425,9 @@ class LibusbAudioSink(
                 val s16 = (src.get(at).toInt() and 0xFF) or (src.get(at + 1).toInt() shl 8)
                 int16ToSubslotSample(s16, gain, tail, bytesPerSample)
             } else {
-                floatToSubslotSample(src.getFloat(srcPos + (i shl 2)) * gain + tail, bytesPerSample)
+                val raw = src.getFloat(srcPos + (i shl 2))
+                if (!looksLikeAudio(raw, SOURCE_HEADROOM)) notAudio = true
+                floatToSubslotSample(safeSourceSample(raw) * gain + tail, bytesPerSample)
             }
             out.put(o, sample.toByte())
             if (bytesPerSample > 1) out.put(o + 1, (sample shr 8).toByte())
@@ -1431,6 +1442,15 @@ class LibusbAudioSink(
             }
         }
 
+        if (notAudio && !notAudioLogged) {
+            notAudioLogged = true
+            Log.w(
+                TAG,
+                "samples past full scale or not numbers reached the DAC packer " +
+                    "(tail mixing=$mixing, float source=${!widen16}) — held to the level, " +
+                    "not played at full scale",
+            )
+        }
         out.position(0)
         out.limit(samples * bytesPerSample)
         return out
@@ -1531,6 +1551,35 @@ class LibusbAudioSink(
         private const val kIsoStallNs = 400_000_000L
     }
 }
+
+/**
+ * A crossfade tail sample as the packer may add it. The tail is a finished
+ * song fading out, never past full scale; a value that is not a number is
+ * silence and one past full scale is held at it, before the tail's gain.
+ *
+ * Bounded before the gain, because the packers clamp only after it: a tail
+ * value of 1e30 (a decoder's 16-bit samples read as float) times any gain
+ * still rounds to the top of the range, so the DAC played full scale at a
+ * song change whatever the volume was set to.
+ */
+internal fun safeTailSample(t: Float): Float = if (t.isFinite()) t.coerceIn(-1f, 1f) else 0f
+
+/**
+ * A float sample of the main stream before its level: [SOURCE_HEADROOM] of
+ * room past full scale for an EQ boost, and no more, so the DAC is never more
+ * than that above the level set, whatever the stream holds.
+ */
+internal fun safeSourceSample(x: Float): Float =
+    if (x.isFinite()) x.coerceIn(-SOURCE_HEADROOM, SOURCE_HEADROOM) else 0f
+
+/** Whether [x] could be audio: a number, within [limit] of silence. */
+internal fun looksLikeAudio(x: Float, limit: Float): Boolean = x.isFinite() && x >= -limit && x <= limit
+
+/** Room past full scale a float stream keeps before its level: +6 dB. */
+internal const val SOURCE_HEADROOM = 2f
+
+/** Past this a tail sample is not audio (a finished song is within ±1). */
+internal const val TAIL_LIMIT = 1.5f
 
 /**
  * A float sample as the little-endian integer a USB Audio Type I subslot of

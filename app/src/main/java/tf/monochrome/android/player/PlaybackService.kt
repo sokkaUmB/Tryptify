@@ -1047,6 +1047,12 @@ class PlaybackService : MediaSessionService() {
                             // through untouched. DefaultAudioSink gets the
                             // equivalent from Media3; this chain is ours to
                             // feed.
+                            //
+                            // Behind FloatPcmGuard, as the hi-res chain is: a
+                            // decoder that declares float and writes 16-bit
+                            // sends samples far past full scale, which the DAC
+                            // played at full scale whatever its level.
+                            tf.monochrome.android.audio.usb.FloatPcmGuard(),
                             tf.monochrome.android.audio.usb.ToFloatPcmAudioProcessor(),
                             channelDetectorProcessor,
                             bpmTap,
@@ -1146,6 +1152,9 @@ class PlaybackService : MediaSessionService() {
                         delegate = fallback,
                         driver = libusbDriver,
                         volumeController = bypassVolumeController,
+                        // Nothing else runs here, but a float stream that is
+                        // really 16-bit must still not reach the DAC as static.
+                        processors = listOf(tf.monochrome.android.audio.usb.FloatPcmGuard()),
                     )
                 }
             }
