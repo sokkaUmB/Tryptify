@@ -90,6 +90,7 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
     entry("Use system font size", R.string.settings_use_system_font_size, "Appearance", listOf("text size", "accessibility", "os", "display")),
     entry("Romaji Lyrics", R.string.settings_romaji_lyrics, "Appearance", listOf("japanese", "transliterate", "latin", "kana", "lyrics")),
     entry("Show Explicit Badges", R.string.settings_show_explicit_badges, "Appearance", listOf("explicit", "badge", "parental", "e")),
+    entry("Song row badges", R.string.settings_row_badges, "Appearance", listOf("badge", "badges", "chip", "tag", "tags", "source", "local", "qobuz", "tidal", "quality", "lossless", "flac", "atmos", "download", "duration", "length", "list", "row")),
     entry("Legacy player", R.string.settings_legacy_player, "Appearance", listOf("old", "flat", "classic", "pre-glass", "design")),
     entry("Remove liquid glass", R.string.settings_remove_liquid_glass, "Appearance", listOf("flat", "opaque", "blur", "performance", "glass")),
     entry("Disable animations", R.string.settings_disable_animations, "Appearance", listOf("motion", "reduce", "still", "accessibility")),

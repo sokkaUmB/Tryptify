@@ -275,6 +275,11 @@ class PreferencesManager @Inject constructor(
         private val UPDATE_LATEST_URL = stringPreferencesKey("update_latest_url")
         private val UPDATE_DISMISSED_VERSION = stringPreferencesKey("update_dismissed_version")
         private val SHOW_EXPLICIT_BADGES = booleanPreferencesKey("show_explicit_badges")
+        private val ROW_BADGE_SOURCE = booleanPreferencesKey("row_badge_source")
+        private val ROW_BADGE_QUALITY = booleanPreferencesKey("row_badge_quality")
+        private val ROW_BADGE_FORMAT = booleanPreferencesKey("row_badge_format")
+        private val ROW_BADGE_DOWNLOAD = booleanPreferencesKey("row_badge_download")
+        private val ROW_BADGE_DURATION = booleanPreferencesKey("row_badge_duration")
 
         // Audio extras
         private val NORMALIZATION_ENABLED = booleanPreferencesKey("normalization_enabled")
@@ -504,6 +509,7 @@ class PreferencesManager @Inject constructor(
             CUSTOM_THEME_ENABLED, CUSTOM_ACCENT, CUSTOM_BACKGROUND,
             FONT_SCALE, FONT_SCALE_FOLLOW_SYSTEM,
             GAPLESS_PLAYBACK, GAPLESS_NO_RESAMPLE, SHOW_EXPLICIT_BADGES,
+            ROW_BADGE_SOURCE, ROW_BADGE_QUALITY, ROW_BADGE_FORMAT, ROW_BADGE_DOWNLOAD, ROW_BADGE_DURATION,
             NORMALIZATION_ENABLED, CROSSFADE_DURATION, MULTICHANNEL_DOWNMIX_ENABLED,
             PLAYBACK_SPEED, PRESERVE_PITCH, PITCH_SEMITONES, SPEED_UNIT_SEMITONES, SPEED_UNIT_BPM,
             PITCH_ENGINE, PITCH_QUALITY,
@@ -1102,6 +1108,27 @@ class PreferencesManager @Inject constructor(
     }
     suspend fun setShowExplicitBadges(enabled: Boolean) {
         dataStore.edit { it[SHOW_EXPLICIT_BADGES] = enabled }
+    }
+
+    /** Which badges song rows carry ([RowBadges]); all of them by default. */
+    val rowBadges: Flow<RowBadges> = dataStore.data.map { prefs ->
+        RowBadges(
+            source = prefs[ROW_BADGE_SOURCE] ?: true,
+            quality = prefs[ROW_BADGE_QUALITY] ?: true,
+            format = prefs[ROW_BADGE_FORMAT] ?: true,
+            download = prefs[ROW_BADGE_DOWNLOAD] ?: true,
+            duration = prefs[ROW_BADGE_DURATION] ?: true,
+        )
+    }.distinctUntilChanged()
+
+    suspend fun setRowBadges(badges: RowBadges) {
+        dataStore.edit {
+            it[ROW_BADGE_SOURCE] = badges.source
+            it[ROW_BADGE_QUALITY] = badges.quality
+            it[ROW_BADGE_FORMAT] = badges.format
+            it[ROW_BADGE_DOWNLOAD] = badges.download
+            it[ROW_BADGE_DURATION] = badges.duration
+        }
     }
 
 

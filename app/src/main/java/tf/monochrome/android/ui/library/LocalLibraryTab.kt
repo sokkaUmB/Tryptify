@@ -829,13 +829,16 @@ private fun SongRow(
                         onAlbumClick = { navController.openAlbum(track.albumId) },
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    Spacer(modifier = Modifier.width(MonoDimens.spacingSm))
-                    tf.monochrome.android.ui.components.SourcePill(track.sourceType)
-                    if (track.isDolbyAtmos) {
+                    val badges = tf.monochrome.android.ui.theme.rowBadges()
+                    if (badges.source) {
+                        Spacer(modifier = Modifier.width(MonoDimens.spacingSm))
+                        tf.monochrome.android.ui.components.SourcePill(track.sourceType)
+                    }
+                    if (badges.format && track.isDolbyAtmos) {
                         Spacer(modifier = Modifier.width(4.dp))
                         tf.monochrome.android.ui.components.DolbyAtmosBadgePill()
                     }
-                    track.qualityBadge?.let { badge ->
+                    track.qualityBadge?.takeIf { badges.quality }?.let { badge ->
                         Spacer(modifier = Modifier.width(MonoDimens.spacingSm))
                         Text(
                             badge,
@@ -845,11 +848,13 @@ private fun SongRow(
                     }
                 }
             }
-            Text(
-                track.formattedDuration,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (tf.monochrome.android.ui.theme.rowBadges().duration) {
+                Text(
+                    track.formattedDuration,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             IconButton(
                 onClick = { onMoreClick(track) },
                 modifier = Modifier.size(32.dp)

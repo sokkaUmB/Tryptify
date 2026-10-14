@@ -154,6 +154,12 @@ object WhatsNew {
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Choose a song row's badges",
+                    body = "Settings › Appearance › Song row badges turns off the source, quality, format, download and length marks on every song list, one by one or all at once, so a song's artist and album get the whole line.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
                     section = DISCOVER,
                     title = "Search the galaxy",
                     body = "A search button on both galaxies finds a genre, by any of its names, or an artist, and flies there.",

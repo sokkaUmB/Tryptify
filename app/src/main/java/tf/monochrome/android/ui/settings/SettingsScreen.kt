@@ -952,6 +952,36 @@ private fun InterfaceControls(viewModel: SettingsViewModel, navController: NavCo
         checked = explicit,
         onCheckedChange = { viewModel.setShowExplicitBadges(it) }
     )
+    // Song row badges: all of them at once, then each. Every one takes line
+    // width from the artist and album beside it.
+    val rowBadges by viewModel.rowBadges.collectAsStateWithLifecycle()
+    SettingSwitchItem(
+        title = stringResource(R.string.settings_row_badges),
+        subtitle = stringResource(R.string.settings_row_badges_summary),
+        checked = rowBadges.any,
+        onCheckedChange = {
+            viewModel.setRowBadges(
+                if (it) tf.monochrome.android.data.preferences.RowBadges()
+                else tf.monochrome.android.data.preferences.RowBadges.NONE
+            )
+        }
+    )
+    for ((badge, title, subtitle) in listOf(
+        Triple(tf.monochrome.android.data.preferences.RowBadge.SOURCE, R.string.settings_row_badge_source, R.string.settings_row_badge_source_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.QUALITY, R.string.settings_row_badge_quality, R.string.settings_row_badge_quality_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.FORMAT, R.string.settings_row_badge_format, R.string.settings_row_badge_format_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.DOWNLOAD, R.string.settings_row_badge_download, R.string.settings_row_badge_download_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.DURATION, R.string.settings_row_badge_duration, R.string.settings_row_badge_duration_summary),
+    )) {
+        Box(modifier = Modifier.padding(start = 16.dp)) {
+            SettingSwitchItem(
+                title = stringResource(title),
+                subtitle = stringResource(subtitle),
+                checked = rowBadges.shows(badge),
+                onCheckedChange = { viewModel.setRowBadges(rowBadges.with(badge, it)) }
+            )
+        }
+    }
     val romaji by viewModel.romajiLyrics.collectAsStateWithLifecycle()
     SettingSwitchItem(
         title = stringResource(R.string.settings_romaji_lyrics),

@@ -178,6 +178,8 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
     val showExplicitBadges: StateFlow<Boolean> = preferences.showExplicitBadges
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val rowBadges: StateFlow<tf.monochrome.android.data.preferences.RowBadges> = preferences.rowBadges
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.data.preferences.RowBadges())
 
     // --- Scrobbling ---
     val lastFmEnabled: StateFlow<Boolean> = preferences.lastFmEnabled
@@ -497,6 +499,7 @@ class SettingsViewModel @Inject constructor(
     // --- Interface actions ---
     fun setGaplessPlayback(enabled: Boolean) { viewModelScope.launch { preferences.setGaplessPlayback(enabled) } }
     fun setShowExplicitBadges(enabled: Boolean) { viewModelScope.launch { preferences.setShowExplicitBadges(enabled) } }
+    fun setRowBadges(badges: tf.monochrome.android.data.preferences.RowBadges) { viewModelScope.launch { preferences.setRowBadges(badges) } }
 
     // --- Scrobbling actions ---
     /**
