@@ -50,7 +50,6 @@ class MediaScanner @Inject constructor(
 ) {
 
     fun fullScan(
-        minDurationMs: Long = 30_000,
         excludedPaths: Set<String> = emptySet()
     ): Flow<ScanProgress> = flow {
         try {
@@ -82,7 +81,7 @@ class MediaScanner @Inject constructor(
                 folderIndexer.index(unindexed)
             }
             val mediaStoreFiles =
-                mediaStoreSource.queryAllAudio(minDurationMs, excluded, folderRoots)
+                mediaStoreSource.queryAllAudio(excluded, folderRoots)
             emit(ScanProgress.Started(totalFiles = mediaStoreFiles.size))
 
             // One projection query up front instead of a findByPath() SELECT
@@ -157,9 +156,7 @@ class MediaScanner @Inject constructor(
      * before storage is mounted, would otherwise empty the library. And when
      * nothing changed, nothing is rebuilt or announced.
      */
-    fun incrementalScan(
-        minDurationMs: Long = 30_000
-    ): Flow<ScanProgress> = flow {
+    fun incrementalScan(): Flow<ScanProgress> = flow {
         try {
             val folderRoots = preferences.userFolderRoots.first()
             // Exclusions apply here too. They used to be read only by fullScan,
@@ -168,7 +165,7 @@ class MediaScanner @Inject constructor(
             // until the next song landed in that folder.
             val excluded = preferences.excludedPaths.first()
             val audio = mediaStoreSource.queryAllAudio(
-                minDurationMs, excluded, folderRoots, includeAtmosVideos = false,
+                excluded, folderRoots, includeAtmosVideos = false,
             )
             val known = localMediaDao.getAllTrackScanInfo().associateBy { it.filePath }
             val changed = audio.filter { needsIncrementalRead(known[it.absolutePath], it.dateModified) }
@@ -186,7 +183,7 @@ class MediaScanner @Inject constructor(
             // Same roots filter as fullScan so the prune diff never deletes
             // tracks a full scan would keep; videos by path, for the reason above.
             val present = audio.mapTo(HashSet()) { it.absolutePath }
-            present += mediaStoreSource.queryAtmosVideoCandidatePaths(minDurationMs, excluded)
+            present += mediaStoreSource.queryAtmosVideoCandidatePaths(excluded)
             val removedCount = pruneDeleted(present, cautious = true)
 
             if (changed.isEmpty() && removedCount == 0) {

@@ -147,6 +147,12 @@ object WhatsNew {
                     body = "An artist's first album orbits nearest and each later one further out. Albums you play a lot glow brighter. Tap a moon to play it; long-press a star to list every album and track.",
                 ),
                 WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = LIBRARY,
+                    title = "Short tracks in your library",
+                    body = "A library scan no longer leaves out tracks under 30 seconds, so intros, interludes and skits are in your albums. Atmos music videos of any length are found too.",
+                ),
+                WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
                     section = DISCOVER,
                     title = "Search the galaxy",

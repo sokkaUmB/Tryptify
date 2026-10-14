@@ -125,7 +125,6 @@ class MediaStoreSource @Inject constructor(
      * folder, and the E-AC-3 requirement is already a narrow enough filter.
      */
     private fun queryEac3Video(
-        minDurationMs: Long,
         excludedPaths: Set<String>,
     ): List<AudioFileInfo> {
         val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -134,11 +133,9 @@ class MediaStoreSource @Inject constructor(
             MediaStore.Video.Media.EXTERNAL_CONTENT_URI
         }
 
-        val selection = "${MediaStore.Video.Media.DURATION} >= ?"
-        val selectionArgs = arrayOf(minDurationMs.toString())
-
+        // No length floor: a library takes every length, short tracks too.
         val results = mutableListOf<AudioFileInfo>()
-        contentResolver.query(collection, videoProjection, selection, selectionArgs, null)
+        contentResolver.query(collection, videoProjection, null, null, null)
             ?.use { cursor ->
                 val idCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
                 val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
@@ -177,13 +174,12 @@ class MediaStoreSource @Inject constructor(
 
     /**
      * The paths [queryEac3Video] would consider, without opening any of them:
-     * every long-enough video in a container that can carry E-AC-3. A superset
+     * every video in a container that can carry E-AC-3. A superset
      * of the Atmos videos in the library, for a prune that must not drop them
      * while their files exist, and that runs too often to open every video on
      * the device each time (see MediaScanner.incrementalScan).
      */
     fun queryAtmosVideoCandidatePaths(
-        minDurationMs: Long = 30_000,
         excludedPaths: Set<String> = emptySet(),
     ): Set<String> {
         val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -195,8 +191,8 @@ class MediaStoreSource @Inject constructor(
         contentResolver.query(
             collection,
             arrayOf(MediaStore.Video.Media.DATA),
-            "${MediaStore.Video.Media.DURATION} >= ?",
-            arrayOf(minDurationMs.toString()),
+            null,
+            null,
             null,
         )?.use { cursor ->
             val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
@@ -214,7 +210,6 @@ class MediaStoreSource @Inject constructor(
      * scan, too much for one that runs on every change.
      */
     fun queryAllAudio(
-        minDurationMs: Long = 30_000,
         excludedPaths: Set<String> = emptySet(),
         folderRoots: Set<String> = emptySet(),
         includeAtmosVideos: Boolean = true,
@@ -225,17 +220,17 @@ class MediaStoreSource @Inject constructor(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         }
 
-        val selection = buildString {
-            append("${MediaStore.Audio.Media.DURATION} >= ?")
-            append(" AND ${MediaStore.Audio.Media.IS_MUSIC} = 1")
-        }
-        val selectionArgs = arrayOf(minDurationMs.toString())
+        // No length floor: tracks under 30 s used to be left out, and with
+        // them intros, interludes, skits and short sketches. A duration the
+        // indexer does not know (NULL) failed even ">= 0", so there is no
+        // duration clause at all.
+        val selection = "${MediaStore.Audio.Media.IS_MUSIC} = 1"
         val sortOrder = "${MediaStore.Audio.Media.DATE_MODIFIED} DESC"
 
         val results = mutableListOf<AudioFileInfo>()
 
         contentResolver.query(
-            collection, projection, selection, selectionArgs, sortOrder
+            collection, projection, selection, null, sortOrder
         )?.use { cursor ->
             val idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
             val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
@@ -281,7 +276,7 @@ class MediaStoreSource @Inject constructor(
             }
         }
 
-        if (includeAtmosVideos) results += queryEac3Video(minDurationMs, excludedPaths)
+        if (includeAtmosVideos) results += queryEac3Video(excludedPaths)
         return results
     }
 
@@ -292,7 +287,7 @@ class MediaStoreSource @Inject constructor(
      * media indexer hasn't seen yet are not counted; a scan asks for them
      * first ([FolderIndexer]), so it can import a few more than this says.
      */
-    fun countAudioUnderPath(path: String, minDurationMs: Long = 30_000): Int {
+    fun countAudioUnderPath(path: String): Int {
         val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
         } else {
@@ -301,10 +296,9 @@ class MediaStoreSource @Inject constructor(
         val escaped = escapeLikePattern(path.trimEnd('/'))
         val selection = buildString {
             append("${MediaStore.Audio.Media.DATA} LIKE ? ESCAPE '\\'")
-            append(" AND ${MediaStore.Audio.Media.DURATION} >= ?")
             append(" AND ${MediaStore.Audio.Media.IS_MUSIC} = 1")
         }
-        val selectionArgs = arrayOf("$escaped/%", minDurationMs.toString())
+        val selectionArgs = arrayOf("$escaped/%")
 
         var count = 0
         contentResolver.query(
