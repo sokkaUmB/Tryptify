@@ -101,6 +101,7 @@ import tf.monochrome.android.ui.library.FolderBrowserScreen
 import tf.monochrome.android.ui.profile.ProfileScreen
 import tf.monochrome.android.ui.stats.ListeningStatsScreen
 import tf.monochrome.android.ui.stats.StatsScreen
+import tf.monochrome.android.ui.stats.StatsChartScreen
 import tf.monochrome.android.ui.search.SearchScreen
 import tf.monochrome.android.ui.theme.motionMillis
 import tf.monochrome.android.ui.settings.SettingsScreen
@@ -156,6 +157,8 @@ sealed class Screen(val route: String) {
     data object ParametricEqEdit : Screen("parametric_eq_edit")
     data object Profile : Screen("profile")
     data object Stats : Screen("stats")
+    /** One Stats chart, opened to be looked at closely; see statsChartRoute. */
+    data object StatsChart : Screen("stats_chart/{chart}?range={range}")
     data object ListeningStats : Screen("listening_stats")
     data object FolderBrowser : Screen("folder/{folderPath}") {
         // Uri.encode (not URLEncoder) so spaces become %20 not '+', and every
@@ -380,6 +383,12 @@ fun MonochromeNavHost(initialRoute: String? = null) {
     // Set by a tap on Search and spent by the Search page's first composition,
     // so the keyboard comes up for a tap and not for coming back to results.
     var focusSearch by remember { mutableStateOf(false) }
+    val openMainPage: (String) -> Unit = { id ->
+        if (!isOnMainTab && !navController.popBackStack(Screen.Home.route, inclusive = false)) {
+            navController.navigate(Screen.Home.route)
+        }
+        selectPageWith(id, false)
+    }
     val onTab: (AppTab) -> Unit = { tab ->
         // A tab tapped from a pushed screen closes it, as in Apple Music: the
         // pager is only drawn while the NavHost is on "home".
@@ -854,7 +863,21 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 }
                 composable(Screen.Stats.route) {
                     tf.monochrome.android.devedit.DevEditScreen("stats") {
-                        StatsScreen(navController = navController)
+                        StatsScreen(navController = navController, onOpenPage = openMainPage)
+                    }
+                }
+                composable(
+                    route = Screen.StatsChart.route,
+                    arguments = listOf(
+                        navArgument("chart") { type = NavType.StringType },
+                        navArgument("range") { type = NavType.StringType; defaultValue = "Month" },
+                    ),
+                ) { backStackEntry ->
+                    val chart = backStackEntry.arguments?.getString("chart")
+                        ?.let { name -> tf.monochrome.android.ui.stats.StatsChart.entries.firstOrNull { it.name == name } }
+                        ?: tf.monochrome.android.ui.stats.StatsChart.MINUTES
+                    tf.monochrome.android.devedit.DevEditScreen("stats_chart") {
+                        StatsChartScreen(navController = navController, chart = chart)
                     }
                 }
                 composable(Screen.ListeningStats.route) {

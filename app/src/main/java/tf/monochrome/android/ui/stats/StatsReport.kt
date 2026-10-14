@@ -390,11 +390,20 @@ object StatsReportBuilder {
         return out
     }
 
-    internal fun streak(window: StatsWindow, byDate: Map<LocalDate, Pair<Long, Int>>): StreakStat {
-        val listened = { d: LocalDate -> (byDate[d]?.second ?: 0) > 0 }
-        var cursor = if (listened(window.today)) window.today else window.today.minusDays(1)
+    /**
+     * Days in a row with listening, ending today, or yesterday while today has
+     * nothing yet: a streak is not broken until the day is over.
+     */
+    fun currentStreak(listened: (LocalDate) -> Boolean, today: LocalDate): Int {
+        var cursor = if (listened(today)) today else today.minusDays(1)
         var current = 0
         while (listened(cursor)) { current++; cursor = cursor.minusDays(1) }
+        return current
+    }
+
+    internal fun streak(window: StatsWindow, byDate: Map<LocalDate, Pair<Long, Int>>): StreakStat {
+        val listened = { d: LocalDate -> (byDate[d]?.second ?: 0) > 0 }
+        val current = currentStreak(listened, window.today)
         var longest = 0
         var longestStart: LocalDate? = null
         var run = 0

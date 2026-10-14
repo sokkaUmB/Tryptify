@@ -995,6 +995,29 @@ it first.
 (`LibraryIndexList`'s `onGalaxy`), drawn like the categories but not one of
 them: the categories open in place, this opens a screen.
 
+### Stats charts
+
+**Bars are glass, and the glass is flat colour.** `glassBar` in `StatsVisuals.kt`
+draws each bar as layers that are each one colour: a translucent tint of the
+theme's primary (0.38, or 0.82 when selected), a white rim, a bright inner top
+edge, and a highlight streak on bars at least 16dp wide. No gradients, anywhere
+on the stats pages: the owner asked for the theme or dynamic colour and nothing
+else. A gradient fill looks like an easy upgrade, and it is the thing that was
+asked to go.
+
+Bars are drawn on the canvas, not as a `GlassPanel` each. The clock grid is 168
+cells, and a shader pane per cell spends the frame on squares a few dp wide. The
+cards around the charts are real `GlassPanel`s over the page's own haze source,
+the same pattern as Discover.
+
+When `disableLiquidGlass` is on, the bars drop to plain solid tint (0.6, or 1
+when selected), the same switch that flattens the rest of the glass. A chart
+that keeps its rims with glass off is out of step with every pane next to it.
+
+Stats and Achievements are **two pages under one glass pill**, not two tabs of
+a Material `TabRow`; the pill is a pair of `GlassChoiceChip`s, as on the chart
+page's view and compare switches.
+
 ### Discord presence
 
 The animated asset must stay under **~248 KB** or Discord's media proxy shows
