@@ -51,7 +51,7 @@ object FileTagsReader {
         )
         val header = runCatching { audio.audioHeader }.getOrNull()
         val tag = runCatching { audio.tag }.getOrNull()
-        return FileTags(
+        val fromTags = FileTags(
             path = path,
             sizeBytes = file.length(),
             format = header?.let { runCatching { it.format }.getOrNull() }?.takeIf { it.isNotBlank() }
@@ -65,6 +65,34 @@ object FileTagsReader {
             pictures = tag?.let { runCatching { it.artworkList.size }.getOrNull() } ?: 0,
             tags = tag?.let(::tagsOf).orEmpty(),
         )
+        // MP4's stream facts come from its own sample entry: jaudiotagger read a
+        // 5.1 AAC file as "-14" channels and 16-bit, and ALAC as AAC.
+        return if (ext in MP4_EXTENSIONS) Mp4AudioInfo.read(file)?.let { withStream(fromTags, it) } ?: fromTags
+        else fromTags
+    }
+
+    private val MP4_EXTENSIONS = setOf("m4a", "m4b", "mp4", "m4p", "alac")
+
+    /** [tags] with its stream facts from [mp4], where the sample entry has them. */
+    internal fun withStream(tags: FileTags, mp4: Mp4Audio): FileTags = tags.copy(
+        format = if (mp4.atmos) "${mp4.codec} · Dolby Atmos" else mp4.codec,
+        sampleRateHz = mp4.sampleRateHz ?: tags.sampleRateHz,
+        // Lossy audio has no bit depth: whatever jaudiotagger reported is not one.
+        bitsPerSample = if (mp4.lossless) mp4.bitsPerSample ?: tags.bitsPerSample else null,
+        bitrateKbps = mp4.bitrateBps?.let { (it + 500) / 1000 }?.takeIf { it > 0 } ?: tags.bitrateKbps,
+        channels = mp4.channels?.let(::channelLabel) ?: tags.channels?.takeIf { it.toIntOrNull()?.let { n -> n > 0 } ?: true },
+        lengthSeconds = mp4.durationSeconds?.takeIf { it > 0 } ?: tags.lengthSeconds,
+        lossless = mp4.lossless,
+    )
+
+    /** "2", "6 (5.1)", "8 (7.1)": the count, and the layout where it names one. */
+    internal fun channelLabel(count: Int): String = when (count) {
+        3 -> "3 (2.1)"
+        6 -> "6 (5.1)"
+        7 -> "7 (6.1)"
+        8 -> "8 (7.1)"
+        12 -> "12 (7.1.4)"
+        else -> count.toString()
     }
 
     /**
