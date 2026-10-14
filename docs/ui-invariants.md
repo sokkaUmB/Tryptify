@@ -149,6 +149,18 @@ from. Its Track info turns the same pane into the song's tags and Back returns t
 the actions. Put back in a `ModalBottomSheet` it is a solid slab, for the reason
 above; outside the nav host it falls back to a plain dialog, never to nothing.
 
+**An overlay pane animates in its own layer, and a bottom one clears the bar.**
+`GlassOverlayLayer` fades the scrim and slides the pane up, and plays both
+backwards on the way out: it holds the withdrawn pane until it has left, and a
+leaving pane takes no presses (a second tap on a menu item would run it twice).
+Its transitions start hidden (`MutableTransitionState(false)`); given
+`visible = true` on its first composition `AnimatedVisibility` would just appear,
+and the first menu after launch would pop in. A pane at `Alignment.BottomCenter`
+sits `bottomClearance` (the nav host's `chromeHeightNow`) above the bottom edge,
+on top of the tab bar rather than over its buttons. In the song menu, Track info
+and the actions turn as pages (`AnimatedContent`, the pane's height following),
+not a cut.
+
 **A `GlassPanel` inside a scrolling list passes `blockTouchesBelow = false`.**
 Its backstop consumes every touch its content does not handle, drags included.
 Over a map that is the point — a tap on the pane must not select the nearest

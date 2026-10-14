@@ -1,5 +1,12 @@
 package tf.monochrome.android.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -79,134 +86,150 @@ fun TrackContextMenu(
     GlassOverlay(onDismiss = onDismiss, alignment = Alignment.BottomCenter) {
         // Back from Track info returns to the actions rather than closing.
         BackHandler(enabled = showingInfo) { showingInfo = false }
-        if (showingInfo) {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                TrackInfoPane(track = track, filePath = filePath, onBack = { showingInfo = false })
-            }
-            return@GlassOverlay
-        }
-        Column(
-            modifier = Modifier
-                // Scrollable so the bottom actions (Go to album/artist) stay
-                // reachable when the sheet is taller than a landscape window.
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 24.dp)
-        ) {
-            // Track header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                CoverImage(
-                    url = track.coverUrl,
-                    contentDescription = track.title,
-                    size = 48.dp,
-                    cornerRadius = 6.dp
-                )
+        // Track info slides in from the end and the actions back from the
+        // start, as a page pushed and popped; the pane's height follows.
+        AnimatedContent(
+            targetState = showingInfo,
+            transitionSpec = {
+                val towards = if (targetState) SlideDirection.Start else SlideDirection.End
+                (slideIntoContainer(towards, tween(PAGE_MS)) + fadeIn(tween(PAGE_MS)))
+                    .togetherWith(slideOutOfContainer(towards, tween(PAGE_MS)) + fadeOut(tween(PAGE_MS / 2)))
+                    .using(SizeTransform(clip = true) { _, _ -> tween(PAGE_MS) })
+            },
+            label = "trackMenuPage",
+        ) { info ->
+            if (info) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    TrackInfoPane(track = track, filePath = filePath, onBack = { showingInfo = false })
+                }
+            } else {
                 Column(
                     modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 12.dp)
+                        // Scrollable so the bottom actions (Go to album/artist) stay
+                        // reachable when the sheet is taller than a landscape window.
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 24.dp)
                 ) {
-                    Text(
-                        text = track.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                    // Track header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CoverImage(
+                            url = track.coverUrl,
+                            contentDescription = track.title,
+                            size = 48.dp,
+                            cornerRadius = 6.dp
+                        )
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 12.dp)
+                        ) {
+                            Text(
+                                text = track.title,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = track.displayArtist,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
-                    Text(
-                        text = track.displayArtist,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+
+                    // Actions
+                    ContextMenuItem(
+                        icon = Icons.Default.SkipNext,
+                        label = stringResource(R.string.action_play_next),
+                        onClick = { onPlayNext(); onDismiss() }
+                    )
+                    ContextMenuItem(
+                        icon = Icons.Default.QueueMusic,
+                        label = stringResource(R.string.action_add_to_queue),
+                        onClick = { onAddToQueue(); onDismiss() }
+                    )
+                    ContextMenuItem(
+                        icon = Icons.Default.Favorite,
+                        label = if (isLiked) stringResource(R.string.action_unlike) else stringResource(R.string.action_like),
+                        tint = if (isLiked) MaterialTheme.colorScheme.primary else null,
+                        onClick = { onToggleLike(); onDismiss() }
+                    )
+                    ContextMenuItem(
+                        icon = Icons.Default.PlaylistAdd,
+                        label = stringResource(R.string.action_add_to_playlist),
+                        onClick = { onAddToPlaylist(); onDismiss() }
+                    )
+
+                    if (onRemoveFromPlaylist != null) {
+                        ContextMenuItem(
+                            icon = Icons.Default.RemoveCircleOutline,
+                            label = removeLabel,
+                            tint = MaterialTheme.colorScheme.error,
+                            onClick = { onRemoveFromPlaylist(); onDismiss() }
+                        )
+                    }
+
+                    if (onDownloadTrack != null) {
+                        ContextMenuItem(
+                            icon = Icons.Default.Download,
+                            label = stringResource(R.string.action_download),
+                            onClick = { onDownloadTrack(); onDismiss() }
+                        )
+                    }
+
+                    // Share the actual audio file when the caller provides a handler.
+                    // The handler resolves to a downloaded copy or a Qobuz cache hit
+                    // and dispatches Intent.ACTION_SEND with the file URI; if neither
+                    // exists the action is a no-op (logged in TrackShareHelper).
+                    if (onShareFile != null) {
+                        ContextMenuItem(
+                            icon = Icons.Default.Share,
+                            label = stringResource(R.string.action_share_file),
+                            onClick = { onShareFile(); onDismiss() }
+                        )
+                    }
+
+                    if (onGoToAlbum != null && track.album != null) {
+                        ContextMenuItem(
+                            icon = Icons.Default.Album,
+                            label = stringResource(R.string.action_go_to_album),
+                            onClick = { onGoToAlbum(); onDismiss() }
+                        )
+                    }
+                    if (onGoToArtist != null && track.artist != null) {
+                        ContextMenuItem(
+                            icon = Icons.Default.Person,
+                            label = stringResource(R.string.action_go_to_artist),
+                            onClick = { onGoToArtist(); onDismiss() }
+                        )
+                    }
+                    // Opens in this pane; the menu stays open behind it.
+                    ContextMenuItem(
+                        icon = Icons.Default.Info,
+                        label = stringResource(R.string.action_track_info),
+                        onClick = { showingInfo = true }
                     )
                 }
             }
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-
-            // Actions
-            ContextMenuItem(
-                icon = Icons.Default.SkipNext,
-                label = stringResource(R.string.action_play_next),
-                onClick = { onPlayNext(); onDismiss() }
-            )
-            ContextMenuItem(
-                icon = Icons.Default.QueueMusic,
-                label = stringResource(R.string.action_add_to_queue),
-                onClick = { onAddToQueue(); onDismiss() }
-            )
-            ContextMenuItem(
-                icon = Icons.Default.Favorite,
-                label = if (isLiked) stringResource(R.string.action_unlike) else stringResource(R.string.action_like),
-                tint = if (isLiked) MaterialTheme.colorScheme.primary else null,
-                onClick = { onToggleLike(); onDismiss() }
-            )
-            ContextMenuItem(
-                icon = Icons.Default.PlaylistAdd,
-                label = stringResource(R.string.action_add_to_playlist),
-                onClick = { onAddToPlaylist(); onDismiss() }
-            )
-
-            if (onRemoveFromPlaylist != null) {
-                ContextMenuItem(
-                    icon = Icons.Default.RemoveCircleOutline,
-                    label = removeLabel,
-                    tint = MaterialTheme.colorScheme.error,
-                    onClick = { onRemoveFromPlaylist(); onDismiss() }
-                )
-            }
-
-            if (onDownloadTrack != null) {
-                ContextMenuItem(
-                    icon = Icons.Default.Download,
-                    label = stringResource(R.string.action_download),
-                    onClick = { onDownloadTrack(); onDismiss() }
-                )
-            }
-
-            // Share the actual audio file when the caller provides a handler.
-            // The handler resolves to a downloaded copy or a Qobuz cache hit
-            // and dispatches Intent.ACTION_SEND with the file URI; if neither
-            // exists the action is a no-op (logged in TrackShareHelper).
-            if (onShareFile != null) {
-                ContextMenuItem(
-                    icon = Icons.Default.Share,
-                    label = stringResource(R.string.action_share_file),
-                    onClick = { onShareFile(); onDismiss() }
-                )
-            }
-
-            if (onGoToAlbum != null && track.album != null) {
-                ContextMenuItem(
-                    icon = Icons.Default.Album,
-                    label = stringResource(R.string.action_go_to_album),
-                    onClick = { onGoToAlbum(); onDismiss() }
-                )
-            }
-            if (onGoToArtist != null && track.artist != null) {
-                ContextMenuItem(
-                    icon = Icons.Default.Person,
-                    label = stringResource(R.string.action_go_to_artist),
-                    onClick = { onGoToArtist(); onDismiss() }
-                )
-            }
-            // Opens in this pane; the menu stays open behind it.
-            ContextMenuItem(
-                icon = Icons.Default.Info,
-                label = stringResource(R.string.action_track_info),
-                onClick = { showingInfo = true }
-            )
         }
     }
 }
+
+/** How long the turn between the actions and Track info takes. */
+private const val PAGE_MS = 280
 
 @Composable
 private fun ContextMenuItem(

@@ -1106,6 +1106,8 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             host = glassOverlayHost,
             hazeState = hazeState,
             glass = miniPlayerGlass,
+            // The song menu sits above the bar rather than over its buttons.
+            bottomClearance = chromeHeightNow,
         )
 
         // The USB DAC's volume, shown by the volume keys while one plays in

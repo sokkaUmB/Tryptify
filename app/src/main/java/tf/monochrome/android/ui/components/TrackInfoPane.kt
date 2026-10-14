@@ -1,6 +1,7 @@
 package tf.monochrome.android.ui.components
 
 import android.text.format.Formatter
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,7 +51,8 @@ fun TrackInfoPane(track: Track, filePath: String?, onBack: () -> Unit) {
         value = Loaded.Done(runCatching { source.fileTags(track, filePath) }.getOrNull())
     }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+    // animateContentSize: the pane grows from the spinner to the tags rather than jumping.
+    Column(modifier = Modifier.fillMaxWidth().animateContentSize().padding(bottom = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
                 Icon(
