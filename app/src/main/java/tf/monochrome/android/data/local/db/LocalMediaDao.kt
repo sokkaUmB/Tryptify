@@ -325,6 +325,10 @@ interface LocalMediaDao {
     @Query("SELECT filePath, durationSeconds, dynamicRange FROM local_tracks WHERE id = :id")
     suspend fun dynamicRangeTarget(id: Long): DynamicRangeTarget?
 
+    /** Track [id]'s tempo from its tag, or null without one. */
+    @Query("SELECT bpm FROM local_tracks WHERE id = :id")
+    suspend fun bpmOf(id: Long): Float?
+
     /** A dynamic range the player measured, written to that file's row alone. */
     @Query("UPDATE local_tracks SET dynamicRange = :dynamicRange WHERE filePath = :filePath")
     suspend fun updateDynamicRange(filePath: String, dynamicRange: Float)

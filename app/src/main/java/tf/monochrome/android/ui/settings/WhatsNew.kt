@@ -179,6 +179,12 @@ object WhatsNew {
                 WhatsNewEntry(
                     kind = WhatsNewKind.CHANGED,
                     section = PLAYER,
+                    title = "BPM at the right tempo",
+                    body = "The Speed panel's BPM no longer reads hardcore and most DnB at half, or slow songs at double, and goes up to 250. A song on your phone with a BPM tag shows its tag at once.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = PLAYER,
                     title = "Panels read in light themes",
                     body = "With dynamic colour in a light theme, the Speed panel, the audio tools and the preset browser had dark text on dark glass and lost their outlines. Their text is light and their pills show.",
                 ),

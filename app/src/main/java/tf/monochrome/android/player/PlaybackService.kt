@@ -81,6 +81,8 @@ class PlaybackService : MediaSessionService() {
     // the library galaxy: the tap at the head of the chain, and what keeps it.
     @Inject lateinit var dynamicRangeTap: tf.monochrome.android.audio.meter.DynamicRangeTapProcessor
     @Inject lateinit var dynamicRangeRecorder: DynamicRangeRecorder
+    // A library track's own BPM tag, over the estimate from its audio.
+    @Inject lateinit var taggedTempo: TaggedTempo
     // The Oxford post-chain, injected so a blend's DSP copy can be seeded with
     // whatever these are set to right now.
     @Inject lateinit var inflatorEffect: tf.monochrome.android.audio.dsp.oxford.InflatorEffect
@@ -404,6 +406,8 @@ class PlaybackService : MediaSessionService() {
                 // A new track gets its own blend at its own end, and its own tempo.
                 crossfadeArmed = true
                 bpmTap.newTrack()
+                // A tagged library track's tempo is its tag: no estimate.
+                taggedTempo.trackChanged(mediaItem)
                 // The one before ran into this one (gapless, or a repeat) only
                 // on an automatic move: then its dynamic range is whole.
                 dynamicRangeRecorder.trackChanged(

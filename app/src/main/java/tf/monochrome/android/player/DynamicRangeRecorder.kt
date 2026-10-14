@@ -52,9 +52,7 @@ class DynamicRangeRecorder @Inject constructor(
         // First, whatever the new item is: a lookup still out for the last
         // local track must not arm the meter on a stream that followed it.
         val gen = ++generation
-        val rowId = mediaItem?.mediaId?.removePrefix(LOCAL_PREFIX)
-            ?.takeIf { mediaItem.mediaId.startsWith(LOCAL_PREFIX) }
-            ?.toLongOrNull() ?: return
+        val rowId = localRowIdOf(mediaItem) ?: return
         scope.launch {
             val row = runCatching { dao.dynamicRangeTarget(rowId) }.getOrNull() ?: return@launch
             if (row.dynamicRange != null || row.durationSeconds <= 0) return@launch
@@ -102,9 +100,6 @@ class DynamicRangeRecorder @Inject constructor(
 
     private companion object {
         const val TAG = "DynamicRange"
-
-        /** A library track's media id: "local_" and its row. */
-        const val LOCAL_PREFIX = "local_"
 
         /** A seek this close to the start is a restart, not a jump. */
         const val RESTART_MS = 500L
