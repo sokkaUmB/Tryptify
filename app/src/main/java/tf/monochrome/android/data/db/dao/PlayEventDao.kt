@@ -71,6 +71,35 @@ interface PlayEventDao {
         if (countWithCloudId(cloudId) > 0) deleteRow(localId) else setCloudId(localId, cloudId)
     }
 
+    // --- Stats report ---
+    //
+    // The Stats screen reads the plays of a window as slim rows and does the
+    // arithmetic in Kotlin (StatsReportBuilder), rather than one aggregate
+    // query per chart: a 30-day window is a few hundred rows, and every chart
+    // then agrees on what a day, a session or a new artist is.
+
+    /** Every play in [from, until), oldest first, without the cover and ids. */
+    @Query(
+        "SELECT playedAt, trackId, title, artistName, albumTitle, duration, audioQuality, source " +
+            "FROM play_events WHERE playedAt >= :from AND playedAt < :until ORDER BY playedAt"
+    )
+    suspend fun playsBetween(from: Long, until: Long): List<PlayRow>
+
+    /** When each artist was first played, ever: what makes an artist "new". */
+    @Query("SELECT artistName AS name, MIN(playedAt) AS firstPlayed FROM play_events WHERE artistName != '' GROUP BY artistName")
+    suspend fun artistFirstPlays(): List<ArtistFirstPlay>
+
+    /** Just when and how long, for the 12-month trend and the streak. */
+    @Query("SELECT playedAt, duration FROM play_events WHERE playedAt >= :from ORDER BY playedAt")
+    suspend fun momentsSince(from: Long): List<PlayMoment>
+
+    @Query("SELECT MIN(playedAt) FROM play_events")
+    suspend fun firstPlayedAt(): Long?
+
+    /** Changes whenever a play is added or removed: the report's refresh signal. */
+    @Query("SELECT COUNT(*) FROM play_events")
+    fun playCount(): Flow<Int>
+
     // --- Totals ---
 
     @Query("SELECT COUNT(*) FROM play_events WHERE playedAt >= :since")
@@ -219,6 +248,22 @@ data class TopAlbumAggregate(
     val totalSeconds: Long,
     val lastPlayed: Long
 )
+
+/** One play as the Stats report reads it. */
+data class PlayRow(
+    val playedAt: Long,
+    val trackId: Long,
+    val title: String,
+    val artistName: String,
+    val albumTitle: String?,
+    val duration: Int,
+    val audioQuality: String?,
+    val source: String?,
+)
+
+data class ArtistFirstPlay(val name: String, val firstPlayed: Long)
+
+data class PlayMoment(val playedAt: Long, val duration: Int)
 
 data class QualityAggregate(val quality: String, val playCount: Int)
 data class SourceAggregate(val source: String, val playCount: Int)
