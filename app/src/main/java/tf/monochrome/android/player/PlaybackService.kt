@@ -611,6 +611,9 @@ class PlaybackService : MediaSessionService() {
         serviceScope.launch {
             preferences.gaplessPlayback.collect { enabled ->
                 gaplessEnabled = enabled
+                // A blend needs gapless (CrossfadeRamp.blends): one running
+                // when it is turned off stops, and its second player with it.
+                if (!enabled) crossfade.cancel()
                 syncGaplessNext()
             }
         }
@@ -1670,7 +1673,7 @@ class PlaybackService : MediaSessionService() {
      * (UsbCrossfadeMix), so there is still one stream and one owner.
      */
     @OptIn(UnstableApi::class)
-    private fun canCrossfade(): Boolean = crossfadeMs > 0L
+    private fun canCrossfade(): Boolean = CrossfadeRamp.blends(gaplessEnabled, crossfadeMs)
 
 
     /** Counts [AnalyticsListener.onAudioPositionAdvancing] on the main player. */
@@ -1781,6 +1784,11 @@ class PlaybackService : MediaSessionService() {
                 // preference change rather than on a timer.
                 if (crossfadeMs == 0L) {
                     preferences.crossfadeDuration.first { it > 0 }
+                    continue
+                }
+                // Nor while gapless is off, which a blend needs.
+                if (!gaplessEnabled) {
+                    preferences.gaplessPlayback.first { it }
                     continue
                 }
                 if (!player.isPlaying) {

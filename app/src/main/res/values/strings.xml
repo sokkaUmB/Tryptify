@@ -1052,6 +1052,7 @@
     <string name="settings_blend_seconds">Blend Between Tracks: %1$d s</string>
     <string name="settings_blend_zero_desc">At zero, tracks run straight into each other with no gap. Add time to overlap them instead.</string>
     <string name="settings_blend_desc">The outgoing track fades out while the next fades in over %1$d s.</string>
+    <string name="settings_blend_needs_gapless">Needs gapless playback. With it off, each song plays on its own from start to end.</string>
     <string name="settings_pitch_fraction">Pitch: %1$+.2f semitones</string>
     <string name="settings_downmix_on">Multichannel tracks fold into stereo (fixed matrix) and run through DSP/EQ.</string>
     <string name="settings_downmix_off">Off. Multichannel passes to the device untouched; DSP/EQ bypassed for those tracks.</string>

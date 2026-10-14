@@ -1014,6 +1014,7 @@
     <string name="settings_blend_seconds">歌曲间过渡：%1$d 秒</string>
     <string name="settings_blend_zero_desc">为零时，歌曲之间直接衔接，没有间隙。增加时长可让它们相互重叠。</string>
     <string name="settings_blend_desc">当前歌曲淡出的同时，下一首在 %1$d 秒内淡入。</string>
+    <string name="settings_blend_needs_gapless">需要开启无缝播放。关闭时，每首歌从头到尾单独播放。</string>
     <string name="settings_pitch_fraction">音高：%1$+.2f 个半音</string>
     <string name="settings_downmix_on">多声道歌曲会缩混为立体声（固定矩阵），并经过 DSP/EQ 处理。</string>
     <string name="settings_downmix_off">关闭。多声道原样传给设备；这些歌曲将绕过 DSP/EQ。</string>

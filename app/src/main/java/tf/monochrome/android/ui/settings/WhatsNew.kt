@@ -226,6 +226,12 @@ object WhatsNew {
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.CHANGED,
+                    section = PLAYBACK,
+                    title = "Blends need gapless",
+                    body = "Blend between tracks only runs with Gapless playback on. With it off, each song plays on its own from start to end, and the blend slider is greyed out.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
                     section = USB_DAC,
                     title = "More DACs in exclusive mode",
                     body = "Exclusive mode now drives DACs that run in USB Audio 3.0's basic mode, like Apple's USB-C headphone adapter, which Android always puts in that mode. They play at 48 kHz, in 24-bit.",

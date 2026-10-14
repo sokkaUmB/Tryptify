@@ -15,6 +15,13 @@ import kotlin.math.sin
  */
 internal object CrossfadeRamp {
 
+    /**
+     * Whether songs blend into each other: a blend length set, and gapless on.
+     * A blend plays the outgoing song on a second player; with gapless off
+     * there is only ever the one, and each song plays on its own, start to end.
+     */
+    fun blends(gapless: Boolean, blendMs: Long): Boolean = gapless && blendMs > 0L
+
     /** Gain for the incoming track, 0 at the start of the blend and 1 at the end. */
     fun fadeIn(progress: Float): Float =
         sin(progress.coerceIn(0f, 1f) * HALF_PI).toFloat()

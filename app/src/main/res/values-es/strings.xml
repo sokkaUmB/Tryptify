@@ -1088,6 +1088,7 @@
     <string name="settings_blend_seconds">Mezcla entre canciones: %1$d s</string>
     <string name="settings_blend_zero_desc">En cero, las canciones se suceden sin pausa. Añade tiempo para que se solapen.</string>
     <string name="settings_blend_desc">La canción saliente se desvanece mientras la siguiente entra en %1$d s.</string>
+    <string name="settings_blend_needs_gapless">Necesita la reproducción sin pausas. Sin ella, cada canción suena sola de principio a fin.</string>
     <string name="settings_pitch_fraction">Tono: %1$+.2f semitonos</string>
     <string name="settings_downmix_on">Las canciones multicanal se reducen a estéreo (matriz fija) y pasan por DSP/EQ.</string>
     <string name="settings_downmix_off">Desactivado. El multicanal pasa intacto al dispositivo; DSP/EQ omitidos en esas canciones.</string>

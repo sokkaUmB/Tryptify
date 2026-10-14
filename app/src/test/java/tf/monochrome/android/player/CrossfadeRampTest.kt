@@ -14,6 +14,15 @@ import kotlin.math.abs
  */
 class CrossfadeRampTest {
 
+    @Test
+    fun `a blend needs gapless on and a length set`() {
+        assertTrue(CrossfadeRamp.blends(gapless = true, blendMs = 4_000L))
+        // Gapless off: one player only, whatever the blend length says.
+        assertFalse(CrossfadeRamp.blends(gapless = false, blendMs = 4_000L))
+        assertFalse(CrossfadeRamp.blends(gapless = true, blendMs = 0L))
+        assertFalse(CrossfadeRamp.blends(gapless = false, blendMs = 0L))
+    }
+
     private val tolerance = 0.001f
 
     @Test

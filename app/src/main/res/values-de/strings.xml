@@ -1051,6 +1051,7 @@
     <string name="settings_blend_seconds">Übergang zwischen Titeln: %1$d s</string>
     <string name="settings_blend_zero_desc">Bei null gehen die Titel ohne Lücke direkt ineinander über. Füge Zeit hinzu, damit sie sich überlappen.</string>
     <string name="settings_blend_desc">Der auslaufende Titel blendet aus, während der nächste über %1$d s einblendet.</string>
+    <string name="settings_blend_needs_gapless">Benötigt lückenlose Wiedergabe. Ohne sie wird jeder Titel für sich von Anfang bis Ende abgespielt.</string>
     <string name="settings_pitch_fraction">Tonhöhe: %1$+.2f Halbtöne</string>
     <string name="settings_downmix_on">Mehrkanaltitel werden auf Stereo gefaltet (feste Matrix) und laufen durch DSP/EQ.</string>
     <string name="settings_downmix_off">Aus. Mehrkanal geht unverändert ans Gerät; DSP/EQ wird für diese Titel umgangen.</string>

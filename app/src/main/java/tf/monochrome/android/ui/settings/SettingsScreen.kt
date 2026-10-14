@@ -1628,17 +1628,20 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         )
 
         // Sits under the gapless toggle because the two decide the same thing:
-        // what happens between one track and the next. They're also mutually
-        // exclusive in effect — any blend above 0s overlaps the tracks, so the
-        // gapless hand-off steps aside for it.
+        // what happens between one track and the next. A blend above 0s
+        // overlaps the tracks, so the gapless hand-off steps aside for it; and
+        // a blend needs gapless on (CrossfadeRamp.blends), so with it off the
+        // slider is greyed and says why, rather than look set and do nothing.
         Text(
             text = if (crossfade == 0) stringResource(R.string.settings_blend_gapless) else stringResource(R.string.settings_blend_seconds, crossfade),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (gapless) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.settingsAnchor(stringResource(R.string.search_crossfade)),
         )
         Text(
-            text = if (crossfade == 0) {
+            text = if (!gapless) {
+                stringResource(R.string.settings_blend_needs_gapless)
+            } else if (crossfade == 0) {
                 stringResource(R.string.settings_blend_zero_desc)
             } else {
                 stringResource(R.string.settings_blend_desc, crossfade)
@@ -1649,6 +1652,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         Slider(
             value = crossfade.toFloat(),
             onValueChange = { viewModel.setCrossfadeDuration(it.toInt()) },
+            enabled = gapless,
             valueRange = 0f..12f,
             steps = 11,
             modifier = Modifier.fillMaxWidth()
