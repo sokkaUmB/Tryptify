@@ -247,6 +247,8 @@ class PlaybackService : MediaSessionService() {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 // Also what wakes the blend watcher — see startCrossfadeWatcher.
                 playingSignal.value = isPlaying
+                // A track change waits here to become a play: see notePlay.
+                if (isPlaying) commitPendingPlay()
                 // Where the play head most likely sits until the app closes,
                 // so this is the one save that must not be throttled away.
                 playbackState.savePosition(player.currentPosition, player.duration, flush = true)
@@ -442,28 +444,10 @@ class PlaybackService : MediaSessionService() {
                 lastGaplessAttempt = null
                 syncGaplessNext()
 
-                if (mediaItem != null && reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
-                    val trackId = mediaItem.mediaId.toLongOrNull()
-                    if (trackId != null) {
-                        val track = queueManager.currentQueue.find { it.id == trackId }
-                        if (track != null) {
-                            serviceScope.launch {
-                                val unified = unifiedTrackRegistry[trackId]
-                                // A station is not something you listened to,
-                                // it is somewhere you tuned. Writing it to
-                                // history fills Recently Played — and the stats
-                                // Discover builds on — with entries keyed by a
-                                // synthetic hash, and telling Last.fm about it
-                                // scrobbles a "track" named after a station and
-                                // credited to a city.
-                                if (!isLiveStream(track)) {
-                                    libraryRepository.addToHistory(track, unified)
-                                    scrobblingService.updateNowPlaying(track)
-                                }
-                            }
-                        }
-                    }
-                }
+                // Every track change, however it came about — a tap in the
+                // app (a playlist change), the player moving on by itself, a
+                // repeat — is a play once it is heard. See notePlay.
+                notePlay(mediaItem, reason)
 
                 // Whenever the playing track actually changes and auto-shuffle is
                 // on, jump the ProjectM visualizer to a new preset right away — so
@@ -1310,8 +1294,7 @@ class PlaybackService : MediaSessionService() {
                 player.setMediaItem(mediaItem)
                 player.prepare()
                 startPlayback()
-
-                libraryRepository.addToHistory(track)
+                // Recorded by the track change this causes (notePlay).
             } catch (e: Exception) {
                 // Skip to next on error
                 onTrackEnded()
@@ -1339,9 +1322,7 @@ class PlaybackService : MediaSessionService() {
                     player.setMediaItem(resolved.mediaItem)
                     player.prepare()
                     startPlayback()
-                    if (!isLiveStream(currentTrack)) {
-                        libraryRepository.addToHistory(currentTrack, unifiedTrack)
-                    }
+                    // Recorded by the track change this causes (notePlay).
                     return@launch
                 }
 
@@ -1377,8 +1358,7 @@ class PlaybackService : MediaSessionService() {
 
                 player.prepare()
                 startPlayback()
-
-                libraryRepository.addToHistory(currentTrack)
+                // Recorded by the track change this causes (notePlay).
 
                 // Preload next tracks
                 preloadNextTracks()
@@ -1852,6 +1832,61 @@ class PlaybackService : MediaSessionService() {
     private var liveReconnects = 0
 
     /** True when this track is a live stream rather than a recording. */
+    /** A track change not yet heard, waiting to become a play. */
+    private class PendingPlay(
+        val track: tf.monochrome.android.domain.model.Track,
+        val unified: tf.monochrome.android.domain.model.UnifiedTrack?,
+        val repeat: Boolean,
+    )
+
+    private var pendingPlay: PendingPlay? = null
+    private val playDeduper = PlayDeduper()
+
+    /**
+     * Notes the track [mediaItem] plays as the next play, and writes it when it
+     * is heard ([commitPendingPlay]): at once if the player is already playing
+     * (a gapless or repeat move), else when playback starts. A session restored
+     * paused at launch is not a play until it is played.
+     *
+     * Matched to its queue track by numeric id or by the library id it was
+     * queued under ([PlayRecording.trackFor]): a local file plays under the
+     * latter, which the old lookup — the id as a number — never matched, so
+     * local songs were missing from Recently Played.
+     */
+    private fun notePlay(mediaItem: MediaItem?, reason: Int) {
+        pendingPlay = null
+        if (mediaItem == null) return
+        val track = PlayRecording.trackFor(
+            mediaId = mediaItem.mediaId,
+            current = queueManager.currentTrack.value,
+            queue = queueManager.currentQueue,
+            unifiedIdOf = { unifiedTrackRegistry[it]?.id },
+        ) ?: return
+        // A station is not something you listened to, it is somewhere you
+        // tuned. Writing it to history fills Recently Played — and the stats
+        // Discover builds on — with entries keyed by a synthetic hash, and
+        // telling Last.fm about it scrobbles a "track" named after a station
+        // and credited to a city.
+        if (isLiveStream(track)) return
+        pendingPlay = PendingPlay(
+            track = track,
+            unified = unifiedTrackRegistry[track.id],
+            repeat = reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT,
+        )
+        if (player.isPlaying) commitPendingPlay()
+    }
+
+    /** Writes the pending play to history, once, unless it repeats the last one. */
+    private fun commitPendingPlay() {
+        val play = pendingPlay ?: return
+        pendingPlay = null
+        if (!playDeduper.shouldRecord(play.track.id, System.currentTimeMillis(), play.repeat)) return
+        serviceScope.launch {
+            libraryRepository.addToHistory(play.track, play.unified)
+            scrobblingService.updateNowPlaying(play.track)
+        }
+    }
+
     private fun isLiveStream(track: tf.monochrome.android.domain.model.Track): Boolean =
         unifiedTrackRegistry[track.id]?.source is
             tf.monochrome.android.domain.model.PlaybackSource.RadioStream

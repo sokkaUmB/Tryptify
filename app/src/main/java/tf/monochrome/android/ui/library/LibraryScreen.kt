@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.library
 
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import tf.monochrome.android.ui.navigation.openTrackArtist
 import tf.monochrome.android.ui.navigation.trackArtistAction
 import tf.monochrome.android.ui.navigation.trackAlbumAction
@@ -187,6 +188,7 @@ fun LibraryScreen(
 ) {
     val favoriteTracks by viewModel.favoriteTracks.collectAsStateWithLifecycle()
     val recentTracks by viewModel.recentTracks.collectAsStateWithLifecycle()
+    val historyRefreshing by viewModel.historyRefreshing.collectAsStateWithLifecycle()
     val favoriteAlbums by viewModel.favoriteAlbums.collectAsStateWithLifecycle()
     val favoriteArtists by viewModel.favoriteArtists.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
@@ -397,78 +399,85 @@ fun LibraryScreen(
         // SaveableStateProvider that keeps its scroll position.
         when (sectionId) {
             OVERVIEW_SECTION ->
-                LazyColumn(
+                // Pull down to read Recently Played again (see refreshHistory).
+                PullToRefreshBox(
+                    isRefreshing = historyRefreshing,
+                    onRefresh = viewModel::refreshHistory,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = tf.monochrome.android.ui.navigation.bottomChromePadding)
                 ) {
-                    if (recentTracks.isNotEmpty()) {
-                        item(key = LibraryKeys.header("recent"), contentType = LibraryContentType.HEADER) {
-                            SectionHeader(
-                                title = stringResource(R.string.recently_played),
-                                // Home used to carry the full history; it is
-                                // the page list now, and five rows here was
-                                // all that was left of it. Rather than a
-                                // screen of its own, the section opens in
-                                // place — the history is one list, and it is
-                                // already loaded.
-                                onSeeAllClick = if (recentTracks.size > RECENT_PREVIEW) {
-                                    { allRecentShown = !allRecentShown }
-                                } else null,
-                                seeAllLabel = if (allRecentShown) stringResource(R.string.action_show_less) else stringResource(R.string.action_see_all),
-                            )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = tf.monochrome.android.ui.navigation.bottomChromePadding)
+                    ) {
+                        if (recentTracks.isNotEmpty()) {
+                            item(key = LibraryKeys.header("recent"), contentType = LibraryContentType.HEADER) {
+                                SectionHeader(
+                                    title = stringResource(R.string.recently_played),
+                                    // Home used to carry the full history; it is
+                                    // the page list now, and five rows here was
+                                    // all that was left of it. Rather than a
+                                    // screen of its own, the section opens in
+                                    // place — the history is one list, and it is
+                                    // already loaded.
+                                    onSeeAllClick = if (recentTracks.size > RECENT_PREVIEW) {
+                                        { allRecentShown = !allRecentShown }
+                                    } else null,
+                                    seeAllLabel = if (allRecentShown) stringResource(R.string.action_show_less) else stringResource(R.string.action_see_all),
+                                )
+                            }
+                            items(
+                                if (allRecentShown) recentTracks else recentTracks.take(RECENT_PREVIEW),
+                                key = { LibraryKeys.recent(it.id) },
+                                contentType = { LibraryContentType.TRACK },
+                            ) { track ->
+                                TrackItem(
+                                    track = track,
+                                    onClick = {
+                                        if (selection.active) selection.toggle(track.id)
+                                        else playerViewModel.playTrack(track, recentTracks)
+                                    },
+                                    onLongClick = { selection.toggle(track.id) },
+                                    onMoreClick = { showContextMenuForTrack = track },
+                                    onArtistClick = { artistId -> navController.openTrackArtist(track, playerViewModel.unifiedFor(track), artistId) },
+                                    onAlbumClick = navController.trackAlbumAction(track, playerViewModel.unifiedFor(track)),
+                                    downloadState = activeDownloads[track.id],
+                                    isDownloaded = track.id in downloadedTrackIds,
+                                    selectionMode = selection.active,
+                                    selected = track.id in selection.selectedIds
+                                )
+                            }
                         }
-                        items(
-                            if (allRecentShown) recentTracks else recentTracks.take(RECENT_PREVIEW),
-                            key = { LibraryKeys.recent(it.id) },
-                            contentType = { LibraryContentType.TRACK },
-                        ) { track ->
-                            TrackItem(
-                                track = track,
-                                onClick = {
-                                    if (selection.active) selection.toggle(track.id)
-                                    else playerViewModel.playTrack(track, recentTracks)
-                                },
-                                onLongClick = { selection.toggle(track.id) },
-                                onMoreClick = { showContextMenuForTrack = track },
-                                onArtistClick = { artistId -> navController.openTrackArtist(track, playerViewModel.unifiedFor(track), artistId) },
-                                onAlbumClick = navController.trackAlbumAction(track, playerViewModel.unifiedFor(track)),
-                                downloadState = activeDownloads[track.id],
-                                isDownloaded = track.id in downloadedTrackIds,
-                                selectionMode = selection.active,
-                                selected = track.id in selection.selectedIds
-                            )
-                        }
-                    }
 
-                    if (favoriteTracks.isNotEmpty()) {
-                        item(key = LibraryKeys.header("liked"), contentType = LibraryContentType.HEADER) {
-                            SectionHeader(title = stringResource(R.string.liked_songs))
+                        if (favoriteTracks.isNotEmpty()) {
+                            item(key = LibraryKeys.header("liked"), contentType = LibraryContentType.HEADER) {
+                                SectionHeader(title = stringResource(R.string.liked_songs))
+                            }
+                            items(
+                                favoriteTracks.take(5),
+                                key = { LibraryKeys.liked(it.id) },
+                                contentType = { LibraryContentType.TRACK },
+                            ) { track ->
+                                TrackItem(
+                                    track = track,
+                                    onClick = {
+                                        if (selection.active) selection.toggle(track.id)
+                                        else playerViewModel.playTrack(track, visibleFavorites)
+                                    },
+                                    onLongClick = { selection.toggle(track.id) },
+                                    onMoreClick = { showContextMenuForTrack = track },
+                                    onArtistClick = { artistId -> navController.openTrackArtist(track, playerViewModel.unifiedFor(track), artistId) },
+                                    onAlbumClick = navController.trackAlbumAction(track, playerViewModel.unifiedFor(track)),
+                                    downloadState = activeDownloads[track.id],
+                                    isDownloaded = track.id in downloadedTrackIds,
+                                    selectionMode = selection.active,
+                                    selected = track.id in selection.selectedIds
+                                )
+                            }
                         }
-                        items(
-                            favoriteTracks.take(5),
-                            key = { LibraryKeys.liked(it.id) },
-                            contentType = { LibraryContentType.TRACK },
-                        ) { track ->
-                            TrackItem(
-                                track = track,
-                                onClick = {
-                                    if (selection.active) selection.toggle(track.id)
-                                    else playerViewModel.playTrack(track, visibleFavorites)
-                                },
-                                onLongClick = { selection.toggle(track.id) },
-                                onMoreClick = { showContextMenuForTrack = track },
-                                onArtistClick = { artistId -> navController.openTrackArtist(track, playerViewModel.unifiedFor(track), artistId) },
-                                onAlbumClick = navController.trackAlbumAction(track, playerViewModel.unifiedFor(track)),
-                                downloadState = activeDownloads[track.id],
-                                isDownloaded = track.id in downloadedTrackIds,
-                                selectionMode = selection.active,
-                                selected = track.id in selection.selectedIds
-                            )
-                        }
-                    }
 
-                    if (favoriteTracks.isEmpty() && recentTracks.isEmpty()) {
-                        item { EmptyState(stringResource(R.string.library_empty)) }
+                        if (favoriteTracks.isEmpty() && recentTracks.isEmpty()) {
+                            item { EmptyState(stringResource(R.string.library_empty)) }
+                        }
                     }
                 }
 
