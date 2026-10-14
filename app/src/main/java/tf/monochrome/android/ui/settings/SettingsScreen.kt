@@ -236,6 +236,9 @@ internal fun settingsLinkRoute(label: String): String? = settingsLinkTabs[label]
 /** The tabs that are pages of the pager, in chip order. */
 private val settingsPages: List<String> = settingsTabs.filter { it !in settingsLinkTabs }
 
+/** The page ids, for the Every Corner achievement to count against. */
+internal val settingsPageIds: List<String> get() = settingsPages
+
 /**
  * Index of the About tab, where the What's New panel lives. Derived from
  * [settingsTabs] rather than written down, so reordering the tabs can't leave a
@@ -278,6 +281,10 @@ fun SettingsScreen(
     // Tab changes slide normally; with "Disable animations" on they jump.
     val animateTabs = !tf.monochrome.android.ui.theme.reduceMotion()
     val selectedTab = settingsPager.currentPage
+    // Every Corner counts the pages seen. Keyed on the page, so a chip tap, a
+    // swipe, a search jump and a deep link landing all count alike.
+    val achievements = tf.monochrome.android.ui.stats.rememberAchievementStore()
+    LaunchedEffect(selectedTab) { achievements?.settingsTabOpened(settingsPages[selectedTab]) }
 
     // Toast one-shot ViewModel messages (font import, backup import, …) from
     // one always-composed collector, regardless of which tab is showing.

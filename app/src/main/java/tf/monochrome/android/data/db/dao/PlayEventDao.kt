@@ -96,6 +96,14 @@ interface PlayEventDao {
     @Query("SELECT MIN(playedAt) FROM play_events")
     suspend fun firstPlayedAt(): Long?
 
+    /** Plays started between midnight and 4 am local time, ever: Night Owl. */
+    @Query("SELECT COUNT(*) FROM play_events WHERE CAST(strftime('%H', playedAt / 1000, 'unixepoch', 'localtime') AS INTEGER) < 4")
+    suspend fun playsAfterMidnight(): Int
+
+    /** Seconds of Hi-Res tracks played, ever: Golden Ears. */
+    @Query("SELECT COALESCE(SUM(duration), 0) FROM play_events WHERE UPPER(audioQuality) LIKE '%HI_RES%'")
+    suspend fun hiResSeconds(): Long
+
     /** Changes whenever a play is added or removed: the report's refresh signal. */
     @Query("SELECT COUNT(*) FROM play_events")
     fun playCount(): Flow<Int>
