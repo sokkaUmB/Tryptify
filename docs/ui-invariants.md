@@ -1043,6 +1043,17 @@ scrim itself and outputs opaque pixels, which is why it replaces
 `PlayerBlurredArtBackground` rather than layering over it. Two backdrops would
 be the artwork darkened twice.
 
+**A frame projectM did not draw is never presented.** `renderFrame` returns
+whether it drew: it does not when the Target FPS cap drops a frame (vsync off)
+or a paused frame is frozen. With vsync off the swap no longer waits for the
+display, so the render threads wait out the interval themselves
+(`nanosUntilNextFrame`) instead of drawing flat out and letting the cap drop;
+the dropped frames used to be presented anyway, the ambient overlay
+compositing its cleared, empty frame (the cover alone) and the hero swapping a
+buffer nothing drew into, and the visualizer flashed and vanished between real
+frames. When nothing new was drawn the overlay composites its last capture
+(`freshFrame = false`).
+
 **Alpha is inferred from the rendered image, never from the preset.** Presets
 assume an opaque, usually black framebuffer and many depend on feedback; making
 the target transparent breaks trails, warps and glow. `ambientAlpha` derives the
