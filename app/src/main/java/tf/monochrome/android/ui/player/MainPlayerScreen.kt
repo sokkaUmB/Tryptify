@@ -244,13 +244,6 @@ fun MainPlayerScreen(
      * Drawn last, above the audio-tools sheet and its scrim.
      */
     overlay: @Composable BoxScope.() -> Unit = {},
-    /**
-     * The USB DAC's volume bar, while one plays in exclusive mode; null
-     * otherwise, and then nothing is drawn. A slot rather than a level on
-     * [state] for the play head's reason: a drag moves it many times a second,
-     * and only the bar should recompose for that.
-     */
-    dacVolume: (@Composable () -> Unit)? = null,
 ) {
     val accent = state.albumColors.vibrant
 
@@ -469,11 +462,6 @@ fun MainPlayerScreen(
                     onNext = onNext,
                     isBuffering = state.isBuffering,
                 )
-            }
-
-            if (dacVolume != null) {
-                Spacer(Modifier.height(if (horizontal) 4.dp else 12.dp))
-                DevEditable("dacVolume", Modifier.fillMaxWidth()) { dacVolume() }
             }
 
             Spacer(Modifier.height(if (horizontal) 8.dp else 20.dp))

@@ -1120,8 +1120,6 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             onMute = playerViewModel::setDacMuted,
             hazeState = hazeState,
             glass = miniPlayerGlass,
-            // The full player carries the bar itself.
-            suppressed = currentDestination?.route == Screen.NowPlaying.route,
             modifier = Modifier.align(Alignment.TopCenter),
         )
     }

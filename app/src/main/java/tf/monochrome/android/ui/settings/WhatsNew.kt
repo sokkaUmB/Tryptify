@@ -234,7 +234,19 @@ object WhatsNew {
                     kind = WhatsNewKind.CHANGED,
                     section = USB_DAC,
                     title = "DACs at their full output",
-                    body = "The DAC's own volume is unmuted and set to full when a song starts, so only the player's volume bar turns it down. The DAC card shows it as HW vol 0 dB.",
+                    body = "The DAC's own volume is unmuted and set to full when a song starts, so only the app's volume turns it down. The DAC card shows it as HW vol 0 dB.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = USB_DAC,
+                    title = "One volume bar",
+                    body = "The player no longer has a DAC volume bar of its own. The volume keys bring up the DAC's bar at the top of the screen everywhere, the player included.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = USB_DAC,
+                    title = "No full-volume burst between songs",
+                    body = "A song change could play a moment of noise at the DAC's full volume, whatever the volume was set to. Samples that aren't audio are now held to the volume set, and a crossfade's outgoing song gets Samsung's 16-bit fix too.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.CHANGED,

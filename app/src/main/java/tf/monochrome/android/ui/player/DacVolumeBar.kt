@@ -131,9 +131,9 @@ internal fun DacVolumeBar(
  * With a DAC in exclusive mode the keys move its level rather than Android's,
  * so Android's own volume panel has nothing to show, and this takes its place.
  *
- * Shown by a key press, hidden [HIDE_AFTER_MS] after the last one, and never
- * while a finger is on it. Not while [suppressed] — the full player carries the
- * bar itself — and only for presses made with the app on screen: in the
+ * Shown by a key press on every screen, the full player included (it has no
+ * bar of its own), hidden [HIDE_AFTER_MS] after the last one, and never while
+ * a finger is on it. Only for presses made with the app on screen: in the
  * background Android shows its own panel for them (the session reports the DAC
  * as a remote device), and one waiting here on return would be stale.
  *
@@ -149,11 +149,10 @@ internal fun DacVolumePopup(
     onMute: (Boolean) -> Unit,
     hazeState: HazeState?,
     glass: PlayerGlassSettings,
-    suppressed: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val isExclusive by exclusive.collectAsStateWithLifecycle()
-    val hidden by rememberUpdatedState(suppressed || !isExclusive)
+    val hidden by rememberUpdatedState(!isExclusive)
     var requested by remember { mutableStateOf(false) }
     var touching by remember { mutableStateOf(false) }
     // Bumped by every press and every change made on the bar; each one
