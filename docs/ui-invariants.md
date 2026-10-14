@@ -161,6 +161,15 @@ on top of the tab bar rather than over its buttons. In the song menu, Track info
 and the actions turn as pages (`AnimatedContent`, the pane's height following),
 not a cut.
 
+With low-performance mode these panes keep their fallback: "Disable
+animations" (`reduceMotion()`) makes the overlay, the page turn, Track info's
+growth and the DAC pop-up come and go at once, and stops the player title's
+back-and-forth loop (a tap jumps it to its end and back instead). With no
+shader and no blur a pane is plain surface colour, and a pane floating over a
+page of text — the overlay, the DAC pop-up — passes
+`fallbackMinAlpha = FLOATING_FALLBACK_MIN_ALPHA` so the rows behind do not read
+through its own; other panels keep the see-through 0.55 floor.
+
 **A `GlassPanel` inside a scrolling list passes `blockTouchesBelow = false`.**
 Its backstop consumes every touch its content does not handle, drags included.
 Over a map that is the point — a tap on the pane must not select the nearest

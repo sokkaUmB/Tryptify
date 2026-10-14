@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dagger.hilt.android.EntryPointAccessors
 import tf.monochrome.android.R
+import tf.monochrome.android.ui.theme.reduceMotion
 import tf.monochrome.android.data.local.tags.FileTags
 import tf.monochrome.android.data.local.tags.TrackInfoEntryPoint
 import tf.monochrome.android.domain.model.Track
@@ -52,7 +53,9 @@ fun TrackInfoPane(track: Track, filePath: String?, onBack: () -> Unit) {
     }
 
     // animateContentSize: the pane grows from the spinner to the tags rather than jumping.
-    Column(modifier = Modifier.fillMaxWidth().animateContentSize().padding(bottom = 12.dp)) {
+    // Not with "Disable animations": it takes its new height at once.
+    val grow = if (reduceMotion()) Modifier else Modifier.animateContentSize()
+    Column(modifier = Modifier.fillMaxWidth().then(grow).padding(bottom = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
                 Icon(

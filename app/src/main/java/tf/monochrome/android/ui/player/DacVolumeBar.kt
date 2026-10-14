@@ -1,6 +1,8 @@
 package tf.monochrome.android.ui.player
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -43,6 +45,7 @@ import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import tf.monochrome.android.ui.theme.reduceMotion
 import tf.monochrome.android.R
 import tf.monochrome.android.audio.usb.BypassVolumeController
 import tf.monochrome.android.domain.model.PlayerGlassSettings
@@ -184,11 +187,13 @@ internal fun DacVolumePopup(
         }
     }
 
+    // "Disable animations": it appears and goes at once.
+    val still = reduceMotion()
     AnimatedVisibility(
         visible = requested && !hidden,
         modifier = modifier,
-        enter = fadeIn(tween(150)) + slideInVertically(tween(220)) { -it / 2 },
-        exit = fadeOut(tween(200)) + slideOutVertically(tween(220)) { -it / 2 },
+        enter = if (still) EnterTransition.None else fadeIn(tween(150)) + slideInVertically(tween(220)) { -it / 2 },
+        exit = if (still) ExitTransition.None else fadeOut(tween(200)) + slideOutVertically(tween(220)) { -it / 2 },
     ) {
         val level by levelDb.collectAsStateWithLifecycle()
         GlassPanel(
@@ -196,6 +201,8 @@ internal fun DacVolumePopup(
             glass = glass,
             modifier = Modifier.statusBarsPadding(),
             avoidNavigationBar = false,
+            // Without glass, near-solid: it floats over whatever page is open.
+            fallbackMinAlpha = tf.monochrome.android.ui.components.FLOATING_FALLBACK_MIN_ALPHA,
         ) {
             // GlassPanel publishes its material to its own slab only; the tube
             // has a shader of its own and reads the same local.

@@ -26,6 +26,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import kotlinx.coroutines.delay
+import tf.monochrome.android.ui.theme.reduceMotion
 
 /**
  * One line of [text] that, when it is wider than its room, shows the rest of
@@ -58,9 +59,17 @@ fun BackAndForthText(
     // Toward the end of the line: left in a left-to-right layout.
     val toward = if (LocalLayoutDirection.current == LayoutDirection.Rtl) 1f else -1f
 
-    LaunchedEffect(text, overflow, toward, taps) {
+    // "Disable animations": no loop. The title rests at its start, and each
+    // tap jumps it to its end and back, so the rest of it is still in reach.
+    val still = reduceMotion()
+
+    LaunchedEffect(text, overflow, toward, taps, still) {
         offset.snapTo(0f)
         if (overflow <= 0 || room <= 0) return@LaunchedEffect
+        if (still) {
+            if (taps % 2 == 1) offset.snapTo(toward * overflow)
+            return@LaunchedEffect
+        }
         val slide = slideMillis(overflow, pxPerSecond)
         var rest = if (taps > 0) REST_AFTER_TAP_MS else REST_AT_START_MS
         while (true) {

@@ -1,6 +1,8 @@
 package tf.monochrome.android.ui.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import tf.monochrome.android.domain.model.Track
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.ui.theme.reduceMotion
 
 /**
  * A song's menu (a long-press or its ⋮): what to do with it, and its Track
@@ -84,6 +87,8 @@ fun TrackContextMenu(
     var showingInfo by remember(track.id) { mutableStateOf(false) }
 
     GlassOverlay(onDismiss = onDismiss, alignment = Alignment.BottomCenter) {
+        // "Disable animations": the pages swap at once, at their own heights.
+        val still = reduceMotion()
         // Back from Track info returns to the actions rather than closing.
         BackHandler(enabled = showingInfo) { showingInfo = false }
         // Track info slides in from the end and the actions back from the
@@ -91,6 +96,7 @@ fun TrackContextMenu(
         AnimatedContent(
             targetState = showingInfo,
             transitionSpec = {
+                if (still) return@AnimatedContent (EnterTransition.None togetherWith ExitTransition.None).using(null)
                 val towards = if (targetState) SlideDirection.Start else SlideDirection.End
                 (slideIntoContainer(towards, tween(PAGE_MS)) + fadeIn(tween(PAGE_MS)))
                     .togetherWith(slideOutOfContainer(towards, tween(PAGE_MS)) + fadeOut(tween(PAGE_MS / 2)))

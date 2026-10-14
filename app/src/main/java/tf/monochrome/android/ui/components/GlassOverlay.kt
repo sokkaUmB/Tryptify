@@ -2,6 +2,8 @@ package tf.monochrome.android.ui.components
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -45,6 +47,7 @@ import tf.monochrome.android.domain.model.PlayerGlassSettings
 import tf.monochrome.android.ui.theme.MonoDimens
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.ui.theme.reduceMotion
 
 /**
  * Where a floating pane goes when it has to be made of glass.
@@ -191,14 +194,16 @@ fun BoxScope.GlassOverlayLayer(
         held[0] = null
     }
     val entry = current ?: held[0] ?: return
+    // "Disable animations": the scrim and the pane come and go at once.
+    val still = reduceMotion()
 
     BackHandler(enabled = open) { entry.onDismiss() }
 
     AnimatedVisibility(
         visibleState = scrimState,
         modifier = Modifier.matchParentSize(),
-        enter = fadeIn(tween(OPEN_MS)),
-        exit = fadeOut(tween(CLOSE_MS)),
+        enter = if (still) EnterTransition.None else fadeIn(tween(OPEN_MS)),
+        exit = if (still) ExitTransition.None else fadeOut(tween(CLOSE_MS)),
     ) {
         Box(
             modifier = Modifier
@@ -234,9 +239,9 @@ fun BoxScope.GlassOverlayLayer(
             visibleState = paneState,
             // A menu rises from below, where it is anchored; a dialog from a
             // little under its place.
-            enter = fadeIn(tween(OPEN_MS)) +
+            enter = if (still) EnterTransition.None else fadeIn(tween(OPEN_MS)) +
                 slideInVertically(tween(OPEN_MS, easing = FastOutSlowInEasing)) { if (bottom) it / 3 else it / 12 },
-            exit = fadeOut(tween(CLOSE_MS)) +
+            exit = if (still) ExitTransition.None else fadeOut(tween(CLOSE_MS)) +
                 slideOutVertically(tween(CLOSE_MS)) { if (bottom) it / 4 else it / 16 },
         ) {
             GlassPanel(
@@ -257,6 +262,9 @@ fun BoxScope.GlassOverlayLayer(
                 // The layer already holds off the navigation bar; a second inset
                 // here would push a centred pane visibly off-centre.
                 avoidNavigationBar = false,
+                // Without glass, a near-solid pane: the list it opened over
+                // must not read through the menu's own rows.
+                fallbackMinAlpha = FLOATING_FALLBACK_MIN_ALPHA,
             ) {
                 entry.content(this)
             }
