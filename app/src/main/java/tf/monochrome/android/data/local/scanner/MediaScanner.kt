@@ -93,12 +93,19 @@ class MediaScanner @Inject constructor(
             // about the files changed, so the usual heuristics would skip them.
             val titleFromFileName = preferences.localTitleFromFileName.first()
             val titleModeChanged = titleFromFileName != preferences.localTitleModeScanned.first()
+            // Rows an older scan gave a number for an artist are healed by one
+            // full scan, not by every one: see needsReRead.
+            val healNumbering = preferences.localNumberingHealScanned.first() < NUMBERING_HEAL_VERSION
 
             val addedCount = processFiles(
                 files = mediaStoreFiles,
                 shouldRead = {
                     titleModeChanged ||
-                        needsReRead(scanInfoByPath[it.absolutePath], it.dateModified, titleFromFileName = titleFromFileName)
+                        needsReRead(
+                            scanInfoByPath[it.absolutePath], it.dateModified,
+                            titleFromFileName = titleFromFileName,
+                            healNumbering = healNumbering,
+                        )
                 },
                 progressChunkSize = 50,
                 titleFromFileName = titleFromFileName,
@@ -119,6 +126,7 @@ class MediaScanner @Inject constructor(
             // Update scan state
             updateScanState(full = true)
             preferences.setLocalTitleModeScanned(titleFromFileName)
+            if (healNumbering) preferences.setLocalNumberingHealScanned(NUMBERING_HEAL_VERSION)
 
             // App data now, not a cache the OS bounds for us, and a scan is
             // the one moment we know which covers are still spoken for. Best
@@ -645,6 +653,12 @@ class MediaScanner @Inject constructor(
     }
 
     companion object {
+        /**
+         * The numbering heal a full scan applies once (needsReRead). Raise it
+         * when the numbering rule changes, so the next full scan heals again.
+         */
+        const val NUMBERING_HEAL_VERSION = 1
+
         /** Rows per insertTracks() call — one Room transaction per batch. */
         private const val INSERT_BATCH_SIZE = 500
 
@@ -678,6 +692,7 @@ class MediaScanner @Inject constructor(
             mediaStoreDateModified: Long,
             artworkFileExists: (String) -> Boolean = { File(it).exists() },
             titleFromFileName: Boolean = false,
+            healNumbering: Boolean = false,
         ): Boolean {
             if (existing == null) return true
             if (existing.lastModified < mediaStoreDateModified) return true
@@ -716,8 +731,13 @@ class MediaScanner @Inject constructor(
             // Re-read rows an older scan gave a track or disc number for an
             // artist ("01 - Song" split at its dash into "01" and "Song"). The
             // split now takes the numbering off first, so the re-read heals the
-            // row and the next scan skips it.
-            if (tf.monochrome.android.data.local.tags.TrackNames.looksLikeNumbering(existing.artist)) return true
+            // row. Once, behind [healNumbering]: a tagged artist really named
+            // "311" or "112" reads back the same, so as a per-scan rule it was
+            // re-read on every full scan, and each re-read replaced its row
+            // under a new id, losing it from the queue.
+            if (healNumbering &&
+                tf.monochrome.android.data.local.tags.TrackNames.looksLikeNumbering(existing.artist)
+            ) return true
             return false
         }
 

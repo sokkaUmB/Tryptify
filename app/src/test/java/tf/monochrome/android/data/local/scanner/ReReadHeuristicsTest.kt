@@ -86,6 +86,27 @@ class ReReadHeuristicsTest {
     }
 
     @Test
+    fun `a number taken for an artist is healed by one scan, not by every scan`() {
+        // "01 - Song" split by an older scan: healed while the heal is pending.
+        val numbered = scanInfo(artist = "01")
+        assertTrue(MediaScanner.needsReRead(numbered, 1_000L, artExists, healNumbering = true))
+        // A tagged artist really named with a number reads back the same, so as
+        // a rule of every scan it was re-read forever, under a new id each time.
+        val band = scanInfo(artist = "311")
+        assertTrue(MediaScanner.needsReRead(band, 1_000L, artExists, healNumbering = true))
+        assertFalse(MediaScanner.needsReRead(band, 1_000L, artExists, healNumbering = false))
+        assertFalse(MediaScanner.needsReRead(numbered, 1_000L, artExists, healNumbering = false))
+        // A real artist is never re-read for this.
+        assertFalse(MediaScanner.needsReRead(scanInfo(artist = "Sylver"), 1_000L, artExists, healNumbering = true))
+    }
+
+    @Test
+    fun `the heal is pending from the first version on`() {
+        // A library from before the heal existed stores 0.
+        assertTrue(0 < MediaScanner.NUMBERING_HEAL_VERSION)
+    }
+
+    @Test
     fun `title from path drops the folder and the extension only`() {
         assertEquals(
             "Vogel im Kafig OpenJoc SharurDM gain",

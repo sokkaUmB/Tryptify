@@ -417,6 +417,7 @@ class PreferencesManager @Inject constructor(
         // to the scan that applied it.
         private val LOCAL_TITLE_FROM_FILENAME = booleanPreferencesKey("local_title_from_filename")
         private val LOCAL_TITLE_MODE_SCANNED = booleanPreferencesKey("local_title_mode_scanned")
+        private val LOCAL_NUMBERING_HEAL_SCANNED = intPreferencesKey("local_numbering_heal_scanned")
 
         // DSP Mixer
         private val DSP_ENABLED = booleanPreferencesKey("dsp_enabled")
@@ -2052,6 +2053,21 @@ class PreferencesManager @Inject constructor(
 
     suspend fun setLocalTitleModeScanned(fromFileName: Boolean) {
         dataStore.edit { it[LOCAL_TITLE_MODE_SCANNED] = fromFileName }
+    }
+
+    /**
+     * The numbering heal (MediaScanner.NUMBERING_HEAL_VERSION) the last
+     * finished full scan applied. Below the current one, the next full scan
+     * re-reads rows whose artist looks like a track or disc number; then never
+     * again, so an artist really named "311" is not re-read on every scan.
+     * Recorded only when a scan completes, so a scan cut short is redone.
+     * Device-local, like the title mode: it describes this device's library.
+     */
+    val localNumberingHealScanned: Flow<Int> =
+        dataStore.data.map { it[LOCAL_NUMBERING_HEAL_SCANNED] ?: 0 }
+
+    suspend fun setLocalNumberingHealScanned(version: Int) {
+        dataStore.edit { it[LOCAL_NUMBERING_HEAL_SCANNED] = version }
     }
     val excludedPathsJson: Flow<String> = dataStore.data.map { it[EXCLUDED_PATHS_JSON] ?: "[]" }
 
