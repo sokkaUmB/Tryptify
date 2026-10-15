@@ -263,6 +263,7 @@ class GlyphViewModel @Inject constructor(
             is GlyphEvent.OpenSongs ->
                 _ui.value = _ui.value.copy(screen = GlyphScreen.HOME, songListMode = event.mode)
             GlyphEvent.BackToMenu -> {
+                wheelFocusJob?.cancel()
                 stopPreview()
                 _ui.value = _ui.value.copy(screen = GlyphScreen.MENU)
             }
@@ -295,14 +296,19 @@ class GlyphViewModel @Inject constructor(
             is GlyphEvent.SortSongs -> {
                 val sort = _ui.value.songSort.pick(event.key)
                 prefs.edit().putString(PREF_SORT_KEY, sort.key.id).putBoolean(PREF_SORT_ASCENDING, sort.ascending).apply()
-                // The sort makes the folders: the chosen song's new folder opens,
-                // so the wheel stays on it rather than on a folder header.
-                _ui.value = _ui.value.copy(
+                // The sort makes the folders. A centred song's new folder opens,
+                // so the wheel stays on it; a centred heading keeps its folder
+                // while the name still stands (turning the sort round), and an
+                // open folder's name the new sort does not make opens nothing.
+                val state = _ui.value
+                val centred = GlyphWheel.trackIdOf(state.wheelFocus)?.let { id -> state.songs.firstOrNull { it.trackId == id } }
+                _ui.value = state.copy(
                     songSort = sort,
-                    wheelFolder = _ui.value.selectedSong?.let { GlyphWheel.sectionOf(it, sort.key) },
+                    wheelFolder = centred?.let { GlyphWheel.sectionOf(it, sort.key) } ?: state.wheelFolder,
                 )
             }
             GlyphEvent.OpenLeaderboard -> {
+                wheelFocusJob?.cancel()
                 stopPreview()
                 leaderboardFrom = _ui.value.screen
                 openLeaderboard()
@@ -323,8 +329,11 @@ class GlyphViewModel @Inject constructor(
                 val open = if (_ui.value.wheelFolder == event.name) null else event.name
                 _ui.value = _ui.value.copy(wheelFolder = open, wheelFocus = GlyphWheel.folderKey(event.name))
             }
-            GlyphEvent.CloseFolder -> _ui.value.wheelFolder?.let { name ->
-                _ui.value = _ui.value.copy(wheelFolder = null, wheelFocus = GlyphWheel.folderKey(name))
+            is GlyphEvent.CloseFolder ->
+                _ui.value = _ui.value.copy(wheelFolder = null, wheelFocus = GlyphWheel.folderKey(event.name))
+            is GlyphEvent.SetWheelSound -> {
+                prefs.edit().putBoolean(PREF_WHEEL_SOUND, event.on).apply()
+                _ui.value = _ui.value.copy(wheelSound = event.on)
             }
             is GlyphEvent.SelectDifficulty ->
                 _ui.value = _ui.value.copy(selectedDifficulty = event.difficulty)
@@ -339,6 +348,7 @@ class GlyphViewModel @Inject constructor(
             GlyphEvent.DismissError -> _ui.value = _ui.value.copy(error = null)
 
             GlyphEvent.OpenPacks -> {
+                wheelFocusJob?.cancel()
                 stopPreview()
                 _ui.value = _ui.value.copy(screen = GlyphScreen.PACKS)
                 refreshOwnCount()
@@ -363,6 +373,9 @@ class GlyphViewModel @Inject constructor(
             GlyphEvent.DismissModelMessage -> updateModel { it.copy(message = null) }
 
             GlyphEvent.OpenOptions -> if (_ui.value.chart != null) {
+                // A song the wheel was about to choose must not replace the
+                // one whose options are opening.
+                wheelFocusJob?.cancel()
                 _ui.value = _ui.value.copy(screen = GlyphScreen.OPTIONS)
             }
             GlyphEvent.CloseOptions -> _ui.value = _ui.value.copy(screen = GlyphScreen.HOME)
@@ -469,6 +482,7 @@ class GlyphViewModel @Inject constructor(
      */
     private fun previewSong(song: GlyphSong) {
         previewJob?.cancel()
+        previewStopped = false
         if (!_ui.value.previews || song.filePath.isBlank()) {
             preview.stop()
             return
@@ -481,6 +495,9 @@ class GlyphViewModel @Inject constructor(
                 ?: dropFromWaveform(song)?.also { prefs.edit().putFloat(PREF_DROP_PREFIX + song.trackId, it).apply() }
                 ?: return@launch
             if (_ui.value.selectedSong?.trackId != song.trackId || _ui.value.screen != GlyphScreen.HOME) return@launch
+            // The start can wait seconds on the waveform; the app may have
+            // gone to the background in the meantime.
+            if (!foreground) return@launch
             preview.play(Uri.fromFile(File(song.filePath)), start, length)
         }
     }
@@ -499,10 +516,30 @@ class GlyphViewModel @Inject constructor(
     private fun stopPreview() {
         previewJob?.cancel()
         preview.stop()
+        previewStopped = true
+    }
+
+    /**
+     * Whether the preview was stopped (a folder, a run, the app left) rather
+     * than started; a preview still buffering is not playing yet, but is not
+     * stopped either, and must not be started again from the top.
+     */
+    private var previewStopped = true
+
+    /** Whether the app is in front; a preview never starts while it is not. */
+    private var foreground = true
+
+    /** The app is in front again. */
+    fun onForeground() {
+        foreground = true
     }
 
     /** The app left the foreground: a preview, or the editor's song, must not play on behind it. */
     fun onBackground() {
+        foreground = false
+        // A song the wheel was about to choose would start its preview behind
+        // the app once its delay ran out.
+        wheelFocusJob?.cancel()
         stopPreview()
         if (_ui.value.editor?.playing == true) stopEditorPlayback()
     }
@@ -787,9 +824,20 @@ class GlyphViewModel @Inject constructor(
      * them; a folder stops the preview.
      */
     private fun focusWheel(key: String) {
-        _ui.value = _ui.value.copy(wheelFocus = key)
+        val before = _ui.value
+        val song = before.songs.firstOrNull { GlyphWheel.songKey(it.trackId) == key }
+        val leaving = GlyphWheel.trackIdOf(before.wheelFocus)?.let { id -> before.songs.firstOrNull { it.trackId == id } }
+        // The open folder, kept by name: the centred song's, or — turning off a
+        // song onto a heading — the folder it was in, so a song's own heading
+        // does not close the folder under it.
+        val folder = when {
+            before.songQuery.isNotBlank() -> before.wheelFolder
+            song != null -> GlyphWheel.sectionOf(song, before.songSort.key)
+            leaving != null -> GlyphWheel.sectionOf(leaving, before.songSort.key)
+            else -> before.wheelFolder
+        }
+        _ui.value = before.copy(wheelFocus = key, wheelFolder = folder)
         wheelFocusJob?.cancel()
-        val song = _ui.value.songs.firstOrNull { GlyphWheel.songKey(it.trackId) == key }
         if (song == null) {
             // A folder stops the music once the wheel rests on it, not as it
             // passes: a wheel turning to a tapped song through a folder would
@@ -800,10 +848,18 @@ class GlyphViewModel @Inject constructor(
             }
             return
         }
-        if (_ui.value.selectedSong?.trackId == song.trackId) return
         wheelFocusJob = viewModelScope.launch {
             kotlinx.coroutines.delay(SAMPLE_MUSIC_DELAY_MS)
-            selectSong(song.trackId)
+            // Not behind the app, and not under another screen.
+            if (!foreground || _ui.value.screen != GlyphScreen.HOME) return@launch
+            val chosen = _ui.value.selectedSong
+            if (chosen?.trackId == song.trackId) {
+                // Back on the chosen song: its preview again, if a folder or a
+                // run stopped it.
+                if (previewStopped) previewSong(chosen)
+            } else {
+                selectSong(song.trackId)
+            }
         }
     }
 
@@ -984,6 +1040,7 @@ class GlyphViewModel @Inject constructor(
     private fun start(training: Boolean, fromSeconds: Float? = null) {
         val song = _ui.value.selectedSong ?: return
         val chart = _ui.value.chart ?: return
+        wheelFocusJob?.cancel()
         stopPreview()
         if (song.filePath.isBlank()) {
             _ui.value = _ui.value.copy(error = "That song's file could not be located.")
@@ -1538,6 +1595,7 @@ class GlyphViewModel @Inject constructor(
             audioOffsetMs = prefs.getInt(PREF_AUDIO_OFFSET, 0)
                 .coerceIn(-GlyphCalibration.MAX_OFFSET_MS, GlyphCalibration.MAX_OFFSET_MS),
             previews = prefs.getBoolean(PREF_PREVIEWS, true),
+            wheelSound = prefs.getBoolean(PREF_WHEEL_SOUND, true),
             songSort = GlyphSongSort(
                 key = GlyphSortKey.fromId(prefs.getString(PREF_SORT_KEY, null)),
                 ascending = prefs.getBoolean(PREF_SORT_ASCENDING, true),
@@ -2149,6 +2207,7 @@ class GlyphViewModel @Inject constructor(
         const val PREF_NAME = "player_name"
         const val PREF_SORT_KEY = "song_sort"
         const val PREF_PREVIEWS = "previews"
+        const val PREF_WHEEL_SOUND = "wheel_sound"
         const val PREF_KEYS = "keys"
         const val PREF_AUDIO_OFFSET = "audio_offset_ms"
 

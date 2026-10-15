@@ -8,19 +8,24 @@ import kotlin.math.roundToInt
  * What a chart asks of the player, at a glance: DDR's Groove Radar and a
  * density graph.
  *
- * The radar's five values are StepMania's (its `RadarCategory`), each 0 to 1,
- * each a rate over the chart's length against the rate StepMania counts as
- * "really high":
+ * The radar's five values are StepMania's, as its `CalculateRadarValues`
+ * computes them, each a rate over the song's length:
  *
- * * **Stream** — notes a second, against 7.
- * * **Voltage** — notes a second in the busiest eight beats, against 10.
- * * **Air** — jumps (two arrows at once) a second, against 1.
- * * **Freeze** — holds and rolls a second, against 0.25.
- * * **Chaos** — notes off the quarter-and-eighth grid (twelfths, sixteenths
- *   and finer) a second, against 0.5.
+ * * **Stream** — notes a second, over 7.
+ * * **Voltage** — the most notes in any eight beats (a rolling window), as
+ *   notes a beat, times the song's average beats a second, over 10.
+ * * **Air** — jumps (rows of two or more arrows) a second.
+ * * **Freeze** — holds a second. Rolls are not freezes.
+ * * **Chaos** — rows off the quarter-and-eighth grid (twelfths, sixteenths
+ *   and finer) a second, times 0.5. Every row counts, a mine's or a fake's
+ *   too, as in StepMania.
  *
- * The density graph is notes a second across the chart in [BINS] slices — the
- * graph ITGmania's themes draw beside the music wheel.
+ * Each is drawn up to 1, where StepMania's own radar stops. The song's length
+ * is the music's, as StepMania's is; without one, the span of the steps.
+ *
+ * The density graph is rows (a jump counts once) a second across the chart in
+ * [BINS] slices, and the peak is the busiest measure's, the way ITGmania's
+ * themes show it beside the music wheel.
  *
  * All of it is read from the chart's own steps — each one's time, beat and
  * beat division, whether it is a tap or a hold — the same per-step facts
@@ -34,9 +39,11 @@ data class GlyphChartStats(
     val air: Float,
     val freeze: Float,
     val chaos: Float,
-    /** Notes a second in each of [BINS] equal slices of the chart. */
+    /** Rows a second in each of [BINS] equal slices of the chart. */
     val density: List<Float>,
+    /** Rows a second in the busiest measure. */
     val peakNps: Float,
+    /** Notes a second over the song. */
     val averageNps: Float,
     val notes: Int,
     val seconds: Float,
@@ -52,59 +59,81 @@ data class GlyphChartStats(
 
         val EMPTY = GlyphChartStats(0f, 0f, 0f, 0f, 0f, List(BINS) { 0f }, 0f, 0f, 0, 0f)
 
-        private const val STREAM_HIGH = 7f
-        private const val VOLTAGE_HIGH = 10f
-        private const val AIR_HIGH = 1f
-        private const val FREEZE_HIGH = 0.25f
-        private const val CHAOS_HIGH = 0.5f
+        private const val STREAM_DIVISOR = 7f
+        private const val VOLTAGE_DIVISOR = 10f
+        private const val CHAOS_SCALE = 0.5f
         private const val VOLTAGE_BEATS = 8f
+        private const val MEASURE_BEATS = 4f
+        /** A measure shorter than this is a gimmick, not a peak (ITGmania's floor). */
+        private const val SHORTEST_MEASURE_SECONDS = 0.12f
 
-        fun of(chart: GlyphChart, timing: GlyphTiming): GlyphChartStats {
+        /**
+         * The stats of [chart] under [timing]. [songSeconds] is the music's
+         * length; zero or less falls back to the span of the steps.
+         */
+        fun of(chart: GlyphChart, timing: GlyphTiming, songSeconds: Float = 0f): GlyphChartStats {
             val notes = chart.scorableNotes
             if (notes.isEmpty()) return EMPTY
             val start = notes.first().timeSeconds
             val end = notes.maxOf { it.endTimeSeconds }
-            // At least a second, so a chart of three notes is not "really high".
-            val seconds = (end - start).coerceAtLeast(1f)
+            // The span of the steps, at least a second: the graph's width.
+            val span = (end - start).coerceAtLeast(1f)
+            val seconds = if (songSeconds > 0f) songSeconds else span
 
             // A row is every note on one beat: two or more of them is a jump.
-            val rows = notes.groupBy { (it.beat * ROW_RESOLUTION).roundToInt() }
+            val rows = notes.groupBy { rowOf(it.beat) }
             val jumps = rows.values.count { row -> row.map { it.lane }.distinct().size >= 2 }
-            val holds = notes.count { it.type.hasTail }
-            val chaosRows = rows.values.count { row -> row.first().division.perBeat > 2 }
+            val holds = notes.count { it.type == GlyphNoteType.HOLD }
+            // Chaos counts every row, whatever its notes are.
+            val chaosRows = chart.notes.groupBy { rowOf(it.beat) }.values
+                .count { row -> row.first().division.perBeat > 2 }
 
-            // Voltage: the busiest eight beats, in notes a second of real time,
-            // so a tempo change counts as the player feels it.
-            val firstBeat = notes.first().beat
-            val windows = notes.groupBy { ((it.beat - firstBeat) / VOLTAGE_BEATS).toInt() }
-            val peakWindow = windows.maxOf { (index, inWindow) ->
-                val from = firstBeat + index * VOLTAGE_BEATS
-                val length = (timing.beatToSeconds(from + VOLTAGE_BEATS) - timing.beatToSeconds(from)).coerceAtLeast(0.25f)
-                inWindow.size / length
+            // Voltage: the most notes in any eight beats, a window rolling from
+            // note to note, as StepMania's recent_notes.
+            val beats = notes.map { it.beat }.sorted()
+            var from = 0
+            var busiest = 0
+            for (to in beats.indices) {
+                while (beats[from] < beats[to] - VOLTAGE_BEATS) from++
+                busiest = maxOf(busiest, to - from + 1)
             }
+            // StepMania spaces the beats evenly here, at the song's average.
+            val averageBps = chart.notes.maxOf { it.beat } / seconds
+            val voltage = busiest / VOLTAGE_BEATS * averageBps / VOLTAGE_DIVISOR
 
+            val rowTimes = rows.values.map { row -> row.first().timeSeconds }
             val counts = IntArray(BINS)
-            for (note in notes) {
-                val bin = (((note.timeSeconds - start) / seconds) * BINS).toInt().coerceIn(0, BINS - 1)
+            for (time in rowTimes) {
+                val bin = (((time - start) / span) * BINS).toInt().coerceIn(0, BINS - 1)
                 counts[bin] += 1
             }
-            val binSeconds = seconds / BINS
+            val binSeconds = span / BINS
             val density = counts.map { it / binSeconds }
 
-            fun rate(count: Int, high: Float) = (count / seconds / high).coerceIn(0f, 1f)
+            // The busiest measure, in rows a second of real time.
+            val peak = rows.keys.groupBy { (it / (ROW_RESOLUTION * MEASURE_BEATS)).toInt() }
+                .maxOfOrNull { (measure, inMeasure) ->
+                    val first = measure * MEASURE_BEATS
+                    val length = timing.beatToSeconds(first + MEASURE_BEATS) - timing.beatToSeconds(first)
+                    if (length < SHORTEST_MEASURE_SECONDS) 0f else inMeasure.size / length
+                } ?: 0f
+
+            fun rate(count: Int) = count / seconds
             return GlyphChartStats(
-                stream = rate(notes.size, STREAM_HIGH),
-                voltage = (peakWindow / VOLTAGE_HIGH).coerceIn(0f, 1f),
-                air = rate(jumps, AIR_HIGH),
-                freeze = rate(holds, FREEZE_HIGH),
-                chaos = rate(chaosRows, CHAOS_HIGH),
+                stream = (rate(notes.size) / STREAM_DIVISOR).coerceIn(0f, 1f),
+                voltage = voltage.coerceIn(0f, 1f),
+                air = rate(jumps).coerceIn(0f, 1f),
+                freeze = rate(holds).coerceIn(0f, 1f),
+                chaos = (rate(chaosRows) * CHAOS_SCALE).coerceIn(0f, 1f),
                 density = density,
-                peakNps = density.max(),
+                peakNps = peak,
                 averageNps = notes.size / seconds,
                 notes = notes.size,
                 seconds = seconds,
             )
         }
+
+        private fun rowOf(beat: Float): Int = (beat * ROW_RESOLUTION).roundToInt()
 
         /** Rows a beat when grouping notes into rows: fine enough for 192nds. */
         private const val ROW_RESOLUTION = 48f

@@ -65,7 +65,8 @@ sealed interface GlyphEvent {
     /** Open the folder [name], or close it when it is the open one. */
     data class ToggleFolder(val name: String) : GlyphEvent
     /** Close the open folder, as StepMania's Up-Down does. */
-    data object CloseFolder : GlyphEvent
+    data class CloseFolder(val name: String) : GlyphEvent
+    data class SetWheelSound(val on: Boolean) : GlyphEvent
     data class SelectDifficulty(val difficulty: StepManiaDifficulty) : GlyphEvent
 
     /** Generate a chart for the selected song from the file already on disk. */

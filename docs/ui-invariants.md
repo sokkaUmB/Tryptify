@@ -1058,37 +1058,79 @@ folder of its results, so neither costs a tap to get past a heading. The flat
 list it replaced was the navigation complaint: hundreds of pack songs in one
 column, with nothing to jump between.
 
+* The centred song's folder is open, always: that is where the song is. The
+  open folder is derived from the centred song, not only stored. Stored alone,
+  a song that changed folder — a chart made under the Mapped sort, a search
+  closed, a pack import landing beside a lone library — was left behind a
+  closed folder, with its panel and preview gone.
 * The centred song is chosen after the wheel rests on it for
   `SAMPLE_MUSIC_DELAY_MS` (StepMania's `SampleMusicDelay`), not as it passes; a
-  folder stops the preview on the same delay. Stopping it at once let a turn
-  through a folder cut off the preview a tap had just started.
+  folder stops the preview on the same delay, and resting again on the chosen
+  song starts its preview again. The delayed choice is cancelled when the
+  screen or the app is left: run out behind the app, it started a looping
+  preview there.
+* The centre is reported by the item, not by its place: a new list with a
+  different song at the same place is a new centre. Reported by place, the
+  panel kept offering Play for the song that used to be there.
 * A tap on the centre item opens it: a folder opens or closes, the chosen song
   goes to its options. A tap on a song away from the centre chooses it now.
 * The selection panel is the centred song's and shows only once that song is
   the chosen one. A panel left up while the wheel turned past offered Play for a
-  song no longer in the middle.
-* The wheel runs to its foot under the panel's glass, and its centre rises by
-  half the panel. The room is kept while any song is centred, not only while the
-  panel shows: sized to the panel's visibility, the wheel jumped up and down at
-  every step as the panel came and went.
-* The items move in `graphicsLayer` from one float position; a frame of a turn
-  recomposes nothing.
+  song no longer in the middle; a panel fading out takes no presses for the same
+  reason.
+* The wheel runs under the search bar and the panel's glass, and its centre
+  moves to the middle of what they leave. The panel's room is kept while a song
+  is chosen, whatever is centred: sized to the centred item, the wheel rose and
+  fell by half a panel at every folder heading.
+* It turns through `Modifier.scrollable`, like a list: presses wait while a
+  drag may be starting (no flash on every drag), and the tab bar folds as it
+  turns. A raw drag detector did neither, which left the mini player unreachable
+  with "Hide mini player when the nav bar shows" on. Items press with
+  `bounceClick`, never a ripple.
+* Up and Down turn it; Left and Right are left to focus, so a D-pad can reach
+  the panel and the top bar. The items are not keyboard stops: the wheel is.
+* The items move in `graphicsLayer` from one float position, and the glass's
+  insets are read there too; a frame of a turn recomposes nothing.
+* It swishes as the player turns it (`GlyphWheelSound`, Settings › More ›
+  Wheel sound), never when it is set to a new place by a sort, a search or a
+  folder.
 
 **The card over the wheel reads the chart; it never grades it.**
 `GlyphSongInfoCard`: DDR's Groove Radar, the BPM meter, the meter in feet and a
-density graph, from `GlyphChartStats` — StepMania's radar rates (`RadarCategory`)
-over the chart's own steps. The difficulty number is the chart's own meter;
-nothing predicts one. Every value moves to the next as the wheel turns or the
-difficulty changes, and snaps under reduced motion.
+density graph, from `GlyphChartStats`. The radar is StepMania's own
+`CalculateRadarValues` over the song's length — rolls are not freeze, every
+off-grid row is chaos, voltage is a rolling eight beats — and `GlyphWheelTest`
+holds each axis to hand-worked charts. Divided by the wrong constants, Freeze and
+Chaos read four times high and filled their axes on almost every chart. The
+difficulty number is the chart's own meter; nothing predicts one, and as text it
+goes through `menuAccent`. Every value moves to the next as the wheel turns or the
+difficulty changes, and snaps under reduced motion. The beat light follows the
+playing preview's beat and is still when nothing plays.
+
+The card sits above the search bar, not in the page under it, and takes the
+height the screen can spare: whole when it is 720 dp or taller, without the radar
+and graph from 600 dp, and gone below that (a phone on its side), where the
+wheel and the panel's Play need the room. Whole at any height, it pushed Play
+off a landscape screen.
 
 **The TV shader is over the game, never over a menu.** `glyphTvShader`, off by
-default, goes on the gameplay screen's root (the whole picture, the HUD and the
-pause panel with it), Training Ground's playfield and the options' preview, and
-nowhere else. Android 13 and later; off under the low-performance switch; a
-shader the driver will not compile leaves the screen plain. Its patterns are
-counted in monitor-sized pixels (1.6 dp): in a phone's own pixels a one-pixel
-scanline is too fine to see. The settings name each look by what it does, never
-by where its arithmetic came from.
+default, goes on the gameplay picture (the playfield, the judgements and the
+HUD), Training Ground's playfield and the options' preview, and nowhere else.
+The pause menu is drawn over it, outside it, in the app's own glass. Android 13
+and later; off where the app turns its blur off (a low-end phone, or liquid glass
+removed), since it is a full-screen pass every frame, and the setting says so;
+a shader the driver will not compile leaves the screen plain.
+
+* The masks are counted in monitor-sized pixels (1.6 dp): in a phone's own
+  pixels a one-pixel scanline is too fine to see. The CRT reads the picture at
+  every phone pixel, as the original reads every output pixel. Read on the
+  coarse grid, it broke the HUD's text and lost one-pixel lines.
+* The line grid is the original's 640 x 480 over the window; a smaller layer
+  gets its share, so the preview's lines are the game's and do not shimmer. Wave
+  averages the rows a line covers rather than reading one, or thin lines blink
+  as they scroll.
+* The settings name each look by what it does, never by where its arithmetic
+  came from.
 
 **The mode opens on its menu.** `GlyphScreen.MENU`: Play and the map editor
 both lead to the song list, Settings to its own page, and Back from the song

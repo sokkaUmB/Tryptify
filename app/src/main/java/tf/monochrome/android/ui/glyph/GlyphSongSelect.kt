@@ -3,12 +3,7 @@
 package tf.monochrome.android.ui.glyph
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -31,6 +26,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,9 +47,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.sin
 import tf.monochrome.android.audio.stepmania.StepManiaDifficulty
 import tf.monochrome.android.glyph.chart.GlyphChartStats
+import tf.monochrome.android.glyph.chart.GlyphTiming
 import tf.monochrome.android.glyph.chart.bpmRange
 import tf.monochrome.android.glyph.data.GlyphWheel
 import tf.monochrome.android.ui.components.CoverImage
@@ -66,6 +65,10 @@ import tf.monochrome.android.ui.components.liquidGlass
  * the wheel turns or the difficulty changes, never jumping.
  *
  * A folder shows its own summary, and the radar and graph fall flat.
+ *
+ * [previewPosition] is the song preview's place in the song, for the beat
+ * light; null while nothing plays. [compact] leaves out the radar and the
+ * graph, for a screen without the height for them.
  */
 @Composable
 internal fun GlyphSongInfoCard(
@@ -73,6 +76,8 @@ internal fun GlyphSongInfoCard(
     state: GlyphUiState,
     reducedMotion: Boolean,
     modifier: Modifier = Modifier,
+    previewPosition: () -> Float? = { null },
+    compact: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val song = (item as? GlyphWheel.Item.Song)?.song
@@ -81,8 +86,10 @@ internal fun GlyphSongInfoCard(
     val loaded = song != null && state.selectedSong?.trackId == song.trackId
     val chart = if (loaded) state.chart else null
     val simfile = if (loaded) state.simfile else null
-    val stats = remember(chart, simfile) {
-        if (chart != null && simfile != null) GlyphChartStats.of(chart, simfile.timing) else GlyphChartStats.EMPTY
+    // Over the music's length, as StepMania's radar is.
+    val songSeconds = song?.durationSeconds?.toFloat() ?: 0f
+    val stats = remember(chart, simfile, songSeconds) {
+        if (chart != null && simfile != null) GlyphChartStats.of(chart, simfile.timing, songSeconds) else GlyphChartStats.EMPTY
     }
     val range = simfile?.timing?.bpmRange()
     val bpm = range?.endInclusive ?: song?.bpm ?: (item as? GlyphWheel.Item.Folder)?.section?.songs?.mapNotNull { it.bpm }?.maxOrNull() ?: 0f
@@ -98,54 +105,64 @@ internal fun GlyphSongInfoCard(
         null -> ""
     }
 
-    Row(
+    // One root, so the caller's modifier and the glass hold the graph too.
+    Column(
         modifier = modifier
             .liquidGlass(shape = MonoDimens.shapeLg)
             .padding(MonoDimens.spacingMd),
-        horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingMd),
     ) {
-        GlyphGrooveRadar(
-            values = stats.radar,
-            colour = colour,
-            reducedMotion = reducedMotion,
-            modifier = Modifier.size(140.dp),
-        )
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val art = song?.artworkUri ?: (item as? GlyphWheel.Item.Folder)?.section?.songs?.firstNotNullOfOrNull { it.artworkUri }
-                Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(sectionColour(item?.let { sectionOf(it) } ?: ""))) {
-                    if (art != null) CoverImage(url = art, contentDescription = null, size = 44.dp, cornerRadius = 10.dp)
-                }
-                Spacer(Modifier.width(MonoDimens.spacingSm))
-                Column(Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
+        Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingMd)) {
+            if (!compact) {
+                GlyphGrooveRadar(
+                    values = stats.radar,
+                    colour = colour,
+                    reducedMotion = reducedMotion,
+                    modifier = Modifier.size(140.dp),
+                )
             }
-            GlyphBpmMeter(
-                bpm = bpm,
-                low = range?.start?.takeIf { it < (range.endInclusive - 0.5f) },
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val art = song?.artworkUri ?: (item as? GlyphWheel.Item.Folder)?.section?.songs?.firstNotNullOfOrNull { it.artworkUri }
+                    Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(sectionColour(item?.let { sectionOf(it) } ?: ""))) {
+                        if (art != null) CoverImage(url = art, contentDescription = null, size = 44.dp, cornerRadius = 10.dp)
+                    }
+                    Spacer(Modifier.width(MonoDimens.spacingSm))
+                    Column(Modifier.weight(1f)) {
+                        Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                GlyphBpmMeter(
+                    bpm = bpm,
+                    low = range?.start?.takeIf { it < (range.endInclusive - 0.5f) },
+                    colour = colour,
+                    reducedMotion = reducedMotion,
+                    timing = simfile?.timing,
+                    previewPosition = if (loaded) previewPosition else NO_POSITION,
+                )
+                GlyphFeet(
+                    difficulty = chart?.difficulty,
+                    meter = chart?.meter ?: 0,
+                    colour = colour,
+                    reducedMotion = reducedMotion,
+                )
+            }
+        }
+        if (!compact) {
+            GlyphDensityGraph(
+                stats = stats,
                 colour = colour,
                 reducedMotion = reducedMotion,
-            )
-            GlyphFeet(
-                difficulty = chart?.difficulty,
-                meter = chart?.meter ?: 0,
-                colour = colour,
-                reducedMotion = reducedMotion,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = MonoDimens.spacingSm)
+                    .height(44.dp),
             )
         }
     }
-    GlyphDensityGraph(
-        stats = stats,
-        colour = colour,
-        reducedMotion = reducedMotion,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = MonoDimens.spacingXs)
-            .height(44.dp),
-    )
 }
+
+private val NO_POSITION: () -> Float? = { null }
 
 private fun sectionOf(item: GlyphWheel.Item): String = when (item) {
     is GlyphWheel.Item.Song -> item.section
@@ -214,17 +231,28 @@ internal fun GlyphGrooveRadar(
         GlyphChartStats.AXES.forEachIndexed { axis, label ->
             val layout = measurer.measure(label, labelStyle)
             val at = point(axis, 1.18f)
-            drawText(layout, topLeft = Offset(at.x - layout.size.width / 2f, at.y - layout.size.height / 2f))
+            // Inside the canvas whatever the font scale, never under the card's rim.
+            val x = (at.x - layout.size.width / 2f).coerceIn(0f, (size.width - layout.size.width).coerceAtLeast(0f))
+            val y = (at.y - layout.size.height / 2f).coerceIn(0f, (size.height - layout.size.height).coerceAtLeast(0f))
+            drawText(layout, topLeft = Offset(x, y))
         }
     }
 }
 
 /**
  * The BPM meter: the tempo rolling to the next song's, a gauge to 300, and a
- * light that blinks on the beat. A song whose tempo changes shows its range.
+ * light that flashes on the preview's beats. A song whose tempo changes shows
+ * its range.
  */
 @Composable
-private fun GlyphBpmMeter(bpm: Float, low: Float?, colour: Color, reducedMotion: Boolean) {
+private fun GlyphBpmMeter(
+    bpm: Float,
+    low: Float?,
+    colour: Color,
+    reducedMotion: Boolean,
+    timing: GlyphTiming?,
+    previewPosition: () -> Float?,
+) {
     val scheme = MaterialTheme.colorScheme
     val shown by animated(bpm, reducedMotion, "bpm")
     val gauge by animated((bpm / MAX_GAUGE_BPM).coerceIn(0f, 1f), reducedMotion, "bpmGauge")
@@ -236,12 +264,18 @@ private fun GlyphBpmMeter(bpm: Float, low: Float?, colour: Color, reducedMotion:
                 text = if (low != null) "${low.toInt()}–${shown.toInt()}" else shown.toInt().toString(),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.semantics { contentDescription = "$bpm beats a minute" },
+                modifier = Modifier.semantics {
+                    contentDescription = if (low != null) {
+                        "${low.toInt()} to ${bpm.toInt()} beats a minute"
+                    } else {
+                        "${bpm.toInt()} beats a minute"
+                    }
+                },
             )
             Spacer(Modifier.width(4.dp))
             Text("BPM", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
-            BeatLight(bpm = bpm, colour = colour, reducedMotion = reducedMotion)
+            BeatLight(timing = timing, previewPosition = previewPosition, colour = colour, reducedMotion = reducedMotion)
         }
         Box(
             Modifier
@@ -256,24 +290,33 @@ private fun GlyphBpmMeter(bpm: Float, low: Float?, colour: Color, reducedMotion:
     }
 }
 
-/** A light that flashes on each beat at [bpm]; still with reduced motion. */
+/**
+ * A light that flashes on each beat of the preview as it plays: the preview's
+ * place turned into a beat by the song's own timing, so it is on the music's
+ * beat through every tempo change. Still while nothing plays, and with reduced
+ * motion.
+ */
 @Composable
-private fun BeatLight(bpm: Float, colour: Color, reducedMotion: Boolean) {
-    if (reducedMotion || bpm <= 0f) {
+private fun BeatLight(timing: GlyphTiming?, previewPosition: () -> Float?, colour: Color, reducedMotion: Boolean) {
+    if (reducedMotion || timing == null) {
         Box(Modifier.size(9.dp).clip(CircleShape).background(colour.copy(alpha = 0.5f)))
         return
     }
-    val beatMillis = (60_000f / bpm.coerceIn(30f, 400f)).toInt()
-    val pulse by rememberInfiniteTransition(label = "beat").animateFloat(
-        initialValue = 1f,
-        targetValue = 0.3f,
-        animationSpec = infiniteRepeatable(tween(beatMillis, easing = LinearEasing), RepeatMode.Restart),
-        label = "beatPulse",
-    )
+    // A frame clock read in the layer: each frame redraws the light and
+    // recomposes nothing.
+    val frame = produceState(0L) { while (true) withFrameNanos { value = it } }
     Box(
         Modifier
             .size(9.dp)
             .graphicsLayer {
+                @Suppress("UNUSED_EXPRESSION") frame.value
+                val position = previewPosition()
+                val pulse = if (position == null) {
+                    0.5f
+                } else {
+                    val beat = timing.secondsToBeat(position)
+                    1f - (beat - floor(beat)) * 0.7f
+                }
                 alpha = pulse
                 val scale = 1f + (pulse - 0.3f) * 0.5f
                 scaleX = scale
@@ -302,7 +345,9 @@ private fun GlyphFeet(difficulty: StepManiaDifficulty?, meter: Int, colour: Colo
                 text = if (difficulty != null) meter.toString() else "",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = colour,
+                // Text, so the accent is moved until it reads on the glass;
+                // the feet below are a fill and keep it as it is.
+                color = menuAccent(colour),
             )
         }
         Row(Modifier.padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -323,7 +368,7 @@ private fun GlyphFeet(difficulty: StepManiaDifficulty?, meter: Int, colour: Colo
 }
 
 /**
- * Notes a second across the chart, as ITGmania's themes draw it: a filled
+ * Rows a second across the chart, as ITGmania's themes draw it: a filled
  * area to a fixed 12 a second, so two charts compare at a glance. Each slice
  * eases to the next chart's.
  */

@@ -87,6 +87,7 @@ fun GlyphRoute(
                 viewModel.onBackground()
                 if (state.gameplay.isPlaying) viewModel.onEvent(GlyphEvent.TogglePause)
             }
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.onForeground()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -164,6 +165,7 @@ fun GlyphRoute(
                 assets = assets,
                 onEvent = viewModel::onEvent,
                 onBack = { viewModel.onEvent(GlyphEvent.BackToMenu) },
+                previewPosition = previewPositionProvider,
                 modifier = Modifier.fillMaxSize(),
             )
 

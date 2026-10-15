@@ -52,6 +52,8 @@ data class GlyphUiState(
     val wheelFolder: String? = null,
     /** The wheel item at the centre, by [tf.monochrome.android.glyph.data.GlyphWheel.Item.key]. */
     val wheelFocus: String? = null,
+    /** The wheel's swish as it turns. */
+    val wheelSound: Boolean = true,
     /** How the song list and the leaderboard are ordered; kept between sessions. */
     val songSort: GlyphSongSort = GlyphSongSort(),
     val leaderboard: GlyphLeaderboardUi = GlyphLeaderboardUi(),

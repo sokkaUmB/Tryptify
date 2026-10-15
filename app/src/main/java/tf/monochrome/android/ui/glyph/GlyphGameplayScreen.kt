@@ -99,8 +99,6 @@ fun GlyphGameplayScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            // The whole picture through the TV, the HUD and pause menu with it.
-            .glyphTvShader(gameplay.modifiers.graphics.tvShader)
             .background(GlyphTheme.Ink)
             .glyphKeyboard(
                 keys = state.keys,
@@ -111,77 +109,86 @@ fun GlyphGameplayScreen(
                 focus = keyboard,
             ),
     ) {
-        GlyphPlayfield(
-            engine = engine,
-            assets = assets,
-            palette = palette,
-            positionProvider = positionProvider,
-            heldLanes = gameplay.heldLanes,
-            scrollMode = gameplay.modifiers.scrollMode,
-            timing = timing,
-            reducedMotion = gameplay.modifiers.reducedMotion,
-            skin = gameplay.modifiers.skin,
-            explosionProvider = explosionProvider,
-            comboBurstProvider = comboBurstProvider,
-            comboProvider = comboProvider,
-            look = GlyphFieldLook.of(gameplay.modifiers),
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        // The lane input sits over the playfield rather than under a row of
-        // buttons: the whole lane is the target, which is what makes the mode
-        // playable with thumbs.
-        GlyphLaneInput(
-            onPress = { lane, at -> onEvent(GlyphEvent.LanePressed(lane, at)) },
-            onRelease = { lane, at -> onEvent(GlyphEvent.LaneReleased(lane, at)) },
-            hitboxScale = gameplay.modifiers.hitboxScale,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        if (gameplay.countInBeatsRemaining > 0) {
-            CountIn(
-                beatsRemaining = gameplay.countInBeatsRemaining,
-                typography = typography,
-                modifier = Modifier.align(Alignment.Center),
-            )
-        }
-
-        JudgementOverlay(
-            judgement = gameplay.lastJudgement,
-            early = gameplay.lastJudgementEarly,
-            shownAtMs = gameplay.lastJudgementAtMs,
-            combo = gameplay.score.combo,
-            fullCombo = gameplay.fullCombo,
-            fonts = fonts,
-            modifier = Modifier.align(Alignment.Center),
-        )
-
-        if (gameplay.introStartedAtMs > 0L) {
-            ReadyGo(
-                startedAtMs = gameplay.introStartedAtMs,
-                fonts = fonts,
-                modifier = Modifier.align(Alignment.Center),
-            )
-        }
-
-        // Clear of the status bar and the cutout when they are there, and only
-        // of those: the route runs full-bleed while playing and the system
-        // bars are usually hidden, and the HUD is pinned to the top, so a
-        // bottom inset here would only pad a column nobody sees the end of.
-        Column(
+        // The game through the TV: the playfield, the judgements and the HUD.
+        // The pause menu is drawn over it, outside the shader, in the app's own
+        // glass; a menu is never seen through the TV.
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-                ),
+                .fillMaxSize()
+                .glyphTvShader(gameplay.modifiers.graphics.tvShader),
         ) {
-            GameplayHud(
-                state = state,
-                typography = typography,
-                fonts = fonts,
-                onEvent = onEvent,
+            GlyphPlayfield(
+                engine = engine,
+                assets = assets,
+                palette = palette,
+                positionProvider = positionProvider,
+                heldLanes = gameplay.heldLanes,
+                scrollMode = gameplay.modifiers.scrollMode,
+                timing = timing,
+                reducedMotion = gameplay.modifiers.reducedMotion,
+                skin = gameplay.modifiers.skin,
+                explosionProvider = explosionProvider,
+                comboBurstProvider = comboBurstProvider,
+                comboProvider = comboProvider,
+                look = GlyphFieldLook.of(gameplay.modifiers),
+                modifier = Modifier.fillMaxSize(),
             )
+
+            // The lane input sits over the playfield rather than under a row of
+            // buttons: the whole lane is the target, which is what makes the mode
+            // playable with thumbs.
+            GlyphLaneInput(
+                onPress = { lane, at -> onEvent(GlyphEvent.LanePressed(lane, at)) },
+                onRelease = { lane, at -> onEvent(GlyphEvent.LaneReleased(lane, at)) },
+                hitboxScale = gameplay.modifiers.hitboxScale,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            if (gameplay.countInBeatsRemaining > 0) {
+                CountIn(
+                    beatsRemaining = gameplay.countInBeatsRemaining,
+                    typography = typography,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
+
+            JudgementOverlay(
+                judgement = gameplay.lastJudgement,
+                early = gameplay.lastJudgementEarly,
+                shownAtMs = gameplay.lastJudgementAtMs,
+                combo = gameplay.score.combo,
+                fullCombo = gameplay.fullCombo,
+                fonts = fonts,
+                modifier = Modifier.align(Alignment.Center),
+            )
+
+            if (gameplay.introStartedAtMs > 0L) {
+                ReadyGo(
+                    startedAtMs = gameplay.introStartedAtMs,
+                    fonts = fonts,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
+
+            // Clear of the status bar and the cutout when they are there, and only
+            // of those: the route runs full-bleed while playing and the system
+            // bars are usually hidden, and the HUD is pinned to the top, so a
+            // bottom inset here would only pad a column nobody sees the end of.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+                    ),
+            ) {
+                GameplayHud(
+                    state = state,
+                    typography = typography,
+                    fonts = fonts,
+                    onEvent = onEvent,
+                )
+            }
         }
 
         if (gameplay.isPaused) {

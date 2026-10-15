@@ -7,10 +7,15 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.calculateTargetValue
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.ScrollScope
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -35,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -51,18 +57,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -75,13 +83,15 @@ import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import tf.monochrome.android.glyph.data.GlyphChartState
 import tf.monochrome.android.glyph.data.GlyphWheel
+import tf.monochrome.android.glyph.engine.GlyphWheelSound
 import tf.monochrome.android.ui.components.CoverImage
-import tf.monochrome.android.ui.theme.MonoDimens
+import tf.monochrome.android.ui.components.bounceClick
 import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.theme.MonoDimens
 
 /**
  * StepMania's music wheel: the songs and their folders on a turning wheel, the
@@ -94,19 +104,28 @@ import tf.monochrome.android.ui.components.liquidGlass
  * settles on an item; a tap brings an item to the centre, and a tap on the
  * centre one opens it — a folder opens or closes, a song is played. A tap on a
  * song away from the centre is a choice too, made now rather than after the
- * wheel rests ([onPick]). A keyboard turns it with the arrows and opens with
- * Enter.
+ * wheel rests ([onPick]). A keyboard turns it with Up and Down and opens with
+ * Enter; Left and Right are left to focus, so a D-pad can reach the panel.
+ *
+ * It turns through [scrollable], like any list: presses wait while a drag
+ * might be starting, the tab bar folds and unfolds as it turns, and a drag
+ * takes over from a settle or a key's turn without a jolt. Every turn the
+ * player makes goes through it, which is how the swish ([sound]) knows a turn
+ * from the wheel being set to a new place.
  *
  * The position is one float, items apart; a frame moves the items' layers and
  * recomposes nothing until the centre changes to another item.
  *
  * [anchor] is the item to centre whenever [items] changes: the wheel keeps its
- * place across a folder opening, a sort or a search.
+ * place across a folder opening, a sort or a search, from the first frame.
  *
- * [bottomInset] is how much of the wheel's foot is under glass (the chosen
- * song's panel, the tab bar). The wheel still runs to its foot, under the
- * glass, and its centre rises by half the inset to stay in the middle of what
- * is left.
+ * [topInset] and [bottomInset] are how much of the wheel's head and foot are
+ * under glass (the search bar, the chosen song's panel, the tab bar), read in
+ * the layer so their animations move layers only. The wheel still runs under
+ * the glass; its centre moves to the middle of what is left.
+ *
+ * [foldersLocked]: the open folder cannot be closed (a search's results, a
+ * lone folder), so its heading offers no "Close folder".
  */
 @Composable
 fun GlyphMusicWheel(
@@ -117,7 +136,10 @@ fun GlyphMusicWheel(
     onActivate: (GlyphWheel.Item) -> Unit,
     modifier: Modifier = Modifier,
     onPick: (GlyphWheel.Item) -> Unit = {},
-    bottomInset: Dp = 0.dp,
+    topInset: () -> Dp = NO_INSET,
+    bottomInset: () -> Dp = NO_INSET,
+    foldersLocked: Boolean = false,
+    sound: Boolean = true,
     requestFocus: Boolean = true,
 ) {
     val count = items.size
@@ -130,111 +152,175 @@ fun GlyphMusicWheel(
     val focusNow by rememberUpdatedState(onFocus)
     val activateNow by rememberUpdatedState(onActivate)
     val pickNow by rememberUpdatedState(onPick)
-    val currentItems by rememberUpdatedState(items)
+    val soundOn by rememberUpdatedState(sound)
+    val topNow by rememberUpdatedState(topInset)
+    val bottomNow by rememberUpdatedState(bottomInset)
+    val currentItems = rememberUpdatedState(items)
 
-    var position by remember { mutableFloatStateOf(anchor.coerceIn(0, count - 1).toFloat()) }
-    var settling by remember { mutableStateOf<Job?>(null) }
+    // Keyed on the items: a new set is drawn at its anchor from its first
+    // frame. Set from an effect instead, the first frame drew the new items at
+    // the old place — blank, or the wrong folders — before the jump.
+    val position = remember(items) { mutableFloatStateOf(anchor.coerceIn(0, count - 1).toFloat()) }
+    val positionNow = rememberUpdatedState(position)
+
+    val swish = remember { GlyphWheelSound() }
+    DisposableEffect(swish) { onDispose { swish.release() } }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize().clipToBounds()) {
         val heightPx = with(density) { maxHeight.toPx() }
-        // Never so far that the centre item leaves the top of the wheel, as a
-        // tall panel on a short screen would otherwise make it.
-        val liftPx = (with(density) { bottomInset.toPx() } / 2f)
-            .coerceAtMost((heightPx / 2f - spacingPx / 2f).coerceAtLeast(0f))
         // Enough on each side to fill the wheel, and one more to scroll in.
         val reach = ceil(heightPx / 2f / spacingPx).toInt() + 1
-        // Below the lifted centre there is more wheel than above it.
-        val drawReach = ceil((heightPx / 2f + liftPx) / spacingPx).toInt() + 1
         // Wrapping a handful round would show the same few over and over; the
         // wheel wraps once it is longer than it is tall, as StepMania's is.
-        // Counted on the whole height, so the panel coming and going never
+        // Counted on the whole height, so the glass coming and going never
         // turns wrapping on or off under the player's thumb.
         val wraps = count > reach * 2
-        fun clamp(value: Float) = if (wraps) value else value.coerceIn(0f, (count - 1).toFloat())
-        fun indexAt(slot: Int): Int? = when {
-            wraps -> ((slot % count) + count) % count
-            slot in 0 until count -> slot
-            else -> null
+        val wrapsNow = rememberUpdatedState(wraps)
+        fun clamp(value: Float): Float =
+            if (wrapsNow.value) value else value.coerceIn(0f, (currentItems.value.size - 1).toFloat())
+        fun indexAt(slot: Int): Int? {
+            val size = currentItems.value.size
+            return when {
+                size == 0 -> null
+                wrapsNow.value -> ((slot % size) + size) % size
+                slot in 0 until size -> slot
+                else -> null
+            }
+        }
+        // Wrapping turned off (a rotation): back into range, on the same item.
+        LaunchedEffect(wraps) {
+            if (!wraps) {
+                val p = position.floatValue
+                position.floatValue = ((p % count) + count) % count
+            }
         }
 
-        // A new set of items (a folder opened, a sort, a search): back to the anchor.
-        LaunchedEffect(items, wraps) {
-            settling?.cancel()
-            position = anchor.coerceIn(0, count - 1).toFloat()
+        // Where the centre sits: the middle of what the glass leaves, never so
+        // far that the centre item leaves the wheel.
+        fun shiftPx(): Float {
+            val raw = with(density) { (topNow() - bottomNow()).toPx() } / 2f
+            val limit = (heightPx / 2f - spacingPx / 2f).coerceAtLeast(0f)
+            return raw.coerceIn(-limit, limit)
+        }
+        // Extra items to compose on the far side of a moved centre; changes a
+        // few times while the glass animates, not every frame.
+        val extra by remember(spacingPx, heightPx) { derivedStateOf { ceil(abs(shiftPx()) / spacingPx).toInt() } }
+
+        // Turns, in pixels: a drag, a fling, a settle. Short of the ends of a
+        // wheel that does not wrap, the rest goes on to the page.
+        val scrollState = rememberScrollableState { delta ->
+            val pos = positionNow.value
+            val before = pos.floatValue
+            val after = clamp(before - delta / spacingPx)
+            pos.floatValue = after
+            -(after - before) * spacingPx
+        }
+        var target by remember { mutableFloatStateOf(Float.NaN) }
+        var speed by remember { mutableFloatStateOf(0f) }
+        var settling by remember { mutableStateOf<Job?>(null) }
+        // A new set of items: whatever was turning stops, so it cannot carry
+        // the new set off its anchor.
+        DisposableEffect(items) {
+            onDispose {
+                settling?.cancel()
+                scope.launch { scrollState.stopScroll(MutatePriority.UserInput) }
+            }
         }
 
-        fun settleTo(target: Float, velocity: Float = 0f) {
-            settling?.cancel()
-            settling = scope.launch {
-                animate(position, clamp(target), velocity, spring(dampingRatio = 0.9f, stiffness = 420f)) { value, _ ->
-                    position = value
+        suspend fun ScrollScope.glide(to: Float, velocity: Float) {
+            target = to
+            var last = positionNow.value.floatValue
+            animate(last, to, velocity, SETTLE) { value, v ->
+                scrollBy(-(value - last) * spacingPx)
+                last = value
+                speed = v
+            }
+        }
+        val fling = remember(spacingPx) {
+            object : FlingBehavior {
+                override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
+                    val velocity = -initialVelocity / spacingPx
+                    // Where a fling would coast to, settled on the item there.
+                    val coast = exponentialDecay<Float>(frictionMultiplier = FRICTION)
+                        .calculateTargetValue(positionNow.value.floatValue, velocity)
+                    glide(clamp(coast.roundToInt().toFloat()), velocity)
+                    return 0f
                 }
             }
         }
-        fun step(by: Int) = settleTo(position.roundToInt().toFloat() + by)
-        val centre by remember { derivedStateOf { position.roundToInt() } }
-        fun activateCentre() {
-            indexAt(centre)?.let { activateNow(currentItems[it]) }
+        fun settleTo(to: Float) {
+            // Carried on from a turn already under way, so presses in quick
+            // succession add up and keep their speed.
+            val carry = if (settling?.isActive == true) speed else 0f
+            settling = scope.launch {
+                scrollState.scroll(MutatePriority.Default) { glide(clamp(to), carry) }
+            }
+        }
+        fun step(by: Int) {
+            val base = if (settling?.isActive == true && !target.isNaN()) {
+                target
+            } else {
+                positionNow.value.floatValue.roundToInt().toFloat()
+            }
+            settleTo(base + by)
         }
 
-        // The centred item, each time it changes, for the banner and the preview.
-        LaunchedEffect(count, wraps) {
-            snapshotFlow { centre }
-                .distinctUntilChanged()
-                .collect { slot -> indexAt(slot)?.let { focusNow(currentItems[it]) } }
+        val centre by remember { derivedStateOf { positionNow.value.floatValue.roundToInt() } }
+        fun activateCentre() {
+            indexAt(centre)?.let { activateNow(currentItems.value[it]) }
+        }
+
+        // The centred item, each time it is another one — by identity, not by
+        // place: a new list with a different song at the same place is a new
+        // centre. A turn the player made swishes; the wheel being set to a new
+        // place by a sort, a search or a folder does not.
+        LaunchedEffect(Unit) {
+            snapshotFlow { indexAt(positionNow.value.floatValue.roundToInt())?.let { currentItems.value[it] } }
+                .distinctUntilChangedBy { it?.key }
+                .collect { item ->
+                    if (item == null) return@collect
+                    if (soundOn && scrollState.isScrollInProgress) swish.swish(System.nanoTime())
+                    focusNow(item)
+                }
         }
 
         val focus = remember { FocusRequester() }
         LaunchedEffect(requestFocus) { if (requestFocus) runCatching { focus.requestFocus() } }
+        val centred = indexAt(centre)?.let { items[it] }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(count, wraps) {
-                    val tracker = VelocityTracker()
-                    detectVerticalDragGestures(
-                        onDragStart = {
-                            settling?.cancel()
-                            tracker.resetTracking()
-                        },
-                        onVerticalDrag = { change, dy ->
-                            tracker.addPosition(change.uptimeMillis, change.position)
-                            change.consume()
-                            position = clamp(position - dy / spacingPx)
-                        },
-                        onDragEnd = {
-                            val velocity = -tracker.calculateVelocity().y / spacingPx
-                            // Where a fling would coast to, settled on the item there.
-                            val coast = exponentialDecay<Float>(frictionMultiplier = FRICTION)
-                                .calculateTargetValue(position, velocity)
-                            settleTo(coast.roundToInt().toFloat(), velocity)
-                        },
-                        onDragCancel = { settleTo(position.roundToInt().toFloat()) },
-                    )
-                }
-                .onPreviewKeyEvent { event ->
-                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                .scrollable(scrollState, Orientation.Vertical, flingBehavior = fling)
+                .onKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                     when (event.nativeKeyEvent.keyCode) {
-                        KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_LEFT -> { step(-1); true }
-                        KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT -> { step(1); true }
+                        KeyEvent.KEYCODE_DPAD_UP -> { step(-1); true }
+                        KeyEvent.KEYCODE_DPAD_DOWN -> { step(1); true }
                         KeyEvent.KEYCODE_PAGE_UP -> { step(-PAGE); true }
                         KeyEvent.KEYCODE_PAGE_DOWN -> { step(PAGE); true }
                         KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_SPACE,
                         KeyEvent.KEYCODE_NUMPAD_ENTER -> { activateCentre(); true }
+                        // Left and Right go to focus search, out to the panel
+                        // and the top bar: a wheel that kept all four was a
+                        // trap for a D-pad.
                         else -> false
                     }
                 }
                 .focusRequester(focus)
                 .focusable()
                 .semantics {
-                    contentDescription = "Music wheel"
+                    // Says what is centred, and again as it changes, so a turn
+                    // by Next or Previous is heard.
+                    contentDescription = centred?.let { "Music wheel, ${describe(it)}" } ?: "Music wheel"
+                    liveRegion = LiveRegionMode.Polite
                     customActions = listOf(
                         CustomAccessibilityAction("Previous") { step(-1); true },
                         CustomAccessibilityAction("Next") { step(1); true },
                     )
                 },
         ) {
-            for (slot in centre - drawReach..centre + drawReach) {
+            for (slot in centre - reach - extra..centre + reach + extra) {
                 val index = indexAt(slot) ?: continue
                 val item = items[index]
                 key(slot, item.key) {
@@ -242,6 +328,7 @@ fun GlyphMusicWheel(
                         item = item,
                         centred = slot == centre,
                         selected = item is GlyphWheel.Item.Song && item.song.trackId == selectedTrackId,
+                        locked = foldersLocked,
                         onClick = {
                             if (slot == centre) {
                                 activateNow(item)
@@ -256,10 +343,11 @@ fun GlyphMusicWheel(
                             .height(itemHeight)
                             .graphicsLayer {
                                 // Read here, in the layer: the wheel turning
-                                // moves layers and recomposes nothing.
-                                val offset = slot - position
+                                // and the glass moving shift layers and
+                                // recompose nothing.
+                                val offset = slot - positionNow.value.floatValue
                                 val distance = abs(offset)
-                                translationY = offset * spacingPx - liftPx
+                                translationY = offset * spacingPx + shiftPx()
                                 // StepMania's arc: items bend away from the centre.
                                 translationX = (1f - cos(offset * ARC_ANGLE)) * arcPx
                                 val scale = 1f - (distance.coerceAtMost(4f) * 0.035f)
@@ -274,50 +362,60 @@ fun GlyphMusicWheel(
     }
 }
 
+/** What an item is, in words: the wheel's centre, and each item's own description. */
+private fun describe(item: GlyphWheel.Item): String = when (item) {
+    is GlyphWheel.Item.Folder -> "${item.section.name}, folder, ${item.section.songs.size} songs, " +
+        if (item.open) "open" else "closed"
+    // As the song rows read before the wheel: nothing a listener had is lost.
+    is GlyphWheel.Item.Song -> buildString {
+        val song = item.song
+        append(song.title)
+        append(", ").append(song.artist)
+        append(", ").append(song.formattedDuration)
+        append(", ").append(song.codec.name)
+        if (song.hasChart) {
+            append(", ").append(song.bpmLabel)
+            append(", ").append(song.difficulties.size).append(" difficulties")
+        } else {
+            append(", ").append(song.chartState.label)
+        }
+    }
+}
+
 /** One item on the wheel: a folder, or a song inside the open one. */
 @Composable
 private fun WheelEntry(
     item: GlyphWheel.Item,
     centred: Boolean,
     selected: Boolean,
+    locked: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val description = when (item) {
-        is GlyphWheel.Item.Folder -> "${item.section.name}, folder, ${item.section.songs.size} songs, " +
-            if (item.open) "open" else "closed"
-        // As the song rows read before the wheel: nothing a listener had is lost.
-        is GlyphWheel.Item.Song -> buildString {
-            val song = item.song
-            append(song.title)
-            append(", ").append(song.artist)
-            append(", ").append(song.formattedDuration)
-            append(", ").append(song.codec.name)
-            if (song.hasChart) {
-                append(", ").append(song.bpmLabel)
-                append(", ").append(song.difficulties.size).append(" difficulties")
-            } else {
-                append(", ").append(song.chartState.label)
-            }
+    val description = describe(item)
+    val label = when {
+        !centred -> if (item is GlyphWheel.Item.Song) "Choose" else "Bring to the centre"
+        item is GlyphWheel.Item.Folder -> when {
+            item.open && locked -> null
+            item.open -> "Close folder"
+            else -> "Open folder"
         }
+        else -> "Choose"
     }
     Surface(
         modifier = modifier
             .padding(horizontal = MonoDimens.listItemPaddingH)
-            .clickable(
-                onClickLabel = when {
-                    !centred -> "Bring to the centre"
-                    item is GlyphWheel.Item.Folder -> if (item.open) "Close folder" else "Open folder"
-                    else -> "Choose"
-                },
-                onClick = onClick,
-            )
+            // The wheel is the keyboard's one stop; its keys turn and open it.
+            .focusProperties { canFocus = false }
+            // The rows' press: a squeeze, not a ripple.
+            .bounceClick(onClick = onClick)
             .semantics(mergeDescendants = true) {
                 contentDescription = description
                 // Spoken by the framework, never left to the tint.
                 this.selected = selected
                 if (centred) stateDescription = "In the centre"
+                if (label != null) onClick(label = label) { onClick(); true }
             }
             .liquidGlass(shape = MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
@@ -454,3 +552,6 @@ private val ARC_REACH = 150.dp
 private const val ARC_ANGLE = 0.26f
 private const val FRICTION = 1.4f
 private const val PAGE = 5
+private val NO_INSET: () -> Dp = { 0.dp }
+/** StepMania's switch between items: quick, barely past its mark. */
+private val SETTLE = spring<Float>(dampingRatio = 0.9f, stiffness = 420f)

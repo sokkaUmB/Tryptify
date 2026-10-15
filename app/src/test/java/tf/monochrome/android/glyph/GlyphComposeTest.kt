@@ -324,6 +324,37 @@ class GlyphComposeTest {
     }
 
     @Test
+    @Config(qualifiers = "w411dp-h891dp")
+    fun `on a phone held upright the card shows the groove radar`() {
+        setFlatContent {
+            GlyphHomeScreen(
+                state = GlyphUiState(songs = listOf(song()), isLoadingSongs = false, selectedSong = song()),
+                assets = assets,
+                onEvent = {},
+                onBack = {},
+            )
+        }
+        compose.onNodeWithContentDescription("Groove radar", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Play").assertIsDisplayed()
+    }
+
+    @Test
+    fun `on a short screen the card steps aside for the wheel and play`() {
+        // The default test screen is 470dp tall, a phone on its side: no room
+        // for the card, the wheel and the panel together.
+        setFlatContent {
+            GlyphHomeScreen(
+                state = GlyphUiState(songs = listOf(song()), isLoadingSongs = false, selectedSong = song()),
+                assets = assets,
+                onEvent = {},
+                onBack = {},
+            )
+        }
+        compose.onNodeWithContentDescription("Groove radar", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Play").assertIsDisplayed()
+    }
+
+    @Test
     fun `a song without a chart offers generation instead of play`() {
         val events = mutableListOf<GlyphEvent>()
         val ungenerated = song(state = GlyphChartState.NOT_GENERATED)

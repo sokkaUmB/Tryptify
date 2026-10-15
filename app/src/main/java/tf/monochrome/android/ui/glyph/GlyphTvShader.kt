@@ -19,23 +19,31 @@ import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.roundToInt
 import tf.monochrome.android.glyph.engine.GlyphTvShader
-import tf.monochrome.android.performance.LocalLowPerformance
+import tf.monochrome.android.performance.LocalPerformanceProfile
 
 /**
  * The game screen through an old TV: one of the [GlyphTvShader]s, drawn over
  * everything the layer holds.
  *
- * Android 13 and later, where a layer can run a shader; below that, and with
- * the app's low-performance switch, the screen is left as it is. A shader the
- * phone's GPU driver will not compile turns the effect off rather than
- * failing the run.
+ * Android 13 and later, where a layer can run a shader. Off where the app
+ * turns its blur off — a low-end phone, or the "Remove liquid glass" switch —
+ * since this is a full-screen pass every frame. A shader the phone's GPU
+ * driver will not compile turns the effect off rather than failing the run.
  *
- * The patterns are drawn in "screen pixels" the size of a desktop monitor's,
+ * The masks are drawn in "screen pixels" the size of a desktop monitor's,
  * about a hundredth of an inch: drawn in a phone's own pixels, four or five
- * times finer, a one-pixel scanline would vanish.
+ * times finer, a one-pixel scanline would vanish. The CRT still reads the
+ * picture at every one of the phone's pixels, as the original reads every
+ * output pixel.
+ *
+ * The line grid is the original's 640 x 480 over the window. A layer smaller
+ * than the window (Training Ground's playfield, the options' preview) gets the
+ * same share of it, so its lines are the game's lines, not finer ones that
+ * shimmer.
  */
 fun Modifier.glyphTvShader(shader: GlyphTvShader): Modifier =
     if (shader == GlyphTvShader.OFF || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
@@ -45,24 +53,36 @@ fun Modifier.glyphTvShader(shader: GlyphTvShader): Modifier =
             val runtime = remember { compileTvShader() }
             val size = remember { mutableStateOf(IntSize.Zero) }
             val pixel = (LocalDensity.current.density * MONITOR_PIXEL_DP).roundToInt().coerceAtLeast(1).toFloat()
-            if (runtime == null || LocalLowPerformance.current.disableLiquidGlass) {
+            val window = LocalWindowInfo.current.containerSize
+            if (runtime == null || !LocalPerformanceProfile.current.allowHazeBlur) {
                 Modifier
             } else {
-                Modifier.onSizeChanged { size.value = it }.tvLayer(runtime, shader.mode, pixel, size)
+                Modifier.onSizeChanged { size.value = it }.tvLayer(runtime, shader.mode, pixel, window, size)
             }
         }
     }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-private fun Modifier.tvLayer(runtime: RuntimeShader, mode: Int, pixel: Float, size: MutableState<IntSize>): Modifier =
+private fun Modifier.tvLayer(
+    runtime: RuntimeShader,
+    mode: Int,
+    pixel: Float,
+    window: IntSize,
+    size: MutableState<IntSize>,
+): Modifier =
     graphicsLayer {
         // Read through state, so a rotation re-runs this with the new size.
         val now = size.value
         renderEffect = if (now.width == 0 || now.height == 0) {
             null
         } else {
+            // The layer's share of the window's 640 x 480; the whole grid when
+            // the layer is the window, or when the window is not known.
+            val shareX = if (window.width > 0) (now.width.toFloat() / window.width).coerceAtMost(1f) else 1f
+            val shareY = if (window.height > 0) (now.height.toFloat() / window.height).coerceAtMost(1f) else 1f
             runtime.setFloatUniform("uSize", now.width.toFloat(), now.height.toFloat())
             runtime.setFloatUniform("uPixel", pixel)
+            runtime.setFloatUniform("uGrid", GRID_COLUMNS * shareX, GRID_LINES * shareY)
             runtime.setFloatUniform("uMode", mode.toFloat())
             android.graphics.RenderEffect
                 .createRuntimeShaderEffect(runtime, "content")
@@ -77,20 +97,25 @@ private fun compileTvShader(): RuntimeShader? {
         .getOrNull()
 }
 
+/** The original's line grid over a whole screen. */
+private const val GRID_COLUMNS = 640f
+private const val GRID_LINES = 480f
+
 /** A desktop monitor's pixel, in dp: a hundredth of an inch is 1.6dp. */
 private const val MONITOR_PIXEL_DP = 1.6f
 
 /**
  * All five in one program, chosen by `uMode`. Each mode is the original's
- * arithmetic, with two changes for a layer on a phone: alpha is passed
+ * arithmetic, with three changes for a layer on a phone: alpha is passed
  * through (the original also halves it, which a game window never shows but
- * a layer would), and pixel positions are counted in [MONITOR_PIXEL_DP]
- * screen pixels.
+ * a layer would); the masks count [MONITOR_PIXEL_DP] screen pixels; and the
+ * line grid is `uGrid`, the original's 640 x 480 scaled to the layer.
  */
 private const val TV_SHADER = """
 uniform shader content;
 uniform float2 uSize;
 uniform float uPixel;
+uniform float2 uGrid;
 uniform float uMode;
 
 // ── the masks: a channel keeps its light, the others keep half ─────────
@@ -117,15 +142,16 @@ float3 toLinear(float3 c) { return float3(toLinear1(c.r), toLinear1(c.g), toLine
 float toSrgb1(float c) { return c < 0.0031308 ? c * 12.92 : 1.055 * pow(c, 0.41666) - 0.055; }
 float3 toSrgb(float3 c) { return float3(toSrgb1(c.r), toSrgb1(c.g), toSrgb1(c.b)); }
 
+// Every output pixel, as the original's u_target_size.
 float3 fetch(float2 pos, float2 off) {
-    float2 target = uSize / uPixel;
+    float2 target = uSize;
     pos = (floor(pos * target + off) + float2(0.5, 0.5)) / target;
     if (max(abs(pos.x - 0.5), abs(pos.y - 0.5)) > 0.5) { return float3(0.0, 0.0, 0.0); }
     return toLinear(float3(content.eval(pos * uSize).rgb));
 }
 
 float2 dist(float2 pos) {
-    pos = pos * float2(640.0, 480.0);
+    pos = pos * uGrid;
     return -((pos - floor(pos)) - float2(0.5, 0.5));
 }
 
@@ -228,12 +254,28 @@ half4 main(float2 fragCoord) {
         return half4(here.rgb * maskOf(i), here.a);
     }
     if (uMode < 4.5) {
-        // Wave: 480 lines, each brightest at its middle.
+        // Wave: the picture in uGrid.y lines, each brightest at its middle.
+        // A line is the mean of every screen row whose centre it covers: the
+        // original's picture has one row per line, so it reads one; read here
+        // at one row in five, anything thinner than a line would blink as it
+        // moved. Eight rows covers a line on the tallest tablet.
         float2 uv = fragCoord / uSize;
-        float factor = 0.9 - 0.4 * cos(6.28318530718 * uv.y * 480.0);
-        float2 at = float2(uv.x, (floor(uv.y * 480.0) + 0.5) / 480.0) * uSize;
-        float4 c = float4(content.eval(at));
-        return half4(c.rgb * factor, c.a);
+        float factor = 0.9 - 0.4 * cos(6.28318530718 * uv.y * uGrid.y);
+        float line = floor(uv.y * uGrid.y);
+        float top = line / uGrid.y * uSize.y;
+        float bottom = (line + 1.0) / uGrid.y * uSize.y;
+        float first = floor(top);
+        float4 sum = float4(0.0, 0.0, 0.0, 0.0);
+        float rows = 0.0;
+        for (int k = 0; k < 8; k++) {
+            float centre = first + float(k) + 0.5;
+            if (centre >= top && centre < bottom) {
+                sum += float4(content.eval(float2(fragCoord.x, centre)));
+                rows += 1.0;
+            }
+        }
+        sum = sum / max(rows, 1.0);
+        return half4(sum.rgb * factor, sum.a);
     }
     // CRT.
     float2 pos = fragCoord / uSize;

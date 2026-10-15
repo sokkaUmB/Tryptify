@@ -33,12 +33,13 @@ object GlyphWheel {
         /** Stable across rebuilds, so the wheel keeps its place when a folder opens. */
         val key: String
 
+        // Stored, not computed: the wheel looks items up by key on every change.
         data class Folder(val section: Section, val open: Boolean) : Item {
-            override val key: String get() = folderKey(section.name)
+            override val key: String = folderKey(section.name)
         }
 
         data class Song(val song: GlyphSong, val section: String) : Item {
-            override val key: String get() = songKey(song.trackId)
+            override val key: String = songKey(song.trackId)
         }
     }
 
@@ -73,7 +74,8 @@ object GlyphWheel {
 
     /** Which folder [song] falls in under [key]. */
     fun sectionOf(song: GlyphSong, key: GlyphSortKey): String = when (key) {
-        GlyphSortKey.PACK -> song.pack ?: LIBRARY
+        // A pack that happens to be called what the library is stays its own folder.
+        GlyphSortKey.PACK -> song.pack?.let { if (it == LIBRARY) "$it (pack)" else it } ?: LIBRARY
         GlyphSortKey.MAPPED -> if (song.hasChart) "Ready to play" else "Not mapped yet"
         GlyphSortKey.NAME -> song.title.trim().firstOrNull()?.uppercaseChar()?.takeIf { it in 'A'..'Z' }?.toString() ?: "#"
         GlyphSortKey.DURATION -> {

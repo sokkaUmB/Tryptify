@@ -168,54 +168,78 @@ class GlyphWheelTest {
 
     @Test
     fun quarterNotesAreStreamAndNothingElse() {
-        // Sixteen quarters at 120 BPM: 0 s to 7.5 s.
+        // Sixteen quarters at 120 BPM: 0 s to 7.5 s, no music length given.
         val stats = GlyphChartStats.of(chart((0 until 16).map { note(it.toFloat(), steady) }), steady)
         assertEquals(7.5f, stats.seconds, 1e-4f)
         assertEquals(16f / 7.5f / 7f, stats.stream, 1e-4f)
-        // Eight beats are four seconds here: two notes a second, against ten.
-        assertEquals(0.2f, stats.voltage, 1e-4f)
+        // Beats 0 to 8 inclusive is nine notes; the last beat, 15, over 7.5 s
+        // is two beats a second: 9 / 8 * 2 / 10.
+        assertEquals(9f / 8f * 2f / 10f, stats.voltage, 1e-4f)
         assertEquals(0f, stats.air, 0f)
         assertEquals(0f, stats.freeze, 0f)
         assertEquals(0f, stats.chaos, 0f)
-        // The graph holds every note: notes a second times each slice's length.
+        // The graph holds every row: rows a second times each slice's length.
         assertEquals(16f, stats.density.sum() * stats.seconds / GlyphChartStats.BINS, 1e-3f)
         assertEquals(GlyphChartStats.BINS, stats.density.size)
     }
 
     @Test
-    fun jumpsAreAirAndHoldsAreFreeze() {
+    fun theRatesAreOverTheSongNotTheSteps() {
+        // As StepMania's: a 100 s song with 7.5 s of steps is a light chart.
+        val stats = GlyphChartStats.of(chart((0 until 16).map { note(it.toFloat(), steady) }), steady, songSeconds = 100f)
+        assertEquals(100f, stats.seconds, 0f)
+        assertEquals(16f / 100f / 7f, stats.stream, 1e-5f)
+    }
+
+    @Test
+    fun jumpsAreAirAndHoldsAreFreezeButRollsAreNot() {
         val notes = listOf(
             note(0f, steady, GlyphLane.LEFT), note(0f, steady, GlyphLane.RIGHT),
             note(4f, steady, GlyphLane.LEFT), note(4f, steady, GlyphLane.RIGHT),
             // A hold from 4 s to 8 s: the chart runs to the end of its tail.
             note(8f, steady, GlyphLane.DOWN, GlyphNoteType.HOLD, endBeat = 16f),
+            // A roll is its own category in StepMania, never a freeze.
+            note(10f, steady, GlyphLane.UP, GlyphNoteType.ROLL, endBeat = 12f),
         )
         val stats = GlyphChartStats.of(chart(notes), steady)
         assertEquals(8f, stats.seconds, 1e-4f)
         assertEquals(2f / 8f, stats.air, 1e-4f)
-        assertEquals(1f / 8f / 0.25f, stats.freeze, 1e-4f)
+        assertEquals(1f / 8f, stats.freeze, 1e-4f)
     }
 
     @Test
-    fun offGridNotesAreChaosAndMinesCountForNothing() {
+    fun offGridRowsAreChaosWhateverTheirNotes() {
         val notes = (0 until 16).map { note(it.toFloat(), steady) } +
             note(1f / 3f, steady, GlyphLane.UP, division = GlyphBeatDivision.TWELFTH) +
-            note(2f, steady, GlyphLane.RIGHT, GlyphNoteType.MINE)
+            // A mine on a sixteenth is a chaos row in StepMania, though it is
+            // not a note to hit; a mine on the beat is neither.
+            note(2.25f, steady, GlyphLane.RIGHT, GlyphNoteType.MINE, division = GlyphBeatDivision.SIXTEENTH) +
+            note(3f, steady, GlyphLane.RIGHT, GlyphNoteType.MINE)
         val stats = GlyphChartStats.of(chart(notes), steady)
         assertEquals(17, stats.notes)
-        assertEquals(1f / 7.5f / 0.5f, stats.chaos, 1e-4f)
+        assertEquals(2f / 7.5f * 0.5f, stats.chaos, 1e-4f)
     }
 
     @Test
-    fun voltageIsCountedInRealTime() {
-        // 120 BPM for eight beats, then 240: the second eight beats last two
-        // seconds, not four, so the same eight notes are four a second.
+    fun voltageIsTheBusiestEightBeatsWhereverTheyFall() {
+        // Quarters, then sixteen eighths from beat 4 to 11.5, then quarters:
+        // the burst straddles beat 8, where fixed windows would halve it. The
+        // busiest eight beats, 4 to 12, hold 17 notes; 15 beats over 7.5 s is
+        // two a second: 17 / 8 * 2 / 10.
+        val notes = listOf(0, 1, 2, 3, 12, 13, 14, 15).map { note(it.toFloat(), steady) } +
+            (0 until 16).map { note(4f + it * 0.5f, steady, GlyphLane.DOWN, division = GlyphBeatDivision.EIGHTH) }
+        val stats = GlyphChartStats.of(chart(notes), steady)
+        assertEquals(17f / 8f * 2f / 10f, stats.voltage, 1e-4f)
+        // The busiest measures hold eight rows in two seconds.
+        assertEquals(4f, stats.peakNps, 1e-4f)
+    }
+
+    @Test
+    fun bpmRangeSpansEveryTempo() {
         val timing = GlyphTiming(
             offsetSeconds = 0f,
             segments = listOf(GlyphTiming.BpmSegment(0f, 120f), GlyphTiming.BpmSegment(8f, 240f)),
         )
-        val stats = GlyphChartStats.of(chart((0 until 16).map { note(it.toFloat(), timing) }), timing)
-        assertEquals(0.4f, stats.voltage, 1e-3f)
         assertEquals(120f..240f, timing.bpmRange())
     }
 

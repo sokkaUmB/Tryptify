@@ -69,6 +69,7 @@ import tf.monochrome.android.glyph.asset.GlyphLane
 import tf.monochrome.android.glyph.data.GlyphCalibration
 import tf.monochrome.android.glyph.engine.GlyphGraphics
 import tf.monochrome.android.glyph.engine.GlyphTvShader
+import tf.monochrome.android.performance.LocalPerformanceProfile
 import tf.monochrome.android.glyph.input.GlyphKeyBindings
 import tf.monochrome.android.ui.components.GlassPill
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
@@ -484,7 +485,13 @@ private fun GraphicsTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
             onSelect = { set(graphics.copy(tvShader = it)) },
         )
         Text(
-            text = graphics.tvShader.note,
+            text = if (LocalPerformanceProfile.current.allowHazeBlur) {
+                graphics.tvShader.note
+            } else {
+                // Said rather than left to look broken: the choice is kept,
+                // and drawn on a phone or setting that allows it.
+                "${graphics.tvShader.note} Not drawn here: the app keeps its heavier effects off on this phone, or with liquid glass removed."
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = MonoDimens.spacingSm),
@@ -500,6 +507,12 @@ private fun MoreTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
         checked = state.previews,
         onChange = { onEvent(GlyphEvent.SetPreviews(it)) },
         note = "Tapping a song plays twelve seconds from its drop",
+    )
+    GlyphSwitchRow(
+        label = "Wheel sound",
+        checked = state.wheelSound,
+        onChange = { onEvent(GlyphEvent.SetWheelSound(it)) },
+        note = "A soft swish as each song turns into the middle",
     )
     GlyphSwitchRow(
         label = "Metronome",

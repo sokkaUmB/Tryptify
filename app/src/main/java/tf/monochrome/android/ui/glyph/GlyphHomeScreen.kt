@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,6 +41,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -103,6 +105,7 @@ fun GlyphHomeScreen(
     onEvent: (GlyphEvent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    previewPosition: () -> Float? = { null },
 ) {
     // MP3 and FLAC only, matching what the mode offers in the list. A picker
     // that accepted anything would hand the converter a file the flow does not
@@ -139,7 +142,9 @@ fun GlyphHomeScreen(
     val panelHaze = rememberHazeState()
 
     var generationInset by remember { mutableStateOf(0.dp) }
-    var selectionInset by remember { mutableStateOf(0.dp) }
+    // The panel's height, kept across trips to the options and back, so the
+    // wheel does not rise when the first panel after a return arrives.
+    var selectionInsetDp by rememberSaveable { mutableFloatStateOf(0f) }
 
     // The selection panel sits on the bar as it stands now, following its fold,
     // as the map panels do. The list pads by the bar open, as lists do.
@@ -150,161 +155,186 @@ fun GlyphHomeScreen(
     val chromeInset = LocalBottomChromeInset.current
     val listBottom = bottomChromePadding
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = {
-                Text(
-                    text = if (state.songListMode == GlyphSongListMode.EDIT) {
-                        "Map editor: pick a song"
-                    } else {
-                        stringResource(R.string.trypt_mania)
-                    },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.semantics { heading() },
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.action_back),
+    // StepMania's music wheel: every folder the sort makes, and the open one's
+    // songs after it. A search is one open folder of its results. A lone
+    // folder — a library with no packs — is open already: a folder with
+    // nothing beside it is only a tap in the way.
+    val searching = state.songQuery.isNotBlank()
+    val sections = remember(state.songs, state.songSort, state.songQuery) {
+        GlyphWheel.sections(state.songs, state.songSort, state.songQuery)
+    }
+    // Before the wheel has reported a centre, the chosen song is it.
+    val focusKey = state.wheelFocus ?: state.selectedSong?.let { GlyphWheel.songKey(it.trackId) }
+    val focusedTrack = GlyphWheel.trackIdOf(focusKey)
+    val focusedSong = focusedTrack?.let { id -> state.songs.firstOrNull { it.trackId == id } }
+    val focusedSection = focusedSong?.let { GlyphWheel.sectionOf(it, state.songSort.key) }
+    // A folder name left over from before the songs changed opens nothing.
+    val namedFolder = state.wheelFolder?.takeIf { name -> sections.any { it.name == name } }
+    val openFolder = when {
+        searching -> sections.firstOrNull()?.name
+        // The centred song's folder is open: that is where the song is. So a
+        // song that changes folder — a chart made under the Mapped sort, a
+        // search closed, a pack arriving beside a lone library — is never left
+        // behind a closed one.
+        focusedSection != null -> focusedSection
+        else -> namedFolder ?: sections.singleOrNull()?.name
+    }
+    // A search's folder and a lone folder cannot close.
+    val foldersLocked = searching || sections.size <= 1
+    val items = remember(sections, openFolder) { GlyphWheel.items(sections, openFolder) }
+    // Back closes the open folder before the screen goes, as StepMania's Back
+    // on a song inside one; a folder that cannot close takes no Back, which
+    // would read as the screen ignoring it.
+    BackHandler(enabled = !searchOpen && !foldersLocked && openFolder != null) {
+        openFolder?.let { onEvent(GlyphEvent.CloseFolder(it)) }
+    }
+    val anchor = run {
+        val at = GlyphWheel.anchor(items, focusKey, focusedSection)
+        // An open folder's heading is only the place to land when it was the
+        // thing focused (it was just opened or closed). Otherwise — a search,
+        // a lone folder — land on its first song.
+        val heading = items.getOrNull(at) as? GlyphWheel.Item.Folder
+        if (heading != null && heading.open && heading.key != focusKey && at + 1 < items.size) at + 1 else at
+    }
+    val focusedItem = GlyphWheel.indexOf(items, focusKey).takeIf { it >= 0 }?.let(items::get)
+        ?: items.getOrNull(anchor)
+    // The panel is the centred song's, and only once it is chosen: the wheel
+    // resting on it for the sample delay. A panel left up while the wheel
+    // turned past would offer Play for a song that is no longer in the middle.
+    val panelSong = state.selectedSong?.takeIf { selected ->
+        (focusedItem as? GlyphWheel.Item.Song)?.song?.trackId == selected.trackId
+    }
+    // Room for the panel is kept while a song is chosen, whatever is centred:
+    // sized to the centred item instead, the wheel rose and fell by half a
+    // panel at every folder heading it turned past.
+    val wheelBottom by animateDpAsState(
+        targetValue = if (state.selectedSong != null) {
+            chromeInset + selectionInsetDp.dp + MonoDimens.spacingSm
+        } else {
+            listBottom
+        },
+        animationSpec = tween(motionMillis(240)),
+        label = "glyphWheelBottom",
+    )
+    val showWheel = !state.isLoadingSongs && items.isNotEmpty()
+
+    // The card takes what height the screen can spare: whole on a phone held
+    // upright, without its radar and graph on a short one, and not at all in
+    // landscape, where the wheel and the panel's Play need all of it.
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val cardRoom = when {
+            maxHeight >= FULL_CARD_HEIGHT -> CardRoom.FULL
+            maxHeight >= COMPACT_CARD_HEIGHT -> CardRoom.COMPACT
+            else -> CardRoom.NONE
+        }
+        Column(modifier = Modifier.fillMaxSize()) {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = if (state.songListMode == GlyphSongListMode.EDIT) {
+                            "Map editor: pick a song"
+                        } else {
+                            stringResource(R.string.trypt_mania)
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.semantics { heading() },
                     )
-                }
-            },
-            actions = {
-                SearchAction(
-                    open = searchOpen,
-                    onToggle = { if (searchOpen) closeSearch() else searchOpen = true },
-                )
-                // The leaderboard on top, as StepMania puts its rankings on
-                // the music wheel's own screen.
-                IconButton(onClick = { onEvent(GlyphEvent.OpenLeaderboard) }) {
-                    Icon(
-                        Icons.Default.Leaderboard,
-                        contentDescription = "Leaderboard",
-                    )
-                }
-                GlyphSortButton(sort = state.songSort, onPick = { onEvent(GlyphEvent.SortSongs(it)) })
-                // The two actions taken now and then, under one menu, so the
-                // title keeps its room.
-                Box {
-                    var more by remember { mutableStateOf(false) }
-                    IconButton(onClick = { more = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More")
-                    }
-                    DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Generate a chart from a file") },
-                            leadingIcon = { Icon(Icons.Default.UploadFile, contentDescription = null) },
-                            onClick = {
-                                more = false
-                                picker.launch(arrayOf("audio/mpeg", "audio/flac", "audio/x-flac"))
-                            },
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
                         )
                     }
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
-            ),
-        )
-
-        SearchOverlay(
-            open = searchOpen,
-            query = state.songQuery,
-            onQueryChange = { onEvent(GlyphEvent.Search(it)) },
-            placeholder = "Search songs",
-            onClose = closeSearch,
-            modifier = Modifier.weight(1f),
-        ) { searchInset ->
-            // StepMania's music wheel: every folder the sort makes, and the
-            // open one's songs after it. A search is one open folder of its
-            // results. A lone folder — a library with no packs — is open
-            // already: a folder with nothing beside it is only a tap in the way.
-            val searching = state.songQuery.isNotBlank()
-            val sections = remember(state.songs, state.songSort, state.songQuery) {
-                GlyphWheel.sections(state.songs, state.songSort, state.songQuery)
-            }
-            val openFolder = if (searching) {
-                sections.firstOrNull()?.name
-            } else {
-                state.wheelFolder ?: sections.singleOrNull()?.name
-            }
-            val items = remember(sections, openFolder) { GlyphWheel.items(sections, openFolder) }
-            // Then the open folder, as StepMania's Back on a song inside one:
-            // the wheel goes back to its folders before the screen goes. Not a
-            // lone folder, which cannot close; a Back that did nothing visible
-            // would read as the screen ignoring it.
-            BackHandler(enabled = !searchOpen && !searching && state.wheelFolder != null && sections.size > 1) {
-                onEvent(GlyphEvent.CloseFolder)
-            }
-            // Before the wheel has reported a centre, the chosen song is it.
-            val focusKey = state.wheelFocus ?: state.selectedSong?.let { GlyphWheel.songKey(it.trackId) }
-            val focusedTrack = GlyphWheel.trackIdOf(focusKey)
-            val anchor = run {
-                val focusedSection = focusedTrack
-                    ?.let { id -> state.songs.firstOrNull { it.trackId == id } }
-                    ?.let { GlyphWheel.sectionOf(it, state.songSort.key) }
-                val at = GlyphWheel.anchor(items, focusKey, focusedSection)
-                // An open folder's heading is only the place to land when it was
-                // the thing focused (it was just opened or closed). Otherwise —
-                // a search, a lone folder — land on its first song.
-                val heading = items.getOrNull(at) as? GlyphWheel.Item.Folder
-                if (heading != null && heading.open && heading.key != focusKey && at + 1 < items.size) at + 1 else at
-            }
-            val focusedItem = GlyphWheel.indexOf(items, focusKey).takeIf { it >= 0 }?.let(items::get)
-                ?: items.getOrNull(anchor)
-            // The panel is the centred song's, and only once it is chosen: the
-            // wheel resting on it for the sample delay. A panel left up while
-            // the wheel turned past would offer Play for a song that is no
-            // longer the one in the middle.
-            val songFocused = focusedItem is GlyphWheel.Item.Song
-            val panelSong = state.selectedSong?.takeIf { songFocused && it.trackId == focusedTrack }
-            // Room for the panel is kept while any song is centred, not only
-            // once it is chosen, so the wheel holds still through the delay
-            // instead of rising each time the panel arrives.
-            val wheelBottom by animateDpAsState(
-                targetValue = if (songFocused) chromeInset + selectionInset + MonoDimens.spacingSm else listBottom,
-                animationSpec = tween(motionMillis(240)),
-                label = "glyphWheelBottom",
+                },
+                actions = {
+                    SearchAction(
+                        open = searchOpen,
+                        onToggle = { if (searchOpen) closeSearch() else searchOpen = true },
+                    )
+                    // The leaderboard on top, as StepMania puts its rankings on
+                    // the music wheel's own screen.
+                    IconButton(onClick = { onEvent(GlyphEvent.OpenLeaderboard) }) {
+                        Icon(
+                            Icons.Default.Leaderboard,
+                            contentDescription = "Leaderboard",
+                        )
+                    }
+                    GlyphSortButton(sort = state.songSort, onPick = { onEvent(GlyphEvent.SortSongs(it)) })
+                    // The two actions taken now and then, under one menu, so the
+                    // title keeps its room.
+                    Box {
+                        var more by remember { mutableStateOf(false) }
+                        IconButton(onClick = { more = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More")
+                        }
+                        DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Generate a chart from a file") },
+                                leadingIcon = { Icon(Icons.Default.UploadFile, contentDescription = null) },
+                                onClick = {
+                                    more = false
+                                    picker.launch(arrayOf("audio/mpeg", "audio/flac", "audio/x-flac"))
+                                },
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                Box(
+            // The card is fixed above the search bar, not under it: the bar floats
+            // over the wheel, whose items pass beneath it, and opening it moves
+            // nothing. Padding a column of card and wheel by the bar pushed both
+            // down and clipped the wheel at a line under the card.
+            if (showWheel && cardRoom != CardRoom.NONE) {
+                GlyphSongInfoCard(
+                    item = focusedItem,
+                    state = state,
+                    reducedMotion = reducedMotion,
+                    previewPosition = previewPosition,
+                    compact = cardRoom == CardRoom.COMPACT,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .hazeSource(panelHaze),
-                ) {
-                    val messageTop = searchInset + generationInset
-                    when {
-                        state.isLoadingSongs -> CentredMessage("Reading the library…", messageTop)
+                        .fillMaxWidth()
+                        .padding(horizontal = MonoDimens.listItemPaddingH)
+                        .padding(bottom = MonoDimens.spacingSm),
+                )
+            }
 
-                        state.songs.isEmpty() -> CentredMessage(
-                            "No MP3 or FLAC files in your library yet. " +
-                                "Import one, or generate a chart from a file.",
-                            messageTop,
-                        )
+            SearchOverlay(
+                open = searchOpen,
+                query = state.songQuery,
+                onQueryChange = { onEvent(GlyphEvent.Search(it)) },
+                placeholder = "Search songs",
+                onClose = closeSearch,
+                modifier = Modifier.weight(1f),
+            ) { searchInset ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .hazeSource(panelHaze),
+                    ) {
+                        val messageTop = searchInset + generationInset
+                        when {
+                            state.isLoadingSongs -> CentredMessage("Reading the library…", messageTop)
 
-                        items.isEmpty() -> CentredMessage(
-                            "Nothing matches \"${state.songQuery}\".",
-                            messageTop,
-                        )
-
-                        else -> Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = searchInset + generationInset + MonoDimens.spacingXs),
-                        ) {
-                            GlyphSongInfoCard(
-                                item = focusedItem,
-                                state = state,
-                                reducedMotion = reducedMotion,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = MonoDimens.listItemPaddingH),
+                            state.songs.isEmpty() -> CentredMessage(
+                                "No MP3 or FLAC files in your library yet. " +
+                                    "Import one, or generate a chart from a file.",
+                                messageTop,
                             )
-                            GlyphMusicWheel(
+
+                            items.isEmpty() -> CentredMessage(
+                                "Nothing matches \"${state.songQuery}\".",
+                                messageTop,
+                            )
+
+                            else -> GlyphMusicWheel(
                                 items = items,
                                 anchor = anchor,
                                 selectedTrackId = state.selectedSong?.trackId,
@@ -312,105 +342,116 @@ fun GlyphHomeScreen(
                                 onActivate = { item ->
                                     when (item) {
                                         is GlyphWheel.Item.Folder ->
-                                            if (!searching) onEvent(GlyphEvent.ToggleFolder(item.section.name))
-                                        // The centred, chosen song plays, as Start on
-                                        // StepMania's wheel; the panel's Play asks no more.
-                                        is GlyphWheel.Item.Song ->
-                                            if (
-                                                state.songListMode == GlyphSongListMode.PLAY &&
-                                                state.selectedSong?.trackId == item.song.trackId &&
-                                                state.chart != null
-                                            ) {
-                                                onEvent(GlyphEvent.OpenOptions)
-                                            } else {
-                                                onEvent(GlyphEvent.SelectSong(item.song.trackId))
+                                            if (!foldersLocked) onEvent(GlyphEvent.ToggleFolder(item.section.name))
+                                        is GlyphWheel.Item.Song -> {
+                                            val chosen = state.selectedSong?.trackId == item.song.trackId
+                                            when {
+                                                // The centred, chosen song plays, as Start on
+                                                // StepMania's wheel; the panel's Play asks no more.
+                                                chosen && state.songListMode == GlyphSongListMode.PLAY &&
+                                                    state.chart != null -> onEvent(GlyphEvent.OpenOptions)
+                                                // Already chosen: choosing it again would only
+                                                // restart its preview and reset the panel.
+                                                chosen -> Unit
+                                                else -> onEvent(GlyphEvent.SelectSong(item.song.trackId))
                                             }
+                                        }
                                     }
                                 },
                                 // A song tapped away from the centre is chosen
                                 // now, not after the wheel rests on it.
                                 onPick = { item ->
-                                    if (item is GlyphWheel.Item.Song) onEvent(GlyphEvent.SelectSong(item.song.trackId))
+                                    if (item is GlyphWheel.Item.Song && state.selectedSong?.trackId != item.song.trackId) {
+                                        onEvent(GlyphEvent.SelectSong(item.song.trackId))
+                                    }
                                 },
-                                bottomInset = wheelBottom,
+                                topInset = { searchInset + generationInset },
+                                bottomInset = { wheelBottom },
+                                foldersLocked = foldersLocked,
+                                sound = state.wheelSound,
                                 requestFocus = !searchOpen,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
-                                    .padding(top = MonoDimens.spacingSm),
+                                modifier = Modifier.fillMaxSize(),
                             )
                         }
                     }
-                }
 
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        // Below the search bar rather than under it: both float
-                        // at the top, and stacked they would overlap.
-                        .padding(top = searchInset)
-                        .onSizeChanged {
-                            generationInset = with(density) { it.height.toDp() }
-                        },
-                ) {
-                    val generation = state.generation
-                    if (generation != null) {
-                        GenerationPanel(
-                            generation = generation,
-                            haze = panelHaze,
-                            glass = glass,
-                            onCancel = { onEvent(GlyphEvent.CancelGeneration) },
-                        )
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            // Below the search bar rather than under it: both float
+                            // at the top, and stacked they would overlap.
+                            .padding(top = searchInset)
+                            .onSizeChanged {
+                                generationInset = with(density) { it.height.toDp() }
+                            },
+                    ) {
+                        val generation = state.generation
+                        if (generation != null) {
+                            GenerationPanel(
+                                generation = generation,
+                                haze = panelHaze,
+                                glass = glass,
+                                onCancel = { onEvent(GlyphEvent.CancelGeneration) },
+                            )
+                        }
+
+                        state.error?.let { message ->
+                            ErrorPanel(
+                                message = message,
+                                haze = panelHaze,
+                                glass = glass,
+                                onDismiss = { onEvent(GlyphEvent.DismissError) },
+                            )
+                        }
                     }
 
-                    state.error?.let { message ->
-                        ErrorPanel(
-                            message = message,
-                            haze = panelHaze,
-                            glass = glass,
-                            onDismiss = { onEvent(GlyphEvent.DismissError) },
-                        )
-                    }
-                }
-
-                // The last song the panel showed, so it fades out with its own
-                // contents rather than going blank first.
-                val shownSong = remember { mutableStateOf<GlyphSong?>(null) }
-                SideEffect { if (panelSong != null) shownSong.value = panelSong }
-                // By its full name: inside the screen's Column the scoped overload would be picked.
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = panelSong != null,
-                    enter = fadeIn(tween(motionMillis(160))),
-                    exit = fadeOut(tween(motionMillis(160))),
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        // Clear of the tab bar and the mini player, which
-                        // are drawn over this screen. The navigation bar
-                        // is already clear: the nav host stops pushed
-                        // screens above it.
-                        .padding(bottom = chromeNow)
-                        // Kept when the panel goes, so the wheel's room for it
-                        // does not collapse and reopen on every turn.
-                        .onSizeChanged {
-                            if (it.height > 0) selectionInset = with(density) { it.height.toDp() }
-                        },
-                ) {
-                    val song = panelSong ?: shownSong.value
-                    if (song != null) {
-                        SelectionPanel(
-                            song = song,
-                            state = state,
-                            haze = panelHaze,
-                            glass = glass,
-                            onEvent = onEvent,
-                        )
+                    // The last song the panel showed, so it fades out with its own
+                    // contents rather than going blank first.
+                    val shownSong = remember { mutableStateOf<GlyphSong?>(null) }
+                    SideEffect { if (panelSong != null) shownSong.value = panelSong }
+                    // By its full name: inside the screen's Column the scoped overload would be picked.
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = panelSong != null,
+                        enter = fadeIn(tween(motionMillis(160))),
+                        exit = fadeOut(tween(motionMillis(160))),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            // Clear of the tab bar and the mini player, which
+                            // are drawn over this screen. The navigation bar
+                            // is already clear: the nav host stops pushed
+                            // screens above it.
+                            .padding(bottom = chromeNow)
+                            // Kept when the panel goes, so the wheel's room for it
+                            // does not collapse and reopen on every turn.
+                            .onSizeChanged {
+                                if (it.height > 0) selectionInsetDp = with(density) { it.height.toDp() }.value
+                            },
+                    ) {
+                        val song = panelSong ?: shownSong.value
+                        if (song != null) {
+                            SelectionPanel(
+                                song = song,
+                                state = state,
+                                haze = panelHaze,
+                                glass = glass,
+                                // A panel on its way out takes no presses: its Play
+                                // is for a song the wheel has turned away from.
+                                onEvent = { event -> if (panelSong != null) onEvent(event) },
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
+
+private enum class CardRoom { FULL, COMPACT, NONE }
+
+/** Screen heights for the card: the whole card, or one without its radar and graph. */
+private val FULL_CARD_HEIGHT = 720.dp
+private val COMPACT_CARD_HEIGHT = 600.dp
 
 /**
  * The bottom panel: difficulty, then the two ways to start.
