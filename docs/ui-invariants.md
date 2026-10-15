@@ -1031,10 +1031,10 @@ page's view and compare switches.
 **The playfield is the mode's own; the menus are the app's.** `GlyphTheme`'s
 near-black palette and the monospaced `GlyphTypography` belong to the lanes,
 the HUD over them, the beat and lane colours and the judgement accents, and to
-readouts that change while they are read. The song list, the selection,
+readouts that change while they are read. The music wheel, the selection,
 generation and pause panels, Training Ground's controls and the results follow
-the theme: a top bar with Back and `SearchAction`, `SearchOverlay`, song rows at
-`MonoDimens.listRowHeight` with `bounceClick`, `GlassPanel`s, and buttons and
+the theme: a top bar with Back and `SearchAction`, `SearchOverlay`, wheel items
+of `liquidGlass` at `MonoDimens.listRowHeight`, `GlassPanel`s, and buttons and
 chips from `GlassPill` and `GlassChoiceChip`. Text on a pane takes the glass's
 ink from `MaterialTheme`, never `GlyphTheme.Paper`: a fixed dark menu was the
 only dark screen in a light theme, and fixed white text on the app's glass is
@@ -1048,6 +1048,47 @@ and came out a solid slab. The selection panel sits on `LocalBottomChromeNow`
 and passes `avoidNavigationBar = false`: the nav host already stops a pushed
 screen above the system bar, and the panel counting it again floated a bar's
 height above the tab bar.
+
+**The songs are on StepMania's music wheel, in folders, not in a list.**
+`GlyphMusicWheel` over `GlyphWheel`: the folders are what the sort makes them
+(Pack, the default, is a folder per imported pack and one for the library), one
+folder is open at a time with its songs after it, and the wheel wraps once it is
+longer than it is tall. A lone folder is open already, and a search is one open
+folder of its results, so neither costs a tap to get past a heading. The flat
+list it replaced was the navigation complaint: hundreds of pack songs in one
+column, with nothing to jump between.
+
+* The centred song is chosen after the wheel rests on it for
+  `SAMPLE_MUSIC_DELAY_MS` (StepMania's `SampleMusicDelay`), not as it passes; a
+  folder stops the preview on the same delay. Stopping it at once let a turn
+  through a folder cut off the preview a tap had just started.
+* A tap on the centre item opens it: a folder opens or closes, the chosen song
+  goes to its options. A tap on a song away from the centre chooses it now.
+* The selection panel is the centred song's and shows only once that song is
+  the chosen one. A panel left up while the wheel turned past offered Play for a
+  song no longer in the middle.
+* The wheel runs to its foot under the panel's glass, and its centre rises by
+  half the panel. The room is kept while any song is centred, not only while the
+  panel shows: sized to the panel's visibility, the wheel jumped up and down at
+  every step as the panel came and went.
+* The items move in `graphicsLayer` from one float position; a frame of a turn
+  recomposes nothing.
+
+**The card over the wheel reads the chart; it never grades it.**
+`GlyphSongInfoCard`: DDR's Groove Radar, the BPM meter, the meter in feet and a
+density graph, from `GlyphChartStats` — StepMania's radar rates (`RadarCategory`)
+over the chart's own steps. The difficulty number is the chart's own meter;
+nothing predicts one. Every value moves to the next as the wheel turns or the
+difficulty changes, and snaps under reduced motion.
+
+**The TV shader is over the game, never over a menu.** `glyphTvShader`, off by
+default, goes on the gameplay screen's root (the whole picture, the HUD and the
+pause panel with it), Training Ground's playfield and the options' preview, and
+nowhere else. Android 13 and later; off under the low-performance switch; a
+shader the driver will not compile leaves the screen plain. Its patterns are
+counted in monitor-sized pixels (1.6 dp): in a phone's own pixels a one-pixel
+scanline is too fine to see. The settings name each look by what it does, never
+by where its arithmetic came from.
 
 **The mode opens on its menu.** `GlyphScreen.MENU`: Play and the map editor
 both lead to the song list, Settings to its own page, and Back from the song
@@ -1092,7 +1133,7 @@ the playfield it runs without the tab bar and the mini player.
 **Back in a run pauses it; Back from the pause leaves.** The pause panel is
 where "Quit to songs" is, so Back walks the same two steps. Quitting on the
 first Back threw a run away to a stray edge swipe. On the home screen Back
-closes the search before it leaves the mode.
+closes the search, then an open folder, before it leaves the mode.
 
 ### Discord presence
 

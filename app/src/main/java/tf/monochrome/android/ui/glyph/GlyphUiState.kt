@@ -48,6 +48,10 @@ data class GlyphUiState(
     val songs: List<GlyphSong> = emptyList(),
     val isLoadingSongs: Boolean = true,
     val songQuery: String = "",
+    /** The music wheel's open folder, StepMania's one open section; null when all are closed. */
+    val wheelFolder: String? = null,
+    /** The wheel item at the centre, by [tf.monochrome.android.glyph.data.GlyphWheel.Item.key]. */
+    val wheelFocus: String? = null,
     /** How the song list and the leaderboard are ordered; kept between sessions. */
     val songSort: GlyphSongSort = GlyphSongSort(),
     val leaderboard: GlyphLeaderboardUi = GlyphLeaderboardUi(),
@@ -79,14 +83,6 @@ data class GlyphUiState(
     val editor: GlyphEditorUi? = null,
 ) {
     val chart: GlyphChart? get() = selectedDifficulty?.let { simfile?.chart(it) }
-
-    val filteredSongs: List<GlyphSong>
-        get() = songSort.apply(
-            if (songQuery.isBlank()) songs else songs.filter { song ->
-                song.title.contains(songQuery, ignoreCase = true) ||
-                    song.artist.contains(songQuery, ignoreCase = true)
-            },
-        )
 }
 
 /**

@@ -11,6 +11,8 @@ package tf.monochrome.android.glyph.data
  * the order never shuffles between two looks at the same list.
  */
 enum class GlyphSortKey(val id: String, val label: String) {
+    /** StepMania's group sort: one folder per pack, the library its own. */
+    PACK("pack", "Pack"),
     MAPPED("mapped", "Mapped"),
     NAME("name", "Name"),
     DURATION("duration", "Duration"),
@@ -18,12 +20,12 @@ enum class GlyphSortKey(val id: String, val label: String) {
     ;
 
     companion object {
-        fun fromId(id: String?): GlyphSortKey = entries.firstOrNull { it.id == id } ?: MAPPED
+        fun fromId(id: String?): GlyphSortKey = entries.firstOrNull { it.id == id } ?: PACK
     }
 }
 
 data class GlyphSongSort(
-    val key: GlyphSortKey = GlyphSortKey.MAPPED,
+    val key: GlyphSortKey = GlyphSortKey.PACK,
     val ascending: Boolean = true,
 ) {
     /** The same key turned round, or [next] from its natural direction. */
@@ -36,6 +38,9 @@ data class GlyphSongSort(
         val byName = compareBy<GlyphSong, String>(String.CASE_INSENSITIVE_ORDER) { it.title }
             .thenBy(String.CASE_INSENSITIVE_ORDER) { it.artist }
         val primary: Comparator<GlyphSong> = when (key) {
+            // The library first, then the packs A to Z, as the wheel's folders run.
+            GlyphSortKey.PACK -> compareBy<GlyphSong> { if (it.pack == null) 0 else 1 }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { it.pack.orEmpty() }
             // Mapped songs first: the ones that can be played now.
             GlyphSortKey.MAPPED -> compareBy { if (it.hasChart) 0 else 1 }
             GlyphSortKey.NAME -> byName

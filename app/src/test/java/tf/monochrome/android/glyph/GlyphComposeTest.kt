@@ -212,7 +212,8 @@ class GlyphComposeTest {
             "Test Song, Tryptify, 3:34, FLAC, 148 BPM, 3 difficulties",
         ).performClick()
 
-        assertEquals(listOf(GlyphEvent.SelectSong("local_1")), events)
+        // The wheel also reports what is at its centre; the choice is the tap's.
+        assertEquals(listOf(GlyphEvent.SelectSong("local_1")), events.filterNot { it is GlyphEvent.WheelFocus })
     }
 
     private fun string(id: Int): String =
@@ -339,7 +340,7 @@ class GlyphComposeTest {
             )
         }
         compose.onNodeWithText("Generate chart").performClick()
-        assertEquals(listOf(GlyphEvent.GenerateChart), events)
+        assertEquals(listOf(GlyphEvent.GenerateChart), events.filterNot { it is GlyphEvent.WheelFocus })
     }
 
     @Test

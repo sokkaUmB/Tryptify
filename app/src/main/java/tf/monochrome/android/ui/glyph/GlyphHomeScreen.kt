@@ -6,10 +6,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,8 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -32,13 +32,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,7 +46,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -67,20 +66,20 @@ import tf.monochrome.android.glyph.asset.GlyphAssetRepository
 import tf.monochrome.android.glyph.data.GlyphAttempt
 import tf.monochrome.android.glyph.data.GlyphChartState
 import tf.monochrome.android.glyph.data.GlyphSong
+import tf.monochrome.android.glyph.data.GlyphWheel
 import tf.monochrome.android.glyph.engine.GlyphStepGrade
 import tf.monochrome.android.glyph.engine.StepManiaScoreKeeper
-import tf.monochrome.android.ui.components.CoverImage
 import tf.monochrome.android.ui.components.GlassPanel
 import tf.monochrome.android.ui.components.LocalGlassBackdrop
 import tf.monochrome.android.ui.components.SearchAction
 import tf.monochrome.android.ui.components.SearchOverlay
-import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
 import tf.monochrome.android.ui.navigation.LocalBottomChromeNow
 import tf.monochrome.android.ui.navigation.LocalMiniPlayerGlass
 import tf.monochrome.android.ui.navigation.bottomChromePadding
 import tf.monochrome.android.ui.theme.MonoDimens
+import tf.monochrome.android.ui.theme.motionMillis
+import tf.monochrome.android.ui.theme.reduceMotion
 
 /**
  * Trypt Mania's front door: pick a song, pick a difficulty, play or practise.
@@ -124,6 +123,7 @@ fun GlyphHomeScreen(
     // Back closes the search before it leaves the mode, as on the maps: a Back
     // that throws away the whole screen to dismiss a search bar is a surprise.
     BackHandler(enabled = searchOpen) { closeSearch() }
+    val reducedMotion = state.gameplay.modifiers.reducedMotion || reduceMotion()
 
     val glass = LocalMiniPlayerGlass.current
     val density = LocalDensity.current
@@ -218,6 +218,58 @@ fun GlyphHomeScreen(
             onClose = closeSearch,
             modifier = Modifier.weight(1f),
         ) { searchInset ->
+            // StepMania's music wheel: every folder the sort makes, and the
+            // open one's songs after it. A search is one open folder of its
+            // results. A lone folder — a library with no packs — is open
+            // already: a folder with nothing beside it is only a tap in the way.
+            val searching = state.songQuery.isNotBlank()
+            val sections = remember(state.songs, state.songSort, state.songQuery) {
+                GlyphWheel.sections(state.songs, state.songSort, state.songQuery)
+            }
+            val openFolder = if (searching) {
+                sections.firstOrNull()?.name
+            } else {
+                state.wheelFolder ?: sections.singleOrNull()?.name
+            }
+            val items = remember(sections, openFolder) { GlyphWheel.items(sections, openFolder) }
+            // Then the open folder, as StepMania's Back on a song inside one:
+            // the wheel goes back to its folders before the screen goes. Not a
+            // lone folder, which cannot close; a Back that did nothing visible
+            // would read as the screen ignoring it.
+            BackHandler(enabled = !searchOpen && !searching && state.wheelFolder != null && sections.size > 1) {
+                onEvent(GlyphEvent.CloseFolder)
+            }
+            // Before the wheel has reported a centre, the chosen song is it.
+            val focusKey = state.wheelFocus ?: state.selectedSong?.let { GlyphWheel.songKey(it.trackId) }
+            val focusedTrack = GlyphWheel.trackIdOf(focusKey)
+            val anchor = run {
+                val focusedSection = focusedTrack
+                    ?.let { id -> state.songs.firstOrNull { it.trackId == id } }
+                    ?.let { GlyphWheel.sectionOf(it, state.songSort.key) }
+                val at = GlyphWheel.anchor(items, focusKey, focusedSection)
+                // An open folder's heading is only the place to land when it was
+                // the thing focused (it was just opened or closed). Otherwise —
+                // a search, a lone folder — land on its first song.
+                val heading = items.getOrNull(at) as? GlyphWheel.Item.Folder
+                if (heading != null && heading.open && heading.key != focusKey && at + 1 < items.size) at + 1 else at
+            }
+            val focusedItem = GlyphWheel.indexOf(items, focusKey).takeIf { it >= 0 }?.let(items::get)
+                ?: items.getOrNull(anchor)
+            // The panel is the centred song's, and only once it is chosen: the
+            // wheel resting on it for the sample delay. A panel left up while
+            // the wheel turned past would offer Play for a song that is no
+            // longer the one in the middle.
+            val songFocused = focusedItem is GlyphWheel.Item.Song
+            val panelSong = state.selectedSong?.takeIf { songFocused && it.trackId == focusedTrack }
+            // Room for the panel is kept while any song is centred, not only
+            // once it is chosen, so the wheel holds still through the delay
+            // instead of rising each time the panel arrives.
+            val wheelBottom by animateDpAsState(
+                targetValue = if (songFocused) chromeInset + selectionInset + MonoDimens.spacingSm else listBottom,
+                animationSpec = tween(motionMillis(240)),
+                label = "glyphWheelBottom",
+            )
+
             Box(modifier = Modifier.fillMaxSize()) {
                 Box(
                     modifier = Modifier
@@ -234,33 +286,59 @@ fun GlyphHomeScreen(
                             messageTop,
                         )
 
-                        state.filteredSongs.isEmpty() -> CentredMessage(
+                        items.isEmpty() -> CentredMessage(
                             "Nothing matches \"${state.songQuery}\".",
                             messageTop,
                         )
 
-                        else -> LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            // Content padding, not padding on the container: it
-                            // starts the rows below the glass while leaving them
-                            // free to travel up behind it. Padding the container
-                            // moves its top edge and the list clips there instead.
-                            contentPadding = PaddingValues(
-                                top = searchInset + generationInset + MonoDimens.spacingXs,
-                                bottom = if (state.selectedSong != null) {
-                                    chromeInset + selectionInset + MonoDimens.spacingSm
-                                } else {
-                                    listBottom
-                                },
-                            ),
+                        else -> Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = searchInset + generationInset + MonoDimens.spacingXs),
                         ) {
-                            items(state.filteredSongs, key = { it.trackId }) { song ->
-                                SongRow(
-                                    song = song,
-                                    selected = song.trackId == state.selectedSong?.trackId,
-                                    onClick = { onEvent(GlyphEvent.SelectSong(song.trackId)) },
-                                )
-                            }
+                            GlyphSongInfoCard(
+                                item = focusedItem,
+                                state = state,
+                                reducedMotion = reducedMotion,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = MonoDimens.listItemPaddingH),
+                            )
+                            GlyphMusicWheel(
+                                items = items,
+                                anchor = anchor,
+                                selectedTrackId = state.selectedSong?.trackId,
+                                onFocus = { onEvent(GlyphEvent.WheelFocus(it.key)) },
+                                onActivate = { item ->
+                                    when (item) {
+                                        is GlyphWheel.Item.Folder ->
+                                            if (!searching) onEvent(GlyphEvent.ToggleFolder(item.section.name))
+                                        // The centred, chosen song plays, as Start on
+                                        // StepMania's wheel; the panel's Play asks no more.
+                                        is GlyphWheel.Item.Song ->
+                                            if (
+                                                state.songListMode == GlyphSongListMode.PLAY &&
+                                                state.selectedSong?.trackId == item.song.trackId &&
+                                                state.chart != null
+                                            ) {
+                                                onEvent(GlyphEvent.OpenOptions)
+                                            } else {
+                                                onEvent(GlyphEvent.SelectSong(item.song.trackId))
+                                            }
+                                    }
+                                },
+                                // A song tapped away from the centre is chosen
+                                // now, not after the wheel rests on it.
+                                onPick = { item ->
+                                    if (item is GlyphWheel.Item.Song) onEvent(GlyphEvent.SelectSong(item.song.trackId))
+                                },
+                                bottomInset = wheelBottom,
+                                requestFocus = !searchOpen,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .padding(top = MonoDimens.spacingSm),
+                            )
                         }
                     }
                 }
@@ -296,126 +374,38 @@ fun GlyphHomeScreen(
                     }
                 }
 
-                val selected = state.selectedSong
-                if (selected != null) {
-                    SelectionPanel(
-                        song = selected,
-                        state = state,
-                        haze = panelHaze,
-                        glass = glass,
-                        onEvent = onEvent,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            // Clear of the tab bar and the mini player, which
-                            // are drawn over this screen. The navigation bar
-                            // is already clear: the nav host stops pushed
-                            // screens above it.
-                            .padding(bottom = chromeNow)
-                            .onSizeChanged {
-                                selectionInset = with(density) { it.height.toDp() }
-                            },
-                    )
-                } else {
-                    LaunchedEffect(Unit) { selectionInset = 0.dp }
-                }
-            }
-        }
-    }
-}
-
-/**
- * A song, as the app's song rows are: one shared row height, the cover, the
- * title over one line of detail, and the chart's state where a track row keeps
- * its quality badge.
- */
-@Composable
-private fun SongRow(
-    song: GlyphSong,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val description = buildString {
-        append(song.title)
-        append(", ").append(song.artist)
-        append(", ").append(song.formattedDuration)
-        append(", ").append(song.codec.name)
-        if (song.hasChart) {
-            append(", ").append(song.bpmLabel)
-            append(", ").append(song.difficulties.size).append(" difficulties")
-        } else {
-            append(", ").append(song.chartState.label)
-        }
-    }
-    val scheme = MaterialTheme.colorScheme
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
-            .bounceClick(onClick = onClick)
-            .semantics(mergeDescendants = true) {
-                contentDescription = description
-                // Spoken by the framework, never left to the tint.
-                this.selected = selected
-            }
-            .liquidGlass(shape = MonoDimens.shapeMd),
-        shape = MonoDimens.shapeMd,
-        color = if (selected) scheme.primary.copy(alpha = 0.18f) else Color.Transparent,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(MonoDimens.listRowHeight)
-                .padding(horizontal = MonoDimens.listItemPaddingH),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CoverImage(
-                url = song.artworkUri,
-                contentDescription = null,
-                size = MonoDimens.coverList,
-                cornerRadius = MonoDimens.radiusSm,
-            )
-            Spacer(Modifier.width(MonoDimens.spacingMd))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    text = song.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (selected) scheme.primary else scheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "${song.artist} · ${song.formattedDuration} · ${song.codec.name}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = scheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            Spacer(Modifier.width(MonoDimens.spacingSm))
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = if (song.hasChart) song.bpmLabel else song.chartState.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = when (song.chartState) {
-                        GlyphChartState.READY -> scheme.primary
-                        GlyphChartState.UNREADABLE -> scheme.error
-                        GlyphChartState.NOT_GENERATED -> scheme.onSurfaceVariant
-                    },
-                    maxLines = 1,
-                )
-                if (song.hasChart) {
-                    Text(
-                        text = song.difficulties.joinToString(" ") { it.sscName.take(1) },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = scheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
+                // The last song the panel showed, so it fades out with its own
+                // contents rather than going blank first.
+                val shownSong = remember { mutableStateOf<GlyphSong?>(null) }
+                SideEffect { if (panelSong != null) shownSong.value = panelSong }
+                // By its full name: inside the screen's Column the scoped overload would be picked.
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = panelSong != null,
+                    enter = fadeIn(tween(motionMillis(160))),
+                    exit = fadeOut(tween(motionMillis(160))),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        // Clear of the tab bar and the mini player, which
+                        // are drawn over this screen. The navigation bar
+                        // is already clear: the nav host stops pushed
+                        // screens above it.
+                        .padding(bottom = chromeNow)
+                        // Kept when the panel goes, so the wheel's room for it
+                        // does not collapse and reopen on every turn.
+                        .onSizeChanged {
+                            if (it.height > 0) selectionInset = with(density) { it.height.toDp() }
+                        },
+                ) {
+                    val song = panelSong ?: shownSong.value
+                    if (song != null) {
+                        SelectionPanel(
+                            song = song,
+                            state = state,
+                            haze = panelHaze,
+                            glass = glass,
+                            onEvent = onEvent,
+                        )
+                    }
                 }
             }
         }

@@ -160,6 +160,7 @@ fun GlyphTrainingScreen(
             modifier = Modifier
                 .weight(PLAYFIELD_SHARE)
                 .fillMaxWidth()
+                .glyphTvShader(gameplay.modifiers.graphics.tvShader)
                 .background(GlyphTheme.Ink),
         ) {
             GlyphPlayfield(

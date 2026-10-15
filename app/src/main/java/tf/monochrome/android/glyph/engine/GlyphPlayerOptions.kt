@@ -149,6 +149,8 @@ data class GlyphGraphics(
     val beatFlash: Boolean = true,
     /** The burst across the field every fifty combo. */
     val comboBurst: Boolean = true,
+    /** The playfield seen through an old TV; [GlyphTvShader.OFF] by default. */
+    val tvShader: GlyphTvShader = GlyphTvShader.OFF,
 ) {
     companion object {
         val RAY_QUALITIES = listOf(1, 2, 3)
@@ -158,5 +160,25 @@ data class GlyphGraphics(
             2 -> "Medium"
             else -> "High"
         }
+    }
+}
+
+/**
+ * The look of an old screen over the playfield. Each multiplies the picture by
+ * a pattern, so none of them moves a note or touches a judgement.
+ *
+ * [mode] is the number the shader picks its pattern by; [id] is what is saved.
+ */
+enum class GlyphTvShader(val id: String, val label: String, val note: String, val mode: Int) {
+    OFF("off", "Off", "The game as it is drawn.", 0),
+    SCANLINES("scanlines", "Scanlines", "Every other line at half brightness.", 1),
+    DIAGONAL("diagonal", "Diagonal", "A red, green and blue mask that steps one pixel each row.", 2),
+    TRIANGULAR("triangular", "Triangular", "Two-pixel red, green and blue columns, shifted every second row pair.", 3),
+    WAVE("wave", "Wave", "The picture in 480 lines, each one brighter at its middle.", 4),
+    CRT("crt", "CRT", "Soft scanlines, a shadow mask and a little bloom: a CRT monitor. The heaviest of the six.", 5),
+    ;
+
+    companion object {
+        fun fromId(id: String?): GlyphTvShader = entries.firstOrNull { it.id == id } ?: OFF
     }
 }

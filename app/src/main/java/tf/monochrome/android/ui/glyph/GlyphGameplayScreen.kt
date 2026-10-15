@@ -99,6 +99,8 @@ fun GlyphGameplayScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
+            // The whole picture through the TV, the HUD and pause menu with it.
+            .glyphTvShader(gameplay.modifiers.graphics.tvShader)
             .background(GlyphTheme.Ink)
             .glyphKeyboard(
                 keys = state.keys,

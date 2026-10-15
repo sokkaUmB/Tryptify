@@ -32,6 +32,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import tf.monochrome.android.audio.stepmania.StepManiaGenerationWorker
 import tf.monochrome.android.glyph.pack.GlyphPackLibrary
+import tf.monochrome.android.glyph.data.GlyphWheel
 import tf.monochrome.android.glyph.pack.OwnPackStore
 import tf.monochrome.android.glyph.pack.PackImportWorker
 import tf.monochrome.android.glyph.pack.TreePackSink
@@ -63,6 +64,7 @@ import tf.monochrome.android.glyph.engine.GlyphAppearance
 import tf.monochrome.android.glyph.engine.GlyphAudioTransport
 import tf.monochrome.android.glyph.engine.GlyphFailType
 import tf.monochrome.android.glyph.engine.GlyphGraphics
+import tf.monochrome.android.glyph.engine.GlyphTvShader
 import tf.monochrome.android.glyph.engine.GlyphPreviewPlayer
 import tf.monochrome.android.glyph.engine.GlyphGameplayEngine
 import tf.monochrome.android.glyph.engine.GlyphJudgement
@@ -293,7 +295,12 @@ class GlyphViewModel @Inject constructor(
             is GlyphEvent.SortSongs -> {
                 val sort = _ui.value.songSort.pick(event.key)
                 prefs.edit().putString(PREF_SORT_KEY, sort.key.id).putBoolean(PREF_SORT_ASCENDING, sort.ascending).apply()
-                _ui.value = _ui.value.copy(songSort = sort)
+                // The sort makes the folders: the chosen song's new folder opens,
+                // so the wheel stays on it rather than on a folder header.
+                _ui.value = _ui.value.copy(
+                    songSort = sort,
+                    wheelFolder = _ui.value.selectedSong?.let { GlyphWheel.sectionOf(it, sort.key) },
+                )
             }
             GlyphEvent.OpenLeaderboard -> {
                 stopPreview()
@@ -307,7 +314,18 @@ class GlyphViewModel @Inject constructor(
             }
             // Back to wherever it was opened from: the menu or the song list.
             GlyphEvent.CloseLeaderboard -> _ui.value = _ui.value.copy(screen = leaderboardFrom)
-            is GlyphEvent.SelectSong -> selectSong(event.trackId)
+            is GlyphEvent.SelectSong -> {
+                wheelFocusJob?.cancel()
+                selectSong(event.trackId)
+            }
+            is GlyphEvent.WheelFocus -> focusWheel(event.key)
+            is GlyphEvent.ToggleFolder -> {
+                val open = if (_ui.value.wheelFolder == event.name) null else event.name
+                _ui.value = _ui.value.copy(wheelFolder = open, wheelFocus = GlyphWheel.folderKey(event.name))
+            }
+            GlyphEvent.CloseFolder -> _ui.value.wheelFolder?.let { name ->
+                _ui.value = _ui.value.copy(wheelFolder = null, wheelFocus = GlyphWheel.folderKey(name))
+            }
             is GlyphEvent.SelectDifficulty ->
                 _ui.value = _ui.value.copy(selectedDifficulty = event.difficulty)
 
@@ -756,6 +774,37 @@ class GlyphViewModel @Inject constructor(
                 difficulties = StepManiaDifficulty.entries.toSet(),
             ),
         )
+    }
+
+    // ── the music wheel ─────────────────────────────────────────────────
+
+    private var wheelFocusJob: Job? = null
+
+    /**
+     * The wheel came to rest on [key]. A song is chosen — its chart read, its
+     * preview started — after StepMania's sample delay (`SampleMusicDelay`,
+     * a quarter of a second), so turning past a dozen songs starts none of
+     * them; a folder stops the preview.
+     */
+    private fun focusWheel(key: String) {
+        _ui.value = _ui.value.copy(wheelFocus = key)
+        wheelFocusJob?.cancel()
+        val song = _ui.value.songs.firstOrNull { GlyphWheel.songKey(it.trackId) == key }
+        if (song == null) {
+            // A folder stops the music once the wheel rests on it, not as it
+            // passes: a wheel turning to a tapped song through a folder would
+            // otherwise cut off the preview the tap just started.
+            wheelFocusJob = viewModelScope.launch {
+                kotlinx.coroutines.delay(SAMPLE_MUSIC_DELAY_MS)
+                stopPreview()
+            }
+            return
+        }
+        if (_ui.value.selectedSong?.trackId == song.trackId) return
+        wheelFocusJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(SAMPLE_MUSIC_DELAY_MS)
+            selectSong(song.trackId)
+        }
     }
 
     // ── packs ───────────────────────────────────────────────────────────
@@ -1479,6 +1528,7 @@ class GlyphViewModel @Inject constructor(
                 explosions = prefs.getBoolean(PREF_GFX_EXPLOSIONS, true),
                 beatFlash = prefs.getBoolean(PREF_GFX_BEAT_FLASH, true),
                 comboBurst = prefs.getBoolean(PREF_GFX_COMBO_BURST, true),
+                tvShader = GlyphTvShader.fromId(prefs.getString(PREF_GFX_TV_SHADER, null)),
             ),
         )
         _ui.value = _ui.value.copy(
@@ -1524,6 +1574,7 @@ class GlyphViewModel @Inject constructor(
             .putBoolean(PREF_GFX_EXPLOSIONS, modifiers.graphics.explosions)
             .putBoolean(PREF_GFX_BEAT_FLASH, modifiers.graphics.beatFlash)
             .putBoolean(PREF_GFX_COMBO_BURST, modifiers.graphics.comboBurst)
+            .putString(PREF_GFX_TV_SHADER, modifiers.graphics.tvShader.id)
             .apply()
     }
 
@@ -2071,6 +2122,9 @@ class GlyphViewModel @Inject constructor(
     }
 
     private companion object {
+        /** StepMania's `SampleMusicDelay`: how long the wheel rests before a song is chosen. */
+        const val SAMPLE_MUSIC_DELAY_MS = 250L
+
         const val TAG = "GlyphViewModel"
 
         const val PREFS_NAME = "trypt_mania"
@@ -2116,6 +2170,7 @@ class GlyphViewModel @Inject constructor(
         const val PREF_GFX_EXPLOSIONS = "gfx_explosions"
         const val PREF_GFX_BEAT_FLASH = "gfx_beat_flash"
         const val PREF_GFX_COMBO_BURST = "gfx_combo_burst"
+        const val PREF_GFX_TV_SHADER = "gfx_tv_shader"
 
         const val MAX_MINI = 0.5f
         const val MAX_NAME_LENGTH = 12

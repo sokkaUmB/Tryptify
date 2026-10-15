@@ -68,6 +68,7 @@ import tf.monochrome.android.audio.sampler.stems.StemModelManager
 import tf.monochrome.android.glyph.asset.GlyphLane
 import tf.monochrome.android.glyph.data.GlyphCalibration
 import tf.monochrome.android.glyph.engine.GlyphGraphics
+import tf.monochrome.android.glyph.engine.GlyphTvShader
 import tf.monochrome.android.glyph.input.GlyphKeyBindings
 import tf.monochrome.android.ui.components.GlassPill
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
@@ -474,6 +475,21 @@ private fun GraphicsTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
         onChange = { set(graphics.copy(comboBurst = it)) },
         note = "A burst across the field every fifty combo",
     )
+    Column {
+        GlyphControlHeader("TV shader", "Android 13 and later")
+        GlyphChipRow(
+            options = GlyphTvShader.entries,
+            selected = graphics.tvShader,
+            label = { it.label },
+            onSelect = { set(graphics.copy(tvShader = it)) },
+        )
+        Text(
+            text = graphics.tvShader.note,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = MonoDimens.spacingSm),
+        )
+    }
 }
 
 @Composable

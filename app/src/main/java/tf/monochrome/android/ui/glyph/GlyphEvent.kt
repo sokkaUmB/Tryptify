@@ -58,6 +58,14 @@ sealed interface GlyphEvent {
     data object OpenLeaderboard : GlyphEvent
     data object CloseLeaderboard : GlyphEvent
     data class SelectSong(val trackId: String) : GlyphEvent
+
+    // ── the music wheel ─────────────────────────────────────────────────
+    /** The wheel settled on [key]; a song there is chosen after StepMania's sample delay. */
+    data class WheelFocus(val key: String) : GlyphEvent
+    /** Open the folder [name], or close it when it is the open one. */
+    data class ToggleFolder(val name: String) : GlyphEvent
+    /** Close the open folder, as StepMania's Up-Down does. */
+    data object CloseFolder : GlyphEvent
     data class SelectDifficulty(val difficulty: StepManiaDifficulty) : GlyphEvent
 
     /** Generate a chart for the selected song from the file already on disk. */
