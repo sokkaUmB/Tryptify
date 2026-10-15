@@ -2120,6 +2120,22 @@ class PreferencesManager @Inject constructor(
         dataStore.edit { it[musicalTagsCursorKey(version)] = resumeAfter }
     }
 
+    /**
+     * Tracks backfill [version] found no file for (an SD card out). The walk
+     * went on past them; they are tried again at each launch until read, or
+     * gone from the library.
+     */
+    fun musicalTagsBackfillMissing(version: Int): Flow<Set<Long>> =
+        dataStore.data.map { prefs ->
+            prefs[musicalTagsMissingKey(version)].orEmpty().mapNotNullTo(HashSet()) { it.toLongOrNull() }
+        }
+    suspend fun setMusicalTagsBackfillMissing(version: Int, ids: Set<Long>) {
+        dataStore.edit {
+            if (ids.isEmpty()) it.remove(musicalTagsMissingKey(version))
+            else it[musicalTagsMissingKey(version)] = ids.mapTo(HashSet()) { id -> id.toString() }
+        }
+    }
+
     /** Marks backfill [version] done and drops its resume point, in one write. */
     suspend fun finishMusicalTagsBackfill(version: Int) {
         dataStore.edit {
@@ -2129,6 +2145,7 @@ class PreferencesManager @Inject constructor(
     }
 
     private fun musicalTagsCursorKey(version: Int) = longPreferencesKey("musical_tags_backfill_cursor_v$version")
+    private fun musicalTagsMissingKey(version: Int) = stringSetPreferencesKey("musical_tags_backfill_missing_v$version")
 
     val userFolderRoots: Flow<Set<String>> = dataStore.data
         .map { it[USER_FOLDER_ROOTS_JSON] }

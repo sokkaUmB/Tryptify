@@ -18,6 +18,7 @@ import tf.monochrome.android.data.local.db.LocalGenreEntity
 import tf.monochrome.android.data.local.db.LocalMediaDao
 import tf.monochrome.android.data.local.db.LocalTrackEntity
 import tf.monochrome.android.data.local.db.ScanStateEntity
+import tf.monochrome.android.data.local.db.TrackPath
 import tf.monochrome.android.data.local.db.TrackScanInfo
 import tf.monochrome.android.data.local.tags.MusicalTags
 import tf.monochrome.android.data.local.tags.TagReader
@@ -557,42 +558,79 @@ class MediaScanner @Inject constructor(
      * ids, groupings and a measured dynamic range stay as they are. Two
      * readers at a time, so it stays in the background.
      *
-     * Returns whether every track was there to read. A file that is not (on
-     * a card not mounted just then) holds the resume point at the track
-     * before it, so the next run tries again from there.
+     * [onBatch] also gets the tracks whose file was not there (on a card not
+     * mounted just then). The walk goes on past them and finishes; they are
+     * read later by [retryMusicalTags].
      */
-    suspend fun backfillMusicalTags(afterId: Long, onBatch: suspend (resumeAfter: Long) -> Unit): Boolean {
-        val dispatcher = Dispatchers.IO.limitedParallelism(BACKFILL_PARALLELISM)
+    suspend fun backfillMusicalTags(
+        afterId: Long,
+        onBatch: suspend (resumeAfter: Long, missing: Set<Long>) -> Unit,
+    ) {
         var cursor = afterId
-        var firstMissing: Long? = null
         var wrote = false
         while (true) {
             val batch = localMediaDao.trackPathsAfter(cursor, BACKFILL_BATCH)
             if (batch.isEmpty()) break
-            val read = coroutineScope {
-                batch.map { row -> async(dispatcher) { row to tagReader.readMusicalTags(row.filePath) } }
-                    .awaitAll()
-            }
-            if (firstMissing == null) {
-                firstMissing = read.firstOrNull { (row, tags) -> tags == null && !File(row.filePath).exists() }?.first?.id
-            }
-            // A file that could not be read, or says nothing, is left as it is.
-            val found = read.mapNotNull { (row, tags) -> tags?.takeIf { it != MusicalTags() }?.let { row.filePath to it } }
-            if (found.isNotEmpty()) {
-                musicDatabase.withTransaction {
-                    for ((path, t) in found) {
-                        localMediaDao.updateMusicalTags(
-                            path, t.bpm, t.camelotKey, t.rgTrackGain, t.rgAlbumGain, t.r128TrackGain, t.r128AlbumGain,
-                        )
-                    }
-                }
-                wrote = true
-            }
+            val (batchWrote, missing) = readMusicalTagsOf(batch)
+            wrote = wrote || batchWrote
             cursor = batch.last().id
-            onBatch(firstMissing?.let { it - 1 } ?: cursor)
+            // Past a missing file too. Held there instead, the walk restarted
+            // from it at every launch while an SD card was out, read every
+            // track after it again, wrote the same values and rebuilt the
+            // galaxy, and never finished. The missing ones are tried again on
+            // their own ([retryMusicalTags]).
+            onBatch(cursor, missing)
         }
         if (wrote) localLibraryRevision.bump()
-        return firstMissing == null
+    }
+
+    /**
+     * Reads the tags of tracks [ids], which the backfill found no file for:
+     * those whose file is back are filled in. Returns the ones still missing;
+     * a track no longer in the library is dropped.
+     */
+    suspend fun retryMusicalTags(ids: Set<Long>): Set<Long> {
+        val stillMissing = HashSet<Long>()
+        var wrote = false
+        for (chunk in ids.chunked(BACKFILL_BATCH)) {
+            val rows = localMediaDao.trackPathsOf(chunk)
+            // Checked before reading: a card that is still out costs a stat
+            // per file, not a parse.
+            val (present, absent) = rows.partition { File(it.filePath).exists() }
+            absent.mapTo(stillMissing) { it.id }
+            if (present.isEmpty()) continue
+            val (batchWrote, missing) = readMusicalTagsOf(present)
+            wrote = wrote || batchWrote
+            stillMissing += missing
+        }
+        if (wrote) localLibraryRevision.bump()
+        return stillMissing
+    }
+
+    /**
+     * Reads and writes the musical tags of [rows]. Returns whether anything
+     * was written, and the ids whose file was not there.
+     */
+    private suspend fun readMusicalTagsOf(rows: List<TrackPath>): Pair<Boolean, Set<Long>> {
+        val dispatcher = Dispatchers.IO.limitedParallelism(BACKFILL_PARALLELISM)
+        val read = coroutineScope {
+            rows.map { row -> async(dispatcher) { row to tagReader.readMusicalTags(row.filePath) } }
+                .awaitAll()
+        }
+        val missing = read.filter { (row, tags) -> tags == null && !File(row.filePath).exists() }
+            .mapTo(HashSet()) { it.first.id }
+        // A file that could not be read, or says nothing, is left as it is.
+        val found = read.mapNotNull { (row, tags) -> tags?.takeIf { it != MusicalTags() }?.let { row.filePath to it } }
+        if (found.isNotEmpty()) {
+            musicDatabase.withTransaction {
+                for ((path, t) in found) {
+                    localMediaDao.updateMusicalTags(
+                        path, t.bpm, t.camelotKey, t.rgTrackGain, t.rgAlbumGain, t.r128TrackGain, t.r128AlbumGain,
+                    )
+                }
+            }
+        }
+        return found.isNotEmpty() to missing
     }
 
     /** Whether the library has no tracks at all. */

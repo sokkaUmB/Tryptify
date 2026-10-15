@@ -164,12 +164,22 @@ class ScanCoordinator @Inject constructor(
         if (!musicalTagsBackfill.compareAndSet(false, true)) return
         scope.launch {
             try {
-                if (preferences.musicalTagsBackfillVersion.first() >= MUSICAL_TAGS_VERSION) return@launch
-                val from = preferences.musicalTagsBackfillCursor(MUSICAL_TAGS_VERSION).first()
-                val complete = mediaScanner.backfillMusicalTags(from) {
-                    preferences.setMusicalTagsBackfillCursor(MUSICAL_TAGS_VERSION, it)
+                val missing = preferences.musicalTagsBackfillMissing(MUSICAL_TAGS_VERSION).first().toHashSet()
+                if (preferences.musicalTagsBackfillVersion.first() >= MUSICAL_TAGS_VERSION) {
+                    // Done, but for files that were not there: those alone.
+                    if (missing.isNotEmpty()) {
+                        preferences.setMusicalTagsBackfillMissing(MUSICAL_TAGS_VERSION, mediaScanner.retryMusicalTags(missing))
+                    }
+                    return@launch
                 }
-                if (complete) preferences.finishMusicalTagsBackfill(MUSICAL_TAGS_VERSION)
+                val from = preferences.musicalTagsBackfillCursor(MUSICAL_TAGS_VERSION).first()
+                mediaScanner.backfillMusicalTags(from) { resumeAfter, newlyMissing ->
+                    if (missing.addAll(newlyMissing)) {
+                        preferences.setMusicalTagsBackfillMissing(MUSICAL_TAGS_VERSION, missing)
+                    }
+                    preferences.setMusicalTagsBackfillCursor(MUSICAL_TAGS_VERSION, resumeAfter)
+                }
+                preferences.finishMusicalTagsBackfill(MUSICAL_TAGS_VERSION)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

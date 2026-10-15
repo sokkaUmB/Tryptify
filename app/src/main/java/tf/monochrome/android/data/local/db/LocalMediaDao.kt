@@ -337,6 +337,10 @@ interface LocalMediaDao {
     @Query("SELECT id FROM local_tracks")
     suspend fun allTrackIds(): List<Long>
 
+    /** Tracks [ids]' files; ids no longer in the library are simply absent. Keep [ids] under SQLite's 999. */
+    @Query("SELECT id, filePath FROM local_tracks WHERE id IN (:ids)")
+    suspend fun trackPathsOf(ids: List<Long>): List<TrackPath>
+
     /** The next [limit] tracks after id [afterId], in id order: a walk over the table that can stop and resume. */
     @Query("SELECT id, filePath FROM local_tracks WHERE id > :afterId ORDER BY id LIMIT :limit")
     suspend fun trackPathsAfter(afterId: Long, limit: Int): List<TrackPath>
