@@ -1086,6 +1086,7 @@
     <string name="settings_blend_zero_desc">Sıfırda parçalar arada boşluk olmadan doğrudan birbirine bağlanır. Üst üste binmeleri için süre ekleyin.</string>
     <string name="settings_blend_desc">Çıkan parça kısılırken sonraki %1$d sn içinde yükselir.</string>
     <string name="settings_blend_needs_gapless">Kesintisiz çalma gerekir. Kapalıyken her parça baştan sona tek başına çalar.</string>
+    <string name="settings_blend_off_exclusive">Özel USB DAC açıkken kapalı. Geçiş iki parçayı birbirine karıştırır, bu yüzden bit-perfect olamaz.</string>
     <string name="settings_pitch_fraction">Perde: %1$+.2f yarım ton</string>
     <string name="settings_downmix_on">Çok kanallı parçalar stereoya indirilir (sabit matris) ve DSP/EQ’dan geçer.</string>
     <string name="settings_downmix_off">Kapalı. Çok kanallı ses cihaza olduğu gibi gider; bu parçalarda DSP/EQ atlanır.</string>

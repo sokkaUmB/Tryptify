@@ -1591,6 +1591,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
     // owned them.
     val gapless by viewModel.gaplessPlayback.collectAsStateWithLifecycle()
     val crossfade by viewModel.crossfadeDuration.collectAsStateWithLifecycle()
+    val exclusiveUsb by viewModel.usbExclusiveBitPerfectEnabled.collectAsStateWithLifecycle()
     val gaplessNoResample by viewModel.gaplessNoResample.collectAsStateWithLifecycle()
     val qualities by viewModel.qualities.collectAsStateWithLifecycle()
     val tidalAtmos by viewModel.tidalAtmosPreferred.collectAsStateWithLifecycle()
@@ -1639,14 +1640,19 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         // overlaps the tracks, so the gapless hand-off steps aside for it; and
         // a blend needs gapless on (CrossfadeRamp.blends), so with it off the
         // slider is greyed and says why, rather than look set and do nothing.
+        // The same with the exclusive USB DAC on (CrossfadeRamp.blendMs): no
+        // blend and no second player then, and the value set waits for it.
+        val blendAvailable = gapless && !exclusiveUsb
         Text(
             text = if (crossfade == 0) stringResource(R.string.settings_blend_gapless) else stringResource(R.string.settings_blend_seconds, crossfade),
             style = MaterialTheme.typography.bodyLarge,
-            color = if (gapless) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (blendAvailable) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.settingsAnchor(stringResource(R.string.search_crossfade)),
         )
         Text(
-            text = if (!gapless) {
+            text = if (exclusiveUsb) {
+                stringResource(R.string.settings_blend_off_exclusive)
+            } else if (!gapless) {
                 stringResource(R.string.settings_blend_needs_gapless)
             } else if (crossfade == 0) {
                 stringResource(R.string.settings_blend_zero_desc)
@@ -1659,7 +1665,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         Slider(
             value = crossfade.toFloat(),
             onValueChange = { viewModel.setCrossfadeDuration(it.toInt()) },
-            enabled = gapless,
+            enabled = blendAvailable,
             valueRange = 0f..12f,
             steps = 11,
             modifier = Modifier.fillMaxWidth()

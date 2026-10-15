@@ -1124,6 +1124,7 @@
     <string name="settings_blend_zero_desc">À zéro, les titres s’enchaînent directement, sans blanc. Ajoutez du temps pour les faire se chevaucher.</string>
     <string name="settings_blend_desc">Le titre sortant s’estompe pendant que le suivant monte en %1$d s.</string>
     <string name="settings_blend_needs_gapless">Nécessite la lecture sans blanc. Sans elle, chaque titre est lu seul, du début à la fin.</string>
+    <string name="settings_blend_off_exclusive">Désactivé tant que le DAC USB exclusif est activé. Un fondu mélange deux titres, il ne peut donc pas être bit-perfect.</string>
     <string name="settings_pitch_fraction">Hauteur : %1$+.2f demi-tons</string>
     <string name="settings_downmix_on">Les titres multicanaux sont réduits en stéréo (matrice fixe) et passent par le DSP/l’égaliseur.</string>
     <string name="settings_downmix_off">Désactivé. Le multicanal est transmis tel quel à l’appareil ; DSP/égaliseur contournés pour ces titres.</string>

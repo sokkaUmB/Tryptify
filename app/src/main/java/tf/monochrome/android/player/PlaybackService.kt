@@ -33,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -630,10 +631,12 @@ class PlaybackService : MediaSessionService() {
         }
 
         // Blend length. Any non-zero value takes over from the gapless window,
-        // so re-derive that whenever it changes.
+        // so re-derive that whenever it changes. Exclusive USB DAC turns it to
+        // none: a blend running when it is turned on stops, and its second
+        // player with it.
         serviceScope.launch {
-            preferences.crossfadeDuration.collect { seconds ->
-                crossfadeMs = seconds.coerceAtLeast(0) * 1_000L
+            blendLengthMs().distinctUntilChanged().collect { ms ->
+                crossfadeMs = ms
                 if (crossfadeMs == 0L) crossfade.cancel()
                 syncGaplessNext()
             }
@@ -1540,8 +1543,18 @@ class PlaybackService : MediaSessionService() {
     // construction — an overlap needs the next track started *early*, which is
     // the opposite of handing it to the player to follow on seamlessly — so a
     // non-zero blend switches the gapless window off.
+    //
+    // [crossfadeMs] is the blend that applies, not the slider: none while the
+    // exclusive USB DAC is on (CrossfadeRamp.blendMs). Everything here reads
+    // it, so the gapless window carries the songs then rather than leave a gap.
 
     @Volatile private var crossfadeMs = 0L
+
+    /** The blend length that applies, in ms, as the settings change. */
+    private fun blendLengthMs(): Flow<Long> =
+        combine(preferences.crossfadeDuration, preferences.usbExclusiveBitPerfectEnabled) { seconds, exclusiveUsb ->
+            CrossfadeRamp.blendMs(seconds.coerceAtLeast(0) * 1_000L, exclusiveUsb)
+        }
 
     /** Where a blend's tail joins the exclusive USB stream. */
     @OptIn(UnstableApi::class)
@@ -1648,9 +1661,11 @@ class PlaybackService : MediaSessionService() {
         }
 
     /**
-     * Whether a blend can run right now. On the exclusive USB path too: the
-     * tail is mixed into the main stream before it reaches the DAC
-     * (UsbCrossfadeMix), so there is still one stream and one owner.
+     * Whether a blend can run right now. Never with the exclusive USB DAC
+     * switched on ([crossfadeMs] is none then). Should the DAC still be
+     * streaming when one starts, the tail is mixed into the main stream before
+     * it reaches the DAC (UsbCrossfadeMix), so there is still one stream and
+     * one owner.
      */
     @OptIn(UnstableApi::class)
     private fun canCrossfade(): Boolean = CrossfadeRamp.blends(gaplessEnabled, crossfadeMs)
@@ -1760,10 +1775,12 @@ class PlaybackService : MediaSessionService() {
     private fun startCrossfadeWatcher() {
         serviceScope.launch {
             while (true) {
-                // Suspends until a blend length is set; wakes on the next
-                // preference change rather than on a timer.
+                // Suspends until a blend length applies; wakes on the next
+                // preference change rather than on a timer. The length that
+                // applies, not the slider's: with the exclusive USB DAC on, a
+                // slider above zero would wake this at once, every time.
                 if (crossfadeMs == 0L) {
-                    preferences.crossfadeDuration.first { it > 0 }
+                    blendLengthMs().first { it > 0L }
                     continue
                 }
                 // Nor while gapless is off, which a blend needs.

@@ -1048,6 +1048,7 @@
     <string name="settings_blend_zero_desc">ゼロでは曲が間を置かずにそのままつながります。時間を加えると重ねて切り替わります。</string>
     <string name="settings_blend_desc">前の曲がフェードアウトし、次の曲が %1$d 秒かけてフェードインします。</string>
     <string name="settings_blend_needs_gapless">ギャップレス再生が必要です。オフのときは、各曲が最初から最後まで単独で再生されます。</string>
+    <string name="settings_blend_off_exclusive">USB DAC の排他使用がオンの間はオフです。ブレンドは 2 曲を混ぜるため、ビットパーフェクトにはなりません。</string>
     <string name="settings_pitch_fraction">ピッチ：%1$+.2f 半音</string>
     <string name="settings_downmix_on">マルチチャンネルの曲はステレオに畳み込まれ（固定マトリクス）、DSP/EQ を通ります。</string>
     <string name="settings_downmix_off">オフ。マルチチャンネルはそのまま端末に渡され、それらの曲では DSP/EQ を通りません。</string>

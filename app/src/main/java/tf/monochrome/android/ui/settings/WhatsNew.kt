@@ -244,6 +244,12 @@ object WhatsNew {
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.CHANGED,
+                    section = PLAYBACK,
+                    title = "No blends in exclusive mode",
+                    body = "With Exclusive USB DAC on, the blend slider is greyed out: a blend mixes two songs, and exclusive mode is the bit-perfect path. Songs play one at a time, gapless with Gapless playback on, and your blend comes back when it is off.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
                     section = USB_DAC,
                     title = "More DACs in exclusive mode",
                     body = "Exclusive mode now drives DACs that run in USB Audio 3.0's basic mode, like Apple's USB-C headphone adapter, which Android always puts in that mode. They play at 48 kHz, in 24-bit.",
