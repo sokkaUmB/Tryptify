@@ -72,26 +72,32 @@ object StepManiaPack {
         return match?.groupValues?.get(1)?.trim()?.ifEmpty { null }
     }
 
-    /** The file in [folder] a tag names, matched without regard to case as Windows-made packs need. */
-    fun resolve(folder: File, name: String?): File? {
+    /** The name among [names] a tag names, matched without regard to case as Windows-made packs need. */
+    fun resolveName(names: List<String>, name: String?): String? {
         if (name.isNullOrBlank()) return null
         val wanted = name.replace('\\', '/').substringAfterLast('/')
-        return folder.listFiles()?.firstOrNull { it.isFile && it.name.equals(wanted, ignoreCase = true) }
+        return names.firstOrNull { it.equals(wanted, ignoreCase = true) }
     }
 
-    /** The song's music: what `#MUSIC` names, or failing that the folder's only audio. */
-    fun music(folder: File, ssc: String): File? =
-        resolve(folder, tag(ssc, "MUSIC"))
-            ?: folder.listFiles()
-                ?.filter { it.isFile && extension(it.name) in AUDIO_EXTENSIONS }
-                ?.minByOrNull { it.name }
+    /** The song's music among [names]: what `#MUSIC` names, or failing that the folder's first audio. */
+    fun musicName(names: List<String>, ssc: String): String? =
+        resolveName(names, tag(ssc, "MUSIC")) ?: names.filter { extension(it) in AUDIO_EXTENSIONS }.minOrNull()
 
-    /** Art for the song list: a square jacket first, then the banner, then the background. */
-    fun art(folder: File, ssc: String): File? =
-        listOf("JACKET", "BANNER", "BACKGROUND").firstNotNullOfOrNull { resolve(folder, tag(ssc, it)) }
-            ?: folder.listFiles()
-                ?.filter { it.isFile && extension(it.name) in IMAGE_EXTENSIONS }
-                ?.minByOrNull { it.name }
+    /** Art among [names]: a square jacket first, then the banner, then the background. */
+    fun artName(names: List<String>, ssc: String): String? =
+        listOf("JACKET", "BANNER", "BACKGROUND").firstNotNullOfOrNull { resolveName(names, tag(ssc, it)) }
+            ?: names.filter { extension(it) in IMAGE_EXTENSIONS }.minOrNull()
+
+    private fun fileNames(folder: File): List<String> = folder.listFiles()?.filter { it.isFile }?.map { it.name }.orEmpty()
+
+    /** The file in [folder] a tag names. */
+    fun resolve(folder: File, name: String?): File? = resolveName(fileNames(folder), name)?.let { File(folder, it) }
+
+    /** The song's music in [folder]. */
+    fun music(folder: File, ssc: String): File? = musicName(fileNames(folder), ssc)?.let { File(folder, it) }
+
+    /** Art for the song list in [folder]. */
+    fun art(folder: File, ssc: String): File? = artName(fileNames(folder), ssc)?.let { File(folder, it) }
 
     /** A `Pack.ini` in ITGmania's format, which StepMania 5 also reads. */
     fun packIni(title: String, year: Int, banner: String = ""): String = buildString {
@@ -116,6 +122,12 @@ object StepManiaPack {
 data class PackIndex(
     val name: String,
     val songs: List<Song>,
+    /**
+     * For a pack read in place: the folder the player picked, as a document
+     * tree. Its music and art are read from there, never copied; only the
+     * charts the app reads, made `.ssc`, are kept beside this index.
+     */
+    val source: String? = null,
 ) {
     /** [folder] is relative to the pack's folder; the other paths to the song's. */
     @Serializable
@@ -130,6 +142,9 @@ data class PackIndex(
         /** The difficulties the chart has, by name, and its opening tempo: the song list's columns. */
         val difficulties: List<String> = emptyList(),
         val bpm: Float? = null,
+        /** A pack read in place: the music and art as documents in [PackIndex.source]. */
+        val musicUri: String? = null,
+        val artUri: String? = null,
     )
 }
 

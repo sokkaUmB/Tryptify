@@ -229,6 +229,42 @@ class StepManiaPackTest {
     }
 
     @Test
+    fun aFolderReadInPlaceCopiesOnlyTheCharts() {
+        // As TreePackSource lists a picked folder: every file a document.
+        val tree = "content://com.android.externalstorage.documents/tree/primary%3AStepMania%205%2FSongs"
+        val files = listOf(
+            "Dance Dance Revolution Ultramix 2/Altitude/Altitude.sm" to sm.toByteArray(),
+            "Dance Dance Revolution Ultramix 2/Altitude/Altitude.ogg" to audio,
+            "Dance Dance Revolution Ultramix 2/Altitude/Altitude-bn.png" to ByteArray(10),
+            "dj Manix Originals/Broken/broken.sm" to sm.toByteArray(),
+        ).map { (path, bytes) ->
+            PackImporter.SourceFile(path.split('/'), bytes.size.toLong(), uri = "$tree/document/${path.hashCode()}") {
+                ByteArrayInputStream(bytes)
+            }
+        }
+        val linking = PackImporter(root, durationOfUri = { 123 }, reserveBytes = 0)
+        var songsDone = 0L
+        val result = linking.importFolder(files, "Songs", onProgress = { done, _ -> songsDone = done }, source = tree)
+
+        assertEquals(listOf("Dance Dance Revolution Ultramix 2"), result.packs.map { it.name })
+        assertEquals(1, result.songs)
+        assertEquals("the song with no music is left out", 1, result.skippedSongs)
+        assertEquals(2L, songsDone)
+        val pack = File(root, "Dance Dance Revolution Ultramix 2")
+        val index = PackImporter.readIndex(pack)!!
+        assertEquals(tree, index.source)
+        val song = index.songs.single()
+        assertEquals(files[1].uri, song.musicUri)
+        assertEquals(files[2].uri, song.artUri)
+        assertEquals(123, song.durationSeconds)
+        // Only the index and the .ssc the app reads are here: no music, no art.
+        val kept = pack.walkTopDown().filter { it.isFile }.map { it.name }.toSet()
+        assertEquals(setOf(StepManiaPack.INDEX_FILE, "Altitude.ssc"), kept)
+        assertNotNull(SscParser.parse(File(pack, "${song.folder}/${song.chart}").readText()))
+        assertNull(root.listFiles()!!.firstOrNull { it.name.startsWith(".staging") })
+    }
+
+    @Test
     fun aPickedPackFolderIsThatPack() {
         val files = folder(
             "Altitude/Altitude.sm" to sm.toByteArray(),

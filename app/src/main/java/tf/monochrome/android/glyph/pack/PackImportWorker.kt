@@ -59,6 +59,7 @@ class PackImportWorker @AssistedInject constructor(
     private var lastShownAt = 0L
     private var name: String = inputData.getString(KEY_NAME).orEmpty()
 
+
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         runCatching { setForeground(foregroundInfo(0f, "Starting")) }
         val url = inputData.getString(KEY_URL)
@@ -92,7 +93,11 @@ class PackImportWorker @AssistedInject constructor(
             notifyFinished("Pack not imported", "${name.ifBlank { "Pack" }}: $reason")
             Result.failure(workDataOf(KEY_NAME to name, KEY_FAILURE to reason))
         } finally {
-            (uri ?: tree)?.let { picked ->
+            // A folder's grant stays while any installed pack reads from it,
+            // a partial import's included; otherwise it goes back.
+            val keepGrant = tree != null && library.root.listFiles().orEmpty()
+                .any { PackImporter.readIndex(it)?.source == tree.toString() }
+            (uri ?: tree?.takeUnless { keepGrant })?.let { picked ->
                 runCatching {
                     applicationContext.contentResolver.releasePersistableUriPermission(picked, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
@@ -107,11 +112,14 @@ class PackImportWorker @AssistedInject constructor(
         report(0, 0, "Reading the folder")
         val listing = TreePackSource.list(applicationContext, tree, isActive = { !isStopped })
         name = listing.name
+        // Read in place: nothing but the charts is copied, and the grant on
+        // the folder is kept for as long as a pack is read from it.
         val result = library.importer().importFolder(
             files = listing.files,
             folderName = listing.name,
-            onProgress = { copied, total -> report(copied, total) },
+            onProgress = { done, total -> report(done, total, "$done of $total songs", throttle = true) },
             isActive = { !isStopped },
+            source = tree.toString(),
         )
         library.refresh()
         val packs = result.packs.joinToString(", ") { it.name }
@@ -172,9 +180,9 @@ class PackImportWorker @AssistedInject constructor(
     }
 
     /** Progress a few times a second at most; the bytes come far faster. */
-    private fun report(read: Long, total: Long, label: String? = null) {
+    private fun report(read: Long, total: Long, label: String? = null, throttle: Boolean = label == null) {
         val now = SystemClock.elapsedRealtime()
-        if (label == null && now - lastShownAt < UPDATE_MS) return
+        if (throttle && now - lastShownAt < UPDATE_MS) return
         lastShownAt = now
         val fraction = if (total > 0) (read.toFloat() / total).coerceIn(0f, 1f) else 0f
         val stage = label ?: if (total > 0) "${formatMb(read)} of ${formatMb(total)}" else "${formatMb(read)} read"

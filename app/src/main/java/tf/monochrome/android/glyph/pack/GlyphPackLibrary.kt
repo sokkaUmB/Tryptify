@@ -29,13 +29,18 @@ import tf.monochrome.android.glyph.data.GlyphSong
  * A pack song's id is `pack:<pack>/<song folder>`. Its chart is the pack's
  * own, read in place; once edited in the map editor, the edit is saved as the
  * app's own copy and wins, and the pack's file is never written to.
+ *
+ * A pack read in place (songs already unpacked on the phone, linked rather
+ * than copied) keeps only its index and charts here; its music and art are
+ * documents in the folder the player picked, read through the grant kept for
+ * it, and removing the pack gives the grant back.
  */
 @Singleton
 class GlyphPackLibrary @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     /** One imported pack, for the list under Settings. */
-    data class Pack(val name: String, val songs: Int, val bytes: Long)
+    data class Pack(val name: String, val songs: Int, val bytes: Long, val inPlace: Boolean = false)
 
     val root: File get() = File(context.filesDir, "glyph/packs")
 
@@ -48,7 +53,7 @@ class GlyphPackLibrary @Inject constructor(
     @Volatile private var loaded = false
 
     /** An importer writing into this library, measuring each song's length as it goes. */
-    fun importer(): PackImporter = PackImporter(root, durationOf = ::durationOf)
+    fun importer(): PackImporter = PackImporter(root, durationOf = ::durationOf, durationOfUri = ::durationOfUri)
 
     /** Re-read every pack's index. Cheap; called after an import or a removal. */
     suspend fun refresh() = withContext(Dispatchers.IO) {
@@ -57,7 +62,12 @@ class GlyphPackLibrary @Inject constructor(
         val packs = ArrayList<Pack>()
         for (folder in folders.sortedBy { it.name.lowercase() }) {
             val index = PackImporter.readIndex(folder) ?: continue
-            packs += Pack(index.name, index.songs.size, folder.walkTopDown().filter { it.isFile }.sumOf { it.length() })
+            packs += Pack(
+                name = index.name,
+                songs = index.songs.size,
+                bytes = folder.walkTopDown().filter { it.isFile }.sumOf { it.length() },
+                inPlace = index.source != null,
+            )
             for (song in index.songs) songs += song.toGlyphSong(folder, index.name)
         }
         _songs.value = songs
@@ -74,7 +84,21 @@ class GlyphPackLibrary @Inject constructor(
     suspend fun remove(name: String) {
         withContext(Dispatchers.IO) {
             val folder = File(root, name)
-            if (folder.canonicalPath.startsWith(root.canonicalPath + File.separator)) folder.deleteRecursively()
+            if (!folder.canonicalPath.startsWith(root.canonicalPath + File.separator)) return@withContext
+            val source = PackImporter.readIndex(folder)?.source
+            folder.deleteRecursively()
+            // The folder's grant goes back once no pack is read from it.
+            if (source != null) {
+                val stillUsed = root.listFiles()?.any { PackImporter.readIndex(it)?.source == source } == true
+                if (!stillUsed) {
+                    runCatching {
+                        context.contentResolver.releasePersistableUriPermission(
+                            Uri.parse(source),
+                            android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                        )
+                    }
+                }
+            }
         }
         refresh()
     }
@@ -97,8 +121,9 @@ class GlyphPackLibrary @Inject constructor(
             chartId = id.hashCode().toUInt().toString(16),
             title = title,
             artist = artist,
-            filePath = musicFile.absolutePath,
-            artworkUri = art?.let { Uri.fromFile(File(songFolder, it)).toString() },
+            // Read in place: the document in the player's folder.
+            filePath = musicUri ?: musicFile.absolutePath,
+            artworkUri = artUri ?: art?.let { Uri.fromFile(File(songFolder, it)).toString() },
             durationSeconds = durationSeconds,
             codec = codecOf(music),
             bpm = bpm,
@@ -112,6 +137,18 @@ class GlyphPackLibrary @Inject constructor(
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(file.absolutePath)
+            ((retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L) / 1000).toInt()
+        } catch (_: Exception) {
+            0
+        } finally {
+            runCatching { retriever.release() }
+        }
+    }
+
+    private fun durationOfUri(uri: String): Int {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(context, Uri.parse(uri))
             ((retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L) / 1000).toInt()
         } catch (_: Exception) {
             0

@@ -128,8 +128,9 @@ fun GlyphPacksScreen(
                 SectionTitle("Get packs")
                 Text(
                     "Simfile packs from StepMania Online, a pack ZIP you already have, or songs already " +
-                        "unpacked on the phone — pick one song, one pack, or StepMania's whole Songs folder. " +
-                        "Their four-panel charts play here with the pack's own music.",
+                        "unpacked on the phone — pick one song, one pack, or StepMania's whole Songs folder, and " +
+                        "they play from where they are, nothing copied. Their four-panel charts play here with " +
+                        "the pack's own music.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = scheme.onSurfaceVariant,
                 )
@@ -150,9 +151,9 @@ fun GlyphPacksScreen(
                 )
                 Spacer(Modifier.height(MonoDimens.spacingSm))
                 GlyphButton(
-                    text = "Import unpacked songs (folder)…",
+                    text = "Link unpacked songs (folder)…",
                     icon = Icons.Default.Folder,
-                    onClickLabel = "Pick a song, a pack, or the Songs folder to import",
+                    onClickLabel = "Pick a song, a pack, or the Songs folder to play in place",
                     onClick = { songsFolderPicker.launch(null) },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -255,7 +256,9 @@ fun GlyphPacksScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(pack.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
                             Text(
-                                "${pack.songs} song${if (pack.songs == 1) "" else "s"} · ${StemModelManager.formatBytes(pack.bytes)}",
+                                "${pack.songs} song${if (pack.songs == 1) "" else "s"} · " +
+                                    // Its music stays in the player's folder: its size here is only the charts.
+                                    if (pack.inPlace) "read in place" else StemModelManager.formatBytes(pack.bytes),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = scheme.onSurfaceVariant,
                             )

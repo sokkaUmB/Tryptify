@@ -60,7 +60,7 @@ object TreePackSource {
                         }
                         val size = if (cursor.isNull(3)) -1L else cursor.getLong(3)
                         val uri = DocumentsContract.buildDocumentUriUsingTree(tree, id)
-                        files += PackImporter.SourceFile(path + childName, size) {
+                        files += PackImporter.SourceFile(path + childName, size, uri = uri.toString()) {
                             resolver.openInputStream(uri) ?: throw IOException("$childName could not be read.")
                         }
                     }

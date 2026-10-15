@@ -43,6 +43,8 @@ class PackImporter(
     private val root: File,
     /** A song's length in seconds, for the song list; 0 when unknown. */
     private val durationOf: (File) -> Int = { 0 },
+    /** The same for music read in place, by its document's URI. */
+    private val durationOfUri: (String) -> Int = { 0 },
     private val maxTotalBytes: Long = 8L * 1024 * 1024 * 1024,
     /** Free space to leave on the volume; the import stops before going under it. */
     private val reserveBytes: Long = 256L * 1024 * 1024,
@@ -60,7 +62,13 @@ class PackImporter(
      * One file of a folder being imported: its [path] under the picked folder
      * (folder names, then the file's), its size when known, and how to read it.
      */
-    class SourceFile(val path: List<String>, val size: Long, val open: () -> InputStream)
+    class SourceFile(
+        val path: List<String>,
+        val size: Long,
+        /** The file as a document, for a pack read in place; null when it can only be copied. */
+        val uri: String? = null,
+        val open: () -> InputStream,
+    )
 
     /**
      * Import StepMania songs already unpacked into folders, as StepMania keeps
@@ -80,12 +88,17 @@ class PackImporter(
      *
      * The files are the player's own, picked from their phone, not a download:
      * there is no cap on the whole beyond the free space left.
+     *
+     * With [source] (the picked folder's tree URI) the songs are read in place
+     * instead ([linkPack]): nothing but the charts is copied, and [onProgress]
+     * counts songs rather than bytes.
      */
     fun importFolder(
         files: List<SourceFile>,
         folderName: String,
         onProgress: (copied: Long, total: Long) -> Unit = { _, _ -> },
         isActive: () -> Boolean = { true },
+        source: String? = null,
     ): Result {
         root.mkdirs()
         val wanted = files.filter { file ->
@@ -104,6 +117,26 @@ class PackImporter(
         // folder's parent is its pack — the picked folder when it is the pack.
         val byPack = songFolders.groupBy { folder -> if (folder.isEmpty()) null else folder.dropLast(1) }
             .entries.sortedBy { (pack, _) -> pack?.joinToString("/").orEmpty().lowercase() }
+        if (source != null) {
+            var done = 0L
+            var skippedInPlace = 0
+            val linked = ArrayList<ImportedPack>()
+            for ((packPath, songs) in byPack) {
+                if (!isActive()) throw PackImportException("The import was cancelled.")
+                val packName = StepManiaPack.safeName(packPath?.lastOrNull() ?: fallback, fallback)
+                val (pack, skippedHere) = linkPack(packName, songs, byFolder, source, isActive) {
+                    done += 1
+                    onProgress(done, songFolders.size.toLong())
+                }
+                skippedInPlace += skippedHere
+                pack?.let { linked += it }
+            }
+            if (linked.isEmpty()) {
+                throw PackImportException("No song in that folder has a four-panel (dance-single) chart with its music.")
+            }
+            return Result(linked, skippedInPlace)
+        }
+
         val total = songFolders.sumOf { folder -> byFolder.getValue(folder).sumOf { it.size.coerceAtLeast(0) } }
         var copied = 0L
         var skipped = 0
@@ -250,6 +283,84 @@ class PackImporter(
             }
         }
         if (kept == 0) throw PackImportException("That file is not a StepMania pack: it has no charts or music in it.")
+    }
+
+    /**
+     * One pack read in place: each song's chart read from the folder, kept as
+     * the `.ssc` the app reads, and its music and art indexed by their
+     * documents' URIs. Installed all at once, replacing an earlier import of
+     * the same pack. Returns the pack, or null when no song in it plays, and
+     * how many songs were left out.
+     */
+    private fun linkPack(
+        packName: String,
+        songs: List<List<String>>,
+        byFolder: Map<List<String>, List<SourceFile>>,
+        source: String,
+        isActive: () -> Boolean,
+        onSong: () -> Unit,
+    ): Pair<ImportedPack?, Int> {
+        val staging = File(root, ".staging-${System.nanoTime()}")
+        try {
+            staging.mkdirs()
+            val entries = ArrayList<PackIndex.Song>()
+            val usedNames = HashSet<String>()
+            var skipped = 0
+            for (song in songs) {
+                if (!isActive()) throw PackImportException("The import was cancelled.")
+                val entry = linkSong(song, byFolder.getValue(song), staging, usedNames)
+                if (entry == null) skipped += 1 else entries += entry
+                onSong()
+            }
+            if (entries.isEmpty()) return null to skipped
+            File(staging, StepManiaPack.INDEX_FILE).writeText(
+                JSON.encodeToString(PackIndex(packName, entries.sortedBy { it.title.lowercase() }, source = source)),
+            )
+            val destination = File(root, packName)
+            if (destination.exists()) destination.deleteRecursively()
+            if (!staging.renameTo(destination)) staging.copyRecursively(destination, overwrite = true)
+            return ImportedPack(packName, destination, entries.size) to skipped
+        } finally {
+            staging.deleteRecursively()
+        }
+    }
+
+    private fun linkSong(
+        song: List<String>,
+        files: List<SourceFile>,
+        staging: File,
+        usedNames: MutableSet<String>,
+    ): PackIndex.Song? {
+        val names = files.map { it.path.last() }
+        val chartFile = StepManiaPack.CHART_EXTENSIONS.firstNotNullOfOrNull { ext ->
+            files.filter { StepManiaPack.extension(it.path.last()) == ext }.minByOrNull { it.path.last() }
+        } ?: return null
+        if (chartFile.size > 16L * MB) return null
+        val text = runCatching { chartFile.open().use { it.readBytes().toString(Charsets.UTF_8) } }.getOrNull() ?: return null
+        val ssc = SmConverter.toSsc(text)
+        val simfile = runCatching { SscParser.parse(ssc) }.getOrNull() ?: return null
+        val musicName = StepManiaPack.musicName(names, ssc) ?: return null
+        val music = files.first { it.path.last() == musicName }
+        val musicUri = music.uri ?: return null
+        val art = StepManiaPack.artName(names, ssc)?.let { name -> files.first { it.path.last() == name } }
+
+        var folderName = StepManiaPack.safeName(song.lastOrNull() ?: simfile.title)
+        while (!usedNames.add(folderName.lowercase())) folderName = "$folderName (2)"
+        val chartName = StepManiaPack.safeName(chartFile.path.last().substringBeforeLast('.')) + ".ssc"
+        File(staging, folderName).apply { mkdirs() }.resolve(chartName).writeText(ssc)
+        return PackIndex.Song(
+            folder = folderName,
+            chart = chartName,
+            music = musicName,
+            art = art?.path?.last(),
+            title = simfile.title,
+            artist = simfile.artist,
+            durationSeconds = runCatching { durationOfUri(musicUri) }.getOrDefault(0),
+            difficulties = simfile.availableDifficulties.map { it.name },
+            bpm = simfile.listedBpm,
+            musicUri = musicUri,
+            artUri = art?.uri,
+        )
     }
 
     private fun ensureSpace() {

@@ -81,14 +81,19 @@ class OwnPackStore @Inject constructor(
         var written = 0
         for ((index, song) in songs.withIndex()) {
             onSong(index, song.title)
-            val music = File(song.musicPath).takeIf { it.isFile }
+            // A song read in place has a document, not a file, for its music.
+            val music: (() -> java.io.InputStream)? = if (song.musicPath.startsWith("content:")) {
+                { context.contentResolver.openInputStream(Uri.parse(song.musicPath)) ?: throw java.io.IOException("The music could not be read.") }
+            } else {
+                File(song.musicPath).takeIf { it.isFile }?.let { file -> { file.inputStream() } }
+            }
             PackWriter.writeSong(
                 sink = sink,
                 pack = StepManiaPack.OWN_PACK,
                 title = song.title,
                 artist = song.artist,
                 ssc = song.chart.readText(),
-                music = music?.let { file -> { file.inputStream() } },
+                music = music,
             )
             written += 1
         }

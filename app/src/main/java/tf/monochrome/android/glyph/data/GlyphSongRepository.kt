@@ -177,6 +177,22 @@ class GlyphSongRepository @Inject constructor(
 }
 
 /** One row in the song list. */
+/**
+ * The song's audio as a URI: a file, or — for a pack read in place — a
+ * document in the folder the player picked. Everything that plays or decodes a
+ * song goes through this, never `File(filePath)`, which a document is not.
+ */
+val GlyphSong.audioUri: android.net.Uri
+    get() = if (filePath.startsWith("content:")) android.net.Uri.parse(filePath) else android.net.Uri.fromFile(java.io.File(filePath))
+
+/** The audio's file name, for a chart's `#MUSIC`, whether a file or a document. */
+val GlyphSong.audioFileName: String
+    get() = if (filePath.startsWith("content:")) {
+        android.net.Uri.parse(filePath).lastPathSegment.orEmpty().substringAfterLast('/').substringAfterLast(':')
+    } else {
+        java.io.File(filePath).name
+    }
+
 data class GlyphSong(
     val trackId: String,
     val chartId: String,

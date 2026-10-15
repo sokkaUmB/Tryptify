@@ -54,6 +54,8 @@ import tf.monochrome.android.glyph.data.GlyphCalibration
 import tf.monochrome.android.glyph.data.GlyphGhost
 import tf.monochrome.android.glyph.data.GlyphGhostRecorder
 import tf.monochrome.android.glyph.data.GlyphSong
+import tf.monochrome.android.glyph.data.audioFileName
+import tf.monochrome.android.glyph.data.audioUri
 import tf.monochrome.android.glyph.data.GlyphSongSort
 import tf.monochrome.android.glyph.data.GlyphSortKey
 import tf.monochrome.android.glyph.data.GlyphSongRepository
@@ -499,7 +501,7 @@ class GlyphViewModel @Inject constructor(
             // The start can wait seconds on the waveform; the app may have
             // gone to the background in the meantime.
             if (!foreground) return@launch
-            preview.play(Uri.fromFile(File(song.filePath)), start, length)
+            preview.play(song.audioUri, start, length)
         }
     }
 
@@ -600,7 +602,7 @@ class GlyphViewModel @Inject constructor(
                     var builder = GlyphWaveformBuilder()
                     PcmDecoder.stream(
                         context = context,
-                        uri = Uri.fromFile(File(song.filePath)),
+                        uri = song.audioUri,
                         isActive = { job?.isActive != false },
                         onFormat = { format -> builder = GlyphWaveformBuilder(format.estimatedFrames) },
                     ) { left, right, frames -> builder.add(left, right, frames) }
@@ -764,7 +766,7 @@ class GlyphViewModel @Inject constructor(
             _ui.value = _ui.value.copy(error = "That song's file could not be located.")
             return
         }
-        generate(Uri.fromFile(File(song.filePath)), File(song.filePath).name, song)
+        generate(song.audioUri, song.audioFileName, song)
     }
 
     /**
@@ -1061,7 +1063,7 @@ class GlyphViewModel @Inject constructor(
         replaceEngine(buildEngine(chart))
         runStartedAtMs = System.currentTimeMillis()
 
-        transport.prepare(Uri.fromFile(File(song.filePath)))
+        transport.prepare(song.audioUri)
         transport.setSpeed(
             _ui.value.gameplay.modifiers.speed,
             _ui.value.gameplay.modifiers.pitchLinkedToSpeed,
@@ -1739,7 +1741,7 @@ class GlyphViewModel @Inject constructor(
             val chart = simfile?.chart(difficulty)
             editorHistory.clear()
             transport.loop = null
-            transport.prepare(Uri.fromFile(File(song.filePath)))
+            transport.prepare(song.audioUri)
             transport.setSpeed(1f, true)
             _ui.value = _ui.value.copy(
                 screen = GlyphScreen.EDITOR,
@@ -1855,7 +1857,7 @@ class GlyphViewModel @Inject constructor(
                     SscChartWriter.newSimfile(
                         title = song.title,
                         artist = song.artist,
-                        musicFileName = File(song.filePath).name,
+                        musicFileName = song.audioFileName,
                         bpm = timing.startBpm,
                         beatZeroSeconds = timing.offsetSeconds,
                         difficulty = editor.difficulty,
