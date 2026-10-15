@@ -8,6 +8,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import tf.monochrome.android.audio.wav.TryptifyExtractors
 
 /**
  * Seeking in fragmented MP4 without a `sidx`, the way Apple's ALAC files are
@@ -70,5 +71,26 @@ class IndexedFragmentedMp4ExtractorTest {
             h.readFrom(0, samples = 1)
             assertTrue(h.seekMap!!.isSeekable)
         }
+    }
+
+    @Test
+    fun `a file on the device is indexed, a stream is not`() {
+        // Walking every fragment first costs a moment on a file. Over HTTP it
+        // was a request per fragment, or the whole file, before anything
+        // played, and then the file again from the start.
+        for (scheme in listOf(null, "", "file", "content", "FILE", "android.resource")) {
+            assertTrue("$scheme", TryptifyExtractors.isOnDevice(scheme))
+        }
+        for (scheme in listOf("https", "http", "HTTPS", "rtsp")) {
+            assertFalse(scheme, TryptifyExtractors.isOnDevice(scheme))
+        }
+    }
+
+    @Test
+    fun `only a file on the device gets the indexing wrapper`() {
+        fun fragmentedOf(index: Boolean) =
+            TryptifyExtractors.wrap(arrayOf(FragmentedMp4Extractor()), indexFragmentedMp4 = index).single()
+        assertTrue(fragmentedOf(index = true) is IndexedFragmentedMp4Extractor)
+        assertTrue(fragmentedOf(index = false) is FragmentedMp4Extractor)
     }
 }
