@@ -33,14 +33,18 @@ class GlyphWheelSwishTest {
     }
 
     @Test
-    fun itHasAnAttack() {
-        // Loudest within its first few milliseconds, and most of its energy in
-        // the first ten: a "tsh", not a "hhh" that swells.
+    fun itSwellsInOverItsAttack() {
+        val perMs = GlyphWheelSwish.SAMPLE_RATE / 1_000
+        val attackMs = (GlyphWheelSwish.ATTACK_SECONDS * 1_000).toInt()
+        // Loudest at the end of the attack, not at its start.
         val peakAt = swish.indices.maxBy { abs(swish[it].toInt()) }
-        assertTrue("peak at sample $peakAt", peakAt < GlyphWheelSwish.SAMPLE_RATE * 4 / 1_000)
+        assertTrue("peak at ${peakAt / perMs} ms", peakAt in (attackMs - 2) * perMs..(attackMs + 4) * perMs)
+        // A straight swell: the first half of the attack carries a seventh of
+        // the second half's energy (1/8 for a perfect ramp of noise).
         val energy = swish.map { it.toDouble() * it }
-        val first10 = energy.take(GlyphWheelSwish.SAMPLE_RATE / 100).sum() / energy.sum()
-        assertTrue("first 10 ms = $first10", first10 > 0.55)
+        val half = attackMs / 2 * perMs
+        val ratio = energy.take(half).sum() / energy.subList(half, attackMs * perMs).sum()
+        assertTrue("first/second half = $ratio", ratio in 0.08..0.25)
     }
 
     @Test

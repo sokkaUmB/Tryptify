@@ -106,11 +106,11 @@ object GlyphWheelSwish {
     /** Length of the swish; a wheel step is about this long at a brisk turn. */
     const val LENGTH_SECONDS = 0.1
 
-    /**
-     * Peak level, the attack's, just under the metronome's 0.35. The body after
-     * it is as loud as the swish was before it had one.
-     */
-    const val AMPLITUDE = 0.34
+    /** Peak level, under the metronome's 0.35: it is a texture, not a signal. */
+    const val AMPLITUDE = 0.19
+
+    /** The attack: the swish swells from silence to its peak over this long. */
+    const val ATTACK_SECONDS = 0.010
 
     /** No more often than this: a fling would otherwise be a buzz. */
     const val MIN_GAP_NANOS = 55_000_000L
@@ -123,11 +123,9 @@ object GlyphWheelSwish {
 
     /**
      * White noise through two band-passes swept from 5.5 kHz down to 3.2 kHz —
-     * the band a whispered "shh" sits in — with an attack on the front: a 1 ms
-     * rise, a 6 ms transient over the body, and the filter starting 2.5 kHz
-     * brighter and falling into the sweep within about 10 ms, the "t" of
-     * "tsh". Then a fall that reaches silence at the end. The noise has a
-     * fixed seed, so every swish is the same swish.
+     * the band a whispered "shh" sits in — swelling in over a 10 ms attack and
+     * falling from that peak to silence at the end. The noise has a fixed seed,
+     * so every swish is the same swish.
      */
     fun render(sampleRate: Int = SAMPLE_RATE): ShortArray {
         val frames = (sampleRate * LENGTH_SECONDS).roundToInt()
@@ -137,9 +135,7 @@ object GlyphWheelSwish {
         val out = DoubleArray(frames)
         for (i in 0 until frames) {
             val progress = i.toDouble() / frames
-            val t = i.toDouble() / sampleRate
-            val centre = SWEEP_FROM_HZ + (SWEEP_TO_HZ - SWEEP_FROM_HZ) * progress +
-                BRIGHT_HZ * exp(-t / BRIGHT_SECONDS)
+            val centre = SWEEP_FROM_HZ + (SWEEP_TO_HZ - SWEEP_FROM_HZ) * progress
             first.bandPass(centre, Q, sampleRate)
             second.bandPass(centre, Q, sampleRate)
             out[i] = second.step(first.step(noise.nextDouble() * 2.0 - 1.0))
@@ -175,9 +171,10 @@ object GlyphWheelSwish {
     }
 
     private fun envelope(t: Double, length: Double): Double {
-        val rise = (t / RISE_SECONDS).coerceAtMost(1.0)
-        // The transient over the body: the attack, gone in a few milliseconds.
-        val fall = BODY * exp(-t / DECAY_SECONDS) + PUNCH * exp(-t / PUNCH_SECONDS)
+        // A straight swell over the attack, and the fall only after it, so the
+        // decay does not eat into the attack and the peak lands at its end.
+        val rise = (t / ATTACK_SECONDS).coerceAtMost(1.0)
+        val fall = exp(-(t - ATTACK_SECONDS).coerceAtLeast(0.0) / DECAY_SECONDS)
         // The last few milliseconds taper to nothing, so the cut is silent.
         val tail = ((length - t) / TAIL_SECONDS).coerceIn(0.0, 1.0)
         return rise * fall * tail
@@ -218,12 +215,6 @@ object GlyphWheelSwish {
     private const val SWEEP_FROM_HZ = 5_500.0
     private const val SWEEP_TO_HZ = 3_200.0
     private const val Q = 0.9
-    private const val RISE_SECONDS = 0.001
     private const val DECAY_SECONDS = 0.028
-    private const val BODY = 0.6
-    private const val PUNCH = 0.5
-    private const val PUNCH_SECONDS = 0.006
-    private const val BRIGHT_HZ = 2_500.0
-    private const val BRIGHT_SECONDS = 0.008
     private const val TAIL_SECONDS = 0.006
 }
