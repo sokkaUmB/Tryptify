@@ -1,8 +1,14 @@
 package tf.monochrome.android.data.import_
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import tf.monochrome.android.domain.model.Track
@@ -66,6 +72,40 @@ class PlaylistImportService @Inject constructor(
     }
 
     /**
+     * Where an Exportify import runs: here, not in the screen that started it.
+     * An Export All of many playlists takes minutes, and run in the screen's
+     * view model it stopped half done when the screen was left.
+     */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /**
+     * Imports every playlist in an Exportify [message], one after another, in
+     * the background. Ends in [ImportProgress.Done] for each playlist with
+     * songs, or in [ImportProgress.Failed]: a file that can't be read, a
+     * search that fails, or an export whose playlists are all empty, which
+     * used to leave the import showing as running forever.
+     */
+    fun importExportify(message: ExportifyFiles.Message, strictAlbumMatch: Boolean) {
+        scope.launch {
+            reportFetching("Exportify")
+            try {
+                var imported = 0
+                for (playlist in ExportifyFiles.playlists(message)) {
+                    val parsed = PlaylistCsv.parse(playlist.csv, fallbackTitle = playlist.title)
+                    if (parsed.tracks.isEmpty()) continue
+                    importTracks(playlist.title, null, parsed.tracks, strictAlbumMatch)
+                    imported++
+                }
+                if (imported == 0) reportFailure("Exportify's playlists have no songs in them.")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                reportFailure(e.message.orEmpty())
+            }
+        }
+    }
+
+    /**
      * Creates the playlist, then matches each track against the streaming
      * catalog and adds the best hit. Returns the terminal [ImportProgress.Done]
      * (also published on [progress]).
@@ -96,11 +136,13 @@ class PlaylistImportService @Inject constructor(
                 async {
                     permits.withPermit { bestMatchFor(csvTrack, strictAlbumMatch) }.also { hit ->
                         if (hit != null) found.incrementAndGet()
-                        _progress.value = ImportProgress.Matching(
-                            current = completed.incrementAndGet(),
-                            total = tracks.size,
-                            matched = found.get(),
-                        )
+                        val done = completed.incrementAndGet()
+                        // Only forward: the searches finish in any order, so
+                        // the one that counted 99 could publish after the one
+                        // that counted 100, and the count went back to 99.
+                        _progress.update { shown ->
+                            nextMatching(shown, done, tracks.size, found.get())
+                        }
                     }
                 }
             }
@@ -174,3 +216,12 @@ class PlaylistImportService @Inject constructor(
             .replace(Regex("[^a-z0-9]+"), " ")
             .trim()
 }
+
+/**
+ * The matching progress to show once [done] of [total] searches have
+ * finished: never behind what is [shown], since the searches publish in any
+ * order. Any other state (a new import's first Matching, Done) is replaced.
+ */
+internal fun nextMatching(shown: ImportProgress, done: Int, total: Int, matched: Int): ImportProgress =
+    if (shown is ImportProgress.Matching && shown.total == total && shown.current >= done) shown
+    else ImportProgress.Matching(current = done, total = total, matched = matched)
