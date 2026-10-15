@@ -255,6 +255,7 @@ fun GlyphRoute(
                         onEvent = viewModel::onEvent,
                         modifier = Modifier.fillMaxSize(),
                         reducedMotion = reduceMotion,
+                        recentLateMs = state.recentLateMs,
                     )
                 }
             }

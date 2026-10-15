@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -29,10 +28,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -40,8 +41,12 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
+import kotlin.math.exp
+import kotlin.math.roundToInt
 import tf.monochrome.android.R
 import tf.monochrome.android.glyph.asset.GlyphAssetRepository
+import tf.monochrome.android.glyph.data.GlyphAttempt
 import tf.monochrome.android.ui.navigation.bottomChromePadding
 import tf.monochrome.android.ui.theme.MonoDimens
 
@@ -55,7 +60,13 @@ import tf.monochrome.android.ui.theme.MonoDimens
  * practice tool.
  *
  * A menu page of the app's, so it follows the theme: a top bar with Back, cards
- * of the app's glass, and the tab bar and mini player back underneath.
+ * of the app's glass, and the tab bar underneath. From the top: the run's
+ * judgements as a ring around the grade, DDR's evaluation lines counting up,
+ * this phone's high scores, the timing curve, then the graph.
+ *
+ * [recentLateMs] is how late the last few runs were hit, when enough agree to
+ * say ([GlyphViewModel]'s calibration): the timing card offers to correct for
+ * it, as Settings does, rather than for this one run alone.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +76,7 @@ fun GlyphResultsScreen(
     onEvent: (GlyphEvent) -> Unit,
     modifier: Modifier = Modifier,
     reducedMotion: Boolean = false,
+    recentLateMs: Int? = null,
 ) {
     val attempt = results.attempt
     val scheme = MaterialTheme.colorScheme
@@ -109,18 +121,11 @@ fun GlyphResultsScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            GlyphPanel(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    GlyphStat("Mean", "%.0f ms".format(attempt.meanOffsetMs))
-                    GlyphStat("Spread", "±%.0f ms".format(attempt.deviationMs))
-                    GlyphStat("Mines", attempt.minesHit.toString())
-                }
-            }
-
-            EarlyLateSummary(early = attempt.early, late = attempt.late)
+            TimingPanel(
+                attempt = attempt,
+                recentLateMs = recentLateMs,
+                onCorrect = { onEvent(GlyphEvent.ApplyRecentTiming) },
+            )
 
             if (results.sections.isNotEmpty()) {
                 AccuracyGraph(
@@ -149,67 +154,170 @@ fun GlyphResultsScreen(
                 }
             }
 
+            // The way on, as the song select's: thumb-sized pills of glass.
             Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {
                 GlyphButton(
                     text = "Play again",
                     icon = Icons.Default.Replay,
+                    height = PILL_HEIGHT,
                     onClick = { onEvent(GlyphEvent.StartPlay) },
                     modifier = Modifier.weight(1f),
                 )
                 GlyphButton(
                     text = "Songs",
+                    primary = true,
+                    height = PILL_HEIGHT,
                     onClick = { onEvent(GlyphEvent.BackToHome) },
                     modifier = Modifier.weight(1f),
                 )
             }
 
             // Trailing space inside the scroll, so the last buttons come clear
-            // of the tab bar and the mini player while the page still runs
-            // under their glass.
+            // of the tab bar while the page still runs under its glass.
             Spacer(Modifier.height(bottomChromePadding))
         }
     }
 }
 
+/**
+ * How the run was timed: a normal curve from the run's mean offset and
+ * spread, early shaded one way and late the other, the mean marked against
+ * zero; the counts early and late, and the mean, spread and mines in figures.
+ *
+ * The curve is drawn from those two numbers, not from the hits one by one,
+ * and says so. When the last few runs agree the player hits early or late,
+ * [onCorrect] moves the audio offset by it, as Settings' Sync does.
+ */
 @Composable
-private fun EarlyLateSummary(early: Int, late: Int) {
-    val total = (early + late).coerceAtLeast(1)
+private fun TimingPanel(attempt: GlyphAttempt, recentLateMs: Int?, onCorrect: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val mean = attempt.meanOffsetMs
+    val spread = attempt.deviationMs
+    val hits = attempt.early + attempt.late
     GlyphPanel(modifier = Modifier.fillMaxWidth()) {
-        GlyphSectionLabel("Early / late")
-        Spacer(Modifier.height(MonoDimens.spacingSm))
         Row(verticalAlignment = Alignment.CenterVertically) {
+            GlyphSectionLabel("Your timing")
+            Spacer(Modifier.weight(1f))
             Text(
-                text = "$early early",
+                text = when {
+                    hits == 0 -> "No hits to time"
+                    mean.roundToInt() == 0 -> "Centred"
+                    else -> "%.0f ms %s on average".format(abs(mean), if (mean > 0f) "late" else "early")
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = scheme.onSurfaceVariant,
+            )
+        }
+        if (hits > 0 && spread > 0f) {
+            Spacer(Modifier.height(MonoDimens.spacingSm))
+            TimingCurve(mean = mean, spread = spread)
+        }
+        Spacer(Modifier.height(MonoDimens.spacingSm))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics(mergeDescendants = true) {
+                    contentDescription = "${attempt.early} hits early, ${attempt.late} hits late"
+                },
+        ) {
+            Text(
+                text = "${attempt.early} early",
                 style = MaterialTheme.typography.bodyMedium,
                 color = menuAccent(GlyphTheme.Early),
             )
             Spacer(Modifier.weight(1f))
             Text(
-                text = "$late late",
+                text = "${attempt.late} late",
                 style = MaterialTheme.typography.bodyMedium,
                 color = menuAccent(GlyphTheme.Late),
             )
         }
         Spacer(Modifier.height(MonoDimens.spacingSm))
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .semantics {
-                    contentDescription = "$early hits early, $late hits late"
-                },
-        ) {
-            val lateShare = late.toFloat() / total
-            drawRect(GlyphTheme.Early, size = Size(size.width * (1f - lateShare), size.height))
-            drawRect(
-                color = GlyphTheme.Late,
-                topLeft = Offset(size.width * (1f - lateShare), 0f),
-                size = Size(size.width * lateShare, size.height),
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            GlyphStat("Mean", "%.0f ms".format(mean))
+            GlyphStat("Spread", "±%.0f ms".format(spread))
+            GlyphStat("Mines", attempt.minesHit.toString())
+        }
+        recentLateMs?.takeIf { it != 0 }?.let { late ->
+            Spacer(Modifier.height(MonoDimens.spacingMd))
+            GlyphButton(
+                text = "Centre my timing (recent runs ${abs(late)} ms ${if (late > 0) "late" else "early"})",
+                onClickLabel = "Move the audio offset by ${abs(late)} milliseconds",
+                onClick = onCorrect,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
 }
+
+/** The bell of the run's timing over ±[TIMING_RANGE_MS] or wider, zero in the middle. */
+@Composable
+private fun TimingCurve(mean: Float, spread: Float) {
+    val ink = MaterialTheme.colorScheme.onSurface
+    val marker = menuAccent(GlyphTheme.Positive)
+    val range = maxOf(TIMING_RANGE_MS, abs(mean) + spread * 3f)
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(110.dp)
+            .semantics {
+                contentDescription = "Timing curve: hits spread %.0f milliseconds either side of %.0f %s".format(
+                    spread,
+                    abs(mean),
+                    if (mean >= 0f) "late" else "early",
+                )
+            },
+    ) {
+        val base = size.height - 4.dp.toPx()
+        val peak = size.height - 12.dp.toPx()
+        fun x(ms: Float) = size.width / 2f + ms / range * (size.width / 2f)
+        fun y(ms: Float) = base - peak * exp(-0.5f * ((ms - mean) / spread).let { it * it })
+        fun area(from: Float, to: Float) = Path().apply {
+            moveTo(x(from), base)
+            var ms = from
+            while (ms <= to) {
+                lineTo(x(ms), y(ms))
+                ms += range / 90f
+            }
+            lineTo(x(to), y(to))
+            lineTo(x(to), base)
+            close()
+        }
+        drawPath(area(-range, 0f), GlyphTheme.Early.copy(alpha = 0.35f))
+        drawPath(area(0f, range), GlyphTheme.Late.copy(alpha = 0.35f))
+        val line = Path().apply {
+            var ms = -range
+            moveTo(x(ms), y(ms))
+            while (ms <= range) {
+                lineTo(x(ms), y(ms))
+                ms += range / 90f
+            }
+        }
+        drawPath(line, ink, style = Stroke(2.dp.toPx()))
+        drawLine(
+            color = ink.copy(alpha = 0.4f),
+            start = Offset(x(0f), 0f),
+            end = Offset(x(0f), base),
+            strokeWidth = 1.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())),
+        )
+        drawLine(marker, Offset(x(mean), 4.dp.toPx()), Offset(x(mean), base), strokeWidth = 2.dp.toPx())
+    }
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text("early", style = MaterialTheme.typography.labelSmall, color = menuAccent(GlyphTheme.Early))
+        Spacer(Modifier.weight(1f))
+        Text("0", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.weight(1f))
+        Text("late", style = MaterialTheme.typography.labelSmall, color = menuAccent(GlyphTheme.Late))
+    }
+}
+
+/** The curve shows at least this far either side of zero, a Judge 4 Miss's reach. */
+private const val TIMING_RANGE_MS = 180f
+
+/** The way on: the song select's thumb-sized pills. */
+private val PILL_HEIGHT = 52.dp
 
 /**
  * Accuracy over the song, one bar per section.

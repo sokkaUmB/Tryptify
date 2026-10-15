@@ -617,6 +617,68 @@ class GlyphComposeTest {
     }
 
     @Test
+    fun `the ring says every judgement and its share`() {
+        compose.setContent {
+            GlyphResultsScreen(
+                results = GlyphResultsUi(attempt = attempt(), previousBest = null),
+                assets = assets,
+                onEvent = {},
+            )
+        }
+        compose.onNodeWithContentDescription(
+            "Judgements: 200 flawless, 80 perfect, 20 great, 6 good, 2 bad, 4 miss, of 312",
+        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun `once counted, a judgement line lights its share of the ring`() {
+        compose.setContent {
+            GlyphResultsScreen(
+                results = GlyphResultsUi(attempt = attempt(), previousBest = null),
+                assets = assets,
+                onEvent = {},
+            )
+        }
+        // The counts have run out by now (the test clock runs them through).
+        compose.onNodeWithContentDescription("Perfect: 80").performScrollTo().performClick()
+        compose.onNodeWithText("PERFECT").assertExists()
+        compose.onNodeWithText("25% of 312 steps").assertExists()
+    }
+
+    @Test
+    fun `the timing curve says what it draws`() {
+        compose.setContent {
+            GlyphResultsScreen(
+                results = GlyphResultsUi(attempt = attempt(), previousBest = null),
+                assets = assets,
+                onEvent = {},
+            )
+        }
+        compose.onNodeWithContentDescription("Timing curve: hits spread 21 milliseconds either side of 7 late")
+            .performScrollTo()
+            .assertIsDisplayed()
+        compose.onNodeWithText("7 ms late on average").assertExists()
+    }
+
+    @Test
+    fun `timing is corrected from recent runs, and only when they agree`() {
+        val events = mutableListOf<GlyphEvent>()
+        val recent = androidx.compose.runtime.mutableStateOf<Int?>(null)
+        compose.setContent {
+            GlyphResultsScreen(
+                results = GlyphResultsUi(attempt = attempt(), previousBest = null),
+                assets = assets,
+                onEvent = { events += it },
+                recentLateMs = recent.value,
+            )
+        }
+        compose.onNodeWithText("Centre my timing", substring = true).assertDoesNotExist()
+        recent.value = 12
+        compose.onNodeWithText("Centre my timing (recent runs 12 ms late)").performScrollTo().performClick()
+        assertEquals(listOf(GlyphEvent.ApplyRecentTiming), events)
+    }
+
+    @Test
     fun `a weak section leads straight into training ground`() {
         val events = mutableListOf<GlyphEvent>()
         val sections = listOf(

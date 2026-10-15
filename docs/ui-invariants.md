@@ -1127,6 +1127,17 @@ and graph from 600 dp, and gone below that (a phone on its side), where the
 wheel and the panel's Play need the room. Whole at any height, it pushed Play
 off a landscape screen.
 
+**The results lead with a ring, then DDR's evaluation, then timing.**
+`GlyphEvaluationPanel`: the run's judgements as one ring, each arc its share
+of the steps, around a glass disc with the grade and percent; then the
+judgement lines, sliding in and counting one after another. A tap while they
+count shows them all; after, a tap on a judgement lights its arc and puts its
+count in the middle. The timing card draws a normal curve from the run's mean
+and spread — two numbers, so it says it is a curve of them, not of the hits —
+and offers a correction only from the recent runs' agreed lateness
+(`ApplyRecentTiming`), never from one run. Every count keeps its spoken
+"Label: value", and everything lands at once under reduced motion.
+
 **The TV shader is over the game, never over a menu.** `glyphTvShader`, off by
 default, goes on the gameplay picture (the playfield, the judgements and the
 HUD), Training Ground's playfield and the options' preview, and nowhere else.
