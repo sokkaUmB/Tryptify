@@ -31,6 +31,10 @@ import tf.monochrome.android.audio.sampler.stems.StemModelManager
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import tf.monochrome.android.audio.stepmania.StepManiaGenerationWorker
+import tf.monochrome.android.glyph.pack.GlyphPackLibrary
+import tf.monochrome.android.glyph.pack.OwnPackStore
+import tf.monochrome.android.glyph.pack.PackImportWorker
+import tf.monochrome.android.glyph.pack.TreePackSink
 import tf.monochrome.android.audio.sampler.stems.QnnStemBackend
 import tf.monochrome.android.audio.stepmania.DropFinder
 import tf.monochrome.android.audio.stepmania.StepManiaDifficulty
@@ -98,6 +102,8 @@ class GlyphViewModel @Inject constructor(
     private val attempts: GlyphAttemptStore,
     private val stemModels: StemModelManager,
     private val stemBackends: StemBackendRegistry,
+    private val packLibrary: GlyphPackLibrary,
+    private val ownPack: OwnPackStore,
     /**
      * Exposed rather than plumbed through navigation: the pack is a singleton
      * whose rasters are scoped to a run, and handing it down the composable
@@ -234,6 +240,7 @@ class GlyphViewModel @Inject constructor(
         loadOptions()
         refreshModel()
         watchGeneration()
+        watchPacks()
         viewModelScope.launch {
             songs.songs()
                 .catch { failure ->
@@ -312,6 +319,25 @@ class GlyphViewModel @Inject constructor(
                 _ui.value = _ui.value.copy(generation = null)
             }
             GlyphEvent.DismissError -> _ui.value = _ui.value.copy(error = null)
+
+            GlyphEvent.OpenPacks -> {
+                stopPreview()
+                _ui.value = _ui.value.copy(screen = GlyphScreen.PACKS)
+                refreshOwnCount()
+            }
+            GlyphEvent.ClosePacks -> _ui.value = _ui.value.copy(screen = GlyphScreen.MENU)
+            is GlyphEvent.ImportPackUrl -> PackImportWorker.enqueueDownload(context, event.url, event.name)
+            is GlyphEvent.ImportPackFile -> PackImportWorker.enqueueFile(context, event.uri)
+            GlyphEvent.CancelPackImports -> PackImportWorker.cancelAll(context)
+            is GlyphEvent.RemovePack -> viewModelScope.launch {
+                packLibrary.remove(event.name)
+                updatePacks { it.copy(message = "${event.name} removed.") }
+            }
+            is GlyphEvent.ChoosePackFolder -> answerPackFolder(event.tree)
+            GlyphEvent.ForgetPackFolder -> ownPack.forget()
+            GlyphEvent.SaveOwnPack -> writeOwnPack(null)
+            is GlyphEvent.ZipOwnPack -> writeOwnPack(event.destination)
+            GlyphEvent.DismissPacksMessage -> updatePacks { it.copy(message = null) }
 
             is GlyphEvent.ImportModel -> importModel(event.uri)
             GlyphEvent.CancelModelImport -> modelJob?.cancel()
@@ -694,6 +720,13 @@ class GlyphViewModel @Inject constructor(
      * including which backend actually ran, unchanged.
      */
     private fun generate(source: Uri, displayName: String, song: GlyphSong?) {
+        // The first chart made asks where the player's own pack is kept; the
+        // answer is remembered, and "not now" is too.
+        if (ownPack.folder.value == null && !ownPack.declined) {
+            pendingGeneration = { generate(source, displayName, song) }
+            _ui.value = _ui.value.copy(askPackFolder = true)
+            return
+        }
         stopPreview()
         val trackId = song?.trackId ?: displayName
         val destination = songs.simfileFile(trackId)
@@ -723,6 +756,111 @@ class GlyphViewModel @Inject constructor(
                 difficulties = StepManiaDifficulty.entries.toSet(),
             ),
         )
+    }
+
+    // ── packs ───────────────────────────────────────────────────────────
+
+    /** A chart waiting on the answer to where the own pack is saved. */
+    private var pendingGeneration: (() -> Unit)? = null
+    private val watchedImports = HashSet<java.util.UUID>()
+    private val handledImports = HashSet<java.util.UUID>()
+
+    private fun updatePacks(change: (GlyphPacksUi) -> GlyphPacksUi) {
+        _ui.value = _ui.value.copy(packs = change(_ui.value.packs))
+    }
+
+    private fun answerPackFolder(tree: Uri?) {
+        if (tree != null) ownPack.choose(tree) else ownPack.declined = true
+        _ui.value = _ui.value.copy(askPackFolder = false)
+        pendingGeneration?.also { pendingGeneration = null }?.invoke()
+    }
+
+    /** The charts the app made: library songs with a chart of the app's own. */
+    private suspend fun ownSongs(): List<OwnPackStore.OwnSong> = withContext(Dispatchers.IO) {
+        _ui.value.songs
+            .filter { it.pack == null }
+            .mapNotNull { song -> songs.simfileFile(song.trackId).takeIf { it.isFile }?.let { OwnPackStore.OwnSong.of(song, it) } }
+    }
+
+    private fun refreshOwnCount() {
+        viewModelScope.launch {
+            val made = ownSongs().size
+            updatePacks { it.copy(ownCharts = made) }
+        }
+    }
+
+    /** Save every made chart into the own pack's folder, or as one ZIP at [zip]. */
+    private fun writeOwnPack(zip: Uri?) {
+        if (_ui.value.packs.saving != null) return
+        viewModelScope.launch {
+            val all = ownSongs()
+            if (all.isEmpty()) {
+                updatePacks { it.copy(message = "No charts made yet: generate one from a song first.") }
+                return@launch
+            }
+            updatePacks { it.copy(saving = "Starting", message = null) }
+            val progress: (Int, String) -> Unit = { index, title -> updatePacks { it.copy(saving = "${index + 1} of ${all.size}: $title") } }
+            val result = runCatching { if (zip != null) ownPack.zip(zip, all, progress) else ownPack.saveAll(all, progress) }
+            updatePacks {
+                it.copy(
+                    saving = null,
+                    message = result.fold(
+                        onSuccess = { n -> if (zip != null) "Saved $n charts as a pack ZIP." else "Saved $n charts to your pack folder." },
+                        onFailure = { failure -> "Could not save the pack: ${failure.message ?: "unknown error"}" },
+                    ),
+                )
+            }
+        }
+    }
+
+    /** Mirror imported packs, the import queue and the own pack's folder into [GlyphUiState.packs]. */
+    private fun watchPacks() {
+        viewModelScope.launch {
+            packLibrary.ensureLoaded()
+            packLibrary.packs.collect { list -> updatePacks { it.copy(imported = list) } }
+        }
+        viewModelScope.launch {
+            ownPack.folder.collect { tree -> updatePacks { it.copy(folderName = tree?.let(TreePackSink::displayName)) } }
+        }
+        viewModelScope.launch {
+            WorkManager.getInstance(context)
+                .getWorkInfosForUniqueWorkFlow(PackImportWorker.WORK_NAME)
+                .collect { infos ->
+                    val running = infos.firstOrNull { it.state == WorkInfo.State.RUNNING }
+                    val waiting = infos.count { it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.BLOCKED }
+                    infos.filter { !it.state.isFinished }.forEach { watchedImports += it.id }
+                    // How the most recent watched import ended, once.
+                    val ended = infos.filter { it.state.isFinished && it.id in watchedImports && handledImports.add(it.id) }
+                    val message = ended.lastOrNull()?.let { info ->
+                        val name = info.outputData.getString(PackImportWorker.KEY_NAME).orEmpty()
+                        when (info.state) {
+                            WorkInfo.State.SUCCEEDED -> {
+                                val skipped = info.outputData.getInt(PackImportWorker.KEY_SKIPPED, 0)
+                                "$name imported: ${info.outputData.getInt(PackImportWorker.KEY_SONGS, 0)} songs." +
+                                    if (skipped > 0) " $skipped had no four-panel chart." else ""
+                            }
+                            WorkInfo.State.FAILED -> "${name.ifBlank { "The pack" }} was not imported: " +
+                                (info.outputData.getString(PackImportWorker.KEY_FAILURE) ?: "unknown error")
+                            else -> "Import cancelled."
+                        }
+                    }
+                    updatePacks { packs ->
+                        packs.copy(
+                            importing = when {
+                                running != null -> GlyphPackImportUi(
+                                    name = running.progress.getString(PackImportWorker.KEY_NAME).orEmpty().ifBlank { "Pack" },
+                                    fraction = running.progress.getFloat(PackImportWorker.KEY_FRACTION, 0f),
+                                    stage = running.progress.getString(PackImportWorker.KEY_STAGE) ?: "Starting",
+                                    queued = waiting,
+                                )
+                                waiting > 0 -> GlyphPackImportUi("Pack", 0f, "Waiting", waiting - 1)
+                                else -> null
+                            },
+                            message = message ?: packs.message,
+                        )
+                    }
+                }
+        }
     }
 
     /** Mirror the background chart job into [GlyphUiState.generation], for as long as the screen lives. */
@@ -1597,7 +1735,9 @@ class GlyphViewModel @Inject constructor(
         val written = withContext(Dispatchers.IO) {
             runCatching {
                 val noteData = editor.draft.toNoteData()
-                val existing = if (file.exists()) file.readText() else null
+                // A pack song starts from the pack's chart; the edit is saved as
+                // the app's own copy, and the pack's file is left as it came.
+                val existing = songs.chartText(song.trackId)
                 val timing = editor.timing
                 var text = if (existing != null) {
                     SscChartWriter.withChart(existing, editor.difficulty, editor.meter, noteData)

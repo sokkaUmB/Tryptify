@@ -56,6 +56,9 @@ data class GlyphUiState(
     val selectedDifficulty: StepManiaDifficulty? = null,
     val generation: GlyphGenerationState? = null,
     val model: GlyphModelUi = GlyphModelUi(),
+    val packs: GlyphPacksUi = GlyphPacksUi(),
+    /** Set when a chart is about to be made and no folder for the own pack is chosen yet: ask. */
+    val askPackFolder: Boolean = false,
     /** The name on the high score tables. */
     val playerName: String = "",
     /** Tapping a song plays it from its drop; kept between sessions. */
@@ -90,7 +93,7 @@ data class GlyphUiState(
  * Where the mode is. [MENU] is the front door; [HOME] is the song list, which
  * Play and the map editor both pick a song from.
  */
-enum class GlyphScreen { MENU, HOME, OPTIONS, LEADERBOARD, SETTINGS, EDITOR, GAMEPLAY, TRAINING, RESULTS }
+enum class GlyphScreen { MENU, HOME, OPTIONS, LEADERBOARD, SETTINGS, PACKS, EDITOR, GAMEPLAY, TRAINING, RESULTS }
 
 /** Whether the song list is choosing a song to play or a chart to edit. */
 enum class GlyphSongListMode { PLAY, EDIT }
@@ -320,3 +323,28 @@ data class GlyphSectionResult(
 
     val isWeak: Boolean get() = noteCount > 0 && accuracy < 0.85f
 }
+
+/**
+ * StepMania packs: the ones imported, the one importing, and the player's own
+ * pack — the charts made in the app, saved as a pack in a folder they chose.
+ */
+data class GlyphPacksUi(
+    val imported: List<tf.monochrome.android.glyph.pack.GlyphPackLibrary.Pack> = emptyList(),
+    val importing: GlyphPackImportUi? = null,
+    /** The folder the own pack is saved in, readably; null when none is chosen. */
+    val folderName: String? = null,
+    /** How many charts the app has made, which is what the own pack holds. */
+    val ownCharts: Int = 0,
+    /** What is being written while the own pack is saved or zipped; null when idle. */
+    val saving: String? = null,
+    /** How the last import or save ended, until dismissed. */
+    val message: String? = null,
+)
+
+/** The pack importing now, and how many wait behind it. */
+data class GlyphPackImportUi(
+    val name: String,
+    val fraction: Float,
+    val stage: String,
+    val queued: Int,
+)

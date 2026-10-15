@@ -109,10 +109,14 @@ fun GlyphRoute(
             GlyphScreen.LEADERBOARD -> viewModel.onEvent(GlyphEvent.CloseLeaderboard)
             GlyphScreen.HOME -> viewModel.onEvent(GlyphEvent.BackToMenu)
             GlyphScreen.SETTINGS -> viewModel.onEvent(GlyphEvent.CloseSettings)
+            GlyphScreen.PACKS -> viewModel.onEvent(GlyphEvent.ClosePacks)
             GlyphScreen.EDITOR -> viewModel.onEvent(GlyphEvent.CloseEditor)
             GlyphScreen.MENU -> Unit
         }
     }
+
+    // Asked before the first chart is made, from whichever screen made it.
+    if (state.askPackFolder) GlyphPackFolderDialog(viewModel::onEvent)
 
     // Read straight from the transport's clock rather than from the state: this
     // is called inside the playfield's draw scope, and routing it through
@@ -174,6 +178,12 @@ fun GlyphRoute(
             )
 
             GlyphScreen.SETTINGS -> GlyphSettingsScreen(
+                state = state,
+                onEvent = viewModel::onEvent,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            GlyphScreen.PACKS -> GlyphPacksScreen(
                 state = state,
                 onEvent = viewModel::onEvent,
                 modifier = Modifier.fillMaxSize(),

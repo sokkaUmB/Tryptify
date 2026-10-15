@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -184,6 +185,12 @@ fun GlyphMenuScreen(
                         title = "Map editor",
                         icon = Icons.Default.Edit,
                         onClick = { onEvent(GlyphEvent.OpenSongs(GlyphSongListMode.EDIT)) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    MenuPill(
+                        title = "Packs",
+                        icon = Icons.Default.LibraryMusic,
+                        onClick = { onEvent(GlyphEvent.OpenPacks) },
                         modifier = Modifier.weight(1f),
                     )
                     MenuPill(

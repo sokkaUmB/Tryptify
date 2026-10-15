@@ -75,6 +75,24 @@ sealed interface GlyphEvent {
     data object RemoveModel : GlyphEvent
     data object DismissModelMessage : GlyphEvent
 
+    // ── packs ───────────────────────────────────────────────────────────
+    data object OpenPacks : GlyphEvent
+    data object ClosePacks : GlyphEvent
+    /** Download and import a pack ZIP from [url] (StepMania Online's download link). */
+    data class ImportPackUrl(val url: String, val name: String) : GlyphEvent
+    /** Import a pack ZIP the player picked. */
+    data class ImportPackFile(val uri: Uri) : GlyphEvent
+    data object CancelPackImports : GlyphEvent
+    data class RemovePack(val name: String) : GlyphEvent
+    /** The folder the player's own pack is saved in; null answers "not now". */
+    data class ChoosePackFolder(val tree: Uri?) : GlyphEvent
+    data object ForgetPackFolder : GlyphEvent
+    /** Write every chart made in the app into the own pack's folder again. */
+    data object SaveOwnPack : GlyphEvent
+    /** Write every chart made in the app as one pack ZIP at [destination]. */
+    data class ZipOwnPack(val destination: Uri) : GlyphEvent
+    data object DismissPacksMessage : GlyphEvent
+
     // ── player options ──────────────────────────────────────────────────
     /** From the song menu to StepMania's Player Options, before the song starts. */
     data object OpenOptions : GlyphEvent

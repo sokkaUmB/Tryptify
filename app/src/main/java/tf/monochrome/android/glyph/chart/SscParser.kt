@@ -27,7 +27,8 @@ object SscParser {
     private const val BEATS_PER_MEASURE = 4f
 
     fun parse(text: String): GlyphSimfile? {
-        val tags = readTags(text)
+        // An .sm, or comments in an .ssc, are rewritten into plain .ssc first.
+        val tags = readTags(SmConverter.toSsc(text))
 
         val bpms = parseBeatValues(tags.header["BPMS"]).map {
             GlyphTiming.BpmSegment(it.first, it.second)
@@ -40,7 +41,19 @@ object SscParser {
         val offsetSeconds = -(tags.header["OFFSET"]?.trim()?.toFloatOrNull() ?: 0f)
         val timing = GlyphTiming(offsetSeconds, bpms, stops)
 
-        val charts = tags.charts.mapNotNull { chart -> parseChart(chart, timing) }
+        val charts = tags.charts
+            // Four panels only. A pack's dance-double (eight lanes) or pump
+            // (five) chart squeezed into four would play as something nobody
+            // wrote; an unnamed type is taken as the default, dance-single.
+            .filter { chart ->
+                chart["STEPSTYPE"]?.trim()?.lowercase().let { it.isNullOrEmpty() || it == SINGLE }
+            }
+            .mapNotNull { chart -> parseChart(chart, timing)?.let { it to isExactDifficulty(chart["DIFFICULTY"]) } }
+            // One chart per difficulty. A pack can carry several Edits, or an
+            // Edit beside a real Challenge, and they all land on Challenge:
+            // the one that is named so wins, then the first.
+            .groupBy { it.first.difficulty }
+            .map { (_, same) -> (same.firstOrNull { it.second } ?: same.first()).first }
         if (charts.isEmpty()) return null
 
         return GlyphSimfile(
@@ -183,6 +196,13 @@ object SscParser {
         )
     }
 
+    private const val SINGLE = "dance-single"
+
+    private fun isExactDifficulty(value: String?): Boolean {
+        val name = value?.trim().orEmpty()
+        return StepManiaDifficulty.entries.any { it.sscName.equals(name, ignoreCase = true) }
+    }
+
     private fun difficultyOf(value: String?): StepManiaDifficulty? {
         val name = value?.trim().orEmpty()
         if (name.isEmpty()) return null
@@ -191,8 +211,11 @@ object SscParser {
         // "Edit" and "Insane" are common aliases for the hardest tier; mapping
         // them beats refusing to load a chart over its label.
         } ?: when (name.lowercase()) {
-            "edit", "insane", "expert" -> StepManiaDifficulty.CHALLENGE
-            "novice", "basic" -> StepManiaDifficulty.EASY
+            // The names older simfiles use, mapped as StepMania maps them.
+            "edit", "insane", "expert", "smaniac", "oni" -> StepManiaDifficulty.CHALLENGE
+            "heavy", "maniac", "another" -> StepManiaDifficulty.HARD
+            "standard", "trick", "normal" -> StepManiaDifficulty.MEDIUM
+            "novice", "basic", "light" -> StepManiaDifficulty.EASY
             else -> null
         }
     }

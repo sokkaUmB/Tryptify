@@ -28,6 +28,10 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
 import tf.monochrome.android.R
+import tf.monochrome.android.glyph.pack.OwnPackStore
+import tf.monochrome.android.glyph.pack.PackWriter
+import tf.monochrome.android.glyph.pack.StepManiaPack
+import tf.monochrome.android.glyph.pack.TreePackSink
 
 /**
  * Chart generation as a background job.
@@ -51,6 +55,7 @@ class StepManiaGenerationWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val conversion: StepManiaConversionService,
+    private val ownPack: OwnPackStore,
 ) : CoroutineWorker(context, params) {
 
     private val title: String get() = inputData.getString(KEY_TITLE).orEmpty()
@@ -93,8 +98,24 @@ class StepManiaGenerationWorker @AssistedInject constructor(
 
         return result.fold(
             onSuccess = { success ->
-                notifyFinished("Chart ready", "$title is ready to play.")
-                Result.success(workDataOf(KEY_TRACK_ID to trackId, KEY_BACKEND to success.backendName))
+                val saved = saveToOwnPack(destination, source, request)
+                notifyFinished(
+                    "Chart ready",
+                    when {
+                        saved == null -> "$title is ready to play."
+                        saved.isSuccess -> "$title is ready to play, and saved to your ${StepManiaPack.OWN_PACK} pack."
+                        else -> "$title is ready to play here, but a copy could not be saved to your pack folder: " +
+                            (saved.exceptionOrNull()?.message ?: "unknown error")
+                    },
+                )
+                Result.success(
+                    workDataOf(
+                        KEY_TRACK_ID to trackId,
+                        KEY_BACKEND to success.backendName,
+                        KEY_SAVED to (saved?.isSuccess == true),
+                        KEY_SAVE_FAILURE to saved?.exceptionOrNull()?.message,
+                    ),
+                )
             },
             onFailure = { failure ->
                 val reason = failure.message ?: "Chart generation failed."
@@ -102,6 +123,30 @@ class StepManiaGenerationWorker @AssistedInject constructor(
                 Result.failure(workDataOf(KEY_TRACK_ID to trackId, KEY_FAILURE to reason))
             },
         )
+    }
+
+    /**
+     * The chart, written into the player's own pack in the folder they chose
+     * ([OwnPackStore]), with its music beside it, as any StepMania song. Null
+     * when no folder is chosen. A failure here never fails the chart: it is
+     * made and plays in the app either way.
+     */
+    private fun saveToOwnPack(chart: File, music: Uri, request: StepManiaRequest): kotlin.Result<Unit>? {
+        val folder = ownPack.folder.value ?: return null
+        return runCatching {
+            PackWriter.writeSong(
+                sink = TreePackSink(applicationContext, folder),
+                pack = StepManiaPack.OWN_PACK,
+                title = request.title,
+                artist = request.artist,
+                ssc = chart.readText(),
+                music = {
+                    applicationContext.contentResolver.openInputStream(music)
+                        ?: throw java.io.IOException("The song's file could not be read.")
+                },
+            )
+            Unit
+        }
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo = foregroundInfo(0f, "Preparing")
@@ -199,6 +244,8 @@ class StepManiaGenerationWorker @AssistedInject constructor(
         const val KEY_STAGE = "stage"
         const val KEY_BACKEND = "backend"
         const val KEY_FAILURE = "failure"
+        const val KEY_SAVED = "saved"
+        const val KEY_SAVE_FAILURE = "save_failure"
 
         private const val KEY_SOURCE = "source"
         private const val KEY_DESTINATION = "destination"

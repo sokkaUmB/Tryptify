@@ -10,8 +10,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import tf.monochrome.android.audio.stepmania.StepManiaDifficulty
 import tf.monochrome.android.data.local.repository.LocalMediaRepository
@@ -20,6 +21,7 @@ import tf.monochrome.android.domain.model.PlaybackSource
 import tf.monochrome.android.domain.model.UnifiedTrack
 import tf.monochrome.android.glyph.chart.GlyphSimfile
 import tf.monochrome.android.glyph.chart.SscParser
+import tf.monochrome.android.glyph.pack.GlyphPackLibrary
 
 /**
  * The songs the mode can play, and the charts already generated for them.
@@ -38,19 +40,32 @@ import tf.monochrome.android.glyph.chart.SscParser
 class GlyphSongRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val localMedia: LocalMediaRepository,
+    private val packs: GlyphPackLibrary,
 ) {
 
     private val chartRoot: File
         get() = File(context.filesDir, CHART_DIRECTORY).apply { mkdirs() }
 
     /**
-     * Every local MP3 or FLAC, each with whatever chart it already has.
+     * Every local MP3 or FLAC, each with whatever chart it already has, then
+     * every song of every imported StepMania pack ([GlyphPackLibrary]).
      *
      * A flow because the library scanner writes into the same database and a
-     * newly imported song should appear without the player leaving the screen.
+     * newly imported song should appear without the player leaving the screen;
+     * an imported pack appears the same way.
      */
-    fun songs(): Flow<List<GlyphSong>> = localMedia.getAllTracks().map { tracks ->
-        tracks.filter { it.isConvertible }.map { it.toGlyphSong() }
+    fun songs(): Flow<List<GlyphSong>> = combine(
+        localMedia.getAllTracks(),
+        packs.songs.onStart { packs.ensureLoaded() },
+    ) { tracks, packSongs ->
+        tracks.filter { it.isConvertible }.map { it.toGlyphSong() } + packSongs.map { it.withEditedChart() }
+    }
+
+    /** A pack song whose chart was edited here: what the list says comes from the edit. */
+    private suspend fun GlyphSong.withEditedChart(): GlyphSong {
+        if (!simfileFile(trackId).exists()) return this
+        val edited = simfile(trackId) ?: return this
+        return copy(bpm = edited.timing.startBpm, difficulties = edited.availableDifficulties)
     }
 
     suspend fun song(trackId: String): GlyphSong? =
@@ -67,7 +82,7 @@ class GlyphSongRepository @Inject constructor(
      */
     suspend fun withCurrentChart(song: GlyphSong): Pair<GlyphSong, GlyphSimfile?> {
         val simfile = simfile(song.trackId)
-        val exists = withContext(Dispatchers.IO) { simfileFile(song.trackId).exists() }
+        val exists = withContext(Dispatchers.IO) { chartFile(song.trackId).exists() }
         return song.copy(
             bpm = simfile?.timing?.startBpm ?: song.bpm,
             difficulties = simfile?.availableDifficulties.orEmpty(),
@@ -79,8 +94,27 @@ class GlyphSongRepository @Inject constructor(
         ) to simfile
     }
 
-    /** Where the simfile for [trackId] is, whether or not it exists yet. */
+    /**
+     * Where the app's own simfile for [trackId] is written, whether or not it
+     * exists yet: a generated chart, or an edit. A pack song's edit goes here
+     * too, so the pack's own file is never written to.
+     */
     fun simfileFile(trackId: String): File = File(chartRoot, "${chartId(trackId)}.ssc")
+
+    /**
+     * The chart [trackId] plays from: the app's own when there is one, else a
+     * pack song's chart from its pack. What the editor starts from, too.
+     */
+    fun chartFile(trackId: String): File {
+        val own = simfileFile(trackId)
+        if (own.exists()) return own
+        return packs.chartFile(trackId) ?: own
+    }
+
+    /** The text of [chartFile], or null when there is none. */
+    suspend fun chartText(trackId: String): String? = withContext(Dispatchers.IO) {
+        chartFile(trackId).takeIf { it.isFile }?.readText()
+    }
 
     /**
      * A stable id for a track's chart.
@@ -100,7 +134,7 @@ class GlyphSongRepository @Inject constructor(
      * can act on.
      */
     suspend fun simfile(trackId: String): GlyphSimfile? = withContext(Dispatchers.IO) {
-        val file = simfileFile(trackId)
+        val file = chartFile(trackId)
         if (!file.exists()) return@withContext null
         runCatching { SscParser.parse(file.readText()) }
             .onFailure { Log.w(TAG, "chart for $trackId is unreadable: ${it.message}") }
@@ -155,6 +189,8 @@ data class GlyphSong(
     val bpm: Float?,
     val difficulties: List<StepManiaDifficulty>,
     val chartState: GlyphChartState,
+    /** The imported StepMania pack the song came in; null for a song of the library. */
+    val pack: String? = null,
 ) {
     val hasChart: Boolean get() = chartState == GlyphChartState.READY
 
