@@ -133,9 +133,15 @@ class MediaStoreSource @Inject constructor(
             MediaStore.Video.Media.EXTERNAL_CONTENT_URI
         }
 
-        // No length floor: a library takes every length, short tracks too.
+        // Only videos long enough to be a music video: each candidate is
+        // opened, and without this every camera and messenger clip on the
+        // device was, at every full scan. Short audio tracks are unaffected.
+        // A length the indexer doesn't know (NULL) is left out, as before.
         val results = mutableListOf<AudioFileInfo>()
-        contentResolver.query(collection, videoProjection, null, null, null)
+        contentResolver.query(
+            collection, videoProjection,
+            "${MediaStore.Video.Media.DURATION} >= ?", arrayOf(SHORT_MS.toString()), null,
+        )
             ?.use { cursor ->
                 val idCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
                 val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
@@ -174,7 +180,7 @@ class MediaStoreSource @Inject constructor(
 
     /**
      * The paths [queryEac3Video] would consider, without opening any of them:
-     * every video in a container that can carry E-AC-3. A superset
+     * every video long enough, in a container that can carry E-AC-3. A superset
      * of the Atmos videos in the library, for a prune that must not drop them
      * while their files exist, and that runs too often to open every video on
      * the device each time (see MediaScanner.incrementalScan).
@@ -191,8 +197,8 @@ class MediaStoreSource @Inject constructor(
         contentResolver.query(
             collection,
             arrayOf(MediaStore.Video.Media.DATA),
-            null,
-            null,
+            "${MediaStore.Video.Media.DURATION} >= ?",
+            arrayOf(SHORT_MS.toString()),
             null,
         )?.use { cursor ->
             val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
@@ -276,8 +282,15 @@ class MediaStoreSource @Inject constructor(
             }
         }
 
-        if (includeAtmosVideos) results += queryEac3Video(excludedPaths)
-        return results
+        // Over the whole device, a short file on its own is a voice note or a
+        // sound, not a track: keep short ones only beside their album. In the
+        // folders the listener picked, everything there is music.
+        val audio = if (folderRoots.isEmpty()) {
+            keepShortOnlyInAlbums(results, { it.absolutePath }, { it.duration })
+        } else {
+            results
+        }
+        return if (includeAtmosVideos) audio + queryEac3Video(excludedPaths) else audio
     }
 
     /**
@@ -351,6 +364,31 @@ class MediaStoreSource @Inject constructor(
     }
 
     companion object {
+        /**
+         * Under this length a whole-device scan keeps a track only beside a
+         * longer one ([keepShortOnlyInAlbums]), and a video is not probed for
+         * Atmos at all: no music video is that short.
+         */
+        const val SHORT_MS = 30_000L
+
+        /**
+         * What a whole-device scan keeps of [files]: every file of [SHORT_MS]
+         * or more, and a shorter one, or one whose length the indexer doesn't
+         * know, only in a folder that also holds a longer one.
+         *
+         * There is no length floor, so an album's intro, interludes and skits
+         * come in with it. But over the whole device, with no folders picked,
+         * no floor at all brought in every short clip Android calls music:
+         * voice notes, app and game sounds, short downloads, each its own
+         * track, album, artist and galaxy star. Those sit on their own; an
+         * album's short tracks sit beside its long ones.
+         */
+        fun <T> keepShortOnlyInAlbums(files: List<T>, path: (T) -> String, durationMs: (T) -> Long): List<T> {
+            fun folderOf(file: T) = path(file).substringBeforeLast('/')
+            val albumFolders = files.filter { durationMs(it) >= SHORT_MS }.mapTo(HashSet(), ::folderOf)
+            return files.filter { durationMs(it) >= SHORT_MS || folderOf(it) in albumFolders }
+        }
+
         /**
          * True when [path] falls under one of [roots] (or roots is empty =
          * unrestricted). A root matches its own path and descendants only —

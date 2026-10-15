@@ -150,7 +150,7 @@ object WhatsNew {
                     kind = WhatsNewKind.CHANGED,
                     section = LIBRARY,
                     title = "Short tracks in your library",
-                    body = "A library scan no longer leaves out tracks under 30 seconds, so intros, interludes and skits are in your albums. Atmos music videos of any length are found too.",
+                    body = "A library scan no longer leaves out tracks under 30 seconds, so intros, interludes and skits are in your albums. Over the whole phone, a short clip on its own, like a voice note, stays out; in folders you pick, every length comes in.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
