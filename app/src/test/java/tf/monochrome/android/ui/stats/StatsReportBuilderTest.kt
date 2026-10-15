@@ -135,6 +135,52 @@ class StatsReportBuilderTest {
     }
 
     @Test
+    fun `a local play with a positive id is local`() {
+        // "local_42" hashes to a positive id, which the sign alone took for a
+        // stream: over half of a library's plays were counted as streamed.
+        val id = localPlayIdOf(42)
+        assertTrue(id > 0)
+        val old = play(today, 9, trackId = id)
+        assertEquals(PlaySource.STREAMED, sourceOf(old))
+        assertEquals(PlaySource.LOCAL, sourceOf(old, localPlayIds = setOf(id)))
+        // Recorded since: the play says so, library or not.
+        assertEquals(PlaySource.LOCAL, sourceOf(old.copy(source = "local")))
+        // A stream is still a stream, and a recorded source wins over the id.
+        assertEquals(PlaySource.STREAMED, sourceOf(play(today, 9, trackId = 58990486), setOf(id)))
+    }
+
+    @Test
+    fun `the report counts the library's plays as local`() {
+        val ids = (1L..200L).map(::localPlayIdOf)
+        // Before 20:00, the test's "now".
+        val rows = ids.mapIndexed { i, id -> play(today, i % 20, trackId = id) }
+        val report = StatsReportBuilder.build(
+            StatsRange.Month,
+            StatsReportBuilder.window(StatsRange.Month, now, zone, rows.minOf { it.playedAt }),
+            zone, rows, emptyList(), emptyMap(), rows.map { PlayMoment(it.playedAt, it.duration) },
+            localPlayIds = ids.toSet(),
+        )
+        assertEquals(listOf(PlaySource.LOCAL), report.sources.map { it.source })
+        assertEquals(200, report.sources.single().plays)
+    }
+
+    @Test
+    fun `a local play's id is the one the player records`() {
+        val local = tf.monochrome.android.domain.model.UnifiedTrack(
+            id = "local_42",
+            title = "Waves",
+            durationSeconds = 240,
+            artistName = "DJ Satomi",
+            source = tf.monochrome.android.domain.model.PlaybackSource.LocalFile(
+                "/music/waves.flac", tf.monochrome.android.domain.model.AudioCodec.FLAC, 44_100, 16,
+            ),
+            sourceType = tf.monochrome.android.domain.model.SourceType.LOCAL,
+        )
+        assertEquals(local.legacyId, localPlayIdOf(42))
+        assertEquals(local.toLegacyTrack().id, localPlayIdOf(42))
+    }
+
+    @Test
     fun `streak counts back from today and finds the longest run`() {
         // Listened Oct 1-5 (5 days), not Oct 6, then Oct 7-14 (8 days).
         val days = (1..5).map { LocalDate.of(2026, 10, it) } + (7..14).map { LocalDate.of(2026, 10, it) }

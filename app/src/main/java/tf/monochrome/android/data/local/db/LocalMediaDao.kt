@@ -333,6 +333,10 @@ interface LocalMediaDao {
     @Query("UPDATE local_tracks SET dynamicRange = :dynamicRange WHERE filePath = :filePath")
     suspend fun updateDynamicRange(filePath: String, dynamicRange: Float)
 
+    /** Every track's row id, and nothing else: Stats knows a local play by it. */
+    @Query("SELECT id FROM local_tracks")
+    suspend fun allTrackIds(): List<Long>
+
     /** The next [limit] tracks after id [afterId], in id order: a walk over the table that can stop and resume. */
     @Query("SELECT id, filePath FROM local_tracks WHERE id > :afterId ORDER BY id LIMIT :limit")
     suspend fun trackPathsAfter(afterId: Long, limit: Int): List<TrackPath>

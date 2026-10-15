@@ -50,6 +50,7 @@ enum class StatsRange(val label: String, val days: Int?) {
 @HiltViewModel
 class StatsViewModel @Inject constructor(
     private val playEventDao: PlayEventDao,
+    private val localMediaDao: tf.monochrome.android.data.local.db.LocalMediaDao,
     private val supabaseSync: SupabaseSyncRepository,
     private val authManager: SupabaseAuthManager,
     private val achievementStore: AchievementStore,
@@ -112,7 +113,10 @@ class StatsViewModel @Inject constructor(
         // the calendar can show.
         val historyFrom = minOf(window.from, window.today.minusMonths(13).withDayOfMonth(1).atStartOfDay(zone).toInstant().toEpochMilli())
         val history = playEventDao.momentsSince(historyFrom)
-        return StatsReportBuilder.build(range, window, zone, rows, prev, firstPlays, history)
+        // The library's tracks as their plays are recorded, so plays from
+        // before local ones said so are still counted as local (sourceOf).
+        val localPlayIds = localMediaDao.allTrackIds().mapTo(HashSet(), ::localPlayIdOf)
+        return StatsReportBuilder.build(range, window, zone, rows, prev, firstPlays, history, localPlayIds)
     }
 
     private suspend fun loadAchievements(log: FeatureLog): List<AchievementState> {

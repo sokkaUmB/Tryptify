@@ -24,10 +24,9 @@ import tf.monochrome.android.data.db.dao.PlayRow
 enum class QualityTier { HI_RES, LOSSLESS, LOSSY, UNKNOWN }
 
 /**
- * Where a play came from. A play recorded on this phone leaves its source
- * empty, so the track id decides: catalogue tracks are positive, local files
- * are not. Which streaming service it was is not recorded, so this does not
- * pretend to know.
+ * Where a play came from. A play of a local file is recorded as "local"; a
+ * stream leaves its source empty, and which service it was is not recorded,
+ * so this does not pretend to know. See [sourceOf] for plays from before.
  */
 enum class PlaySource { STREAMED, LOCAL }
 
@@ -49,12 +48,27 @@ fun qualityTierOf(quality: String?): QualityTier {
     }
 }
 
-fun sourceOf(row: PlayRow): PlaySource = when {
+/**
+ * Where [row] came from. Plays recorded before local ones said so have no
+ * source, and their id alone can't tell: a local file's id is the hash of
+ * "local_<n>" ([localPlayIdOf]), positive about half the time, so going by
+ * the sign counted over half of them as streamed. A play without a source is
+ * local when its id is one of the library's ([localPlayIds]); else it goes by
+ * the sign, which is right for a stream and for a local id that is negative.
+ */
+fun sourceOf(row: PlayRow, localPlayIds: Set<Long> = emptySet()): PlaySource = when {
     row.source.equals("local", ignoreCase = true) -> PlaySource.LOCAL
     !row.source.isNullOrBlank() -> PlaySource.STREAMED
+    row.trackId in localPlayIds -> PlaySource.LOCAL
     row.trackId > 0 -> PlaySource.STREAMED
     else -> PlaySource.LOCAL
 }
+
+/**
+ * The id a play of local track [localRowId] is recorded under: the hash of
+ * its library id, "local_<n>" (LocalMediaRepository, UnifiedTrack.legacyId).
+ */
+fun localPlayIdOf(localRowId: Long): Long = "local_$localRowId".hashCode().toLong()
 
 /** The days a report covers, and the same span just before it. */
 data class StatsWindow(
@@ -226,6 +240,7 @@ object StatsReportBuilder {
         prevRows: List<PlayRow>,
         firstPlays: Map<String, Long>,
         history: List<PlayMoment>,
+        localPlayIds: Set<Long> = emptySet(),
     ): StatsReport {
         fun wrap(r: PlayRow): Play {
             val t = Instant.ofEpochMilli(r.playedAt).atZone(zone)
@@ -332,7 +347,7 @@ object StatsReportBuilder {
             if (inside.isEmpty()) null else TierShare(tier, inside.sumOf { it.seconds }, inside.size)
         }
         val sources = PlaySource.entries.mapNotNull { src ->
-            val inside = plays.filter { sourceOf(it.row) == src }
+            val inside = plays.filter { sourceOf(it.row, localPlayIds) == src }
             if (inside.isEmpty()) null else SourceShare(src, inside.sumOf { it.seconds }, inside.size)
         }
 
