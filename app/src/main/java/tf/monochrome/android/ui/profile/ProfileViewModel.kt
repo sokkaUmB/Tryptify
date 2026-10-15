@@ -5,13 +5,10 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tf.monochrome.android.data.auth.AccountAvatar
@@ -38,12 +35,8 @@ class ProfileViewModel @Inject constructor(
     val errorMessage: StateFlow<String?> = authManager.errorMessage
     val successMessage: StateFlow<String?> = authManager.successMessage
 
-    val avatar: StateFlow<AccountAvatar?> =
-        combine(authManager.userProfile, avatarStore.revision) { profile, _ ->
-            profile?.let(avatarStore::avatarOf)
-        }
-            .flowOn(Dispatchers.IO)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), authManager.userProfile.value?.let(avatarStore::avatarOf))
+    val avatar: StateFlow<AccountAvatar?> = avatarStore.avatars(authManager.userProfile)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), avatarStore.placeholder(authManager.userProfile.value))
 
     private val _avatarBusy = MutableStateFlow(false)
     val avatarBusy: StateFlow<Boolean> = _avatarBusy.asStateFlow()

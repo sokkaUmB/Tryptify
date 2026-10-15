@@ -8,9 +8,12 @@ import android.net.Uri
 import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -124,6 +127,25 @@ class ProfileAvatarStore @Inject constructor(
         prefs.getString(choiceKey(userId), null)
             ?.let { runCatching { AvatarChoice.valueOf(it) }.getOrNull() }
             ?: AvatarChoice.PROVIDER
+
+    /**
+     * The signed-in account's avatar as the account and its stored picture
+     * change: one definition for every screen that shows it (the top bar's
+     * button, the profile page). Read on IO, since [avatarOf] reads prefs and
+     * checks a file.
+     */
+    fun avatars(profiles: Flow<UserProfile?>): Flow<AccountAvatar?> =
+        combine(profiles, revision) { profile, _ -> profile?.let(::avatarOf) }
+            .flowOn(Dispatchers.IO)
+
+    /**
+     * What a screen shows before [avatars] has read the store: a signed-in
+     * account's initials, so it doesn't open on the "Sign in" pill. No disk
+     * read, so a view model can start on it on the main thread; it used to
+     * start on [avatarOf] there, the first prefs load and a file check.
+     */
+    fun placeholder(profile: UserProfile?): AccountAvatar? =
+        profile?.let { AccountAvatar(source = null, initials = avatarInitials(it.username, it.email)) }
 
     fun avatarOf(profile: UserProfile): AccountAvatar {
         val custom = prefs.getString(fileKey(profile.id), null)

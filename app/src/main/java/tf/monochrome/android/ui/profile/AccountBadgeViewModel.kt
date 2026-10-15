@@ -3,11 +3,8 @@ package tf.monochrome.android.ui.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import tf.monochrome.android.data.auth.AccountAvatar
 import tf.monochrome.android.data.auth.ProfileAvatarStore
@@ -20,12 +17,9 @@ class AccountBadgeViewModel @Inject constructor(
     authManager: SupabaseAuthManager,
     avatarStore: ProfileAvatarStore,
 ) : ViewModel() {
-    val account: StateFlow<AccountAvatar?> =
-        combine(authManager.userProfile, avatarStore.revision) { profile, _ ->
-            profile?.let(avatarStore::avatarOf)
-        }
-            .flowOn(Dispatchers.IO)
-            // Seeded from the current account so a signed-in bar does not open
-            // on the "Sign in" pill for a frame and then swap.
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), authManager.userProfile.value?.let(avatarStore::avatarOf))
+    val account: StateFlow<AccountAvatar?> = avatarStore.avatars(authManager.userProfile)
+        // Seeded from the current account so a signed-in bar does not open on
+        // the "Sign in" pill for a frame and then swap; the initials, which
+        // need no disk read, until the picture is read.
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), avatarStore.placeholder(authManager.userProfile.value))
 }
