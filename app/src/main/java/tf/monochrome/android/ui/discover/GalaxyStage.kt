@@ -124,7 +124,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -140,7 +139,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.lifecycle.compose.currentStateAsState
 import android.content.res.Configuration
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
 import tf.monochrome.android.performance.LocalLowPerformance
 import tf.monochrome.android.ui.discover.galaxy.AudioBands
 import tf.monochrome.android.ui.discover.galaxy.GALAXY_ARRIVE_DISTANCE
@@ -247,13 +245,11 @@ internal fun GalaxyStage(
     }
     // The map turns with the phone, even with rotation locked — that is how
     // full screen is reached — and the app goes back to its own rule after.
-    val hostView = LocalView.current
-    DisposableEffect(hostView) {
-        val activity = hostView.context as? android.app.Activity
-        val before = activity?.requestedOrientation
-        activity?.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR
-        onDispose { if (activity != null && before != null) activity.requestedOrientation = before }
-    }
+    // Borrowed, not saved and restored here: switching galaxies overlaps two
+    // stages, and the one leaving must not undo the one arriving (WindowLoan).
+    tf.monochrome.android.ui.components.BorrowOrientation(
+        android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR,
+    )
     tf.monochrome.android.ui.components.HideAppChrome(fullScreen)
     tf.monochrome.android.ui.main.SystemBarsHidden(fullScreen)
     // The mini player and the tab bar float over space here, whatever the theme.
@@ -693,15 +689,8 @@ internal fun GalaxyStage(
     }
 
     // Deep space is dark in every theme, so the status bar's icons are light
-    // while the map is up.
-    val view = LocalView.current
-    DisposableEffect(view) {
-        val window = (view.context as? android.app.Activity)?.window
-        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
-        val had = controller?.isAppearanceLightStatusBars
-        controller?.isAppearanceLightStatusBars = false
-        onDispose { had?.let { controller?.isAppearanceLightStatusBars = it } }
-    }
+    // while the map is up. Borrowed, for the same reason as the orientation.
+    tf.monochrome.android.ui.components.BorrowLightStatusBars(light = false)
 
     // Back puts the star away before it leaves the map; so does a tap on
     // empty space. The dock has no close of its own.
