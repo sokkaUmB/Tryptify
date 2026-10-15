@@ -1413,10 +1413,12 @@ class LibusbAudioSink(
             // Every sample is bounded before its level, not after: clamped
             // after, a value far past full scale (a decoder's 16-bit samples
             // read as float, a filter blowing up) came out at full scale
-            // whatever the volume, as a burst between songs. See safeTailSample.
+            // whatever the volume, as a burst between songs. The tail ran
+            // through its own copy of the DSP chain, so it gets the same room
+            // for an EQ boost as the song coming in. See safeSourceSample.
             val rawTail = if (mixing) tailScratch[i] else 0f
-            if (mixing && !looksLikeAudio(rawTail, TAIL_LIMIT)) notAudio = true
-            val tail = if (mixing) safeTailSample(rawTail) * tailGain else 0f
+            if (mixing && !looksLikeAudio(rawTail, SOURCE_HEADROOM)) notAudio = true
+            val tail = if (mixing) safeSourceSample(rawTail) * tailGain else 0f
             val sample = if (widen16) {
                 // Little-endian by hand, like applyGainPcmInt: with no DSP
                 // running, src is the renderer's own buffer, whose ByteBuffer
@@ -1553,21 +1555,19 @@ class LibusbAudioSink(
 }
 
 /**
- * A crossfade tail sample as the packer may add it. The tail is a finished
- * song fading out, never past full scale; a value that is not a number is
- * silence and one past full scale is held at it, before the tail's gain.
+ * A float sample before its level, the main stream's or a crossfade tail's:
+ * [SOURCE_HEADROOM] of room past full scale for an EQ boost, and no more, so
+ * the DAC is never more than that above the level set, whatever the stream
+ * holds. A value that is not a number is silence.
  *
- * Bounded before the gain, because the packers clamp only after it: a tail
- * value of 1e30 (a decoder's 16-bit samples read as float) times any gain
- * still rounds to the top of the range, so the DAC played full scale at a
- * song change whatever the volume was set to.
- */
-internal fun safeTailSample(t: Float): Float = if (t.isFinite()) t.coerceIn(-1f, 1f) else 0f
-
-/**
- * A float sample of the main stream before its level: [SOURCE_HEADROOM] of
- * room past full scale for an EQ boost, and no more, so the DAC is never more
- * than that above the level set, whatever the stream holds.
+ * Bounded before the gain, because the packers clamp only after it: a value
+ * of 1e30 (a decoder's 16-bit samples read as float) times any gain still
+ * rounds to the top of the range, so the DAC played full scale at a song
+ * change whatever the volume was set to.
+ *
+ * The tail has the same room as the main stream because it has been through
+ * the same DSP: held at full scale instead, an EQ boost on the outgoing song
+ * was clipped through every crossfade, at any volume.
  */
 internal fun safeSourceSample(x: Float): Float =
     if (x.isFinite()) x.coerceIn(-SOURCE_HEADROOM, SOURCE_HEADROOM) else 0f
@@ -1577,9 +1577,6 @@ internal fun looksLikeAudio(x: Float, limit: Float): Boolean = x.isFinite() && x
 
 /** Room past full scale a float stream keeps before its level: +6 dB. */
 internal const val SOURCE_HEADROOM = 2f
-
-/** Past this a tail sample is not audio (a finished song is within ±1). */
-internal const val TAIL_LIMIT = 1.5f
 
 /**
  * A float sample as the little-endian integer a USB Audio Type I subslot of
