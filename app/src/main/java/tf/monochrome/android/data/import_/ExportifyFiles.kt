@@ -3,6 +3,8 @@ package tf.monochrome.android.data.import_
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.util.Base64
 import java.util.zip.ZipInputStream
 
@@ -77,11 +79,14 @@ object ExportifyFiles {
                 val entry = zip.nextEntry ?: break
                 val entryName = entry.name.substringAfterLast('/')
                 if (entry.isDirectory || !entryName.endsWith(".csv", ignoreCase = true)) continue
-                val bytes = zip.readBytes()
+                // Bounded as it inflates. Read whole first and measured after,
+                // an entry that inflates to hundreds of MB (a few hundred KB
+                // of zeros does) ran the app out of memory before any check.
+                // One playlist is held to one CSV's cap, as a picked file is.
+                val limit = minOf(PlaylistCsv.MAX_BYTES.toLong(), ZIP_BUDGET - total)
+                val bytes = readAtMost(zip, limit)
+                    ?: throw IllegalArgumentException("Exportify's file is too large to import.")
                 total += bytes.size
-                if (total > PlaylistCsv.MAX_BYTES * ZIP_CAP_FACTOR) {
-                    throw IllegalArgumentException("Exportify's file is too large to import.")
-                }
                 out += ExportedPlaylist(title = titleFrom(entryName), csv = PlaylistCsv.decode(bytes))
             }
         }
@@ -101,6 +106,26 @@ object ExportifyFiles {
             .trim()
             .ifEmpty { "Spotify playlist" }
 
+    /**
+     * All of [input], or null once it passes [limit] bytes: checked as it is
+     * read, so no more than [limit] is ever held.
+     */
+    internal fun readAtMost(input: InputStream, limit: Long): ByteArray? {
+        val out = ByteArrayOutputStream()
+        val buffer = ByteArray(16 * 1024)
+        var read = 0L
+        while (true) {
+            val n = input.read(buffer)
+            if (n < 0) return out.toByteArray()
+            read += n
+            if (read > limit) return null
+            out.write(buffer, 0, n)
+        }
+    }
+
     /** An Export All ZIP holds many playlists; it may be this many times one's cap. */
     private const val ZIP_CAP_FACTOR = 20
+
+    /** What an Export All may inflate to, all its playlists together. */
+    private const val ZIP_BUDGET = PlaylistCsv.MAX_BYTES.toLong() * ZIP_CAP_FACTOR
 }

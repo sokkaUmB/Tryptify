@@ -92,4 +92,33 @@ class ExportifyFilesTest {
         }.exceptionOrNull()
         assertTrue(notPlaylist is IllegalArgumentException)
     }
+
+    @Test
+    fun `an entry that inflates past the cap is refused as it inflates`() {
+        // A few KB of download that inflates to more than one playlist may be:
+        // read whole before the check, this was an out-of-memory crash.
+        val zipped = ByteArrayOutputStream().also { out ->
+            ZipOutputStream(out).use { zip ->
+                zip.putNextEntry(ZipEntry("Huge.csv"))
+                val zeros = ByteArray(64 * 1024)
+                repeat((PlaylistCsv.MAX_BYTES / zeros.size) + 2) { zip.write(zeros) }
+                zip.closeEntry()
+            }
+        }.toByteArray()
+        assertTrue("compressed to ${zipped.size} bytes", zipped.size < 100_000)
+        val refused = runCatching {
+            ExportifyFiles.playlists(
+                ExportifyFiles.Message(fileName = "spotify_playlists.zip", dataUrl = dataUrl(zipped, "application/zip")),
+            )
+        }.exceptionOrNull()
+        assertTrue(refused is IllegalArgumentException)
+        assertEquals("Exportify's file is too large to import.", refused?.message)
+    }
+
+    @Test
+    fun `a bounded read stops past its limit and keeps what fits`() {
+        assertEquals(5, ExportifyFiles.readAtMost(java.io.ByteArrayInputStream(ByteArray(5)), 5)?.size)
+        assertNull(ExportifyFiles.readAtMost(java.io.ByteArrayInputStream(ByteArray(6)), 5))
+        assertEquals(0, ExportifyFiles.readAtMost(java.io.ByteArrayInputStream(ByteArray(0)), 0)?.size)
+    }
 }
