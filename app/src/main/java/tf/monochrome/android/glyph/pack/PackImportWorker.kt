@@ -38,8 +38,8 @@ import tf.monochrome.android.R
 
 /**
  * Imports one StepMania pack in the background: downloaded from StepMania
- * Online (or any https link to a pack ZIP), or read from a ZIP the player
- * picked.
+ * Online (or any https link to a pack ZIP), read from a ZIP the player
+ * picked, or copied from songs already unpacked in a folder they picked.
  *
  * Packs run hundreds of megabytes, so this is a foreground job with the
  * download in a notification, like the app's own downloads. Jobs queue: tap
@@ -63,7 +63,9 @@ class PackImportWorker @AssistedInject constructor(
         runCatching { setForeground(foregroundInfo(0f, "Starting")) }
         val url = inputData.getString(KEY_URL)
         val uri = inputData.getString(KEY_URI)?.let(Uri::parse)
+        val tree = inputData.getString(KEY_TREE)?.let(Uri::parse)
         try {
+            if (tree != null) return@withContext importFolder(tree)
             val opened = when {
                 url != null -> download(url)
                 uri != null -> open(uri)
@@ -90,7 +92,7 @@ class PackImportWorker @AssistedInject constructor(
             notifyFinished("Pack not imported", "${name.ifBlank { "Pack" }}: $reason")
             Result.failure(workDataOf(KEY_NAME to name, KEY_FAILURE to reason))
         } finally {
-            uri?.let { picked ->
+            (uri ?: tree)?.let { picked ->
                 runCatching {
                     applicationContext.contentResolver.releasePersistableUriPermission(picked, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
@@ -99,6 +101,24 @@ class PackImportWorker @AssistedInject constructor(
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo = foregroundInfo(0f, "Starting")
+
+    /** Songs already unpacked in [tree]: listed, then copied pack by pack. */
+    private suspend fun importFolder(tree: Uri): Result {
+        report(0, 0, "Reading the folder")
+        val listing = TreePackSource.list(applicationContext, tree, isActive = { !isStopped })
+        name = listing.name
+        val result = library.importer().importFolder(
+            files = listing.files,
+            folderName = listing.name,
+            onProgress = { copied, total -> report(copied, total) },
+            isActive = { !isStopped },
+        )
+        library.refresh()
+        val packs = result.packs.joinToString(", ") { it.name }
+        val skipped = if (result.skippedSongs > 0) " ${result.skippedSongs} without a four-panel chart were left out." else ""
+        notifyFinished("Songs imported", "$packs: ${result.songs} songs.$skipped")
+        return Result.success(workDataOf(KEY_NAME to packs, KEY_SONGS to result.songs, KEY_SKIPPED to result.skippedSongs))
+    }
 
     private class Opened(val stream: InputStream, val length: Long, val name: String)
 
@@ -152,12 +172,12 @@ class PackImportWorker @AssistedInject constructor(
     }
 
     /** Progress a few times a second at most; the bytes come far faster. */
-    private fun report(read: Long, total: Long) {
+    private fun report(read: Long, total: Long, label: String? = null) {
         val now = SystemClock.elapsedRealtime()
-        if (now - lastShownAt < UPDATE_MS) return
+        if (label == null && now - lastShownAt < UPDATE_MS) return
         lastShownAt = now
         val fraction = if (total > 0) (read.toFloat() / total).coerceIn(0f, 1f) else 0f
-        val stage = if (total > 0) "${formatMb(read)} of ${formatMb(total)}" else "${formatMb(read)} read"
+        val stage = label ?: if (total > 0) "${formatMb(read)} of ${formatMb(total)}" else "${formatMb(read)} read"
         setProgressAsync(workDataOf(KEY_NAME to name, KEY_FRACTION to fraction, KEY_STAGE to stage))
         runCatching { setForegroundAsync(foregroundInfo(fraction, stage)) }
     }
@@ -217,6 +237,7 @@ class PackImportWorker @AssistedInject constructor(
         const val KEY_FAILURE = "failure"
         private const val KEY_URL = "url"
         private const val KEY_URI = "uri"
+        private const val KEY_TREE = "tree"
 
         private const val CHANNEL_ID = "trypt_mania_packs"
         private const val NOTIFICATION_ID = 8210
@@ -236,6 +257,14 @@ class PackImportWorker @AssistedInject constructor(
                 context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             enqueue(context, workDataOf(KEY_URI to uri.toString()))
+        }
+
+        /** Queue songs already unpacked in a folder the player picked: one song, a pack, or StepMania's Songs. */
+        fun enqueueFolder(context: Context, tree: Uri) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            enqueue(context, workDataOf(KEY_TREE to tree.toString()))
         }
 
         fun cancelAll(context: Context) {

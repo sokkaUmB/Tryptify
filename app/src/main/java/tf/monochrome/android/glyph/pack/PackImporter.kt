@@ -57,6 +57,125 @@ class PackImporter(
     class PackImportException(message: String) : IOException(message)
 
     /**
+     * One file of a folder being imported: its [path] under the picked folder
+     * (folder names, then the file's), its size when known, and how to read it.
+     */
+    class SourceFile(val path: List<String>, val size: Long, val open: () -> InputStream)
+
+    /**
+     * Import StepMania songs already unpacked into folders, as StepMania keeps
+     * them: `Songs/<pack>/<song>/<chart and music>`. [folderName] is the
+     * picked folder's own name, and it can be any level of that tree:
+     *
+     * * a song (it holds the chart) — a pack of that one song, named after it;
+     * * a pack (its folders hold charts) — that pack, named after it;
+     * * `Songs`, or StepMania's own folder — every pack in it, each named
+     *   after its folder.
+     *
+     * A song folder is a folder that holds a chart, and its pack is the folder
+     * around it. Each pack is copied and installed on its own, through the
+     * same checks as a ZIP's: the same files kept, the same bounds, the same
+     * all-or-nothing install. So a folder of thirty packs that fills the phone
+     * at the eighth keeps the seven before it, and says where it stopped.
+     *
+     * The files are the player's own, picked from their phone, not a download:
+     * there is no cap on the whole beyond the free space left.
+     */
+    fun importFolder(
+        files: List<SourceFile>,
+        folderName: String,
+        onProgress: (copied: Long, total: Long) -> Unit = { _, _ -> },
+        isActive: () -> Boolean = { true },
+    ): Result {
+        root.mkdirs()
+        val wanted = files.filter { file ->
+            val name = file.path.lastOrNull() ?: return@filter false
+            file.path.none { it.isEmpty() || it == "." || it == ".." || it == "__MACOSX" } &&
+                !name.startsWith("._") && limitFor(name) != null
+        }
+        val byFolder = wanted.groupBy { it.path.dropLast(1) }
+        val songFolders = byFolder.keys.filter { folder ->
+            byFolder.getValue(folder).any { StepManiaPack.extension(it.path.last()) in StepManiaPack.CHART_EXTENSIONS }
+        }
+        if (songFolders.isEmpty()) throw PackImportException("That folder has no StepMania charts in it.")
+
+        val fallback = StepManiaPack.safeName(folderName, "Imported pack")
+        // The picked folder itself a song: one pack of it. Otherwise each song
+        // folder's parent is its pack — the picked folder when it is the pack.
+        val byPack = songFolders.groupBy { folder -> if (folder.isEmpty()) null else folder.dropLast(1) }
+            .entries.sortedBy { (pack, _) -> pack?.joinToString("/").orEmpty().lowercase() }
+        val total = songFolders.sumOf { folder -> byFolder.getValue(folder).sumOf { it.size.coerceAtLeast(0) } }
+        var copied = 0L
+        var skipped = 0
+        val packs = ArrayList<ImportedPack>()
+        val buffer = ByteArray(64 * 1024)
+
+        for ((packPath, songs) in byPack) {
+            if (!isActive()) throw PackImportException("The import was cancelled.")
+            val packName = StepManiaPack.safeName(packPath?.lastOrNull() ?: fallback, fallback)
+            val staging = File(root, ".staging-${System.nanoTime()}")
+            try {
+                staging.mkdirs()
+                for (song in songs) {
+                    // A song folder at the top (the pick was a song) lands at
+                    // the top of staging, as a bare song in a ZIP does.
+                    val into = if (song.isEmpty()) staging else File(staging, StepManiaPack.safeName(song.last()).take(MAX_SEGMENT))
+                    into.mkdirs()
+                    for (file in byFolder.getValue(song)) {
+                        if (!isActive()) throw PackImportException("The import was cancelled.")
+                        val name = file.path.last()
+                        val limit = limitFor(name) ?: continue
+                        ensureSpace()
+                        val target = File(into, name.take(MAX_SEGMENT))
+                        var written = 0L
+                        var tooBig = false
+                        file.open().use { input ->
+                            target.outputStream().buffered().use { out ->
+                                while (true) {
+                                    val read = input.read(buffer)
+                                    if (read < 0) break
+                                    written += read
+                                    copied += read
+                                    if (written > limit) {
+                                        tooBig = true
+                                        break
+                                    }
+                                    if (written % SPACE_CHECK_BYTES < read) ensureSpace()
+                                    out.write(buffer, 0, read)
+                                    onProgress(copied, total)
+                                }
+                            }
+                        }
+                        if (tooBig) target.delete()
+                    }
+                }
+                val installed = try {
+                    install(staging, packName)
+                } catch (empty: PackImportException) {
+                    // Nothing playable in this pack: counted, and on to the next.
+                    if (!isActive() || staging.usableSpace < reserveBytes) throw empty
+                    skipped += songs.size
+                    continue
+                }
+                packs += installed.packs
+                skipped += installed.skippedSongs
+            } catch (failure: PackImportException) {
+                if (packs.isEmpty()) throw failure
+                throw PackImportException(
+                    "${failure.message} ${packs.size} pack${if (packs.size == 1) "" else "s"} before it " +
+                        "(${packs.joinToString(", ") { it.name }}) were imported.",
+                )
+            } finally {
+                staging.deleteRecursively()
+            }
+        }
+        if (packs.isEmpty()) {
+            throw PackImportException("No song in that folder has a four-panel (dance-single) chart with its music.")
+        }
+        return Result(packs, skipped)
+    }
+
+    /**
      * Import the ZIP read from [input]. [nameHint] names the pack when the ZIP
      * holds song folders with no pack folder around them (usually the file's
      * name). [onBytes] gets the compressed bytes read so far, for progress.

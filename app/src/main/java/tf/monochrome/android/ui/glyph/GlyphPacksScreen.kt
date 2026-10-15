@@ -27,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.AlertDialog
@@ -84,6 +85,10 @@ fun GlyphPacksScreen(
     val zipPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) onEvent(GlyphEvent.ImportPackFile(uri))
     }
+    // Songs already unpacked, as StepMania keeps them: a song, a pack, or Songs.
+    val songsFolderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { tree ->
+        if (tree != null) onEvent(GlyphEvent.ImportPackFolder(tree))
+    }
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { tree ->
         if (tree != null) onEvent(GlyphEvent.ChoosePackFolder(tree))
     }
@@ -122,8 +127,9 @@ fun GlyphPacksScreen(
             GlyphPanel(modifier = Modifier.fillMaxWidth()) {
                 SectionTitle("Get packs")
                 Text(
-                    "Simfile packs from StepMania Online, or a pack ZIP you already have. Their four-panel " +
-                        "charts play here with the pack's own music.",
+                    "Simfile packs from StepMania Online, a pack ZIP you already have, or songs already " +
+                        "unpacked on the phone — pick one song, one pack, or StepMania's whole Songs folder. " +
+                        "Their four-panel charts play here with the pack's own music.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = scheme.onSurfaceVariant,
                 )
@@ -140,6 +146,14 @@ fun GlyphPacksScreen(
                     text = "Import a pack ZIP…",
                     icon = Icons.Default.FolderOpen,
                     onClick = { zipPicker.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(MonoDimens.spacingSm))
+                GlyphButton(
+                    text = "Import unpacked songs (folder)…",
+                    icon = Icons.Default.Folder,
+                    onClickLabel = "Pick a song, a pack, or the Songs folder to import",
+                    onClick = { songsFolderPicker.launch(null) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 packs.importing?.let { importing ->

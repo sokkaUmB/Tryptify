@@ -190,6 +190,86 @@ class StepManiaPackTest {
         assertNotNull(SscParser.parse(File(folder, "Feel So High/${feel.chart}").readText()))
     }
 
+    // ── songs already unpacked in a folder ──────────────────────────────
+
+    private fun folder(vararg entries: Pair<String, ByteArray>) = entries.map { (path, bytes) ->
+        PackImporter.SourceFile(path.split('/'), bytes.size.toLong()) { ByteArrayInputStream(bytes) }
+    }
+
+    @Test
+    fun stepManiasSongsFolderImportsEachPackOnItsOwn() {
+        // StepMania 5/Songs on a phone: packs of song folders, and things that
+        // are not songs beside them.
+        val files = folder(
+            "Dance Dance Revolution Ultramix 2/Altitude/Altitude.sm" to sm.toByteArray(),
+            "Dance Dance Revolution Ultramix 2/Altitude/Altitude.ogg" to audio,
+            "Dance Dance Revolution Ultramix 2/Altitude/preview.avi" to ByteArray(50),
+            "dj Manix Originals/Own/own.ssc" to ssc.toByteArray(),
+            "dj Manix Originals/Own/own.mp3" to audio,
+            "dj Manix Originals/readme.txt" to ByteArray(5),
+            "__MACOSX/dj Manix Originals/Own/._own.ssc" to ByteArray(5),
+        )
+        var lastCopied = 0L
+        var lastTotal = 0L
+        val result = importer().importFolder(files, "Songs", onProgress = { copied, total ->
+            lastCopied = copied
+            lastTotal = total
+        })
+
+        assertEquals(listOf("Dance Dance Revolution Ultramix 2", "dj Manix Originals"), result.packs.map { it.name })
+        assertEquals(2, result.songs)
+        assertEquals(0, result.skippedSongs)
+        // Every byte of the song folders, the video included (counted, then dropped).
+        assertEquals(lastTotal, lastCopied)
+        val ultramix = File(root, "Dance Dance Revolution Ultramix 2")
+        assertTrue("the .sm is kept, with an .ssc beside it", File(ultramix, "Altitude/Altitude.ssc").isFile)
+        assertFalse("videos are not kept", File(ultramix, "Altitude/preview.avi").exists())
+        assertEquals("Altitude.ogg", PackImporter.readIndex(ultramix)!!.songs.single().music)
+        assertNull(root.listFiles()!!.firstOrNull { it.name.startsWith(".staging") })
+    }
+
+    @Test
+    fun aPickedPackFolderIsThatPack() {
+        val files = folder(
+            "Altitude/Altitude.sm" to sm.toByteArray(),
+            "Altitude/Altitude.ogg" to audio,
+            "Own/own.ssc" to ssc.toByteArray(),
+            "Own/own.mp3" to audio,
+        )
+        val result = importer().importFolder(files, "Dance Dance Revolution Ultramix 2")
+        assertEquals("Dance Dance Revolution Ultramix 2", result.packs.single().name)
+        assertEquals(2, result.songs)
+    }
+
+    @Test
+    fun aPickedSongFolderIsAPackOfOne() {
+        val files = folder("Altitude.sm" to sm.toByteArray(), "Altitude.ogg" to audio)
+        val result = importer().importFolder(files, "Altitude")
+        assertEquals("Altitude", result.packs.single().name)
+        assertEquals(1, result.songs)
+    }
+
+    @Test
+    fun aPackWithNothingPlayableIsSkippedAndTheRestStillImport() {
+        val files = folder(
+            "Broken/No Music/nomusic.sm" to sm.toByteArray(),
+            "Good/Own/own.ssc" to ssc.toByteArray(),
+            "Good/Own/own.mp3" to audio,
+        )
+        val result = importer().importFolder(files, "Songs")
+        assertEquals("Good", result.packs.single().name)
+        assertEquals(1, result.skippedSongs)
+        assertFalse(File(root, "Broken").exists())
+    }
+
+    @Test
+    fun aFolderWithNoChartsIsRefused() {
+        val files = folder("Themes/default/metrics.ini" to ByteArray(10), "music.ogg" to audio)
+        val failure = runCatching { importer().importFolder(files, "StepMania 5") }.exceptionOrNull()
+        assertTrue(failure is PackImporter.PackImportException)
+        assertTrue(root.listFiles().orEmpty().none { !it.name.startsWith(".") })
+    }
+
     @Test
     fun songsWithoutAPackFolderTakeTheFileName() {
         val bare = zip("own.ssc" to ssc.toByteArray(), "own.mp3" to audio)

@@ -91,6 +91,7 @@ sealed interface GlyphEvent {
     data class ImportPackUrl(val url: String, val name: String) : GlyphEvent
     /** Import a pack ZIP the player picked. */
     data class ImportPackFile(val uri: Uri) : GlyphEvent
+    data class ImportPackFolder(val tree: Uri) : GlyphEvent
     data object CancelPackImports : GlyphEvent
     data class RemovePack(val name: String) : GlyphEvent
     /** The folder the player's own pack is saved in; null answers "not now". */

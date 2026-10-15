@@ -356,6 +356,7 @@ class GlyphViewModel @Inject constructor(
             GlyphEvent.ClosePacks -> _ui.value = _ui.value.copy(screen = GlyphScreen.MENU)
             is GlyphEvent.ImportPackUrl -> PackImportWorker.enqueueDownload(context, event.url, event.name)
             is GlyphEvent.ImportPackFile -> PackImportWorker.enqueueFile(context, event.uri)
+            is GlyphEvent.ImportPackFolder -> PackImportWorker.enqueueFolder(context, event.tree)
             GlyphEvent.CancelPackImports -> PackImportWorker.cancelAll(context)
             is GlyphEvent.RemovePack -> viewModelScope.launch {
                 packLibrary.remove(event.name)
