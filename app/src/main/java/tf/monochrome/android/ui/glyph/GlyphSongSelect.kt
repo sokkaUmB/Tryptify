@@ -106,7 +106,12 @@ internal fun GlyphSongInfoCard(
         null -> ""
     }
     val subtitle = when (item) {
-        is GlyphWheel.Item.Song -> listOfNotNull(item.song.artist.ifBlank { null }, item.section).joinToString(" · ")
+        // A song with no chart says so here, where the panel's pills cannot.
+        is GlyphWheel.Item.Song -> listOfNotNull(
+            item.song.artist.ifBlank { null },
+            item.section,
+            item.song.chartState.label.takeIf { !item.song.hasChart },
+        ).joinToString(" · ")
         is GlyphWheel.Item.Folder -> "${item.section.songs.size} songs · ${item.section.charted} ready"
         null -> ""
     }
@@ -153,6 +158,9 @@ internal fun GlyphSongInfoCard(
                     colour = colour,
                     reducedMotion = reducedMotion,
                 )
+                // This phone's best on the chosen chart, as StepMania's wheel
+                // shows the grade beside it; only when there is one.
+                chart?.difficulty?.let { state.bestGrades[it] }?.let { best -> PersonalBest(best) }
             }
         }
         if (!compact) {

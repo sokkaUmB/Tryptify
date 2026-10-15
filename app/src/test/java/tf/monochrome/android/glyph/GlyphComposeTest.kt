@@ -324,6 +324,26 @@ class GlyphComposeTest {
     }
 
     @Test
+    fun `trypt mania hides the mini player, keeps the tab bar, and gives it back`() {
+        val chrome = tf.monochrome.android.ui.components.AppChrome()
+        val inMode = androidx.compose.runtime.mutableStateOf(true)
+        compose.setContent {
+            androidx.compose.runtime.CompositionLocalProvider(
+                tf.monochrome.android.ui.components.LocalAppChrome provides chrome,
+            ) {
+                if (inMode.value) tf.monochrome.android.ui.components.HideMiniPlayer(true)
+            }
+        }
+        compose.runOnIdle {
+            assertTrue(chrome.miniPlayerHidden)
+            // The tab bar is not part of it.
+            assertTrue(!chrome.hidden)
+        }
+        inMode.value = false
+        compose.runOnIdle { assertTrue(!chrome.miniPlayerHidden) }
+    }
+
+    @Test
     @Config(qualifiers = "w411dp-h891dp")
     fun `on a phone held upright the card shows the groove radar`() {
         setFlatContent {

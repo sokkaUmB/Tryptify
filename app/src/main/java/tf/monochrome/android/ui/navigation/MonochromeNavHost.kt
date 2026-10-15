@@ -311,7 +311,8 @@ fun MonochromeNavHost(initialRoute: String? = null) {
     // The handle only — never its contents, which change on every composition
     // of the screen that holds it (see MiniBarHandle). The bar reads those.
     val miniHandle = miniPlayerSlot.handle
-    val showMiniPlayer = (currentTrack != null || miniHandle != null) && showChrome
+    // A screen can keep the tab bar and send the mini player away (Trypt Mania).
+    val showMiniPlayer = (currentTrack != null || miniHandle != null) && showChrome && !appChrome.miniPlayerHidden
 
     val scope = rememberCoroutineScope()
 

@@ -26,6 +26,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import tf.monochrome.android.glyph.asset.GlyphPalette
 import tf.monochrome.android.ui.components.HideAppChrome
+import tf.monochrome.android.ui.components.HideMiniPlayer
 import tf.monochrome.android.ui.main.SystemBarsHidden
 import tf.monochrome.android.ui.theme.reduceMotion
 
@@ -63,6 +64,10 @@ fun GlyphRoute(
     val playing = state.screen == GlyphScreen.GAMEPLAY || state.screen == GlyphScreen.TRAINING ||
         state.screen == GlyphScreen.EDITOR
     HideAppChrome(playing)
+    // The tab bar stays on the menus; the mini player does not. The song
+    // panel's pills and the previews sit where it would, and another track's
+    // controls over a rhythm game's song select were noise.
+    HideMiniPlayer(true)
     // A scored run takes the status and navigation bars too; an edge swipe
     // brings them back for a moment. Training Ground keeps them: it is as much
     // a panel of controls as a playfield, and is left and re-entered often.

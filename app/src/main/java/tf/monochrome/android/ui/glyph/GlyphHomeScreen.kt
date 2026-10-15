@@ -434,7 +434,6 @@ fun GlyphHomeScreen(
                                 song = song,
                                 state = state,
                                 haze = panelHaze,
-                                glass = glass,
                                 // A panel on its way out takes no presses: its Play
                                 // is for a song the wheel has turned away from.
                                 onEvent = { event -> if (panelSong != null) onEvent(event) },
@@ -454,11 +453,12 @@ private val FULL_CARD_HEIGHT = 720.dp
 private val COMPACT_CARD_HEIGHT = 600.dp
 
 /**
- * The bottom panel, one row of glass: the chart's difficulty pills, then
- * Training Ground and Play as pills beside them. The card above already names
- * the song and its tempo and draws the chart, so the panel repeats none of it;
- * a title, a heading and two full-width buttons stacked took a third of the
- * screen from the wheel.
+ * The bottom of the song select: free pills of glass over the wheel, no pane
+ * around them — the difficulties on one line, Training Ground and Play under
+ * them. The card above names the song, draws the chart and shows the best
+ * grade, so nothing here repeats it. A pane holding the pills read as a slab
+ * over the wheel, and a single row squeezed the difficulties until one was cut
+ * in half between its neighbours.
  *
  * Play and Train are peers rather than one being behind the other, because
  * Training Ground is not an advanced option — for most of a chart's life it is
@@ -469,64 +469,57 @@ private fun SelectionPanel(
     song: GlyphSong,
     state: GlyphUiState,
     haze: HazeState,
-    glass: PlayerGlassSettings,
     onEvent: (GlyphEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    GlassPanel(
-        hazeState = haze,
-        glass = glass,
-        // The nav host already stops this screen above the navigation bar;
-        // holding clear of it here as well counted it twice.
-        avoidNavigationBar = false,
-        modifier = modifier.padding(horizontal = 4.dp),
-    ) {
-        // The pills are glass on glass, frosting the same page.
-        CompositionLocalProvider(LocalGlassBackdrop provides haze) {
-            Column(
-                modifier = Modifier.padding(horizontal = MonoDimens.spacingMd, vertical = MonoDimens.spacingSm),
-            ) {
-                when {
-                    state.songListMode == GlyphSongListMode.EDIT -> EditChoice(song = song, state = state, onEvent = onEvent)
-                    !song.hasChart -> NoChart(song = song, state = state, onEvent = onEvent)
-                    else -> {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm),
-                        ) {
-                            // Scrolls on its own when a song has more charts
-                            // than the row has room for; the pills to its right
-                            // stay put.
-                            GlyphChipRow(
-                                options = song.difficulties,
-                                selected = state.selectedDifficulty,
-                                label = { difficulty -> "${difficulty.sscName} ${meterOf(state, difficulty)}" },
-                                onSelect = { onEvent(GlyphEvent.SelectDifficulty(it)) },
-                                modifier = Modifier.weight(1f),
-                            )
-                            GlyphButton(
-                                text = "Train",
-                                enabled = state.chart != null,
-                                height = PILL_HEIGHT,
-                                onClickLabel = "Practise in Training Ground",
-                                onClick = { onEvent(GlyphEvent.StartTraining) },
-                            )
-                            GlyphButton(
-                                text = "Play",
-                                icon = Icons.Default.PlayArrow,
-                                primary = true,
-                                enabled = state.chart != null,
-                                height = PILL_HEIGHT,
-                                onClick = { onEvent(GlyphEvent.OpenOptions) },
-                            )
-                        }
-                        // This phone's best on the chosen difficulty, as
-                        // StepMania's music wheel shows the grade beside each
-                        // chart; only when there is one.
-                        state.selectedDifficulty?.let { state.bestGrades[it] }?.let { best ->
-                            Spacer(Modifier.height(MonoDimens.spacingXs))
-                            PersonalBest(best)
-                        }
+    // Each pill frosts the wheel under it. The wheel's haze source is this
+    // panel's sibling, never its parent, so the frost has a real backdrop.
+    CompositionLocalProvider(LocalGlassBackdrop provides haze) {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingSm),
+            verticalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm),
+        ) {
+            when {
+                state.songListMode == GlyphSongListMode.EDIT -> EditChoice(song = song, state = state, onEvent = onEvent)
+                // The card says why there is no chart; the pill makes one.
+                !song.hasChart -> GlyphButton(
+                    text = "Generate chart",
+                    primary = true,
+                    enabled = state.generation == null,
+                    height = ACTION_HEIGHT,
+                    onClick = { onEvent(GlyphEvent.GenerateChart) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                else -> {
+                    // The whole width, scrolling when a song has more charts
+                    // than fit, so none is cut off by the pills beside it.
+                    GlyphChipRow(
+                        options = song.difficulties,
+                        selected = state.selectedDifficulty,
+                        label = { difficulty -> "${difficulty.sscName} ${meterOf(state, difficulty)}" },
+                        onSelect = { onEvent(GlyphEvent.SelectDifficulty(it)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {
+                        GlyphButton(
+                            text = "Train",
+                            enabled = state.chart != null,
+                            height = ACTION_HEIGHT,
+                            onClickLabel = "Practise in Training Ground",
+                            onClick = { onEvent(GlyphEvent.StartTraining) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        GlyphButton(
+                            text = "Play",
+                            icon = Icons.Default.PlayArrow,
+                            primary = true,
+                            enabled = state.chart != null,
+                            height = ACTION_HEIGHT,
+                            onClick = { onEvent(GlyphEvent.OpenOptions) },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
             }
@@ -534,39 +527,13 @@ private fun SelectionPanel(
     }
 }
 
-/** A song with no readable chart: why, in a line, and the pill that makes one. */
-@Composable
-private fun NoChart(song: GlyphSong, state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm),
-    ) {
-        Text(
-            text = if (song.chartState == GlyphChartState.UNREADABLE) {
-                "The chart on disk could not be read; generating replaces it."
-            } else {
-                "No chart yet. It is made offline in the background, from the song's stems."
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        GlyphButton(
-            text = "Generate chart",
-            primary = true,
-            enabled = state.generation == null,
-            height = PILL_HEIGHT,
-            onClick = { onEvent(GlyphEvent.GenerateChart) },
-        )
-    }
-}
+/** The actions' pills: thumb-sized. */
+private val ACTION_HEIGHT = 52.dp
 
-/** The panel's pills, the height of the difficulty chips beside them. */
-private val PILL_HEIGHT = 40.dp
 
 /**
- * The selection panel in the map editor's list: any difficulty, a new one
- * included, and Edit. A song with no chart can be generated first, or charted
+ * The selection pills in the map editor's list: any difficulty, a new one
+ * included, then Edit. A song with no chart can be generated first, or charted
  * from nothing at its tempo.
  */
 @Composable
@@ -576,23 +543,17 @@ private fun EditChoice(song: GlyphSong, state: GlyphUiState, onEvent: (GlyphEven
     }
     LaunchedEffect(state.selectedDifficulty) { state.selectedDifficulty?.let { difficulty = it } }
     if (song.chartState == GlyphChartState.UNREADABLE) {
-        Text(
-            text = "The chart on disk could not be read. Generate it again before editing.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(MonoDimens.spacingMd))
+        // The card says the chart could not be read; generating replaces it.
         GlyphButton(
             text = "Generate chart",
             primary = true,
             enabled = state.generation == null,
+            height = ACTION_HEIGHT,
             onClick = { onEvent(GlyphEvent.GenerateChart) },
             modifier = Modifier.fillMaxWidth(),
         )
         return
     }
-    GlyphSectionLabel("Difficulty")
-    Spacer(Modifier.height(MonoDimens.spacingSm))
     GlyphChipRow(
         options = StepManiaDifficulty.entries.toList(),
         selected = difficulty,
@@ -602,21 +563,11 @@ private fun EditChoice(song: GlyphSong, state: GlyphUiState, onEvent: (GlyphEven
         onSelect = { difficulty = it },
         modifier = Modifier.fillMaxWidth(),
     )
-    Spacer(Modifier.height(MonoDimens.spacingSm))
-    Text(
-        text = when {
-            !song.hasChart -> "No chart yet: start this one from nothing at the song's tempo, or generate charts and edit those."
-            difficulty in song.difficulties -> "${state.simfile?.chart(difficulty)?.notes?.size ?: 0} notes · ${song.bpmLabel}"
-            else -> "A new ${difficulty.sscName} chart, on the song's tempo."
-        },
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(Modifier.height(MonoDimens.spacingMd))
     Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {
         GlyphButton(
-            text = "Edit chart",
+            text = if (difficulty in song.difficulties) "Edit chart" else "New chart",
             primary = true,
+            height = ACTION_HEIGHT,
             onClick = { onEvent(GlyphEvent.OpenEditor(difficulty)) },
             modifier = Modifier.weight(1f),
         )
@@ -624,6 +575,7 @@ private fun EditChoice(song: GlyphSong, state: GlyphUiState, onEvent: (GlyphEven
             GlyphButton(
                 text = "Generate",
                 enabled = state.generation == null,
+                height = ACTION_HEIGHT,
                 onClick = { onEvent(GlyphEvent.GenerateChart) },
                 modifier = Modifier.weight(1f),
             )
@@ -633,7 +585,7 @@ private fun EditChoice(song: GlyphSong, state: GlyphUiState, onEvent: (GlyphEven
 
 /** The grade sprite and percent of this phone's best run, and whose it is. */
 @Composable
-private fun PersonalBest(best: GlyphAttempt) {
+internal fun PersonalBest(best: GlyphAttempt) {
     val grade = GlyphStepGrade.fromName(best.stepGrade)
     val art = rememberStepArt(grade?.asset)
     val percent = if (best.hasStepScore) best.percent else best.accuracy

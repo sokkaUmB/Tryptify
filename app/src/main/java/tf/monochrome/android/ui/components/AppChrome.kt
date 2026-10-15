@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.Color
  * - [hidden]: the screen wants the whole window (the genre galaxy in full
  *   screen). The chrome steps aside while it is set, and comes back when the
  *   screen lets go or leaves.
+ * - [miniPlayerHidden]: the screen keeps the tab bar but not the mini player
+ *   (Trypt Mania, whose own panel and previews sit where it would).
  * - [ground]: what the chrome is floating over, when that is not the page. The
  *   galaxy is deep space under every theme, so the mini player's glass there is
  *   dark glass, and its text has to be light ([GlassInkScope]).
@@ -27,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 @Stable
 class AppChrome {
     var hidden by mutableStateOf(false)
+        internal set
+    var miniPlayerHidden by mutableStateOf(false)
         internal set
     var ground by mutableStateOf<Color?>(null)
         internal set
@@ -39,6 +43,7 @@ class AppChrome {
     // values instead failed when both asked for the same one (the genre galaxy
     // and the library galaxy are both deep space): the one leaving cleared it.
     internal var hiddenBy: Any? = null
+    internal var miniPlayerHiddenBy: Any? = null
     internal var groundBy: Any? = null
     internal var lensBy: Any? = null
 }
@@ -57,6 +62,23 @@ fun HideAppChrome(hidden: Boolean) {
             if (chrome.hiddenBy === me) {
                 chrome.hidden = false
                 chrome.hiddenBy = null
+            }
+        }
+    }
+}
+
+/** Hides the mini player alone, the tab bar staying, while [hidden] and this is in the composition. */
+@Composable
+fun HideMiniPlayer(hidden: Boolean) {
+    val chrome = LocalAppChrome.current ?: return
+    DisposableEffect(chrome, hidden) {
+        val me = Any()
+        chrome.miniPlayerHidden = hidden
+        chrome.miniPlayerHiddenBy = me
+        onDispose {
+            if (chrome.miniPlayerHiddenBy === me) {
+                chrome.miniPlayerHidden = false
+                chrome.miniPlayerHiddenBy = null
             }
         }
     }

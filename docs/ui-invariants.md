@@ -1044,10 +1044,10 @@ page goes through `menuAccent`, which keeps its hue and moves it until it reads.
 **The home panels' haze source is the page in every state**, the loading and
 empty messages included, not the list alone. While the list was the source,
 the generation panel over a library still loading had nothing drawn to frost
-and came out a solid slab. The selection panel sits on `LocalBottomChromeNow`
-and passes `avoidNavigationBar = false`: the nav host already stops a pushed
-screen above the system bar, and the panel counting it again floated a bar's
-height above the tab bar.
+and came out a solid slab. The selection pills sit on `LocalBottomChromeNow`
+and add no navigation-bar inset: the nav host already stops a pushed screen
+above the system bar, and counting it again floated them a bar's height above
+the tab bar.
 
 **The songs are on StepMania's music wheel, in folders, not in a list.**
 `GlyphMusicWheel` over `GlyphWheel`: the folders are what the sort makes them
@@ -1096,10 +1096,15 @@ column, with nothing to jump between.
   folder. The swish and the metronome are `USAGE_GAME`, on the media volume:
   as sonification they went with the system stream, which a phone on silent
   mutes, and the wheel was silent for anyone with their ringer off.
-* The selection panel is one row of glass pills: the difficulties, Train and
-  Play, and the best grade under them when there is one. The card says the
-  song's name, tempo and notes; a panel that said them again, under a heading
-  and over two full-width buttons, took a third of the screen from the wheel.
+* The selection is free pills of glass over the wheel, with no pane around
+  them: the difficulties on a line of their own, Train and Play under them.
+  The card says the song's name, tempo, notes, best grade and why a song has
+  no chart; a panel that said them again took a third of the screen, a pane
+  around the pills read as a slab, and one row squeezed the difficulties until
+  one was cut in half. The pills frost the wheel's haze source, their sibling.
+* Trypt Mania keeps the tab bar and hides the mini player (`HideMiniPlayer`)
+  for the whole route; the bottom insets follow, so the wheel and the pills
+  take its place.
 
 **The card over the wheel reads the chart; it never grades it.**
 `GlyphSongInfoCard`: DDR's Groove Radar, the BPM meter, the meter in feet and a
