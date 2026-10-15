@@ -33,6 +33,17 @@ class GlyphWheelSwishTest {
     }
 
     @Test
+    fun itHasAnAttack() {
+        // Loudest within its first few milliseconds, and most of its energy in
+        // the first ten: a "tsh", not a "hhh" that swells.
+        val peakAt = swish.indices.maxBy { abs(swish[it].toInt()) }
+        assertTrue("peak at sample $peakAt", peakAt < GlyphWheelSwish.SAMPLE_RATE * 4 / 1_000)
+        val energy = swish.map { it.toDouble() * it }
+        val first10 = energy.take(GlyphWheelSwish.SAMPLE_RATE / 100).sum() / energy.sum()
+        assertTrue("first 10 ms = $first10", first10 > 0.55)
+    }
+
+    @Test
     fun itIsAHissNotATone() {
         // Goertzel power: the "shh" band carries the energy, the lows and the
         // very highs do not.
