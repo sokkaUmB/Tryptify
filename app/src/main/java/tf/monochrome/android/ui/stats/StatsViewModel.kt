@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -72,12 +73,20 @@ class StatsViewModel @Inject constructor(
     private val _messages = MutableSharedFlow<tf.monochrome.android.ui.components.UiText>(extraBufferCapacity = 2)
     val messages: SharedFlow<tf.monochrome.android.ui.components.UiText> = _messages.asSharedFlow()
 
+    /**
+     * The report's refresh signal: the number of plays, when it changes. Room
+     * re-emits the count after any write to play_events, the cloud id stamped
+     * on a play just after it is written included, so each play rebuilt the
+     * whole report twice, and a sync once per row it touched.
+     */
+    private val plays = playEventDao.playCount().distinctUntilChanged()
+
     /** Null until the first report is ready. */
-    val report: StateFlow<StatsReport?> = combine(_range, playEventDao.playCount()) { r, _ -> r }
+    val report: StateFlow<StatsReport?> = combine(_range, plays) { r, _ -> r }
         .mapLatest { r -> withContext(Dispatchers.Default) { loadReport(r) } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val achievements: StateFlow<List<AchievementState>> = combine(playEventDao.playCount(), achievementStore.log) { _, log -> log }
+    val achievements: StateFlow<List<AchievementState>> = combine(plays, achievementStore.log) { _, log -> log }
         .mapLatest { log -> withContext(Dispatchers.Default) { loadAchievements(log) } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
