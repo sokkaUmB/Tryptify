@@ -65,7 +65,7 @@ class GlyphSongRepository @Inject constructor(
     private suspend fun GlyphSong.withEditedChart(): GlyphSong {
         if (!simfileFile(trackId).exists()) return this
         val edited = simfile(trackId) ?: return this
-        return copy(bpm = edited.timing.startBpm, difficulties = edited.availableDifficulties)
+        return copy(bpm = edited.listedBpm, difficulties = edited.availableDifficulties)
     }
 
     suspend fun song(trackId: String): GlyphSong? =
@@ -84,7 +84,7 @@ class GlyphSongRepository @Inject constructor(
         val simfile = simfile(song.trackId)
         val exists = withContext(Dispatchers.IO) { chartFile(song.trackId).exists() }
         return song.copy(
-            bpm = simfile?.timing?.startBpm ?: song.bpm,
+            bpm = simfile?.listedBpm ?: song.bpm,
             difficulties = simfile?.availableDifficulties.orEmpty(),
             chartState = when {
                 simfile != null -> GlyphChartState.READY
@@ -160,7 +160,7 @@ class GlyphSongRepository @Inject constructor(
             codec = codec ?: AudioCodec.UNKNOWN,
             // BPM is only known once a chart exists — it comes out of the stem
             // analysis, not out of the file's tags.
-            bpm = simfile?.timing?.startBpm,
+            bpm = simfile?.listedBpm,
             difficulties = simfile?.availableDifficulties.orEmpty(),
             chartState = when {
                 simfile != null -> GlyphChartState.READY

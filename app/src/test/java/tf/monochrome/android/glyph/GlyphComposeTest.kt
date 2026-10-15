@@ -320,7 +320,7 @@ class GlyphComposeTest {
         // Play and Training Ground are peers. Training is not an advanced
         // option hidden behind Play.
         compose.onNodeWithText("Play").assertIsDisplayed()
-        compose.onNodeWithText("Training Ground").assertIsDisplayed()
+        compose.onNodeWithText("Train").assertIsDisplayed()
     }
 
     @Test

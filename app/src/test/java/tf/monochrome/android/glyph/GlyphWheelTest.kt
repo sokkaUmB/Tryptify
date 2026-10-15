@@ -12,6 +12,8 @@ import tf.monochrome.android.glyph.asset.GlyphBeatDivision
 import tf.monochrome.android.glyph.asset.GlyphLane
 import tf.monochrome.android.glyph.chart.GlyphChart
 import tf.monochrome.android.glyph.chart.GlyphChartStats
+import tf.monochrome.android.glyph.chart.GlyphDisplayBpm
+import tf.monochrome.android.glyph.chart.SscParser
 import tf.monochrome.android.glyph.chart.GlyphNote
 import tf.monochrome.android.glyph.chart.GlyphNoteType
 import tf.monochrome.android.glyph.chart.GlyphTiming
@@ -241,6 +243,53 @@ class GlyphWheelTest {
             segments = listOf(GlyphTiming.BpmSegment(0f, 120f), GlyphTiming.BpmSegment(8f, 240f)),
         )
         assertEquals(120f..240f, timing.bpmRange())
+    }
+
+    // ── #DISPLAYBPM ─────────────────────────────────────────────────────
+
+    @Test
+    fun displayBpmReadsAsStepManiaReadsIt() {
+        assertEquals(GlyphDisplayBpm.Shown(150f, 150f), GlyphDisplayBpm.parse("150"))
+        assertEquals(GlyphDisplayBpm.Shown(75f, 150f), GlyphDisplayBpm.parse(" 75:150 "))
+        // Written high first, it is still the same range.
+        assertEquals(GlyphDisplayBpm.Shown(75f, 150f), GlyphDisplayBpm.parse("150:75"))
+        assertEquals(GlyphDisplayBpm.Hidden, GlyphDisplayBpm.parse("*"))
+        for (junk in listOf(null, "", "  ", "fast", "0", "-20", "1:2:3", "150:"))
+            assertNull("\"$junk\"", GlyphDisplayBpm.parse(junk))
+    }
+
+    @Test
+    fun aGimmickSongListsItsDisplayTempoAndPlaysItsTiming() {
+        // A beat at 1500 BPM for show: the list and the sort read 150, the
+        // notes still fall to the real timing.
+        val ssc = """
+            #TITLE:Gimmick;
+            #BPMS:0=150,8=1500,8.5=150;
+            #DISPLAYBPM:150;
+            #NOTEDATA:;
+            #STEPSTYPE:dance-single;
+            #DIFFICULTY:Easy;
+            #METER:3;
+            #NOTES:
+            1000
+            0100
+            0010
+            0001
+            ;
+        """.trimIndent()
+        val simfile = SscParser.parse(ssc)!!
+        assertEquals(GlyphDisplayBpm.Shown(150f, 150f), simfile.displayBpm)
+        assertEquals(150f, simfile.listedBpm, 0f)
+        assertEquals(1500f, simfile.timing.bpmRange().endInclusive, 0f)
+
+        val hidden = SscParser.parse(ssc.replace("#DISPLAYBPM:150;", "#DISPLAYBPM:*;"))!!
+        assertEquals(GlyphDisplayBpm.Hidden, hidden.displayBpm)
+        // Hidden on the card, still sorted by its timing.
+        assertEquals(150f, hidden.listedBpm, 0f)
+
+        val none = SscParser.parse(ssc.replace("#DISPLAYBPM:150;\n", ""))!!
+        assertNull(none.displayBpm)
+        assertEquals(150f, none.listedBpm, 0f)
     }
 
     @Test

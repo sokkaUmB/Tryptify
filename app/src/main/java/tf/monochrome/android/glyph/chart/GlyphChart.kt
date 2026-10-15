@@ -107,10 +107,44 @@ data class GlyphSimfile(
     val sampleStartSeconds: Float? = null,
     /** #SAMPLELENGTH: how long the preview runs. */
     val sampleLengthSeconds: Float? = null,
+    /** #DISPLAYBPM: the tempo the song says it is, or null to read the timing. */
+    val displayBpm: GlyphDisplayBpm? = null,
 ) {
+    /**
+     * The tempo a list shows and sorts by: the display tempo's top, as
+     * StepMania's BPM sort uses, else the timing's own. A hidden display
+     * tempo (`*`) keeps the timing's, so the song still sorts somewhere.
+     */
+    val listedBpm: Float
+        get() = (displayBpm as? GlyphDisplayBpm.Shown)?.high ?: timing.startBpm
+
     fun chart(difficulty: StepManiaDifficulty): GlyphChart? =
         charts.firstOrNull { it.difficulty == difficulty }
 
     val availableDifficulties: List<StepManiaDifficulty> =
         charts.map { it.difficulty }.sortedBy { it.ordinal }
+}
+
+/**
+ * `#DISPLAYBPM`: what a song shows as its tempo, apart from its timing — so a
+ * chart that jumps to 1500 BPM for a beat as a gimmick still reads 150. As
+ * StepMania reads it: one value, a range `low:high`, or `*` for a tempo the
+ * song keeps hidden.
+ */
+sealed interface GlyphDisplayBpm {
+    data class Shown(val low: Float, val high: Float) : GlyphDisplayBpm
+    data object Hidden : GlyphDisplayBpm
+
+    companion object {
+        /** The tag's value, or null when it is missing, empty or not a tempo. */
+        fun parse(raw: String?): GlyphDisplayBpm? {
+            val text = raw?.trim().orEmpty()
+            if (text.isEmpty()) return null
+            if (text == "*") return Hidden
+            val parts = text.split(':').map { it.trim().toFloatOrNull() }
+            if (parts.isEmpty() || parts.size > 2 || parts.any { it == null || it <= 0f || !it.isFinite() }) return null
+            val values = parts.filterNotNull()
+            return Shown(values.min(), values.max())
+        }
+    }
 }

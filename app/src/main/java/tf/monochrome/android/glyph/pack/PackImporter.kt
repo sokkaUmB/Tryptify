@@ -227,7 +227,7 @@ class PackImporter(
             artist = simfile.artist,
             durationSeconds = runCatching { durationOf(music) }.getOrDefault(0),
             difficulties = simfile.availableDifficulties.map { it.name },
-            bpm = simfile.timing.startBpm,
+            bpm = simfile.listedBpm,
         )
     }
 

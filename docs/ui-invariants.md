@@ -1093,7 +1093,13 @@ column, with nothing to jump between.
   insets are read there too; a frame of a turn recomposes nothing.
 * It swishes as the player turns it (`GlyphWheelSound`, Settings › More ›
   Wheel sound), never when it is set to a new place by a sort, a search or a
-  folder.
+  folder. The swish and the metronome are `USAGE_GAME`, on the media volume:
+  as sonification they went with the system stream, which a phone on silent
+  mutes, and the wheel was silent for anyone with their ringer off.
+* The selection panel is one row of glass pills: the difficulties, Train and
+  Play, and the best grade under them when there is one. The card says the
+  song's name, tempo and notes; a panel that said them again, under a heading
+  and over two full-width buttons, took a third of the screen from the wheel.
 
 **The card over the wheel reads the chart; it never grades it.**
 `GlyphSongInfoCard`: DDR's Groove Radar, the BPM meter, the meter in feet and a
@@ -1105,7 +1111,10 @@ Chaos read four times high and filled their axes on almost every chart. The
 difficulty number is the chart's own meter; nothing predicts one, and as text it
 goes through `menuAccent`. Every value moves to the next as the wheel turns or the
 difficulty changes, and snaps under reduced motion. The beat light follows the
-playing preview's beat and is still when nothing plays.
+playing preview's beat and is still when nothing plays. The tempo shown is the
+song's `#DISPLAYBPM` when it has one (`???` for `*`), as the list and the BPM
+sort use: the timing's range showed a gimmick's one beat at 1500 as the song's
+tempo. Play keeps the real timing.
 
 The card sits above the search bar, not in the page under it, and takes the
 height the screen can spare: whole when it is 720 dp or taller, without the radar

@@ -62,10 +62,11 @@ class GlyphMetronome {
         val output = AudioTrack.Builder()
             .setAudioAttributes(
                 AudioAttributes.Builder()
-                    // Sonification, not media: the click should duck under a
-                    // call and must never be what a headset's next-track button
-                    // is aimed at.
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                    // A game sound: it follows the media volume and ducks under
+                    // a call, and an AudioTrack is never what a headset's
+                    // buttons are aimed at. As sonification it went with the
+                    // system stream, which a phone on silent mutes.
+                    .setUsage(AudioAttributes.USAGE_GAME)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build(),
             )

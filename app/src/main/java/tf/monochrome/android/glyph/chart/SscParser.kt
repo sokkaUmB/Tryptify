@@ -63,6 +63,7 @@ object SscParser {
             credit = tags.header["CREDIT"].orEmpty().trim(),
             sampleStartSeconds = tags.header["SAMPLESTART"]?.trim()?.toFloatOrNull()?.takeIf { it >= 0f },
             sampleLengthSeconds = tags.header["SAMPLELENGTH"]?.trim()?.toFloatOrNull()?.takeIf { it > 0f },
+            displayBpm = GlyphDisplayBpm.parse(tags.header["DISPLAYBPM"]),
             timing = timing,
             charts = charts.sortedBy { it.difficulty.ordinal },
         )

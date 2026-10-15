@@ -51,6 +51,7 @@ import kotlin.math.floor
 import kotlin.math.sin
 import tf.monochrome.android.audio.stepmania.StepManiaDifficulty
 import tf.monochrome.android.glyph.chart.GlyphChartStats
+import tf.monochrome.android.glyph.chart.GlyphDisplayBpm
 import tf.monochrome.android.glyph.chart.GlyphTiming
 import tf.monochrome.android.glyph.chart.bpmRange
 import tf.monochrome.android.glyph.data.GlyphWheel
@@ -91,7 +92,12 @@ internal fun GlyphSongInfoCard(
     val stats = remember(chart, simfile, songSeconds) {
         if (chart != null && simfile != null) GlyphChartStats.of(chart, simfile.timing, songSeconds) else GlyphChartStats.EMPTY
     }
-    val range = simfile?.timing?.bpmRange()
+    // The tempo the song says it is (#DISPLAYBPM) before the one its timing
+    // reaches: a gimmick that jumps to 1500 BPM for a beat reads as the 150 it
+    // is. A hidden one (`*`) reads as StepMania's "???".
+    val display = simfile?.displayBpm
+    val hidden = display is GlyphDisplayBpm.Hidden
+    val range = (display as? GlyphDisplayBpm.Shown)?.let { it.low..it.high } ?: simfile?.timing?.bpmRange()
     val bpm = range?.endInclusive ?: song?.bpm ?: (item as? GlyphWheel.Item.Folder)?.section?.songs?.mapNotNull { it.bpm }?.maxOrNull() ?: 0f
     val colour = chart?.difficulty?.let(::difficultyColour) ?: scheme.onSurfaceVariant
     val title = when (item) {
@@ -135,6 +141,7 @@ internal fun GlyphSongInfoCard(
                 GlyphBpmMeter(
                     bpm = bpm,
                     low = range?.start?.takeIf { it < (range.endInclusive - 0.5f) },
+                    hidden = hidden,
                     colour = colour,
                     reducedMotion = reducedMotion,
                     timing = simfile?.timing,
@@ -248,6 +255,7 @@ internal fun GlyphGrooveRadar(
 private fun GlyphBpmMeter(
     bpm: Float,
     low: Float?,
+    hidden: Boolean,
     colour: Color,
     reducedMotion: Boolean,
     timing: GlyphTiming?,
@@ -255,17 +263,23 @@ private fun GlyphBpmMeter(
 ) {
     val scheme = MaterialTheme.colorScheme
     val shown by animated(bpm, reducedMotion, "bpm")
-    val gauge by animated((bpm / MAX_GAUGE_BPM).coerceIn(0f, 1f), reducedMotion, "bpmGauge")
+    val gauge by animated(if (hidden) 0f else (bpm / MAX_GAUGE_BPM).coerceIn(0f, 1f), reducedMotion, "bpmGauge")
     Column {
         Row(verticalAlignment = Alignment.Bottom) {
             Text("SPEED", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, letterSpacing = 1.4.sp)
             Spacer(Modifier.width(6.dp))
             Text(
-                text = if (low != null) "${low.toInt()}–${shown.toInt()}" else shown.toInt().toString(),
+                text = when {
+                    hidden -> "???"
+                    low != null -> "${low.toInt()}–${shown.toInt()}"
+                    else -> shown.toInt().toString()
+                },
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.semantics {
-                    contentDescription = if (low != null) {
+                    contentDescription = if (hidden) {
+                        "Tempo hidden"
+                    } else if (low != null) {
                         "${low.toInt()} to ${bpm.toInt()} beats a minute"
                     } else {
                         "${bpm.toInt()} beats a minute"

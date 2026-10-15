@@ -25,9 +25,11 @@ import kotlin.math.sin
  * a fast turn is "shh-shh-shh" rather than a wash. The track is driven from
  * one background thread, never the frame that moved the wheel.
  *
- * Sonification, not media, as the metronome is: it ducks under a call and is
- * never what a headset's buttons are aimed at. A track that cannot be made
- * leaves the wheel silent, never broken.
+ * A game sound: it follows the media volume, as a game's sounds do, and ducks
+ * under a call. Played as sonification it went with the system stream, which
+ * a phone on silent mutes — the wheel was silent on a phone set to vibrate,
+ * whatever its media volume. A track that cannot be made leaves the wheel
+ * silent, never broken.
  */
 class GlyphWheelSound {
 
@@ -77,7 +79,7 @@ class GlyphWheelSound {
         return AudioTrack.Builder()
             .setAudioAttributes(
                 AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_GAME)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build(),
             )
@@ -106,8 +108,8 @@ object GlyphWheelSwish {
     /** Length of the swish; a wheel step is about this long at a brisk turn. */
     const val LENGTH_SECONDS = 0.1
 
-    /** Peak level, under the metronome's 0.35: it is a texture, not a signal. */
-    const val AMPLITUDE = 0.19
+    /** Peak level, under the metronome's 0.35, and enough to be heard over a preview. */
+    const val AMPLITUDE = 0.30
 
     /** The attack: the swish swells from silence to its peak over this long. */
     const val ATTACK_SECONDS = 0.010
