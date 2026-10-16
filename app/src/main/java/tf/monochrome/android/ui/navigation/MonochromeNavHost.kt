@@ -233,6 +233,17 @@ internal val chromeHiddenRoutes = setOf(
     Screen.CarMode.route,
 )
 
+/**
+ * Destinations that keep the tab bar but never the mini player: Trypt Mania,
+ * on every one of its screens, results included. GlyphRoute also asks for it
+ * (HideMiniPlayer), but that is an effect, a frame late and only as good as
+ * the order screens come and go in; the route is known before anything is
+ * composed, so the bar never shows there, even for a frame.
+ */
+internal val miniPlayerHiddenRoutes = setOf(
+    Screen.Glyph.route,
+)
+
 @Composable
 fun MonochromeNavHost(initialRoute: String? = null) {
     val navController = rememberNavController()
@@ -318,7 +329,8 @@ fun MonochromeNavHost(initialRoute: String? = null) {
     // of the screen that holds it (see MiniBarHandle). The bar reads those.
     val miniHandle = miniPlayerSlot.handle
     // A screen can keep the tab bar and send the mini player away (Trypt Mania).
-    val showMiniPlayer = (currentTrack != null || miniHandle != null) && showChrome && !appChrome.miniPlayerHidden
+    val showMiniPlayer = (currentTrack != null || miniHandle != null) && showChrome &&
+        !appChrome.miniPlayerHidden && currentDestination?.route !in miniPlayerHiddenRoutes
 
     val scope = rememberCoroutineScope()
 

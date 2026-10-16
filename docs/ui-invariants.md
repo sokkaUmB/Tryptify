@@ -598,6 +598,12 @@ tab bar and the mini player from the menus too. While a screen holds
 itself; stopped above the bar, the black playfield had a strip of theme
 background under it, white on a light theme.
 
+**Trypt Mania never has the mini player**, on its menus, song list and results
+alike (`miniPlayerHiddenRoutes`, checked by route in the nav host, as well as
+`HideMiniPlayer` in GlyphRoute): it keeps the tab bar only. The route is known
+before the screen composes, so the bar cannot show there for a frame or after
+a run, whatever order the screens' effects run in.
+
 **Bottom padding comes from `LocalBottomChromeInset`, never a number.** It is
 measured from where the reading screen ends: pager pages and full-bleed routes
 run under the system bar, so theirs includes it; pushed screens stop above it,
