@@ -26,14 +26,14 @@ class RemoteStemAnalysisTest {
         return Base64.getEncoder().encodeToString(buffer.array())
     }
 
-    private fun answer(device: String, layers: List<String>): String {
+    private fun answer(device: String, layers: List<String>, extra: String = ""): String {
         val raw = FloatArray(500) { (it % 50) / 10f }
         val rates = FloatArray(500) { 440f }
         val envelopes = (listOf("drums") + layers).joinToString(",") {
             "\"$it\":{\"raw\":\"${b64(raw)}\",\"rates\":\"${b64(rates)}\"}"
         }
         return """{"success":true,"data":{"service":"tryptmania-parser","model":"htdemucs_ft","device":"$device",
-            "sampleRate":44100,"frames":220500,"envelopeHz":100,"pricePerHour":0.8,"idleSeconds":300,
+            "sampleRate":44100,"frames":220500,"envelopeHz":100,"pricePerHour":0.8,"idleSeconds":300,$extra
             "seconds":{"upload":0.5,"decode":0.2,"separate":0.9,"envelopes":0.1},"envelopes":{$envelopes}}}"""
     }
 
@@ -47,6 +47,15 @@ class RemoteStemAnalysisTest {
         assertEquals("htdemucs_ft on x.modal.run (GPU)", result.label)
         // Enough for the analyzer, which wants four seconds and more.
         assertTrue(StemRhythmAnalyzer().analyze(result.drums, result.layers).durationSeconds > 4f)
+    }
+
+    @Test
+    fun aServerSaysHowManySongsItTakesAtOnce() {
+        val six = RemoteStemAnalysis.parse(json, answer("cpu", listOf("bass"), "\"parallel\":6,"), "railway.app")
+        assertEquals(6, six.run.parallel)
+        // An older server, or a nonsense count, says nothing.
+        assertEquals(null, RemoteStemAnalysis.parse(json, answer("cpu", listOf("bass")), "host").run.parallel)
+        assertEquals(null, RemoteStemAnalysis.parse(json, answer("cpu", listOf("bass"), "\"parallel\":0,"), "host").run.parallel)
     }
 
     @Test

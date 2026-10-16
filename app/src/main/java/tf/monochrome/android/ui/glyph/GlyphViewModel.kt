@@ -822,7 +822,7 @@ class GlyphViewModel @Inject constructor(
                     )
                 // A server that has not said is taken for what Fast first tries: a GPU.
                 val gpu = first.separatesOnGpu ?: true
-                val estimate = ChartPace.estimate(audioSeconds, gpu, chartPace.snapshot(gpu))
+                val estimate = ChartPace.estimate(audioSeconds, gpu, chartPace.snapshot(gpu), songs = picked.size)
                 return GlyphModeEstimate(
                     time = ChartPace.describeDuration(estimate.seconds),
                     cost = estimate.costDollars?.let(ChartPace::describeCost),

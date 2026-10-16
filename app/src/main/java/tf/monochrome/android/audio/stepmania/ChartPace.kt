@@ -30,6 +30,7 @@ class ChartPace @Inject constructor(@ApplicationContext context: Context) {
             ratio = prefs.getFloat("ratio_$kind", Float.NaN).toDouble().takeUnless { it.isNaN() },
             pricePerHour = prefs.getFloat("price_$kind", Float.NaN).toDouble().takeUnless { it.isNaN() },
             idleSeconds = prefs.getInt("idle_$kind", -1).takeIf { it >= 0 },
+            parallel = prefs.getInt("parallel_$kind", -1).takeIf { it >= 1 },
         )
     }
 
@@ -43,6 +44,7 @@ class ChartPace @Inject constructor(@ApplicationContext context: Context) {
         // A server that stopped saying leaves no stale price behind.
         if (run.pricePerHour != null) edit.putFloat("price_$kind", run.pricePerHour.toFloat()) else edit.remove("price_$kind")
         if (run.idleSeconds != null) edit.putInt("idle_$kind", run.idleSeconds) else edit.remove("idle_$kind")
+        if (run.parallel != null) edit.putInt("parallel_$kind", run.parallel) else edit.remove("parallel_$kind")
         edit.apply()
     }
 
@@ -51,6 +53,8 @@ class ChartPace @Inject constructor(@ApplicationContext context: Context) {
         val ratio: Double? = null,
         val pricePerHour: Double? = null,
         val idleSeconds: Int? = null,
+        /** How many songs the server separates at once, as it last said. */
+        val parallel: Int? = null,
     )
 
     /** How long a batch should take and, on a server that says what it charges, what it should cost. */
@@ -80,15 +84,21 @@ class ChartPace @Inject constructor(@ApplicationContext context: Context) {
             if (old == null) sample else old + (sample - old) * LEARN
 
         /**
-         * A batch of [audioSeconds] of music on a GPU or a CPU server: the
-         * songs back to back at the learned pace, plus a start in case it is
-         * asleep. The cost, where the server says its price, is its time for
-         * all of that plus the idle minutes it stays up after.
+         * A batch of [songs] songs, [audioSeconds] of music, on a GPU or a CPU
+         * server: the songs at the learned pace, shared among as many copies
+         * of the server as it runs at once and the batch has songs for, plus a
+         * start in case it is asleep. The cost, where the server says its
+         * price, is every copy's time: the songs, and each copy's start and
+         * the idle minutes it stays up after.
          */
-        fun estimate(audioSeconds: Long, gpu: Boolean, pace: Pace): Estimate {
+        fun estimate(audioSeconds: Long, gpu: Boolean, pace: Pace, songs: Int = 1): Estimate {
             val ratio = pace.ratio ?: if (gpu) DEFAULT_GPU_RATIO else DEFAULT_CPU_RATIO
-            val seconds = (audioSeconds * ratio).roundToLong() + SERVER_START_SECONDS
-            val cost = pace.pricePerHour?.let { price -> price * (seconds + (pace.idleSeconds ?: 0)) / 3600.0 }
+            val busy = audioSeconds * ratio
+            val copies = (pace.parallel ?: 1).coerceAtMost(songs.coerceAtLeast(1)).coerceAtLeast(1)
+            val seconds = (busy / copies).roundToLong() + SERVER_START_SECONDS
+            val cost = pace.pricePerHour?.let { price ->
+                price * (busy + copies * (SERVER_START_SECONDS + (pace.idleSeconds ?: 0))) / 3600.0
+            }
             return Estimate(seconds, cost)
         }
 

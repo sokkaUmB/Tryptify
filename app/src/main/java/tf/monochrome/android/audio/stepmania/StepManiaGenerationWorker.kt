@@ -30,7 +30,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withContext
 import tf.monochrome.android.R
 import tf.monochrome.android.glyph.pack.OwnPackStore
@@ -49,9 +49,12 @@ import tf.monochrome.android.glyph.pack.TreePackSink
  * how the batch ended in one when it is done.
  *
  * It charts the line's songs until none is left, a song that fails noted and
- * passed over rather than ending the batch. Two are in flight at once: the
- * next song uploads while the server separates this one, which it does one at
- * a time anyway, so the upload costs the batch nothing.
+ * passed over rather than ending the batch. As many are in flight at once as
+ * the server separates at a time, and one more: a server separates one song at
+ * a time, so a batch goes faster only on several copies of it (Modal's CPU
+ * copies, Railway's replicas), each server says how many it has, and the song
+ * sent ahead uploads while the others separate. Two until a server has said,
+ * which its first song does, so the line widens once that song is back.
  *
  * The screen watches [ChartQueue] rather than this job, so leaving and coming
  * back shows the same progress, and the songs waiting behind it.
@@ -81,15 +84,21 @@ class StepManiaGenerationWorker @AssistedInject constructor(
 
         val outcomes = mutableListOf<ChartOutcome>()
         try {
-            val slots = Semaphore(LANES)
+            // Songs in flight, counted here only; each sends on [done] as it ends.
+            var inFlight = 0
+            val done = Channel<Unit>(Channel.UNLIMITED)
             coroutineScope {
                 while (true) {
-                    slots.acquire()
-                    val job = queue.next()
-                    if (job == null) {
-                        slots.release()
-                        break
+                    while (done.tryReceive().isSuccess) inFlight--
+                    // The next song's server sets how many go at once, read
+                    // again each time, so it widens as soon as a server says.
+                    val mode = queue.state.value.waiting.firstOrNull()?.mode ?: ChartMode.FAST
+                    while (inFlight >= lanesFor(mode)) {
+                        done.receive()
+                        inFlight--
                     }
+                    val job = queue.next() ?: break
+                    inFlight++
                     launch {
                         try {
                             val outcome = chart(job)
@@ -101,7 +110,7 @@ class StepManiaGenerationWorker @AssistedInject constructor(
                             withContext(NonCancellable) { queue.putBack(job) }
                             throw stopped
                         } finally {
-                            slots.release()
+                            done.trySend(Unit)
                         }
                     }
                 }
@@ -183,6 +192,12 @@ class StepManiaGenerationWorker @AssistedInject constructor(
             Unit
         }
     }
+
+    /**
+     * Songs in flight at once for a song in [mode]: as many as its server
+     * separates at a time, as it last said, and one more uploading ahead.
+     */
+    private fun lanesFor(mode: ChartMode): Int = lanes(pace.snapshot(gpu = mode == ChartMode.FAST).parallel)
 
     override suspend fun getForegroundInfo(): ForegroundInfo = foregroundInfo(queue.state.value)
 
@@ -280,8 +295,11 @@ class StepManiaGenerationWorker @AssistedInject constructor(
     companion object {
         const val WORK_NAME = "trypt_mania_chart"
 
-        /** Songs in flight at once: one uploading while the server separates the other. */
-        private const val LANES = 2
+        /** The most songs in flight at once, however many copies a server says it has. */
+        const val MAX_LANES = 8
+
+        /** Songs in flight for a server that separates [parallel] at a time: those, and one uploading ahead. */
+        fun lanes(parallel: Int?): Int = ((parallel ?: 1).coerceAtLeast(1) + 1).coerceAtMost(MAX_LANES)
 
         private const val CHANNEL_ID = "trypt_mania_charts"
         private const val NOTIFICATION_ID = 8200

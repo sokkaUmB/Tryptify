@@ -186,6 +186,7 @@ class RemoteStemAnalysis @Inject constructor(
                 separateSeconds = timing("separate") + timing("envelopes"),
                 pricePerHour = data["pricePerHour"]?.jsonPrimitive?.doubleOrNull,
                 idleSeconds = data["idleSeconds"]?.jsonPrimitive?.intOrNull,
+                parallel = data["parallel"]?.jsonPrimitive?.intOrNull?.takeIf { it >= 1 },
             )
         }
 
@@ -221,6 +222,11 @@ data class RemoteRun(
     /** Null when the deploy does not say (a server not on Modal, or an older one). */
     val pricePerHour: Double?,
     val idleSeconds: Int?,
+    /**
+     * How many songs the deploy separates at once: its copies, each one song
+     * at a time (Modal's CPU copies, Railway's replicas). Null when it does not say.
+     */
+    val parallel: Int? = null,
 ) {
     /**
      * Seconds of a batch this song costs, per second of its audio. A batch

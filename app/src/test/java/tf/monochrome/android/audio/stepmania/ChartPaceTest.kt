@@ -32,6 +32,32 @@ class ChartPaceTest {
     }
 
     @Test
+    fun copiesOfTheServerShareTheBatchAndEachBillsItsOwnStartAndIdle() {
+        // Eight songs, an hour of music at 0.4 s a second on four CPU copies:
+        // 24 minutes of separating shared four ways, plus a start.
+        val pace = ChartPace.Pace(ratio = 0.4, pricePerHour = 0.22, idleSeconds = 60, parallel = 4)
+        val estimate = ChartPace.estimate(3600, gpu = false, pace, songs = 8)
+        assertEquals(1440L / 4 + ChartPace.SERVER_START_SECONDS, estimate.seconds)
+        assertEquals(0.22 * (1440 + 4 * (ChartPace.SERVER_START_SECONDS + 60)) / 3600, estimate.costDollars!!, 1e-9)
+    }
+
+    @Test
+    fun aBatchUsesNoMoreCopiesThanItHasSongs() {
+        val pace = ChartPace.Pace(ratio = 0.4, parallel = 6)
+        val two = ChartPace.estimate(600, gpu = false, pace, songs = 2)
+        assertEquals(240L / 2 + ChartPace.SERVER_START_SECONDS, two.seconds)
+    }
+
+    @Test
+    fun songsInFlightAreTheServersCopiesAndOneAhead() {
+        assertEquals("one server, one sent ahead", 2, StepManiaGenerationWorker.lanes(null))
+        assertEquals(2, StepManiaGenerationWorker.lanes(1))
+        assertEquals("Modal's four CPU copies", 5, StepManiaGenerationWorker.lanes(4))
+        assertEquals("Railway's six replicas", 7, StepManiaGenerationWorker.lanes(6))
+        assertEquals(StepManiaGenerationWorker.MAX_LANES, StepManiaGenerationWorker.lanes(50))
+    }
+
+    @Test
     fun theLearnedPaceMovesTowardsEachSong() {
         assertEquals(0.2, ChartPace.blend(null, 0.2), 0.0)
         assertEquals(0.13, ChartPace.blend(0.1, 0.2), 1e-9)
