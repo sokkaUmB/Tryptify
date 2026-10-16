@@ -242,6 +242,10 @@ Replace broad package-wide keep rules with evidence-based rules. Confirm reflect
 
 Review every exported service/activity/receiver and all OAuth/playback deep links. Validate scheme, host, path, extras, and caller assumptions; use explicit intents where possible; apply permissions and `exported=false` where external invocation is not required. Reassess whether global cleartext traffic is necessary or can be scoped with network security configuration.
 
+### Snapdragon NPU and GPU (stem separation)
+
+The manifest's `<uses-native-library>` entries for `libcdsprpc.so` and `libOpenCL.so` are what let QNN reach the NPU and the GPU at all; since Android 12 a vendor library not declared there cannot be loaded. Without the first, a OnePlus 15 failed `QNN_DEVICE_ERROR_INVALID_CONFIG` ten milliseconds in. Two more things hold it up. ONNX Runtime does not fail a session whose accelerator would not start: it runs the whole model on the CPU and logs one line. So the NPU graph goes through the compile API with `ERROR_IF_NO_NODES_COMPILED` (`QnnStemBackend.compileForNpu`), never a plain session. And the chip is named to QNN (`SnapdragonNpu`, `soc_model`/`htp_arch`) rather than left for its driver to detect.
+
 ### Compose performance
 
 Use stable parameters, keyed lazy items, remembered derived values, and immutable collections where they materially reduce recomposition. Validate with tooling rather than mechanically adding annotations.

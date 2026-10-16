@@ -76,6 +76,19 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- The stem separator's accelerators reach the hardware through vendor
+             libraries, and since Android 12 an app may load one only if it says
+             so here. libcdsprpc.so is the link to the Snapdragon NPU's DSP:
+             without it QNN's HTP backend could not open the NPU at all
+             (QNN_DEVICE_ERROR_INVALID_CONFIG, ten milliseconds in, no DSP ever
+             reached). libOpenCL.so is the same for QNN's GPU backend. Not
+             required: a phone without them runs the separator on the CPU. -->
+        <uses-native-library
+            android:name="libcdsprpc.so"
+            android:required="false" />
+        <uses-native-library
+            android:name="libOpenCL.so"
+            android:required="false" />
 
         <activity
             android:name=".ui.main.MainActivity"

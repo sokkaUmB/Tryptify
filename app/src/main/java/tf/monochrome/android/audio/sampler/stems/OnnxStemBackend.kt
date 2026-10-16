@@ -128,6 +128,12 @@ open class OnnxStemBackend @Inject constructor(
         // track is hundreds of windows; allocating per window would spend the
         // whole job in the collector.
         val inputData = FloatArray(2 * segment)
+        // The outputs too: the chunk loop adds each window into the track
+        // before asking for the next. Allocated per window, a song's run
+        // pushed the heap to its 256 MB cap and stalled on the collector.
+        val outputs = order.withIndex()
+            .filter { (_, stem) -> stem in wanted }
+            .associate { (_, stem) -> stem to (FloatArray(segment) to FloatArray(segment)) }
 
         ChunkedSeparation.run(
             input = input,
@@ -156,8 +162,7 @@ open class OnnxStemBackend @Inject constructor(
                     buildMap {
                         order.forEachIndexed { index, stem ->
                             if (stem !in wanted) return@forEachIndexed
-                            val outL = FloatArray(segment)
-                            val outR = FloatArray(segment)
+                            val (outL, outR) = outputs.getValue(stem)
                             // (stem, channel, sample) into a flat buffer.
                             val base = index * 2 * segment
                             flat.position(base)
