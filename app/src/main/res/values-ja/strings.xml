@@ -2327,4 +2327,8 @@
     <plurals name="stats_tracks_unit">
         <item quantity="other">曲</item>
     </plurals>
+    <string name="settings_crt_effect">CRT エフェクト</string>
+    <string name="settings_crt_effect_subtitle">すべての画面を古いテレビのように表示します。Android 13 以降。</string>
+    <string name="settings_crt_look">スタイル</string>
+    <string name="settings_crt_unavailable">この端末では無効です。Android 13 以降とガラス効果の有効化が必要です。</string>
 </resources>

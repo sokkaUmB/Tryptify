@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.main
 
+import tf.monochrome.android.ui.glyph.tvShader
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -169,6 +170,9 @@ class MainActivity : ComponentActivity() {
             // composition local as well as applied here, so the visualiser's
             // own fullscreen mode knows not to show the bars again on its way
             // out — see SystemBarsHidden.
+            // Settings › Appearance › CRT effect: every screen through an old TV.
+            val appTvShader by preferences.appTvShader
+                .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.glyph.engine.GlyphTvShader.OFF)
             val immersiveFullScreen by preferences.immersiveFullScreen
                 .collectAsStateWithLifecycle(initialValue = false)
             // The user's manual low-performance overrides, from Settings ›
@@ -271,22 +275,30 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     SystemBarsHidden(immersiveFullScreen)
+                    // The CRT effect over the whole app, drawn on the one layer
+                    // every screen is in; a screen with its own (Trypt Mania's
+                    // playfield) leaves its own off under it.
+                    val appTv = tf.monochrome.android.ui.glyph.appTvShaderRuns(appTvShader)
                     Surface(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .then(if (appTv) Modifier.tvShader(appTvShader) else Modifier),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        // First-run gate. null = flag not read yet (splash is
-                        // still covering); false = wizard; true = main app.
-                        // Collected (not read once) so Settings flipping the
-                        // flag back re-enters onboarding on the next frame.
-                        val onboardingComplete by preferences.onboardingComplete
-                            .collectAsStateWithLifecycle(initialValue = null)
-                        when (onboardingComplete) {
-                            null -> Unit
-                            false -> OnboardingScreen(
-                                onFinished = { pendingPostRoute = it }
-                            )
-                            true -> MonochromeNavHost(initialRoute = pendingPostRoute)
+                        CompositionLocalProvider(tf.monochrome.android.ui.glyph.LocalAppTvShader provides appTv) {
+                            // First-run gate. null = flag not read yet (splash is
+                            // still covering); false = wizard; true = main app.
+                            // Collected (not read once) so Settings flipping the
+                            // flag back re-enters onboarding on the next frame.
+                            val onboardingComplete by preferences.onboardingComplete
+                                .collectAsStateWithLifecycle(initialValue = null)
+                            when (onboardingComplete) {
+                                null -> Unit
+                                false -> OnboardingScreen(
+                                    onFinished = { pendingPostRoute = it }
+                                )
+                                true -> MonochromeNavHost(initialRoute = pendingPostRoute)
+                            }
                         }
                     }
                 }

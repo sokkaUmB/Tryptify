@@ -2327,4 +2327,8 @@
     <plurals name="stats_tracks_unit">
         <item quantity="other">首曲目</item>
     </plurals>
+    <string name="settings_crt_effect">CRT 效果</string>
+    <string name="settings_crt_effect_subtitle">所有界面呈现老式电视效果。需要 Android 13 或更高版本。</string>
+    <string name="settings_crt_look">样式</string>
+    <string name="settings_crt_unavailable">此手机上不可用：需要 Android 13 并开启玻璃效果。</string>
 </resources>

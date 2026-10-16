@@ -10,9 +10,11 @@ import android.graphics.RuntimeShader
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.asComposeRenderEffect
@@ -43,8 +45,33 @@ import tf.monochrome.android.performance.LocalPerformanceProfile
  * pixels, a smaller layer (Training Ground's playfield, the options' and the
  * settings' preview) draws the same size of pixel as the game.
  */
-fun Modifier.glyphTvShader(graphics: GlyphGraphics): Modifier {
-    val shader = graphics.tvShader
+fun Modifier.glyphTvShader(graphics: GlyphGraphics): Modifier =
+    if (graphics.tvShader == GlyphTvShader.OFF) {
+        this
+    } else {
+        // Under the app-wide effect the game is already seen through a TV:
+        // a second one on top would draw every scanline twice.
+        this.composed { if (LocalAppTvShader.current) Modifier else Modifier.tvShader(graphics.tvShader, graphics.tv) }
+    }
+
+/**
+ * Whether the whole app is drawn through a TV (Settings › Appearance ›
+ * CRT effect, [appTvShaderRuns]), so a screen does not add its own on top.
+ */
+val LocalAppTvShader = staticCompositionLocalOf { false }
+
+/** Whether [shader] drawn over the whole app runs here: on, Android 13 or later, and blur allowed. */
+@Composable
+fun appTvShaderRuns(shader: GlyphTvShader): Boolean =
+    shader != GlyphTvShader.OFF && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        LocalPerformanceProfile.current.allowHazeBlur
+
+/**
+ * Any layer through [shader] at [tv]'s settings: the game's playfield, or
+ * the whole app from its root. Nothing below Android 13, where the shader off
+ * on a phone that turns its blur off, or one whose GPU will not compile it.
+ */
+fun Modifier.tvShader(shader: GlyphTvShader, tv: GlyphTvTuning = GlyphTvTuning()): Modifier {
     return if (shader == GlyphTvShader.OFF || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         this
     } else {
@@ -53,11 +80,11 @@ fun Modifier.glyphTvShader(graphics: GlyphGraphics): Modifier {
             val size = remember { mutableStateOf(IntSize.Zero) }
             val density = LocalDensity.current.density
             val window = LocalWindowInfo.current.containerSize
-            val pixel = graphics.tv.pixelSize(shader, density, window.height)
+            val pixel = tv.pixelSize(shader, density, window.height)
             if (runtime == null || !LocalPerformanceProfile.current.allowHazeBlur) {
                 Modifier
             } else {
-                Modifier.onSizeChanged { size.value = it }.tvLayer(runtime, shader, graphics.tv, pixel, size)
+                Modifier.onSizeChanged { size.value = it }.tvLayer(runtime, shader, tv, pixel, size)
             }
         }
     }

@@ -2398,4 +2398,8 @@
         <item quantity="one">track</item>
         <item quantity="other">tracks</item>
     </plurals>
+    <string name="settings_crt_effect">CRT effect</string>
+    <string name="settings_crt_effect_subtitle">Every screen through an old TV. Android 13 and later.</string>
+    <string name="settings_crt_look">Look</string>
+    <string name="settings_crt_unavailable">Off on this phone: it needs Android 13 and the glass effects on.</string>
 </resources>

@@ -1275,6 +1275,15 @@ turns its blur off (a low-end phone, or liquid glass removed), since it is a
 full-screen pass every frame, and the setting says so; a shader the driver will
 not compile leaves the screen plain.
 
+**Except when the player asks for it everywhere.** Settings › Appearance ›
+CRT effect, the tab's last setting and off by default, draws the whole app
+through one of the same looks (`Modifier.tvShader` on the activity's root
+surface, the CRT unless another look is picked), with the same limits, and
+says when this phone cannot run it. Pop-ups that open their own window (a
+dropdown, a system dialog) are outside it. Under it the game's own
+(`glyphTvShader`, `LocalAppTvShader`) is left off: two would draw every
+scanline twice.
+
 * Every pattern is counted in TV pixels of a whole number of phone pixels
   (`GlyphTvTuning.pixelSize`), never a fraction. The old line grid was 640 x 480
   stretched over the window, 5.775 rows a line on a 2772-row screen: lines of

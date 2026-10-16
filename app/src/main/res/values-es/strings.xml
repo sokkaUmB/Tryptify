@@ -2459,4 +2459,8 @@
         <item quantity="many">canciones</item>
         <item quantity="other">canciones</item>
     </plurals>
+    <string name="settings_crt_effect">Efecto CRT</string>
+    <string name="settings_crt_effect_subtitle">Todas las pantallas como en un televisor antiguo. Android 13 o posterior.</string>
+    <string name="settings_crt_look">Estilo</string>
+    <string name="settings_crt_unavailable">Desactivado en este teléfono: necesita Android 13 y los efectos de cristal activados.</string>
 </resources>

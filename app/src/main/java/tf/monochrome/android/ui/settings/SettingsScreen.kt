@@ -719,6 +719,59 @@ private fun AppearanceTab(viewModel: SettingsViewModel, navController: NavContro
         AppearanceControls(viewModel, onOpenFonts = onOpenFonts)
         Spacer(modifier = Modifier.height(16.dp))
         InterfaceControls(viewModel, navController)
+        Spacer(modifier = Modifier.height(16.dp))
+        // Last of all: the whole app through an old TV.
+        CrtEffectSetting(viewModel)
+    }
+}
+
+/**
+ * Settings › Appearance, last: every screen through an old TV, in one of Trypt
+ * Mania's looks (the CRT unless another is picked). Says so when this phone
+ * cannot run it, rather than leaving a switch that does nothing.
+ */
+@Composable
+private fun CrtEffectSetting(viewModel: SettingsViewModel) {
+    val shader by viewModel.appTvShader.collectAsStateWithLifecycle()
+    val on = shader != tf.monochrome.android.glyph.engine.GlyphTvShader.OFF
+    val runs = tf.monochrome.android.ui.glyph.appTvShaderRuns(shader)
+    var looks by remember { mutableStateOf(false) }
+    SettingsGroupHeader(stringResource(R.string.settings_crt_effect))
+    SettingSwitchItem(
+        title = stringResource(R.string.settings_crt_effect),
+        subtitle = if (on && !runs) {
+            stringResource(R.string.settings_crt_unavailable)
+        } else {
+            stringResource(R.string.settings_crt_effect_subtitle)
+        },
+        checked = on,
+        onCheckedChange = {
+            viewModel.setAppTvShader(
+                if (it) tf.monochrome.android.glyph.engine.GlyphTvShader.CRT else tf.monochrome.android.glyph.engine.GlyphTvShader.OFF,
+            )
+        },
+    )
+    if (on) {
+        Box {
+            SettingItem(
+                title = stringResource(R.string.settings_crt_look),
+                subtitle = shader.label,
+                onClick = { looks = true },
+            )
+            DropdownMenu(expanded = looks, onDismissRequest = { looks = false }) {
+                tf.monochrome.android.glyph.engine.GlyphTvShader.entries
+                    .filter { it != tf.monochrome.android.glyph.engine.GlyphTvShader.OFF }
+                    .forEach { look ->
+                        DropdownMenuItem(
+                            text = { Text(look.label) },
+                            onClick = {
+                                viewModel.setAppTvShader(look)
+                                looks = false
+                            },
+                        )
+                    }
+            }
+        }
     }
 }
 

@@ -147,6 +147,8 @@ class PreferencesManager @Inject constructor(
         private val DYNAMIC_COLORS_MENUS = booleanPreferencesKey("dynamic_colors_menus")
         private val DYNAMIC_COLORS_KEEP_BACKGROUND =
             booleanPreferencesKey("dynamic_colors_keep_background")
+        // The whole app through an old TV: a TV shader's id, "off" for none.
+        private val APP_TV_SHADER = stringPreferencesKey("app_tv_shader")
         // How long the album colours take to cross over, in ms. Older builds
         // also stored -1 here for "match Blend Between Tracks"; ColorBlend
         // .millisFor turns that back into a real length.
@@ -506,7 +508,7 @@ class PreferencesManager @Inject constructor(
         val SETTINGS_SYNC_KEYS: Set<Preferences.Key<*>> = setOf(
             WIFI_QUALITY, CELLULAR_QUALITY,
             THEME, THEME_PAPER, DYNAMIC_COLORS,
-            DYNAMIC_COLORS_MENUS, DYNAMIC_COLORS_KEEP_BACKGROUND, COLOR_TRANSITION_MS,
+            DYNAMIC_COLORS_MENUS, DYNAMIC_COLORS_KEEP_BACKGROUND, APP_TV_SHADER, COLOR_TRANSITION_MS,
             CUSTOM_THEME_ENABLED, CUSTOM_ACCENT, CUSTOM_BACKGROUND,
             FONT_SCALE, FONT_SCALE_FOLLOW_SYSTEM,
             GAPLESS_PLAYBACK, GAPLESS_NO_RESAMPLE, SHOW_EXPLICIT_BADGES,
@@ -675,6 +677,15 @@ class PreferencesManager @Inject constructor(
 
     suspend fun setDynamicColorKeepBackground(enabled: Boolean) {
         dataStore.edit { it[DYNAMIC_COLORS_KEEP_BACKGROUND] = enabled }
+    }
+
+    /** Settings › Appearance › CRT effect: the look every screen is drawn through, off by default. */
+    val appTvShader: Flow<tf.monochrome.android.glyph.engine.GlyphTvShader> = dataStore.data.map { prefs ->
+        tf.monochrome.android.glyph.engine.GlyphTvShader.fromId(prefs[APP_TV_SHADER])
+    }
+
+    suspend fun setAppTvShader(shader: tf.monochrome.android.glyph.engine.GlyphTvShader) {
+        dataStore.edit { it[APP_TV_SHADER] = shader.id }
     }
 
     /**

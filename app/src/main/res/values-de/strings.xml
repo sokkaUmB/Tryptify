@@ -2393,4 +2393,8 @@
         <item quantity="one">Titel</item>
         <item quantity="other">Titel</item>
     </plurals>
+    <string name="settings_crt_effect">CRT-Effekt</string>
+    <string name="settings_crt_effect_subtitle">Jeder Bildschirm wie auf einem alten Fernseher. Ab Android 13.</string>
+    <string name="settings_crt_look">Stil</string>
+    <string name="settings_crt_unavailable">Auf diesem Telefon aus: Es braucht Android 13 und eingeschaltete Glaseffekte.</string>
 </resources>

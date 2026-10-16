@@ -2459,4 +2459,8 @@
         <item quantity="many">titres</item>
         <item quantity="other">titres</item>
     </plurals>
+    <string name="settings_crt_effect">Effet CRT</string>
+    <string name="settings_crt_effect_subtitle">Chaque écran comme sur un vieux téléviseur. Android 13 et plus.</string>
+    <string name="settings_crt_look">Style</string>
+    <string name="settings_crt_unavailable">Désactivé sur ce téléphone : il faut Android 13 et les effets de verre activés.</string>
 </resources>
