@@ -2333,4 +2333,8 @@
     <string name="settings_crt_unavailable">此手机上不可用：需要 Android 13 并开启玻璃效果。</string>
     <string name="fx_curvature">曲面</string>
     <string name="fx_curvature_desc">把歌词包在弯曲的 CRT 显像管上：玻璃从中央到两侧向后弯折的角度。中间鼓起，文字行向外弯；按钮每次调整 0.1 度。需要 Android 13 或更高版本。</string>
+    <string name="fx_curve_target">弯曲范围</string>
+    <string name="fx_curve_all">全部歌词</string>
+    <string name="fx_curve_line">正在唱的行</string>
+    <string name="fx_curve_word">正在唱的词</string>
 </resources>

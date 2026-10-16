@@ -119,6 +119,12 @@ data class LyricsFxSettings(
      * corners round off. Android 13 and later (lyricCurvature).
      */
     val curvatureDeg: Float = 0f,
+    /**
+     * What the curve bends: [CURVE_ALL] the lyrics as one tube, [CURVE_LINE]
+     * a dome over the sung line alone, [CURVE_WORD] over the sung word alone
+     * (word-timed lyrics; the line otherwise). Everything else stays flat.
+     */
+    val curvatureTarget: Int = 0,
 
     // ── Beat engine (bass → pulse) ─────────────────────────────────────
     /** Master intensity. 0 disables the whole audio-reactive path. */
@@ -261,6 +267,7 @@ data class LyricsFxSettings(
             waveTravelDp = waveTravelDp.c(0f, 8f, d.waveTravelDp),
             shadowDepth = shadowDepth.c(0f, 1f, d.shadowDepth),
             curvatureDeg = curvatureDeg.c(0f, 75f, d.curvatureDeg),
+            curvatureTarget = curvatureTarget.coerceIn(0, 2),
             bassReact = bassReact.c(0f, 1f, d.bassReact),
             pumpAmount = pumpAmount.c(0f, 0.25f, d.pumpAmount),
             attackMs = attackMs.c(4f, 60f, d.attackMs),
@@ -344,6 +351,13 @@ data class LyricsFxSettings(
     fun matchesPreset(preset: LyricsFxSettings): Boolean = this == preset.withPersonalFrom(this)
 
     companion object {
+        /** [curvatureTarget]: every lyric, as one tube. */
+        const val CURVE_ALL = 0
+        /** [curvatureTarget]: the sung line alone. */
+        const val CURVE_LINE = 1
+        /** [curvatureTarget]: the sung word alone, on word-timed lyrics. */
+        const val CURVE_WORD = 2
+
         val DEFAULT = LyricsFxSettings()
 
         /** [godRaySource]: the sung line itself shines, and its light streams out of the letters. */

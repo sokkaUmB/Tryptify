@@ -2333,4 +2333,8 @@
     <string name="settings_crt_unavailable">この端末では無効です。Android 13 以降とガラス効果の有効化が必要です。</string>
     <string name="fx_curvature">湾曲</string>
     <string name="fx_curvature_desc">歌詞を湾曲したブラウン管に巻き付けます。中央から端までガラスがどれだけ奥へ曲がるかの角度です。中央がふくらみ行が外へ反ります。ボタンで 0.1 度ずつ調整できます。Android 13 以降。</string>
+    <string name="fx_curve_target">曲げる対象</string>
+    <string name="fx_curve_all">すべての歌詞</string>
+    <string name="fx_curve_line">歌っている行</string>
+    <string name="fx_curve_word">歌っている単語</string>
 </resources>

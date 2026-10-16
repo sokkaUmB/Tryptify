@@ -415,6 +415,10 @@ internal fun SyncedLyricsView(
     // whichever layer draws the light, so the shafts follow the scroll glide
     // and hop from word to word without recomposing anything.
     val followWord = fx.godRays && fx.godRaysFollowWord
+    // The curve over the sung line or the sung word alone (Lyrics FX › Curve).
+    val curveTarget = if (fx.curvatureDeg >= MIN_CURVATURE_DEG) fx.curvatureTarget else LyricsFxSettings.CURVE_ALL
+    // The sung word is tracked for whichever of the two follows it.
+    val trackWord = followWord || curveTarget == LyricsFxSettings.CURVE_WORD
     val sungWord = remember { SungWordAnchor() }
     val listBox = remember { androidx.compose.runtime.mutableStateOf(Rect.Zero) }
     val bandInRoot: () -> Rect? = remember(listState, currentLineState, followWord) {
@@ -447,6 +451,23 @@ internal fun SyncedLyricsView(
     }
     if (backdrop != null) {
         androidx.compose.runtime.SideEffect { backdrop.capture.bandInRoot = bandInRoot }
+    }
+    // The box the curve's dome covers, in root px, read in the draw phase:
+    // the sung line, or its sung word (the line on line-timed lyrics); null
+    // for the whole surface.
+    val curveFocus: (() -> Rect?)? = remember(listState, currentLineState, curveTarget) {
+        when (curveTarget) {
+            LyricsFxSettings.CURVE_LINE -> {
+                { activeLineBand(listState, currentLineState.value)?.translate(listBox.value.topLeft) }
+            }
+            LyricsFxSettings.CURVE_WORD -> {
+                {
+                    val line = currentLineState.value
+                    sungWord.rectFor(line) ?: activeLineBand(listState, line)?.translate(listBox.value.topLeft)
+                }
+            }
+            else -> null
+        }
     }
     // Shared line registry — the active line reports its screen bounds here and
     // the full-screen LyricsFxLayer (in the player, no clipping ancestor) blooms
@@ -568,7 +589,7 @@ internal fun SyncedLyricsView(
                 // Bent inside the copy, so the shadow and the shafts the
                 // backdrop draws from it bend with the letters, and the glass
                 // bevels the bent ones.
-                .lyricCurvature(fx.curvatureDeg),
+                .lyricCurvature(fx.curvatureDeg, curveFocus, wide = curveTarget == LyricsFxSettings.CURVE_WORD),
             contentPadding = PaddingValues(top = halfViewport, bottom = tailPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -629,7 +650,7 @@ internal fun SyncedLyricsView(
                     beatModifier = beatModifier,
                     availableWidth = fitWidth,
                     measureStyle = measureStyle,
-                    onSungWordPositioned = if (isActive && followWord) {
+                    onSungWordPositioned = if (isActive && trackWord) {
                         { rect -> sungWord.report(index, rect) }
                     } else {
                         null
@@ -1248,7 +1269,8 @@ internal fun UnsyncedLyricsView(lines: List<LyricLine>) {
                 .padding(horizontal = sidePadding)
                 .fxaa()
                 .liquidGlass()
-                .lyricCurvature(fx.curvatureDeg),
+                // No line is sung here: the curve is on only over all the lyrics.
+                .lyricCurvature(if (fx.curvatureTarget == LyricsFxSettings.CURVE_ALL) fx.curvatureDeg else 0f),
             contentPadding = PaddingValues(vertical = 60.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {

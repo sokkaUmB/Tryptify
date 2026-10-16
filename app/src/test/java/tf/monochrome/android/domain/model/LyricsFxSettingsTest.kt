@@ -92,6 +92,41 @@ class LyricsFxSettingsTest {
     }
 
     @Test
+    fun `the curve covers all the lyrics unless asked for the sung line or word`() {
+        assertEquals(LyricsFxSettings.CURVE_ALL, LyricsFxSettings.DEFAULT.curvatureTarget)
+        assertEquals(LyricsFxSettings.CURVE_WORD, LyricsFxSettings(curvatureTarget = 9).clamped().curvatureTarget)
+        assertEquals(LyricsFxSettings.CURVE_ALL, LyricsFxSettings(curvatureTarget = -3).clamped().curvatureTarget)
+        // A look: a theme carries its own.
+        val line = LyricsFxSettings(curvatureTarget = LyricsFxSettings.CURVE_LINE)
+        assertEquals(LyricsFxSettings.CURVE_ALL, LyricsFxSettings.DEFAULT.withPersonalFrom(line).curvatureTarget)
+    }
+
+    @Test
+    fun `a dome over the sung line or word fits it, and none without one`() {
+        val dome = tf.monochrome.android.ui.player.focusDome(
+            androidx.compose.ui.geometry.Rect(-1e6f, 300f, 1e6f, 360f), 1000f, 2000f, wide = false,
+        )!!
+        // A line's open sides are kept to the surface; it stands taller than the line.
+        assertEquals(0f, dome.left, 0f)
+        assertEquals(1000f, dome.right, 0f)
+        assertEquals(330f, dome.center.y, 1e-3f)
+        assertEquals(60f * tf.monochrome.android.ui.player.DOME_HEADROOM, dome.height, 1e-3f)
+        // A word gets room at its sides.
+        val word = tf.monochrome.android.ui.player.focusDome(
+            androidx.compose.ui.geometry.Rect(400f, 300f, 500f, 360f), 1000f, 2000f, wide = true,
+        )!!
+        assertEquals(100f * tf.monochrome.android.ui.player.WORD_SIDE_ROOM, word.width, 1e-3f)
+        assertEquals(450f, word.center.x, 1e-3f)
+        // Nothing sung on screen: nothing bent.
+        assertNull(tf.monochrome.android.ui.player.focusDome(null, 1000f, 2000f, wide = false))
+        assertNull(
+            tf.monochrome.android.ui.player.focusDome(
+                androidx.compose.ui.geometry.Rect(1200f, 300f, 1300f, 360f), 1000f, 2000f, wide = true,
+            ),
+        )
+    }
+
+    @Test
     fun `serialization round-trips every field`() {
         val original = LyricsFxSettings(
             fontSizeSp = 27f,

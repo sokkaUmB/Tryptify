@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.settings
 
+import tf.monochrome.android.ui.player.lyricCurvature
 import kotlin.math.roundToInt
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import androidx.compose.animation.AnimatedVisibility
@@ -1012,6 +1013,30 @@ fun LyricsFxStudioScreen(
                 FxNudge(label = stringResource(R.string.fx_curvature), step = 0.1f, unit = "°") { delta ->
                     viewModel.update { s ->
                         s.copy(curvatureDeg = ((s.curvatureDeg + delta) * 10f).roundToInt().div(10f).coerceIn(0f, 75f))
+                    }
+                }
+                // What the curve bends: every lyric as one tube, or a dome
+                // over the sung line or the sung word alone.
+                Text(
+                    stringResource(R.string.fx_curve_target),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    listOf(
+                        LyricsFxSettings.CURVE_ALL to R.string.fx_curve_all,
+                        LyricsFxSettings.CURVE_LINE to R.string.fx_curve_line,
+                        LyricsFxSettings.CURVE_WORD to R.string.fx_curve_word,
+                    ).forEach { (target, label) ->
+                        tf.monochrome.android.ui.mixer.GlassChoiceChip(
+                            label = stringResource(label),
+                            selected = fx.curvatureTarget == target,
+                            accent = MaterialTheme.colorScheme.primary,
+                            onClick = { viewModel.update { s -> s.copy(curvatureTarget = target) } },
+                        )
                     }
                 }
             }
@@ -2236,25 +2261,34 @@ private fun StudioPreview(
                 val followWord = fx.godRaysFollowWord
                 var blockBand by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
                 val rowBands = remember { mutableStateMapOf<Int, androidx.compose.ui.geometry.Rect>() }
+                // The word being "sung", one per beat, in root px; null until laid out.
+                val sampleWord: () -> androidx.compose.ui.geometry.Rect? = {
+                    if (wordSpans.isEmpty()) {
+                        null
+                    } else {
+                        val (row, from, to) = wordSpans[(clock.value * 2f).toInt().mod(wordSpans.size)]
+                        rowBands[row]?.let { band ->
+                            // The row is measured inside the pump's scale, the
+                            // spans outside it: scale them to the row as drawn.
+                            val advance = rowSpans.getOrNull(row)?.advance ?: 0f
+                            val k = if (advance > 0f) band.width / advance else 1f
+                            androidx.compose.ui.geometry.Rect(band.left + from * k, band.top, band.left + to * k, band.bottom)
+                        }
+                    }
+                }
                 androidx.compose.runtime.SideEffect {
                     letters.bandInRoot = {
                         val block = blockBand
-                        if (block == null || !followWord || wordSpans.isEmpty()) {
-                            block
-                        } else {
-                            val (row, from, to) = wordSpans[(clock.value * 2f).toInt().mod(wordSpans.size)]
-                            val band = rowBands[row]
-                            if (band == null) {
-                                block
-                            } else {
-                                // The row is measured inside the pump's scale, the
-                                // spans outside it: scale them to the row as drawn.
-                                val advance = rowSpans.getOrNull(row)?.advance ?: 0f
-                                val k = if (advance > 0f) band.width / advance else 1f
-                                androidx.compose.ui.geometry.Rect(band.left + from * k, band.top, band.left + to * k, band.bottom)
-                            }
-                        }
+                        if (block == null || !followWord) block else sampleWord() ?: block
                     }
+                }
+                // The curve over the sample: all of it, the block as the sung
+                // line, or the beat's word.
+                val curveTarget = fx.curvatureTarget
+                val curveFocus: (() -> androidx.compose.ui.geometry.Rect?)? = when (curveTarget) {
+                    LyricsFxSettings.CURVE_LINE -> { { blockBand } }
+                    LyricsFxSettings.CURVE_WORD -> { { sampleWord() ?: blockBand } }
+                    else -> null
                 }
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -2269,6 +2303,8 @@ private fun StudioPreview(
                             .liquidGlass(tint = accent, rayLight = rayLight)
                             // Before the pump, so the copy pumps with the letters.
                             .captureLetters(letters)
+                            // Bent inside the copy, as in the player.
+                            .lyricCurvature(fx.curvatureDeg, curveFocus, wide = curveTarget == LyricsFxSettings.CURVE_WORD)
                             .bassBeat(pulse, fx, anchors),
                     ) {
                         // The ripple runs on across rows, as in the player.
