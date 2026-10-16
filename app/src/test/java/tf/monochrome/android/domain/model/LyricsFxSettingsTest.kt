@@ -1,5 +1,6 @@
 package tf.monochrome.android.domain.model
 
+import tf.monochrome.android.ui.player.curvatureSourceRadius
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -54,6 +55,40 @@ class LyricsFxSettingsTest {
         ).clamped()
         assertEquals(LyricsFxSettings.DEFAULT.waveSpeed, c.waveSpeed, 0f)
         assertEquals(LyricsFxSettings.DEFAULT.pumpAmount, c.pumpAmount, 0f)
+    }
+
+    @Test
+    fun `the lyrics are flat unless curved, and the curve stays in range`() {
+        // Off by default, so an upgrade bends no one's lyrics, and no theme sets it.
+        assertEquals(0f, LyricsFxSettings.DEFAULT.curvatureDeg, 0f)
+        assertTrue(LyricsFxSettings.PRESETS.all { (_, preset) -> preset.curvatureDeg == 0f })
+        assertEquals(75f, LyricsFxSettings(curvatureDeg = 300f).clamped().curvatureDeg, 0f)
+        assertEquals(0f, LyricsFxSettings(curvatureDeg = -1f).clamped().curvatureDeg, 0f)
+        assertEquals(0f, LyricsFxSettings(curvatureDeg = Float.NaN).clamped().curvatureDeg, 0f)
+        // Kept to a tenth of a degree, as the Studio's buttons set it.
+        assertEquals(12.3f, LyricsFxSettings(curvatureDeg = 12.3f).clamped().curvatureDeg, 0f)
+        // A look, not a device setting: a theme applied over a curved Studio flattens it.
+        val curved = LyricsFxSettings(curvatureDeg = 30f)
+        assertEquals(0f, LyricsFxSettings.DEFAULT.withPersonalFrom(curved).curvatureDeg, 0f)
+    }
+
+    @Test
+    fun `the tube keeps the edges, swells the middle and drops the corners`() {
+        val curve = ::curvatureSourceRadius
+        // Flat: every point shows itself.
+        assertEquals(0.5f, curve(0.5f, 0f)!!, 0f)
+        // The middle of each side stays at the side, at any angle.
+        assertEquals(1f, curve(1f, 30f)!!, 1e-5f)
+        assertEquals(1f, curve(1f, 75f)!!, 1e-5f)
+        // Inside, a point shows lyrics nearer the middle: the middle swells,
+        // and more as the angle grows.
+        val at30 = curve(0.5f, 30f)!!
+        val at60 = curve(0.5f, 60f)!!
+        assertTrue(at30 < 0.5f && at60 < at30)
+        // asin(0.5 sin 60°) / 60° in radians, worked by hand.
+        assertEquals((Math.asin(0.5 * Math.sin(Math.PI / 3)) / (Math.PI / 3)).toFloat(), at60, 1e-5f)
+        // A corner past the dome's rim shows nothing.
+        assertEquals(null, curve(1.414f, 75f))
     }
 
     @Test

@@ -163,6 +163,7 @@ Personal fields are omitted here — never set them in a preset.
 | `wavePhaseStep` | 0.05..0.9 | 0.22 | Phase advance per letter. Low = smooth ribbon; high = choppy/glitchy. |
 | `waveTravelDp` | 0..8 | 3 | Vertical bob amplitude of each letter. |
 | `shadowDepth` | 0..1 | 0.7 | Soft shadow cast on the background under every lyric line, falling away from the light (the rays' light when they are on, else the glass key light). 0 = none, 1 = darkest and softest. Not on the letters: it is its own layer outside the glass. |
+| `curvatureDeg` | 0..75 | 0 | The lyrics on a curved tube, as a CRT draws them: how far the glass turns away between its middle and its sides, in degrees. The middle swells, lines bow outward, a line's ends stay at the edges, the corners round off. Set to 0.1° with the Studio's buttons. 0 = flat and no layer. Android 13+. Bends inside the letters' copy, so their shadow and rays bend too. |
 | `bassReact` | 0..1 | 0.8 | Master reactive intensity **and gate** (≤0.01 = no pump/pop/glow). |
 | `pumpAmount` | 0..0.25 | 0.08 | Active-line swell on a kick. |
 | `attackMs` | 4..60 | 12 | Pulse attack — how fast it snaps onto a kick. Low = snappy, high = soft swell. |

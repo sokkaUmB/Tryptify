@@ -2397,4 +2397,6 @@
     <string name="settings_crt_effect_subtitle">Jeder Bildschirm wie auf einem alten Fernseher. Ab Android 13.</string>
     <string name="settings_crt_look">Stil</string>
     <string name="settings_crt_unavailable">Auf diesem Telefon aus: Es braucht Android 13 und eingeschaltete Glaseffekte.</string>
+    <string name="fx_curvature">Wölbung</string>
+    <string name="fx_curvature_desc">Legt die Liedtexte über eine gewölbte Bildröhre: wie weit sich das Glas von der Mitte zu den Seiten wegdreht. Die Mitte wölbt sich vor, Zeilen biegen sich nach außen; die Tasten verstellen um ein Zehntelgrad. Ab Android 13.</string>
 </resources>

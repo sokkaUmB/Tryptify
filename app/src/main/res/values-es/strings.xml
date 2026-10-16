@@ -2463,4 +2463,6 @@
     <string name="settings_crt_effect_subtitle">Todas las pantallas como en un televisor antiguo. Android 13 o posterior.</string>
     <string name="settings_crt_look">Estilo</string>
     <string name="settings_crt_unavailable">Desactivado en este teléfono: necesita Android 13 y los efectos de cristal activados.</string>
+    <string name="fx_curvature">Curvatura</string>
+    <string name="fx_curvature_desc">Envuelve la letra sobre un tubo CRT curvo: cuánto se aleja el cristal del centro a los lados. El centro se abomba y las líneas se arquean; los botones lo mueven una décima de grado. Android 13 o posterior.</string>
 </resources>

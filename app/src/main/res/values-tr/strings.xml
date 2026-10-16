@@ -2397,4 +2397,6 @@
     <string name="settings_crt_effect_subtitle">Her ekran eski bir televizyondaki gibi. Android 13 ve sonrası.</string>
     <string name="settings_crt_look">Görünüm</string>
     <string name="settings_crt_unavailable">Bu telefonda kapalı: Android 13 ve cam efektlerinin açık olması gerekir.</string>
+    <string name="fx_curvature">Kavis</string>
+    <string name="fx_curvature_desc">Şarkı sözlerini kavisli bir CRT tüpüne sarar: camın ortadan kenarlara ne kadar geriye döndüğü. Orta şişer, satırlar dışa kıvrılır; düğmeler onda bir derece oynatır. Android 13 ve sonrası.</string>
 </resources>

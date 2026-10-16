@@ -2463,4 +2463,6 @@
     <string name="settings_crt_effect_subtitle">Chaque écran comme sur un vieux téléviseur. Android 13 et plus.</string>
     <string name="settings_crt_look">Style</string>
     <string name="settings_crt_unavailable">Désactivé sur ce téléphone : il faut Android 13 et les effets de verre activés.</string>
+    <string name="fx_curvature">Courbure</string>
+    <string name="fx_curvature_desc">Enroule les paroles sur un tube cathodique bombé : de combien le verre s’éloigne du centre vers les bords. Le centre se bombe et les lignes s’arrondissent ; les boutons le règlent au dixième de degré. Android 13 et plus.</string>
 </resources>

@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.settings
 
+import kotlin.math.roundToInt
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
@@ -1000,6 +1001,19 @@ fun LyricsFxStudioScreen(
                     stringResource(R.string.fx_shadow_depth), "${(fx.shadowDepth * 100).toInt()}%", fx.shadowDepth, 0f..1f,
                     description = stringResource(R.string.fx_lyric_shadow_desc),
                 ) { viewModel.update { s -> s.copy(shadowDepth = it) } }
+                FxSlider(
+                    stringResource(R.string.fx_curvature),
+                    "%.1f°".format(fx.curvatureDeg) + if (fx.curvatureDeg < 0.05f) " (off)" else "",
+                    fx.curvatureDeg, 0f..75f,
+                    description = stringResource(R.string.fx_curvature_desc),
+                ) { viewModel.update { s -> s.copy(curvatureDeg = it) } }
+                // The angle to a tenth of a degree, which a finger on the
+                // slider cannot place.
+                FxNudge(label = stringResource(R.string.fx_curvature), step = 0.1f, unit = "°") { delta ->
+                    viewModel.update { s ->
+                        s.copy(curvatureDeg = ((s.curvatureDeg + delta) * 10f).roundToInt().div(10f).coerceIn(0f, 75f))
+                    }
+                }
             }
 
             item {
@@ -2591,4 +2605,28 @@ private fun blendLabel(mode: VisualizerBlendMode): Int = when (mode) {
     VisualizerBlendMode.SCREEN -> R.string.blend_screen
     VisualizerBlendMode.ADDITIVE -> R.string.blend_additive
     VisualizerBlendMode.SOFT_LIGHT -> R.string.blend_soft_light
+}
+
+/**
+ * Two buttons that move a setting by [step] at a time, under the slider that
+ * sets it roughly: for a value a finger on a slider cannot place exactly.
+ */
+@Composable
+internal fun FxNudge(label: String, step: Float, unit: String, onNudge: (Float) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val amount = "%.1f".format(step) + unit
+        androidx.compose.material3.OutlinedButton(
+            onClick = { onNudge(-step) },
+            modifier = Modifier.semantics { contentDescription = "$label, less by $amount" },
+        ) { Text("− $amount") }
+        Spacer(Modifier.width(8.dp))
+        androidx.compose.material3.OutlinedButton(
+            onClick = { onNudge(step) },
+            modifier = Modifier.semantics { contentDescription = "$label, more by $amount" },
+        ) { Text("+ $amount") }
+    }
 }

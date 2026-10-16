@@ -2402,4 +2402,6 @@
     <string name="settings_crt_effect_subtitle">Every screen through an old TV. Android 13 and later.</string>
     <string name="settings_crt_look">Look</string>
     <string name="settings_crt_unavailable">Off on this phone: it needs Android 13 and the glass effects on.</string>
+    <string name="fx_curvature">Curvature</string>
+    <string name="fx_curvature_desc">Wraps the lyrics over a curved CRT tube: how far the glass turns away from the middle to the sides. The middle swells and lines bow outward; the buttons move it a tenth of a degree. Android 13 and later.</string>
 </resources>

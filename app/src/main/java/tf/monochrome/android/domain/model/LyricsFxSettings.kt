@@ -111,6 +111,14 @@ data class LyricsFxSettings(
      * the sung line's letters (see lyricShadow).
      */
     val shadowDepth: Float = 0.7f,
+    /**
+     * The lyrics on a curved tube, as a CRT draws them: how far the tube's
+     * glass turns away from the viewer between its middle and its sides, in
+     * degrees. 0 = flat (the shipped look), 75 = a deep fish-eye. The middle
+     * swells, lines bow outward, a line's ends stay at the edges and the
+     * corners round off. Android 13 and later (lyricCurvature).
+     */
+    val curvatureDeg: Float = 0f,
 
     // ── Beat engine (bass → pulse) ─────────────────────────────────────
     /** Master intensity. 0 disables the whole audio-reactive path. */
@@ -252,6 +260,7 @@ data class LyricsFxSettings(
             wavePhaseStep = wavePhaseStep.c(0.05f, 0.9f, d.wavePhaseStep),
             waveTravelDp = waveTravelDp.c(0f, 8f, d.waveTravelDp),
             shadowDepth = shadowDepth.c(0f, 1f, d.shadowDepth),
+            curvatureDeg = curvatureDeg.c(0f, 75f, d.curvatureDeg),
             bassReact = bassReact.c(0f, 1f, d.bassReact),
             pumpAmount = pumpAmount.c(0f, 0.25f, d.pumpAmount),
             attackMs = attackMs.c(4f, 60f, d.attackMs),

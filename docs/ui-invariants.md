@@ -291,7 +291,9 @@ disc and the dock had none of the light under them (seen on device, in "Under"
 and then again in "On top", which was left behind in the surface). A render
 effect reads only its own layer, so the lyric view records its letters into a
 `GraphicsLayer` (`captureLetters`, innermost, before the glass, so the glass
-shader does not run twice) and the backdrop draws that copy as its input and
+shader does not run twice; only the tube's curvature, `lyricCurvature`, sits
+inside it, so the copy is bent with the letters and the shadow and the shafts
+follow the bent lines) and the backdrop draws that copy as its input and
 hands back only the shadow and the shafts (`uRaysOnly`); the real letters draw
 over them. Where a pixel's march misses the sung line it hands back nothing,
 never the copy: returning the copy there drew plain letters under the glass

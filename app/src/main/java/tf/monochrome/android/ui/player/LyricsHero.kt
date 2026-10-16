@@ -564,7 +564,11 @@ internal fun SyncedLyricsView(
                 .liquidGlass(tint = accent, rayLight = rayLight)
                 // Innermost, so the copy the backdrop lights from is the plain
                 // letters and the glass is not run twice.
-                .captureLetters(backdrop?.capture, edgeFade = true),
+                .captureLetters(backdrop?.capture, edgeFade = true)
+                // Bent inside the copy, so the shadow and the shafts the
+                // backdrop draws from it bend with the letters, and the glass
+                // bevels the bent ones.
+                .lyricCurvature(fx.curvatureDeg),
             contentPadding = PaddingValues(top = halfViewport, bottom = tailPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -1243,7 +1247,8 @@ internal fun UnsyncedLyricsView(lines: List<LyricLine>) {
                 .fillMaxSize()
                 .padding(horizontal = sidePadding)
                 .fxaa()
-                .liquidGlass(),
+                .liquidGlass()
+                .lyricCurvature(fx.curvatureDeg),
             contentPadding = PaddingValues(vertical = 60.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
