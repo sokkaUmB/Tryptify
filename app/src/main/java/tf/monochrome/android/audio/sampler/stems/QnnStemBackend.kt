@@ -117,6 +117,12 @@ abstract class QnnStemBackend(
         SnapdragonNpu.of(socModel())?.let { npu ->
             provider["soc_model"] = npu.socModel.toString()
             if (npu.htpArch in SnapdragonNpu.ARCHS_THE_PROVIDER_TAKES) provider["htp_arch"] = npu.htpArch.toString()
+            // The separator is a large graph for the NPU. On a OnePlus 15 its
+            // compile mapped some 530 MB into the NPU's address space and then
+            // failed to finalize with QNN_COMMON_ERROR_MEM_ALLOC (1002).
+            // Extended UDMA widens that address space; it is QNN's setting for
+            // graphs this size, on the Hexagon generations that have it.
+            if (npu.extendedUdma) provider["extended_udma"] = "1"
         }
         // A job measured in minutes: the clock the NPU can hold, not its burst.
         provider["htp_performance_mode"] = "sustained_high_performance"
@@ -214,8 +220,10 @@ abstract class QnnStemBackend(
          * in a build with the same version code. "c2": the manifest declares
          * the DSP and OpenCL libraries, the chip is named, and the NPU graph
          * is compiled checked. "c3": compiled at QNN's default optimisation.
+         * "c4": extended UDMA on V79 and later, after "c3" ran out of the
+         * NPU's memory finalizing the graph.
          */
-        internal const val SETUP_REVISION = "c3"
+        internal const val SETUP_REVISION = "c4"
 
         /** The NPU's compiled graphs. Hundreds of megabytes; [clear] when the model goes. */
         fun cacheDir(context: Context): File = File(context.filesDir, "stem_npu_cache")
@@ -271,6 +279,9 @@ internal class QnnFailures(context: Context) {
  * Qualcomm backend carries it (`QcomChipset`); they are not the chip's name.
  */
 internal data class SnapdragonNpu(val socModel: Int, val htpArch: Int) {
+    /** Whether the NPU can address past the usual window: Hexagon V79 and later. */
+    val extendedUdma: Boolean get() = htpArch >= 79
+
     companion object {
         /** Phones' Snapdragons, by the name Android gives them (`Build.SOC_MODEL`). */
         private val KNOWN = mapOf(

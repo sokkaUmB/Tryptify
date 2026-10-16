@@ -35,4 +35,11 @@ class SnapdragonNpuTest {
         assertNull(SnapdragonNpu.of(""))
         assertNull(SnapdragonNpu.of(null))
     }
+
+    @Test
+    fun onlyTheNewerNpusWidenTheirAddressSpace() {
+        assertTrue(SnapdragonNpu.of("SM8850")!!.extendedUdma)
+        assertTrue(SnapdragonNpu.of("SM8750")!!.extendedUdma)
+        assertTrue(!SnapdragonNpu.of("SM8650")!!.extendedUdma)
+    }
 }

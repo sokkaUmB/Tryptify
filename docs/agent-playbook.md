@@ -248,6 +248,8 @@ The manifest's `<uses-native-library>` entries for `libcdsprpc.so` and `libOpenC
 
 Read an NPU run from its own lines: `QnnStemBackend` says "NPU graph compiled in N s" or "loaded from its cache", and `OnnxStemBackend` says which unit separated each piece and how many times faster than the music. Keep ONNX Runtime at its default log level. At INFO it validates every node aloud, some six thousand lines in a second, and a OnePlus drops an app's logs past its quota (`LOGS OVER PROC QUOTA`), the outcome included. In a debug log, `avc: denied` on `/dev/fastrpc-cdsp` is expected: an app reaches the DSP through the HAL, and `Created user PD on domain 3` is the line that says it did.
 
+What a OnePlus 15 (SM8850) has said so far, in order: the NPU would not open without `libcdsprpc.so` declared; declared, it opened, compiled the separator for 2.5 minutes and failed to finalize with QNN error 1002 (`QNN_COMMON_ERROR_MEM_ALLOC`) after mapping some 530 MB, so V79 and later now ask for extended UDMA. QNN's GPU backend fails this model at session creation: a Conv it asked ONNX Runtime to rewrite to NHWC it then rejected, which leaves a node no provider can run. That is recorded like any failure, and the CPU runs it, at 1.1 to 1.5 times faster than the music.
+
 ### Compose performance
 
 Use stable parameters, keyed lazy items, remembered derived values, and immutable collections where they materially reduce recomposition. Validate with tooling rather than mechanically adding annotations.
