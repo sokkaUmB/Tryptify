@@ -113,15 +113,16 @@ data class LyricsFxSettings(
     val shadowDepth: Float = 0.7f,
     /**
      * The lyrics on a curved tube, as a CRT draws them: how far the tube's
-     * glass turns away from the viewer between its middle and its sides, in
-     * degrees. 0 = flat (the shipped look), 75 = a deep fish-eye. The middle
-     * swells, lines bow outward, a line's ends stay at the edges and the
-     * corners round off. Android 13 and later (lyricCurvature).
+     * glass bows away from the viewer between its middle and its edge, in
+     * degrees. 0 = flat (the shipped look), about 14 = the classic tube, 75 =
+     * a deep pillow. The middle stays as it is, lines bow outward and draw in
+     * toward the corners, which round off; never a fish-eye's swollen middle.
+     * Android 13 and later (lyricCurvature, crtWarp).
      */
     val curvatureDeg: Float = 0f,
     /**
      * What the curve bends: [CURVE_ALL] the lyrics as one tube, [CURVE_LINE]
-     * a dome over the sung line alone, [CURVE_WORD] over the sung word alone
+     * a tube over the sung line alone, [CURVE_WORD] over the sung word alone
      * (word-timed lyrics; the line otherwise). Everything else stays flat.
      */
     val curvatureTarget: Int = 0,
