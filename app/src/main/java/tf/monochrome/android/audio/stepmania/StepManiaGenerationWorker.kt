@@ -178,6 +178,7 @@ class StepManiaGenerationWorker @AssistedInject constructor(
                     applicationContext.contentResolver.openInputStream(music)
                         ?: throw java.io.IOException("The song's file could not be read.")
                 },
+                art = tf.monochrome.android.glyph.pack.SongArt.of(applicationContext, music),
             )
             Unit
         }

@@ -1114,7 +1114,13 @@ column, with nothing to jump between.
   the way in; the drop found after is the next visit's start.
 * The picture behind the wheel follows the preview (`GlyphSongBackdrop`, fed
   `GlyphUiState.backdrop`): the song's chart background (`#BACKGROUND`), else
-  its artwork, else the grid (`GlyphRankingGrid`). It comes up as the preview
+  its artwork, else nothing: a song with no picture leaves the page plain, with
+  no scrim. (An orange and purple ranking grid stood in for one, and was not
+  liked.) A pack song's artwork is its own picture, else the cover inside its
+  music, taken out once and kept (`GlyphPackLibrary`, `SongArt`): a chart made
+  in the app names no picture, so a song charted here came back from the
+  player's own pack with none. The own pack now writes the cover beside each
+  chart as its jacket and names it (`#JACKET`). It comes up as the preview
   starts, over `GlyphPreviewPlayer.FADE_IN_MILLIS`, and goes as a preview
   stops, over `STOP_FADE_MILLIS`; a folder that stops the music takes it too.
   With previews off it follows the choice instead. It waits for its decode

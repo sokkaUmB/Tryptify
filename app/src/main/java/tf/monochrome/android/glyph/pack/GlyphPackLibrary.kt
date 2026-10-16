@@ -73,6 +73,49 @@ class GlyphPackLibrary @Inject constructor(
         _songs.value = songs
         _packs.value = packs
         loaded = true
+        // After the list is up: covers for the songs that had none in their folder.
+        fillEmbeddedArt(songs)
+    }
+
+    /**
+     * Every song in [listed] with no picture of its own takes the cover inside
+     * its music, as the library's songs do: a chart made in the app and saved
+     * to the player's own pack names no picture. Each is taken out once and
+     * kept ([artCache]); a song whose music has none is remembered so it is not
+     * opened again. The list is shown first and the covers come after it.
+     */
+    private fun fillEmbeddedArt(listed: List<GlyphSong>) {
+        val found = HashMap<String, String>()
+        for (song in listed) {
+            if (song.artworkUri != null || song.trackId in noArt()) continue
+            val music = if (song.filePath.startsWith("content:")) Uri.parse(song.filePath) else Uri.fromFile(File(song.filePath))
+            val bytes = SongArt.embedded(context, music)
+            if (bytes == null) {
+                runCatching { File(artCache, "${artKey(song.trackId)}$NO_ART").createNewFile() }
+                continue
+            }
+            val file = File(artCache, artKey(song.trackId) + "." + SongArt.jacketName(bytes).substringAfterLast('.'))
+            if (runCatching { file.writeBytes(bytes) }.isSuccess) found[song.trackId] = Uri.fromFile(file).toString()
+        }
+        if (found.isEmpty()) return
+        _songs.value = _songs.value.map { song -> found[song.trackId]?.let { song.copy(artworkUri = it) } ?: song }
+    }
+
+    /** Where the covers taken out of pack songs' music are kept. */
+    private val artCache: File get() = File(context.cacheDir, "glyph/art").apply { mkdirs() }
+
+    private fun artKey(trackId: String): String = trackId.hashCode().toUInt().toString(16)
+
+    /** A cover already taken out of [trackId]'s music, or null. */
+    private fun cachedArt(trackId: String): String? {
+        val key = artKey(trackId)
+        return listOf("jpg", "png").map { File(artCache, "$key.$it") }.firstOrNull { it.isFile }?.let { Uri.fromFile(it).toString() }
+    }
+
+    /** The pack songs whose music is known to hold no cover. */
+    private fun noArt(): Set<String> {
+        val marked = artCache.listFiles { file -> file.name.endsWith(NO_ART) }?.map { it.name.removeSuffix(NO_ART) }?.toSet().orEmpty()
+        return _songs.value.filter { artKey(it.trackId) in marked }.mapTo(HashSet()) { it.trackId }
     }
 
     /** Load once, the first time anything asks. */
@@ -123,7 +166,8 @@ class GlyphPackLibrary @Inject constructor(
             artist = artist,
             // Read in place: the document in the player's folder.
             filePath = musicUri ?: musicFile.absolutePath,
-            artworkUri = artUri ?: art?.let { Uri.fromFile(File(songFolder, it)).toString() },
+            // The pack's own picture, else the cover once taken out of the music.
+            artworkUri = artUri ?: art?.let { Uri.fromFile(File(songFolder, it)).toString() } ?: cachedArt(id),
             durationSeconds = durationSeconds,
             codec = codecOf(music),
             bpm = bpm,
@@ -181,6 +225,7 @@ class GlyphPackLibrary @Inject constructor(
 
     companion object {
         const val PREFIX = "pack:"
+        private const val NO_ART = ".none"
 
         /** How much of a chart is read for its header's tags: they all come before the notes. */
         private const val HEADER_CHARS = 16 * 1024

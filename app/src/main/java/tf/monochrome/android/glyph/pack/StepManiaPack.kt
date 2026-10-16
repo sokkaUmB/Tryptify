@@ -224,6 +224,11 @@ object PackWriter {
      * it under the name the chart's `#MUSIC` gives. The chart is always
      * rewritten; the music only when it is not there yet, since it is the same
      * file every time and can be large. Returns the song folder's path.
+     *
+     * [art], the song's cover ([SongArt]), goes beside them as its jacket and
+     * the chart names it (`#JACKET`), unless the chart names a jacket of its
+     * own: a made chart names no picture, and the pack read back here or in
+     * StepMania showed the song with none.
      */
     fun writeSong(
         sink: PackSink,
@@ -231,6 +236,7 @@ object PackWriter {
         title: String,
         artist: String,
         ssc: String,
+        art: ByteArray? = null,
         music: (() -> InputStream)?,
     ): List<String> {
         val packFolder = StepManiaPack.safeName(pack, StepManiaPack.OWN_PACK)
@@ -243,7 +249,12 @@ object PackWriter {
                 it.write(StepManiaPack.packIni(packFolder, java.time.Year.now().value).toByteArray())
             }
         }
-        sink.write(base + "$songFolder.ssc") { it.write(ssc.toByteArray(Charsets.UTF_8)) }
+        val jacket = art?.takeIf { StepManiaPack.tag(ssc, "JACKET") == null }?.let { SongArt.jacketName(it) }
+        val chart = if (jacket != null) SongArt.withJacket(ssc, jacket) else ssc
+        sink.write(base + "$songFolder.ssc") { it.write(chart.toByteArray(Charsets.UTF_8)) }
+        if (art != null && jacket != null && !sink.exists(base + jacket)) {
+            sink.write(base + jacket) { it.write(art) }
+        }
         if (music != null && musicName != null && !sink.exists(base + musicName)) {
             sink.write(base + musicName) { out -> music().use { it.copyTo(out) } }
         }

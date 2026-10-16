@@ -94,6 +94,11 @@ class OwnPackStore @Inject constructor(
                 artist = song.artist,
                 ssc = song.chart.readText(),
                 music = music,
+                art = SongArt.of(
+                    context,
+                    if (song.musicPath.startsWith("content:")) Uri.parse(song.musicPath) else Uri.fromFile(File(song.musicPath)),
+                    song.artworkUri,
+                ),
             )
             written += 1
         }
@@ -104,10 +109,16 @@ class OwnPackStore @Inject constructor(
         ?.let(Uri::parse)
         ?.takeIf { TreePackSink.isUsable(context, it) }
 
-    /** One chart the app made: the song, its chart file and its music. */
-    data class OwnSong(val title: String, val artist: String, val chart: File, val musicPath: String) {
+    /** One chart the app made: the song, its chart file, its music and the library's cover for it. */
+    data class OwnSong(
+        val title: String,
+        val artist: String,
+        val chart: File,
+        val musicPath: String,
+        val artworkUri: String? = null,
+    ) {
         companion object {
-            fun of(song: GlyphSong, chart: File) = OwnSong(song.title, song.artist, chart, song.filePath)
+            fun of(song: GlyphSong, chart: File) = OwnSong(song.title, song.artist, chart, song.filePath, song.artworkUri)
         }
     }
 

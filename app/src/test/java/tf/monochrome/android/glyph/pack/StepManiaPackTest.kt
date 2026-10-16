@@ -396,6 +396,39 @@ class StepManiaPackTest {
     }
 
     @Test
+    fun aMadeChartTakesItsCoverIntoThePack() {
+        // A PNG's signature, then anything: written as the song's jacket and named by the chart.
+        val cover = byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte(), 1, 2, 3)
+        val bytes = ByteArrayOutputStream()
+        ZipPackSink(bytes).use { sink ->
+            PackWriter.writeSong(sink, "Tryptify", "Own Song", "Me", ssc, art = cover) { ByteArrayInputStream(audio) }
+        }
+        importer().import(ByteArrayInputStream(bytes.toByteArray()), "shared.zip")
+
+        val song = File(root, "Tryptify/Own Song - Me")
+        assertTrue(File(song, "jacket.png").readBytes().contentEquals(cover))
+        assertEquals("jacket.png", StepManiaPack.tag(File(song, "Own Song - Me.ssc").readText(), "JACKET"))
+        assertEquals("jacket.png", PackImporter.readIndex(File(root, "Tryptify"))!!.songs.single().art)
+    }
+
+    @Test
+    fun aChartNamingItsOwnJacketKeepsIt() {
+        val own = ssc.replace("#MUSIC:own.mp3;", "#MUSIC:own.mp3;\n#JACKET:mine.jpg;")
+        assertEquals(own, SongArt.withJacket(own, "jacket.jpg"))
+        // An empty tag is filled; a chart with none gets one after its music.
+        assertEquals("jacket.jpg", StepManiaPack.tag(SongArt.withJacket("#TITLE:x;\n#JACKET:;\n", "jacket.jpg"), "JACKET"))
+        val added = SongArt.withJacket(ssc, "jacket.jpg")
+        assertTrue(added.indexOf("#JACKET:jacket.jpg;") > added.indexOf("#MUSIC:"))
+        assertEquals(ssc.length + "#JACKET:jacket.jpg;\n".length, added.length)
+    }
+
+    @Test
+    fun aCoverIsNamedByWhatItIs() {
+        assertEquals("jacket.png", SongArt.jacketName(byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte())))
+        assertEquals("jacket.jpg", SongArt.jacketName(byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte())))
+    }
+
+    @Test
     fun aDownloadIsNamedByItsResponse() {
         assertEquals(
             "East Coast Stamina 15 - Upper Marathon.zip",
