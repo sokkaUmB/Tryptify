@@ -1328,6 +1328,7 @@
     <string name="api_move_up">Yukarı taşı</string>
     <string name="api_check_again">Yeniden denetle</string>
     <string name="api_remove">Kaldır</string>
+    <string name="api_built_in">Yerleşik</string>
     <string name="api_add_api">API ekle</string>
     <string name="api_remove_this_api">Bu API kaldırılsın mı?</string>
     <string name="api_checking">Denetleniyor…</string>

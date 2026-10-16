@@ -1286,6 +1286,7 @@
     <string name="api_move_up">上移</string>
     <string name="api_check_again">重新检查</string>
     <string name="api_remove">移除</string>
+    <string name="api_built_in">内置</string>
     <string name="api_add_api">添加 API</string>
     <string name="api_remove_this_api">要移除此 API 吗？</string>
     <string name="api_checking">正在检查…</string>

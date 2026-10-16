@@ -169,6 +169,11 @@ private fun ApiServerCard(
     onRecheck: () -> Unit,
     onRemove: () -> Unit,
 ) {
+    // The build's own chart server: shown by its host (its path is its
+    // secret), marked as built in, and with nothing to remove it.
+    val builtIn = tf.monochrome.android.data.api.BuiltInServer.isBuiltIn(
+        server.url, tf.monochrome.android.BuildConfig.BUILT_IN_CPU_SERVER,
+    )
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
             .liquidGlass(shape = RoundedCornerShape(8.dp)),
@@ -181,7 +186,12 @@ private fun ApiServerCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = server.url.substringAfter("://"),
+                    text = if (builtIn) {
+                        tf.monochrome.android.data.api.BuiltInServer.shownAs(server.url) +
+                            " · " + stringResource(R.string.api_built_in)
+                    } else {
+                        server.url.substringAfter("://")
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -216,8 +226,10 @@ private fun ApiServerCard(
                 if (checking) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 else Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.api_check_again))
             }
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.api_remove))
+            if (!builtIn) {
+                IconButton(onClick = onRemove) {
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.api_remove))
+                }
             }
         }
     }

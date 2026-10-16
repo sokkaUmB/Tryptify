@@ -1328,6 +1328,7 @@
     <string name="api_move_up">Nach oben</string>
     <string name="api_check_again">Erneut prüfen</string>
     <string name="api_remove">Entfernen</string>
+    <string name="api_built_in">Integriert</string>
     <string name="api_add_api">API hinzufügen</string>
     <string name="api_remove_this_api">Diese API entfernen?</string>
     <string name="api_checking">Wird geprüft …</string>

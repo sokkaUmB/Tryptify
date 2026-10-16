@@ -1370,6 +1370,7 @@
     <string name="api_move_up">Monter</string>
     <string name="api_check_again">Vérifier à nouveau</string>
     <string name="api_remove">Retirer</string>
+    <string name="api_built_in">Intégré</string>
     <string name="api_add_api">Ajouter une API</string>
     <string name="api_remove_this_api">Retirer cette API ?</string>
     <string name="api_checking">Vérification…</string>

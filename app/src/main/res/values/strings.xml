@@ -1329,6 +1329,7 @@
     <string name="api_move_up">Move up</string>
     <string name="api_check_again">Check again</string>
     <string name="api_remove">Remove</string>
+    <string name="api_built_in">Built in</string>
     <string name="api_add_api">Add API</string>
     <string name="api_remove_this_api">Remove this API?</string>
     <string name="api_checking">Checking…</string>

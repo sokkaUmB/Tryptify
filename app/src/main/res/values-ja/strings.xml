@@ -1286,6 +1286,7 @@
     <string name="api_move_up">上へ移動</string>
     <string name="api_check_again">再確認</string>
     <string name="api_remove">削除</string>
+    <string name="api_built_in">組み込み</string>
     <string name="api_add_api">API を追加</string>
     <string name="api_remove_this_api">この API を削除しますか？</string>
     <string name="api_checking">確認中…</string>

@@ -196,9 +196,6 @@ class PreferencesManager @Inject constructor(
         private val APPLE_QUALITY = stringPreferencesKey("apple_quality")
         private val DEV_MODE_ENABLED = booleanPreferencesKey("dev_mode_enabled")
         private val API_SERVERS = stringPreferencesKey("api_servers")
-        // The built-in chart server's address as last added (BuiltInServer),
-        // so a removed one stays removed. This device's own record: not synced.
-        private val BUILT_IN_SERVER_SEEDED = stringPreferencesKey("built_in_server_seeded")
 
         // Lyrics 3D appearance (legacy per-field keys, read for migration only)
         private val LYRICS_3D_ROTATION = floatPreferencesKey("lyrics_3d_rotation")
@@ -995,7 +992,14 @@ class PreferencesManager @Inject constructor(
      */
     val apiServers: Flow<List<tf.monochrome.android.data.api.ApiServer>> = dataStore.data.map { prefs -> apiServersOf(prefs) }
 
+    /** The saved list, always with the build's chart server in it (BuiltInServer). */
     private fun apiServersOf(prefs: Preferences): List<tf.monochrome.android.data.api.ApiServer> =
+        withBuiltIn(savedApiServers(prefs))
+
+    private fun withBuiltIn(servers: List<tf.monochrome.android.data.api.ApiServer>) =
+        tf.monochrome.android.data.api.BuiltInServer.ensure(servers, BuildConfig.BUILT_IN_CPU_SERVER) ?: servers
+
+    private fun savedApiServers(prefs: Preferences): List<tf.monochrome.android.data.api.ApiServer> =
         prefs[API_SERVERS]
             ?.let { raw ->
                 runCatching { json.decodeFromString<List<tf.monochrome.android.data.api.ApiServer>>(raw) }.getOrNull()
@@ -1006,16 +1010,11 @@ class PreferencesManager @Inject constructor(
                 appleUrl = prefs[APPLE_INSTANCE_URL],
             )
 
-    /**
-     * Adds the build's chart server ([builtIn]) to the list once
-     * (BuiltInServer.seed), in one edit so nothing saved in between is lost.
-     */
+    /** Writes the build's chart server into the saved list, once a launch (BuiltInServer). */
     suspend fun seedBuiltInServer(builtIn: String) {
-        val url = tf.monochrome.android.data.api.ApiServers.normalizeUrl(builtIn) ?: return
         dataStore.edit { prefs ->
-            val seeded = tf.monochrome.android.data.api.BuiltInServer.seed(apiServersOf(prefs), url, prefs[BUILT_IN_SERVER_SEEDED])
-            if (seeded != null) prefs[API_SERVERS] = json.encodeToString(seeded)
-            prefs[BUILT_IN_SERVER_SEEDED] = url
+            val saved = savedApiServers(prefs)
+            tf.monochrome.android.data.api.BuiltInServer.ensure(saved, builtIn)?.let { prefs[API_SERVERS] = json.encodeToString(it) }
         }
     }
 
@@ -1025,7 +1024,9 @@ class PreferencesManager @Inject constructor(
      * but a few call sites ask whether Qobuz is set up, and a downgrade should
      * find the servers where that build looks for them.
      */
-    suspend fun setApiServers(servers: List<tf.monochrome.android.data.api.ApiServer>) {
+    suspend fun setApiServers(edited: List<tf.monochrome.android.data.api.ApiServer>) {
+        // The build's chart server cannot be removed: put back if it was.
+        val servers = withBuiltIn(edited)
         val encoded = json.encodeToString(servers)
         fun urlFor(service: tf.monochrome.android.data.api.ApiService) =
             tf.monochrome.android.data.api.ApiServers.serverFor(servers, service)?.url
