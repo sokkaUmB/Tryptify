@@ -83,6 +83,14 @@ internal class LyricLetterCapture {
 
     /** What is being sung, in root px. Set by the lyric view; read in the draw phase. */
     var bandInRoot: () -> Rect? = { null }
+
+    /**
+     * True while [captureLetters] records [layer]. Anything that would draw
+     * the copy then is inside the letters, and drawing it would put the layer
+     * inside itself: a loop the render thread walks until its stack runs out.
+     * Not state: read and written in the draw pass only.
+     */
+    var recording = false
 }
 
 /** What the player hands the lyric view: where to send its letters, and the light. */
@@ -118,8 +126,19 @@ internal fun Modifier.captureLetters(capture: LyricLetterCapture?, edgeFade: Boo
             capture.size = Size(it.size.width.toFloat(), it.size.height.toFloat())
         }
         .drawWithContent {
+            // A second capture of the same letters inside the first (a lyric
+            // view drawn within its own copy) draws plainly instead.
+            if (capture.recording) {
+                drawContent()
+                return@drawWithContent
+            }
             RaysProbe.copiesRecorded++
-            layer.record { this@drawWithContent.drawContent() }
+            capture.recording = true
+            try {
+                layer.record { this@drawWithContent.drawContent() }
+            } finally {
+                capture.recording = false
+            }
             drawLayer(layer)
         }
 }
@@ -167,7 +186,7 @@ internal fun LyricBackdropFx(backdrop: LyricBackdrop, modifier: Modifier = Modif
                     RaysProbe.hit(RaysProbe.Backdrop.NO_ORIGIN)
                     return@drawBehind
                 }
-                if (letters.isReleased || size.minDimension <= 0f) {
+                if (letters.isReleased || size.minDimension <= 0f || capture.recording) {
                     RaysProbe.hit(RaysProbe.Backdrop.LETTERS_RELEASED)
                     return@drawBehind
                 }

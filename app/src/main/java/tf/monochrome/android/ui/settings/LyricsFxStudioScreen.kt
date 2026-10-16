@@ -71,6 +71,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -2133,6 +2134,15 @@ private fun StudioPreview(
 ) {
     val anchors = remember { LyricGlyphAnchors() }
     val accent = MaterialTheme.colorScheme.primary
+    // What the preview draws, for a native crash's report.
+    SideEffect {
+        tf.monochrome.android.debug.CrashBreadcrumbs.note(
+            "lyricsfx",
+            "curve=${fx.curvatureDeg}/${fx.effectiveCurvatureSideDeg} target=${fx.curvatureTarget} " +
+                "rays=${fx.godRays}${if (fx.godRaysOnTop) " on top" else ""} shadow=${fx.shadowDepth} " +
+                "lyrics=${if (lyrics?.isSynced == true) "song" else "sample"}",
+        )
+    }
     // Show the real currently-playing lyrics when there are synced lines; else a
     // synthetic sample so the preview is never empty.
     val playing = lyrics?.takeIf { it.isSynced && it.lines.isNotEmpty() }
