@@ -854,6 +854,20 @@ private fun TvShaderControls(
             onChange = { setTv(tv.copy(sharpness = it)) },
         )
     }
+    GlyphSlider(
+        label = "Chromatic shift",
+        value = tv.chromatic,
+        reading = percent(tv.chromatic),
+        note = "Red and blue drift apart, as on a tube with its beams out of line",
+        onChange = { setTv(tv.copy(chromatic = it)) },
+    )
+    GlyphSlider(
+        label = "Curvature",
+        value = tv.curvature,
+        reading = percent(tv.curvature),
+        note = "The picture bowed over a curved tube, its corners in the dark. 25% is the classic CRT's curve.",
+        onChange = { setTv(tv.copy(curvature = it)) },
+    )
     GlyphButton(
         text = "Reset ${shader.label}",
         onClick = { setTv(GlyphTvTuning(pixelSizes = tv.pixelSizes - shader)) },

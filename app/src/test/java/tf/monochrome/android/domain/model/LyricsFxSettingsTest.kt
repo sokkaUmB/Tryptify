@@ -1,6 +1,7 @@
 package tf.monochrome.android.domain.model
 
-import tf.monochrome.android.ui.player.curvatureSourceRadius
+import tf.monochrome.android.ui.player.crtSource
+import tf.monochrome.android.ui.player.crtWarp
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -73,22 +74,28 @@ class LyricsFxSettingsTest {
     }
 
     @Test
-    fun `the tube keeps the edges, swells the middle and drops the corners`() {
-        val curve = ::curvatureSourceRadius
+    fun `the tube bows like a CRT, not a fish-eye`() {
         // Flat: every point shows itself.
-        assertEquals(0.5f, curve(0.5f, 0f)!!, 0f)
-        // The middle of each side stays at the side, at any angle.
-        assertEquals(1f, curve(1f, 30f)!!, 1e-5f)
-        assertEquals(1f, curve(1f, 75f)!!, 1e-5f)
-        // Inside, a point shows lyrics nearer the middle: the middle swells,
-        // and more as the angle grows.
-        val at30 = curve(0.5f, 30f)!!
-        val at60 = curve(0.5f, 60f)!!
-        assertTrue(at30 < 0.5f && at60 < at30)
-        // asin(0.5 sin 60°) / 60° in radians, worked by hand.
-        assertEquals((Math.asin(0.5 * Math.sin(Math.PI / 3)) / (Math.PI / 3)).toFloat(), at60, 1e-5f)
-        // A corner past the dome's rim shows nothing.
-        assertEquals(null, curve(1.414f, 75f))
+        assertEquals(0.5f to 0.5f, crtSource(0.5f, 0.5f, 0f))
+        // The classic tube's bow, 1/32, at about 14.1 degrees.
+        assertEquals(1f / 32f, crtWarp(14.14f), 2e-4f)
+        assertEquals((1.0 / Math.cos(Math.PI / 3) - 1.0).toFloat(), crtWarp(60f), 1e-5f)
+        // The middle is not swollen: it shows itself at any angle, and so
+        // does every point of the two middle lines (a fish-eye moved them).
+        assertEquals(0f to 0f, crtSource(0f, 0f, 60f))
+        assertEquals(0.5f to 0f, crtSource(0.5f, 0f, 60f))
+        assertEquals(0f to -0.7f, crtSource(0f, -0.7f, 60f))
+        // The sides' middles stay at the sides.
+        assertEquals(1f to 0f, crtSource(1f, 0f, 75f))
+        // Off the middle lines a point shows lyrics further out: a line bows
+        // outward and its ends draw in, more as the angle grows.
+        val at30 = crtSource(0.6f, 0.6f, 30f)!!
+        val at45 = crtSource(0.6f, 0.6f, 45f)!!
+        assertTrue(at30.first > 0.6f && at45.first > at30.first)
+        assertEquals(0.6f * (1f + 0.36f * crtWarp(30f)), at30.first, 1e-5f)
+        // A corner past the tube's edge shows nothing: the corners round off.
+        assertNull(crtSource(1f, 1f, 30f))
+        assertNull(crtSource(0.95f, 0.95f, 45f))
     }
 
     @Test
@@ -102,7 +109,7 @@ class LyricsFxSettingsTest {
     }
 
     @Test
-    fun `a dome over the sung line or word fits it, and none without one`() {
+    fun `a tube over the sung line or word fits it, and none without one`() {
         val dome = tf.monochrome.android.ui.player.focusDome(
             androidx.compose.ui.geometry.Rect(-1e6f, 300f, 1e6f, 360f), 1000f, 2000f, wide = false,
         )!!

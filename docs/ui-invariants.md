@@ -293,9 +293,10 @@ effect reads only its own layer, so the lyric view records its letters into a
 `GraphicsLayer` (`captureLetters`, innermost, before the glass, so the glass
 shader does not run twice; only the tube's curvature, `lyricCurvature`, sits
 inside it, so the copy is bent with the letters and the shadow and the shafts
-follow the bent lines; set to the sung line or word, its dome covers that box
-alone, read in the draw phase, flat outside and meeting the flat lyrics at its
-rim) and the backdrop draws that copy as its input and
+follow the bent lines; it is a CRT tube's bow, `crtSource`, never a
+fish-eye: the middle keeps its size and lines bow outward toward rounded
+corners; set to the sung line or word, its tube covers that box alone, read in
+the draw phase, flat outside it and in its own rounded-off corners) and the backdrop draws that copy as its input and
 hands back only the shadow and the shafts (`uRaysOnly`); the real letters draw
 over them. Where a pixel's march misses the sung line it hands back nothing,
 never the copy: returning the copy there drew plain letters under the glass
@@ -1286,7 +1287,22 @@ surface, the CRT unless another look is picked), with the same limits, and
 says when this phone cannot run it. Pop-ups that open their own window (a
 dropdown, a system dialog) are outside it. Under it the game's own
 (`glyphTvShader`, `LocalAppTvShader`) is left off: two would draw every
-scanline twice.
+scanline twice. Under Look it has every one of the game's sliders, its own
+copy (`appTvTuning`, one line in the settings store, synced), and the app is
+their preview: a drag moves the whole app live (`AppTvLive`, read in the
+root layer's draw) and the store is written once, on release.
+
+**Chromatic shift and Curvature are the tube's glass, over any look.** A second
+pass chained after the pattern (`TUBE_SHADER`), so the scanlines and the mask
+bow with the picture, as on a tube; it runs only while either is above 0, and
+both start at 0. Curvature is the CRT shader's warp, a quarter of the slider
+being its classic 1/32 and 1/24: the middle keeps its size, the edges bow
+outward, the corners go dark. Chromatic shift reads red and blue up to 3 dp
+either side of green. Under the app-wide effect a bowed picture would put every
+button somewhere other than where it shows, so `MainActivity.dispatchTouchEvent`
+sends each touch (and its history) through the same warp
+(`GlyphTvTuning.tubeSource`, `bentThroughTube`): a tap lands on what is seen
+under the finger.
 
 * Every pattern is counted in TV pixels of a whole number of phone pixels
   (`GlyphTvTuning.pixelSize`), never a fraction. The old line grid was 640 x 480

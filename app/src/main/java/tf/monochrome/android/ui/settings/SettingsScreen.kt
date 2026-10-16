@@ -772,7 +772,150 @@ private fun CrtEffectSetting(viewModel: SettingsViewModel) {
                     }
             }
         }
+        CrtSliders(viewModel, shader)
     }
+}
+
+/**
+ * The CRT effect's sliders: Trypt Mania's TV shader's own (its pixel size,
+ * strength and brightness for every look, the CRT's four for the CRT), then
+ * the tube's Chromatic shift and Curvature. The whole app is the preview: a
+ * drag moves it live ([tf.monochrome.android.ui.glyph.AppTvLive]) and the
+ * store is written once, on release.
+ */
+@Composable
+private fun CrtSliders(viewModel: SettingsViewModel, shader: tf.monochrome.android.glyph.engine.GlyphTvShader) {
+    val stored by viewModel.appTvTuning.collectAsStateWithLifecycle()
+    val live = tf.monochrome.android.ui.glyph.AppTvLive
+    val tv = live.tuning ?: stored
+    val drag: (tf.monochrome.android.glyph.engine.GlyphTvTuning) -> Unit = { live.tuning = it }
+    val commit: () -> Unit = {
+        val done = live.tuning
+        if (done != null) {
+            viewModel.setAppTvTuning(done)
+            // Nothing to wait for when the drag came back to where it was.
+            if (done == stored) live.tuning = null
+        }
+    }
+    val window = androidx.compose.ui.platform.LocalWindowInfo.current.containerSize
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    val pixel = tv.pixelSize(shader, density, window.height)
+    val range = tf.monochrome.android.glyph.engine.GlyphTvTuning.pixelRange(shader)
+    val wave = shader == tf.monochrome.android.glyph.engine.GlyphTvShader.WAVE
+    fun percent(value: Float) = (value * 100f).roundToInt()
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        CrtSlider(
+            label = stringResource(if (wave) R.string.settings_crt_line_height else R.string.settings_crt_pixel_size, pixel),
+            subtitle = if (window.height <= 0) {
+                null
+            } else if (wave) {
+                stringResource(R.string.settings_crt_lines_down, window.height / pixel)
+            } else {
+                stringResource(R.string.settings_crt_tv_pixels, window.width / pixel, window.height / pixel)
+            },
+            value = pixel.toFloat(),
+            range = range.first.toFloat()..range.last.toFloat(),
+            steps = range.last - range.first - 1,
+            onChange = { drag(tv.withPixelSize(shader, it.roundToInt())) },
+            onDone = commit,
+        )
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_strength, percent(tv.strength)),
+            subtitle = stringResource(R.string.settings_crt_strength_desc),
+            value = tv.strength,
+            onChange = { drag(tv.copy(strength = it)) },
+            onDone = commit,
+        )
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_brightness, percent(tv.brightness)),
+            subtitle = stringResource(R.string.settings_crt_brightness_desc),
+            value = tv.brightness,
+            range = tf.monochrome.android.glyph.engine.GlyphTvTuning.MIN_BRIGHTNESS..
+                tf.monochrome.android.glyph.engine.GlyphTvTuning.MAX_BRIGHTNESS,
+            onChange = { drag(tv.copy(brightness = it)) },
+            onDone = commit,
+        )
+        if (shader == tf.monochrome.android.glyph.engine.GlyphTvShader.CRT) {
+            CrtSlider(
+                label = stringResource(R.string.settings_crt_scanlines, percent(tv.scanlines)),
+                subtitle = stringResource(R.string.settings_crt_scanlines_desc),
+                value = tv.scanlines,
+                onChange = { drag(tv.copy(scanlines = it)) },
+                onDone = commit,
+            )
+            CrtSlider(
+                label = stringResource(R.string.settings_crt_mask, percent(tv.mask)),
+                subtitle = stringResource(R.string.settings_crt_mask_desc),
+                value = tv.mask,
+                onChange = { drag(tv.copy(mask = it)) },
+                onDone = commit,
+            )
+            CrtSlider(
+                label = stringResource(R.string.settings_crt_glow, percent(tv.glow)),
+                subtitle = stringResource(R.string.settings_crt_glow_desc),
+                value = tv.glow,
+                onChange = { drag(tv.copy(glow = it)) },
+                onDone = commit,
+            )
+            CrtSlider(
+                label = stringResource(R.string.settings_crt_sharpness, percent(tv.sharpness)),
+                subtitle = stringResource(R.string.settings_crt_sharpness_desc),
+                value = tv.sharpness,
+                onChange = { drag(tv.copy(sharpness = it)) },
+                onDone = commit,
+            )
+        }
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_chromatic, percent(tv.chromatic)),
+            subtitle = stringResource(R.string.settings_crt_chromatic_desc),
+            value = tv.chromatic,
+            onChange = { drag(tv.copy(chromatic = it)) },
+            onDone = commit,
+        )
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_curvature, percent(tv.curvature)),
+            subtitle = stringResource(R.string.settings_crt_curvature_desc),
+            value = tv.curvature,
+            onChange = { drag(tv.copy(curvature = it)) },
+            onDone = commit,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = {
+                live.tuning = null
+                viewModel.setAppTvTuning(tf.monochrome.android.glyph.engine.GlyphTvTuning(pixelSizes = tv.pixelSizes - shader))
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.settings_crt_reset, shader.label))
+        }
+    }
+}
+
+/** One of [CrtSliders]: its label, a line on what it does, and the slider, moving the app as it is dragged. */
+@Composable
+private fun CrtSlider(
+    label: String,
+    subtitle: String?,
+    value: Float,
+    onChange: (Float) -> Unit,
+    onDone: () -> Unit,
+    range: ClosedFloatingPointRange<Float> = 0f..1f,
+    steps: Int = 0,
+) {
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(label, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+    if (subtitle != null) {
+        Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    Slider(
+        value = value.coerceIn(range),
+        onValueChange = onChange,
+        onValueChangeFinished = onDone,
+        valueRange = range,
+        steps = steps,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 /** Which of the two custom colours a picker is open for. */

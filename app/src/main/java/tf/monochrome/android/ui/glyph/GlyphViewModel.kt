@@ -1795,6 +1795,8 @@ class GlyphViewModel @Inject constructor(
             mask = unit(PREF_GFX_TV_MASK, defaults.mask),
             glow = unit(PREF_GFX_TV_GLOW, defaults.glow),
             sharpness = unit(PREF_GFX_TV_SHARPNESS, defaults.sharpness),
+            chromatic = unit(PREF_GFX_TV_CHROMATIC, defaults.chromatic),
+            curvature = unit(PREF_GFX_TV_CURVATURE, defaults.curvature),
         )
     }
 
@@ -1809,6 +1811,8 @@ class GlyphViewModel @Inject constructor(
             .putFloat(PREF_GFX_TV_MASK, tv.mask)
             .putFloat(PREF_GFX_TV_GLOW, tv.glow)
             .putFloat(PREF_GFX_TV_SHARPNESS, tv.sharpness)
+            .putFloat(PREF_GFX_TV_CHROMATIC, tv.chromatic)
+            .putFloat(PREF_GFX_TV_CURVATURE, tv.curvature)
     }
 
     /**
@@ -2502,6 +2506,8 @@ class GlyphViewModel @Inject constructor(
         const val PREF_GFX_TV_MASK = "gfx_tv_mask"
         const val PREF_GFX_TV_GLOW = "gfx_tv_glow"
         const val PREF_GFX_TV_SHARPNESS = "gfx_tv_sharpness"
+        const val PREF_GFX_TV_CHROMATIC = "gfx_tv_chromatic"
+        const val PREF_GFX_TV_CURVATURE = "gfx_tv_curvature"
         const val PREF_GFX_TV_SHADER = "gfx_tv_shader"
 
         const val MAX_MINI = 0.5f

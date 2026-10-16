@@ -94,7 +94,7 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
     entry("Legacy player", R.string.settings_legacy_player, "Appearance", listOf("old", "flat", "classic", "pre-glass", "design")),
     entry("Remove liquid glass", R.string.settings_remove_liquid_glass, "Appearance", listOf("flat", "opaque", "blur", "performance", "glass")),
     entry("Disable animations", R.string.settings_disable_animations, "Appearance", listOf("motion", "reduce", "still", "accessibility")),
-    entry("CRT effect", R.string.settings_crt_effect, "Appearance", listOf("tv", "television", "retro", "scanlines", "crt", "shader", "monitor", "vintage", "old")),
+    entry("CRT effect", R.string.settings_crt_effect, "Appearance", listOf("tv", "television", "retro", "scanlines", "crt", "shader", "monitor", "vintage", "old", "curvature", "curve", "chromatic", "aberration", "rgb", "mask", "glow", "bloom")),
 
     // ── Visual Studio ───────────────────────────────────────────────────
     entry(

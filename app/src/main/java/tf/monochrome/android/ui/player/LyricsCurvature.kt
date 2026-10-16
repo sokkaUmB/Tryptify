@@ -18,27 +18,29 @@ import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import kotlin.math.asin
-import kotlin.math.sin
+import kotlin.math.abs
+import kotlin.math.cos
 
 /**
  * The lyrics on a curved tube, as a CRT draws them (Lyrics FX › Curvature,
  * [tf.monochrome.android.domain.model.LyricsFxSettings.curvatureDeg]): the
- * flat lyrics wrapped over a glass dome that turns [degrees] away from the
- * viewer between its middle and the middle of each side, and seen from the
- * front. The middle swells toward the viewer, lines bow outward, a line's ends
- * stay at the edges, and the corners, past the dome's rim, round off.
+ * glass bowed [degrees] away from the viewer between its middle and its
+ * edge, with the flat lyrics seen through it. The middle stays as it is;
+ * further out each line bows outward and its ends draw in, more toward the
+ * corners, which round off into nothing ([crtSource]). Not a fish-eye: it
+ * swells nothing, the sides' middles stay at the sides, and a line through
+ * the middle stays straight.
  *
  * Put it innermost on the lyric surface, inside the copy of the letters the
  * backdrop takes for their shadow and their light, so the shadow and the
  * shafts bend with them and the glass bevels the bent letters.
  *
  * With [focusInRoot] (Lyrics FX › Curve: the sung line or the sung word) the
- * dome sits over that box alone, read in the draw phase so it follows the
- * scroll and hops from word to word, a little taller than the box so the
- * letters fit under it ([wide] adds room at its sides for a word). Outside it
- * the lyrics are flat, and at its rim the dome meets them exactly. No box (the
- * line off screen) leaves everything flat.
+ * tube is that box alone, read in the draw phase so it follows the scroll and
+ * hops from word to word, a little taller than the box so the letters fit in
+ * it ([wide] adds room at its sides for a word). Outside it, and where its
+ * rounded corners leave room inside it, the lyrics are flat. No box (the line
+ * off screen) leaves everything flat.
  *
  * Android 13 and later; flat below, and under [MIN_CURVATURE_DEG].
  */
@@ -83,20 +85,18 @@ private fun Modifier.curved(
             renderEffect = null
             return@graphicsLayer
         }
-        val theta = Math.toRadians(degrees.toDouble()).toFloat()
         shader.setFloatUniform("uSize", size.width, size.height)
         shader.setFloatUniform("uCenter", dome.center.x, dome.center.y)
         shader.setFloatUniform("uRadii", dome.width / 2f, dome.height / 2f)
         shader.setFloatUniform("uLocal", if (focusInRoot == null) 0f else 1f)
-        shader.setFloatUniform("uTheta", theta)
-        shader.setFloatUniform("uSin", sin(theta))
+        shader.setFloatUniform("uWarp", crtWarp(degrees))
         renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
     }
 
 /**
- * The dome over [box] (in the surface's own px), on a surface of [width]:
+ * The tube over [box] (in the surface's own px), on a surface of [width]:
  * the box's sides kept to the surface (a line's run past it), its height
- * raised by [DOME_HEADROOM] so the letters fit under it, and [wide] adding
+ * raised by [DOME_HEADROOM] so the letters fit in it, and [wide] adding
  * [WORD_SIDE_ROOM] at the sides for a single word. Null without a box, or
  * for one with no size.
  */
@@ -112,26 +112,40 @@ internal fun focusDome(box: Rect?, width: Float, height: Float, wide: Boolean): 
     return Rect(cx - halfW, cy - halfH, cx + halfW, cy + halfH)
 }
 
-/** The dome over a line or a word stands this much taller than it, so no letter is cut at its rim. */
+/** The tube over a line or a word stands this much taller than it, so no letter reaches its rim. */
 internal const val DOME_HEADROOM = 1.6f
 
 /** And this much wider than a word, so its ends are not pressed against the rim. */
 internal const val WORD_SIDE_ROOM = 1.35f
 
 /**
- * Where on the flat lyrics a point of the curved tube shows, as a share of
- * the way out from the middle: a point [radius] of the way out on the screen
- * is the dome's surface at `asin(radius · sin θ)` from its middle, and that
- * much of the arc's θ is that much of the way across the lyrics. Null past
- * the dome's rim. The shader's sum, here to be checked.
+ * How far the tube bows at [degrees]: `1 / cos θ − 1`, how much further out
+ * than its corner on the glass a corner of the flat lyrics lies. The CRT
+ * shader's `warp`: about 1/32 at 14.1°, the classic tube's, 0.155 at 30°, 1
+ * at 60°. 0 below [MIN_CURVATURE_DEG].
  */
-internal fun curvatureSourceRadius(radius: Float, degrees: Float): Float? {
-    if (degrees < MIN_CURVATURE_DEG) return radius
-    val theta = Math.toRadians(degrees.toDouble())
-    val x = radius * sin(theta)
-    if (x >= 1.0) return null
-    return (asin(x) / theta).toFloat()
+internal fun crtWarp(degrees: Float): Float {
+    if (degrees < MIN_CURVATURE_DEG) return 0f
+    return (1.0 / cos(Math.toRadians(degrees.coerceAtMost(MAX_CURVATURE_DEG).toDouble())) - 1.0).toFloat()
 }
+
+/**
+ * Where on the flat lyrics the point [x], [y] of the tube shows, both as
+ * shares of the way out from its middle (−1 to 1 across it): each pulled
+ * outward by the other's square, `x · (1 + y² · warp)`, so a point's way out
+ * grows toward the corners and never along the middle lines. Null past the
+ * tube's edge, its rounded corners. The shader's sum, here to be checked.
+ */
+internal fun crtSource(x: Float, y: Float, degrees: Float): Pair<Float, Float>? {
+    val warp = crtWarp(degrees)
+    val sx = x * (1f + y * y * warp)
+    val sy = y * (1f + x * x * warp)
+    if (abs(sx) > 1f || abs(sy) > 1f) return null
+    return sx to sy
+}
+
+/** The slider's far end; [crtWarp] is held there, where the tube bows four times the corners away. */
+private const val MAX_CURVATURE_DEG = 75f
 
 /** Below this the lyrics are drawn flat, with no layer at all. */
 internal const val MIN_CURVATURE_DEG = 0.05f
@@ -144,11 +158,12 @@ private fun compileCurvature(): RuntimeShader? {
 }
 
 /**
- * [curvatureSourceRadius] for every pixel, out from the dome's middle in its
- * own proportions, so the dome fits what it covers whatever its shape. Over
- * the whole surface (uLocal 0) a read past the rim, or off the lyrics, is
- * clear: the tube's rounded corners. Over a line or a word (uLocal 1) every
- * pixel outside the dome is the flat lyrics, as the rim reads itself.
+ * [crtSource] for every pixel, out from the tube's middle in its own
+ * proportions, so the tube fits what it covers whatever its shape. Over the
+ * whole surface (uLocal 0) a read past the tube's edge is clear: its rounded
+ * corners. Over a line or a word (uLocal 1) every pixel outside the box, and
+ * any whose read falls outside it, is the flat lyrics, so the box has no hole
+ * and no edge of its own.
  */
 private const val CURVATURE_SHADER = """
 uniform shader content;
@@ -156,22 +171,22 @@ uniform float2 uSize;
 uniform float2 uCenter;
 uniform float2 uRadii;
 uniform float uLocal;
-uniform float uTheta;
-uniform float uSin;
+uniform float uWarp;
 
 half4 main(float2 p) {
-    float2 c = uCenter;
-    float2 d = (p - c) / uRadii;
-    float r = length(d);
-    if (r < 0.0001 || (uLocal > 0.5 && r >= 1.0)) {
+    float2 d = (p - uCenter) / uRadii;
+    bool local = uLocal > 0.5;
+    if (local && (abs(d.x) >= 1.0 || abs(d.y) >= 1.0)) {
         return content.eval(p);
     }
-    float x = r * uSin;
-    if (x >= 1.0) {
+    float2 s = d * float2(1.0 + d.y * d.y * uWarp, 1.0 + d.x * d.x * uWarp);
+    if (abs(s.x) > 1.0 || abs(s.y) > 1.0) {
+        if (local) {
+            return content.eval(p);
+        }
         return half4(0.0);
     }
-    float source = asin(x) / uTheta;
-    float2 q = c + d * (source / r) * uRadii;
+    float2 q = uCenter + s * uRadii;
     if (q.x < 0.0 || q.y < 0.0 || q.x > uSize.x || q.y > uSize.y) {
         return half4(0.0);
     }

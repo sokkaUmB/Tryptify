@@ -11,6 +11,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import android.media.AudioManager
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -28,6 +29,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.graphics.luminance
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -69,6 +72,14 @@ class MainActivity : ComponentActivity() {
      * ("library", "settings?tab=7"), null for the default start screen.
      */
     private var pendingPostRoute by mutableStateOf<String?>(null)
+
+    /**
+     * The app-wide CRT's sliders while its picture is drawn, for
+     * [dispatchTouchEvent] to bend taps through a curved tube; null when the
+     * effect is off. [appTubeBounds] is where its layer sits in the window.
+     */
+    private var appTube: (() -> tf.monochrome.android.glyph.engine.GlyphTvTuning)? = null
+    private val appTubeBounds = android.graphics.RectF()
 
     // Registered-for-result launcher for POST_NOTIFICATIONS. Fires a one-shot
     // system prompt on Android 13+; the result doesn't block the UI either way
@@ -173,6 +184,17 @@ class MainActivity : ComponentActivity() {
             // Settings › Appearance › CRT effect: every screen through an old TV.
             val appTvShader by preferences.appTvShader
                 .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.glyph.engine.GlyphTvShader.OFF)
+            val appTvStored = preferences.appTvTuning
+                .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.glyph.engine.GlyphTvTuning())
+            // A slider being dragged wins until the store has its value.
+            androidx.compose.runtime.LaunchedEffect(appTvStored.value) {
+                if (tf.monochrome.android.ui.glyph.AppTvLive.tuning == appTvStored.value) {
+                    tf.monochrome.android.ui.glyph.AppTvLive.tuning = null
+                }
+            }
+            val appTvNow = remember(appTvStored) {
+                { tf.monochrome.android.ui.glyph.AppTvLive.tuning ?: appTvStored.value }
+            }
             val immersiveFullScreen by preferences.immersiveFullScreen
                 .collectAsStateWithLifecycle(initialValue = false)
             // The user's manual low-performance overrides, from Settings ›
@@ -279,10 +301,15 @@ class MainActivity : ComponentActivity() {
                     // every screen is in; a screen with its own (Trypt Mania's
                     // playfield) leaves its own off under it.
                     val appTv = tf.monochrome.android.ui.glyph.appTvShaderRuns(appTvShader)
+                    SideEffect { appTube = if (appTv) appTvNow else null }
                     Surface(
                         modifier = Modifier
                             .fillMaxSize()
-                            .then(if (appTv) Modifier.tvShader(appTvShader) else Modifier),
+                            .onGloballyPositioned {
+                                val at = it.positionInWindow()
+                                appTubeBounds.set(at.x, at.y, at.x + it.size.width, at.y + it.size.height)
+                            }
+                            .then(if (appTv) Modifier.tvShader(appTvShader, appTvNow) else Modifier),
                         color = MaterialTheme.colorScheme.background
                     ) {
                         CompositionLocalProvider(tf.monochrome.android.ui.glyph.LocalAppTvShader provides appTv) {
@@ -352,6 +379,27 @@ class MainActivity : ComponentActivity() {
      * ACTION_DOWN only — ACTION_UP fires on every key release and would
      * double the step otherwise. A held key repeats ACTION_DOWN.
      */
+    /**
+     * Under the app-wide CRT's Curvature the picture is bowed but the screens
+     * under it are not: a tap goes to the spot on them that is seen under the
+     * finger, so a button near a corner is pressed where it shows.
+     */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val tuning = appTube?.invoke()
+        val bounds = appTubeBounds
+        if (tuning == null || !tuning.curved || bounds.isEmpty || !tf.monochrome.android.ui.glyph.tubeDrawable) {
+            return super.dispatchTouchEvent(ev)
+        }
+        val bent = tf.monochrome.android.ui.glyph.bentThroughTube(
+            ev, tuning, bounds.left, bounds.top, bounds.width(), bounds.height(),
+        )
+        return try {
+            super.dispatchTouchEvent(bent)
+        } finally {
+            bent.recycle()
+        }
+    }
+
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {

@@ -196,9 +196,11 @@ enum class GlyphTvShader(val id: String, val label: String, val note: String, va
  * CRT at the phone's own resolution, the masks at a desktop monitor's pixel
  * (where a one-pixel line is still visible), Wave at the original's 480 lines.
  *
- * [strength] and [brightness] apply to every look; the rest to the CRT only.
- * The four CRT values run 0 to 1, and [crtScan] and the rest turn them into
- * the shader's own numbers; their defaults are the original's.
+ * [strength] and [brightness] apply to every look, and so do [chromatic] and
+ * [curvature], which bend the finished picture as the glass of a tube would;
+ * the rest to the CRT only. The four CRT values run 0 to 1, and [crtScan] and
+ * the rest turn them into the shader's own numbers; their defaults are the
+ * original's. The tube's two start at 0, a flat picture in line.
  */
 data class GlyphTvTuning(
     val pixelSizes: Map<GlyphTvShader, Int> = emptyMap(),
@@ -210,6 +212,10 @@ data class GlyphTvTuning(
     val mask: Float = DEFAULT_MASK,
     val glow: Float = DEFAULT_GLOW,
     val sharpness: Float = DEFAULT_SHARPNESS,
+    /** Red and blue drawn apart sideways, as on a tube whose three beams are out of line: 0 is in line. */
+    val chromatic: Float = 0f,
+    /** The picture bowed over a curved tube, its corners rounded off into the dark: 0 is flat. */
+    val curvature: Float = 0f,
 ) {
     /** Phone pixels to a TV pixel for [shader], on a screen of [density] and [windowHeightPx]. */
     fun pixelSize(shader: GlyphTvShader, density: Float, windowHeightPx: Int): Int =
@@ -231,6 +237,71 @@ data class GlyphTvTuning(
     /** The bloom added over the picture: 0.15 by default. */
     val crtBloom: Float get() = GLOW_MOST * glow
 
+    /** How far red and blue each stand from green, in phone pixels on a screen of [density]. */
+    fun chromaticPx(density: Float): Float = CHROMATIC_MOST_DP * density * chromatic
+
+    /**
+     * The tube's bow across and down: the CRT shader's `warp`, which at a
+     * quarter of the slider is the original's 1/32 and 1/24.
+     */
+    val warpX: Float get() = WARP_MOST_X * curvature
+    val warpY: Float get() = WARP_MOST_Y * curvature
+
+    /** Whether the picture is bowed at all, so taps on it have to follow the bow. */
+    val curved: Boolean get() = curvature >= TUBE_MIN
+
+    /** Whether the tube's pass runs: the picture bowed, or its colours apart. */
+    val hasTube: Boolean get() = curved || chromatic >= TUBE_MIN
+
+    /**
+     * Where on the flat picture the point [x], [y] of a [width] by [height]
+     * bowed tube shows it: the tube shader's own sum, so a tap can be sent to
+     * what is seen under it. Past the tube's edge (its dark corners) the
+     * point is held to the picture's edge. [out] gets the two, x then y.
+     */
+    fun tubeSource(x: Float, y: Float, width: Float, height: Float, out: FloatArray) {
+        if (width <= 0f || height <= 0f) {
+            out[0] = x
+            out[1] = y
+            return
+        }
+        val cx = x / width * 2f - 1f
+        val cy = y / height * 2f - 1f
+        val sx = cx * (1f + cy * cy * warpX)
+        val sy = cy * (1f + cx * cx * warpY)
+        out[0] = ((sx * 0.5f + 0.5f) * width).coerceIn(0f, width)
+        out[1] = ((sy * 0.5f + 0.5f) * height).coerceIn(0f, height)
+    }
+
+    /** Every value inside its slider's range, and every size inside its look's. */
+    fun clamped(): GlyphTvTuning = GlyphTvTuning(
+        pixelSizes = pixelSizes.mapValues { (shader, size) -> size.coerceIn(pixelRange(shader)) },
+        strength = strength.unit(1f),
+        brightness = (if (brightness.isFinite()) brightness else 1f).coerceIn(MIN_BRIGHTNESS, MAX_BRIGHTNESS),
+        scanlines = scanlines.unit(DEFAULT_SCANLINES),
+        mask = mask.unit(DEFAULT_MASK),
+        glow = glow.unit(DEFAULT_GLOW),
+        sharpness = sharpness.unit(DEFAULT_SHARPNESS),
+        chromatic = chromatic.unit(0f),
+        curvature = curvature.unit(0f),
+    )
+
+    /**
+     * One line for a settings store: `name=value` pairs, `;` between them,
+     * a look's pixel size as `px.<look>`. [decode] reads it back.
+     */
+    fun encode(): String = buildList {
+        add("strength=$strength")
+        add("brightness=$brightness")
+        add("scanlines=$scanlines")
+        add("mask=$mask")
+        add("glow=$glow")
+        add("sharpness=$sharpness")
+        add("chromatic=$chromatic")
+        add("curvature=$curvature")
+        pixelSizes.forEach { (shader, size) -> add("px.${shader.id}=$size") }
+    }.joinToString(";")
+
     companion object {
         const val DEFAULT_SCANLINES = 6f / 14f
         const val DEFAULT_MASK = 0.5f
@@ -244,6 +315,47 @@ data class GlyphTvTuning(
         private const val SHARP_SOFTEST = 1f
         private const val SHARP_HARDEST = 6f
         private const val GLOW_MOST = 0.5f
+
+        /** Red and blue's furthest from green, in dp: past it the letters read double. */
+        const val CHROMATIC_MOST_DP = 3f
+
+        /** The tube's bow at the slider's end: four times the original CRT's. */
+        const val WARP_MOST_X = 0.125f
+        const val WARP_MOST_Y = 1f / 6f
+
+        /** Below this the tube's two are off, with no pass at all. */
+        private const val TUBE_MIN = 0.001f
+
+        private fun Float.unit(fallback: Float): Float = (if (isFinite()) this else fallback).coerceIn(0f, 1f)
+
+        /**
+         * [encode]'s line read back, each value held to its range; a name it
+         * does not know, or a value it cannot read, keeps that default. Null
+         * or blank is every default.
+         */
+        fun decode(line: String?): GlyphTvTuning {
+            if (line.isNullOrBlank()) return GlyphTvTuning()
+            val pairs = line.split(';').mapNotNull { part ->
+                val name = part.substringBefore('=', "").trim()
+                val value = part.substringAfter('=', "").trim()
+                if (name.isEmpty() || value.isEmpty()) null else name to value
+            }.toMap()
+            fun float(name: String, default: Float) = pairs[name]?.toFloatOrNull()?.takeIf { it.isFinite() } ?: default
+            val defaults = GlyphTvTuning()
+            return GlyphTvTuning(
+                pixelSizes = GlyphTvShader.entries.mapNotNull { shader ->
+                    pairs["px.${shader.id}"]?.toIntOrNull()?.takeIf { it > 0 }?.let { shader to it }
+                }.toMap(),
+                strength = float("strength", defaults.strength),
+                brightness = float("brightness", defaults.brightness),
+                scanlines = float("scanlines", defaults.scanlines),
+                mask = float("mask", defaults.mask),
+                glow = float("glow", defaults.glow),
+                sharpness = float("sharpness", defaults.sharpness),
+                chromatic = float("chromatic", defaults.chromatic),
+                curvature = float("curvature", defaults.curvature),
+            ).clamped()
+        }
 
         /** A monitor's pixel, in dp: about a hundredth of an inch. */
         private const val MONITOR_PIXEL_DP = 1.6f

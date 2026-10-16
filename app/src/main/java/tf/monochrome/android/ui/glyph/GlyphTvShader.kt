@@ -6,21 +6,24 @@
 
 package tf.monochrome.android.ui.glyph
 
+import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.os.Build
 import android.util.Log
+import android.view.MotionEvent
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.IntSize
 import tf.monochrome.android.glyph.engine.GlyphGraphics
@@ -60,6 +63,17 @@ fun Modifier.glyphTvShader(graphics: GlyphGraphics): Modifier =
  */
 val LocalAppTvShader = staticCompositionLocalOf { false }
 
+/**
+ * The app-wide effect's sliders while one is being dragged (Settings ›
+ * Appearance › CRT effect): read by the root layer as it draws, so the whole
+ * app changes under the finger, and written to the store once, on release.
+ * Null when nothing is being dragged; the root clears it when the store has
+ * caught up.
+ */
+object AppTvLive {
+    var tuning: GlyphTvTuning? by mutableStateOf(null)
+}
+
 /** Whether [shader] drawn over the whole app runs here: on, Android 13 or later, and blur allowed. */
 @Composable
 fun appTvShaderRuns(shader: GlyphTvShader): Boolean =
@@ -71,20 +85,29 @@ fun appTvShaderRuns(shader: GlyphTvShader): Boolean =
  * the whole app from its root. Nothing below Android 13, where the shader off
  * on a phone that turns its blur off, or one whose GPU will not compile it.
  */
-fun Modifier.tvShader(shader: GlyphTvShader, tv: GlyphTvTuning = GlyphTvTuning()): Modifier {
+fun Modifier.tvShader(shader: GlyphTvShader, tv: GlyphTvTuning = GlyphTvTuning()): Modifier = tvShader(shader) { tv }
+
+/**
+ * [tvShader] with its settings read as the layer draws, so a slider being
+ * dragged ([AppTvLive]) moves the picture without recomposing what is in it.
+ *
+ * Chromatic shift and Curvature are a second pass over the first one's
+ * picture, the glass in front of the pattern: the scanlines and the mask bow
+ * with the tube, as they do on one. It runs only while either is above 0.
+ */
+fun Modifier.tvShader(shader: GlyphTvShader, tv: () -> GlyphTvTuning): Modifier {
     return if (shader == GlyphTvShader.OFF || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         this
     } else {
         this.composed {
             val runtime = remember { compileTvShader() }
+            val tube = remember { compileTubeShader() }
             val size = remember { mutableStateOf(IntSize.Zero) }
-            val density = LocalDensity.current.density
-            val window = LocalWindowInfo.current.containerSize
-            val pixel = tv.pixelSize(shader, density, window.height)
+            val windowHeight = LocalWindowInfo.current.containerSize.height
             if (runtime == null || !LocalPerformanceProfile.current.allowHazeBlur) {
                 Modifier
             } else {
-                Modifier.onSizeChanged { size.value = it }.tvLayer(runtime, shader, tv, pixel, size)
+                Modifier.onSizeChanged { size.value = it }.tvLayer(runtime, tube, shader, tv, windowHeight, size)
             }
         }
     }
@@ -93,38 +116,120 @@ fun Modifier.tvShader(shader: GlyphTvShader, tv: GlyphTvTuning = GlyphTvTuning()
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 private fun Modifier.tvLayer(
     runtime: RuntimeShader,
+    tube: RuntimeShader?,
     shader: GlyphTvShader,
-    tv: GlyphTvTuning,
-    pixel: Int,
+    tv: () -> GlyphTvTuning,
+    windowHeight: Int,
     size: MutableState<IntSize>,
 ): Modifier =
     graphicsLayer {
-        // Read through state, so a rotation re-runs this with the new size.
+        // Read through state, so a rotation re-runs this with the new size,
+        // and a slider's move with the new value.
         val now = size.value
+        val tuning = tv()
         renderEffect = if (now.width == 0 || now.height == 0) {
             null
         } else {
-            runtime.setFloatUniform("uSize", now.width.toFloat(), now.height.toFloat())
-            runtime.setFloatUniform("uPixel", pixel.toFloat())
+            val width = now.width.toFloat()
+            val height = now.height.toFloat()
+            runtime.setFloatUniform("uSize", width, height)
+            runtime.setFloatUniform("uPixel", tuning.pixelSize(shader, density, windowHeight).toFloat())
             runtime.setFloatUniform("uMode", shader.mode.toFloat())
-            runtime.setFloatUniform("uStrength", tv.strength.coerceIn(0f, 1f))
-            runtime.setFloatUniform("uBright", tv.brightness.coerceIn(GlyphTvTuning.MIN_BRIGHTNESS, GlyphTvTuning.MAX_BRIGHTNESS))
-            runtime.setFloatUniform("uScan", tv.crtScan)
-            runtime.setFloatUniform("uSharp", tv.crtSharpness)
-            runtime.setFloatUniform("uMaskDark", tv.crtMaskDark)
-            runtime.setFloatUniform("uMaskLight", tv.crtMaskLight)
-            runtime.setFloatUniform("uBloom", tv.crtBloom)
-            android.graphics.RenderEffect
-                .createRuntimeShaderEffect(runtime, "content")
-                .asComposeRenderEffect()
+            runtime.setFloatUniform("uStrength", tuning.strength.coerceIn(0f, 1f))
+            runtime.setFloatUniform("uBright", tuning.brightness.coerceIn(GlyphTvTuning.MIN_BRIGHTNESS, GlyphTvTuning.MAX_BRIGHTNESS))
+            runtime.setFloatUniform("uScan", tuning.crtScan)
+            runtime.setFloatUniform("uSharp", tuning.crtSharpness)
+            runtime.setFloatUniform("uMaskDark", tuning.crtMaskDark)
+            runtime.setFloatUniform("uMaskLight", tuning.crtMaskLight)
+            runtime.setFloatUniform("uBloom", tuning.crtBloom)
+            val pattern = RenderEffect.createRuntimeShaderEffect(runtime, "content")
+            if (tube == null || !tuning.hasTube) {
+                pattern.asComposeRenderEffect()
+            } else {
+                tube.setFloatUniform("uSize", width, height)
+                tube.setFloatUniform("uWarp", tuning.warpX, tuning.warpY)
+                tube.setFloatUniform("uChroma", tuning.chromaticPx(density))
+                // A flat picture keeps its edge pixels; a bowed one softens
+                // its rim over a dp, rather than stepping into the dark.
+                tube.setFloatUniform("uEdge", if (tuning.curved) TUBE_EDGE_DP * density else 0f)
+                RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(tube, "content"), pattern)
+                    .asComposeRenderEffect()
+            }
         }
     }
+
+/**
+ * Whether this phone draws the tube at all: both programs compile on its GPU.
+ * Asked once, apart from any layer's own copies. Taps are bent only where the
+ * picture is, never over a flat one.
+ */
+val tubeDrawable: Boolean by lazy { compileTvShader() != null && compileTubeShader() != null }
+
+/** The bowed tube's rim, softened over this much. */
+private const val TUBE_EDGE_DP = 1f
 
 private fun compileTvShader(): RuntimeShader? {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return null
     return runCatching { RuntimeShader(TV_SHADER) }
         .onFailure { Log.w("GlyphTvShader", "TV shader did not compile; drawing the screen plain", it) }
         .getOrNull()
+}
+
+/** The glass pass; null leaves the picture flat and in line, with the pattern still on it. */
+private fun compileTubeShader(): RuntimeShader? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return null
+    return runCatching { RuntimeShader(TUBE_SHADER) }
+        .onFailure { Log.w("GlyphTvShader", "tube shader did not compile; drawing the picture flat", it) }
+        .getOrNull()
+}
+
+/**
+ * [event] as the layer under a bowed tube should get it: each point (and each
+ * point in its history) moved to the spot on the flat picture that is seen
+ * there ([GlyphTvTuning.tubeSource]), in a layer at [left], [top] of [width]
+ * by [height] in the event's coordinates. A new event, for the caller to
+ * recycle.
+ */
+fun bentThroughTube(
+    event: MotionEvent,
+    tuning: GlyphTvTuning,
+    left: Float,
+    top: Float,
+    width: Float,
+    height: Float,
+): MotionEvent {
+    val count = event.pointerCount
+    val history = event.historySize
+    val properties = Array(count) { i -> MotionEvent.PointerProperties().also { event.getPointerProperties(i, it) } }
+    val at = FloatArray(2)
+    // pos -1 is the event's own point, the rest its history, oldest first.
+    fun coords(pos: Int): Array<MotionEvent.PointerCoords> = Array(count) { i ->
+        MotionEvent.PointerCoords().also { c ->
+            if (pos < 0) event.getPointerCoords(i, c) else event.getHistoricalPointerCoords(i, pos, c)
+            tuning.tubeSource(c.x - left, c.y - top, width, height, at)
+            c.x = at[0] + left
+            c.y = at[1] + top
+        }
+    }
+    val bent = MotionEvent.obtain(
+        event.downTime,
+        if (history > 0) event.getHistoricalEventTime(0) else event.eventTime,
+        event.action,
+        count,
+        properties,
+        coords(if (history > 0) 0 else -1),
+        event.metaState,
+        event.buttonState,
+        event.xPrecision,
+        event.yPrecision,
+        event.deviceId,
+        event.edgeFlags,
+        event.source,
+        event.flags,
+    )
+    for (k in 1 until history) bent.addBatch(event.getHistoricalEventTime(k), coords(k), event.metaState)
+    if (history > 0) bent.addBatch(event.eventTime, coords(-1), event.metaState)
+    return bent
 }
 
 /**
@@ -304,5 +409,43 @@ half4 main(float2 fragCoord) {
         tv = toSrgb(clamp(colour * uBright, 0.0, 1.0));
     }
     return half4(mix(here.rgb, tv, uStrength), here.a);
+}
+"""
+
+/**
+ * The glass over the pattern: [GlyphTvTuning.tubeSource] for every pixel,
+ * the CRT shader's own warp, so the picture bows outward and its corners go
+ * dark past the tube; then red read from one side and blue from the other,
+ * `uChroma` pixels apart from green. A read is held inside the picture, so a
+ * flat one in line is exactly the picture. `uEdge` softens the bowed rim.
+ */
+private const val TUBE_SHADER = """
+uniform shader content;
+uniform float2 uSize;
+uniform float2 uWarp;
+uniform float uChroma;
+uniform float uEdge;
+
+half4 main(float2 p) {
+    float2 c = p / uSize * 2.0 - 1.0;
+    c = c * float2(1.0 + c.y * c.y * uWarp.x, 1.0 + c.x * c.x * uWarp.y);
+    float2 q = (c * 0.5 + 0.5) * uSize;
+    float fade = 1.0;
+    if (uEdge > 0.0) {
+        float2 room = min(q, uSize - q);
+        fade = clamp(min(room.x, room.y) / uEdge, 0.0, 1.0);
+        if (fade <= 0.0) {
+            return half4(0.0, 0.0, 0.0, 1.0);
+        }
+    }
+    float2 lo = float2(0.5, 0.5);
+    float2 hi = uSize - lo;
+    float4 here = float4(content.eval(clamp(q, lo, hi)));
+    if (uChroma > 0.0) {
+        float2 apart = float2(uChroma, 0.0);
+        here.r = float4(content.eval(clamp(q - apart, lo, hi))).r;
+        here.b = float4(content.eval(clamp(q + apart, lo, hi))).b;
+    }
+    return half4(here.rgb * fade, mix(1.0, here.a, fade));
 }
 """
