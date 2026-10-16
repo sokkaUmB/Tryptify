@@ -51,6 +51,8 @@ import tf.monochrome.android.glyph.chart.GlyphTiming
 import tf.monochrome.android.glyph.data.GlyphAttempt
 import tf.monochrome.android.glyph.data.GlyphAttemptStore
 import tf.monochrome.android.glyph.data.GlyphCalibration
+import tf.monochrome.android.glyph.data.GlyphSyncTrack
+import tf.monochrome.android.glyph.data.GlyphTapSync
 import tf.monochrome.android.glyph.data.GlyphGhost
 import tf.monochrome.android.glyph.data.GlyphGhostRecorder
 import tf.monochrome.android.glyph.data.GlyphSong
@@ -270,7 +272,10 @@ class GlyphViewModel @Inject constructor(
                 _ui.value = _ui.value.copy(screen = GlyphScreen.MENU)
             }
             GlyphEvent.OpenSettings -> openSettings()
-            GlyphEvent.CloseSettings -> _ui.value = _ui.value.copy(screen = GlyphScreen.MENU)
+            GlyphEvent.CloseSettings -> {
+                stopTapSync()
+                _ui.value = _ui.value.copy(screen = GlyphScreen.MENU, tapSync = null)
+            }
             is GlyphEvent.SetKey -> setKey(event.lane, event.slot, event.code)
             GlyphEvent.ResetKeys -> saveKeys(GlyphKeyBindings.DEFAULT)
             is GlyphEvent.SetAudioOffset -> setAudioOffset(event.ms)
@@ -280,6 +285,15 @@ class GlyphViewModel @Inject constructor(
                 // What the runs said is now in the offset; the next runs
                 // measure whatever is left.
                 _ui.value = _ui.value.copy(recentLateMs = null)
+            }
+            GlyphEvent.StartTapSync -> startTapSync()
+            is GlyphEvent.SyncTap -> syncTap(event.atUptimeMillis)
+            GlyphEvent.StopTapSync -> stopTapSync()
+            GlyphEvent.ApplyTapSync -> {
+                val offset = _ui.value.tapSync?.offsetMs ?: return
+                stopTapSync()
+                setAudioOffset(offset)
+                _ui.value = _ui.value.copy(tapSync = null)
             }
 
             is GlyphEvent.OpenEditor -> openEditor(event.difficulty)
@@ -545,6 +559,8 @@ class GlyphViewModel @Inject constructor(
         wheelFocusJob?.cancel()
         stopPreview()
         if (_ui.value.editor?.playing == true) stopEditorPlayback()
+        // A click track tapped to with the app behind would read nothing.
+        stopTapSync()
     }
 
     /** Fill in what has to be read from disk, and refresh the chart state. */
@@ -1705,6 +1721,83 @@ class GlyphViewModel @Inject constructor(
         _ui.value = _ui.value.copy(keys = keys)
     }
 
+    // ── tap to sync ─────────────────────────────────────────────────────
+
+    private var tapSync: GlyphTapSync? = null
+    private var tapSyncJob: Job? = null
+
+    /**
+     * Play the click track through the game's own transport and clock, so a
+     * tap is timed exactly as a lane press is (see [GlyphTapSync]).
+     */
+    private fun startTapSync() {
+        stopTapSync()
+        val sync = GlyphTapSync()
+        tapSync = sync
+        _ui.value = _ui.value.copy(tapSync = GlyphTapSyncUi(playing = true, taps = 0, needed = GlyphTapSync.NEEDED))
+        tapSyncJob = viewModelScope.launch {
+            val file = withContext(Dispatchers.IO) {
+                File(context.cacheDir, SYNC_TRACK_FILE).also { file ->
+                    val wav = GlyphSyncTrack.wav()
+                    // Written once, and again only if the track itself changes.
+                    if (file.length() != wav.size.toLong()) file.writeBytes(wav)
+                }
+            }
+            transport.loop = null
+            transport.prepare(Uri.fromFile(file))
+            transport.setSpeed(1f, true)
+            transport.seekTo(0f)
+            transport.play()
+            while (isActive) {
+                val position = transport.pump()
+                val beat = ((position - GlyphSyncTrack.FIRST_BEAT_SECONDS) / GlyphSyncTrack.BEAT_SECONDS)
+                    .let { if (it < 0f) -1 else it.toInt() }
+                val shown = _ui.value.tapSync
+                if (shown != null && shown.beat != beat) _ui.value = _ui.value.copy(tapSync = shown.copy(beat = beat))
+                if (sync.done || position >= GlyphSyncTrack.endSeconds) break
+                delay(SYNC_TICK_MILLIS)
+            }
+            transport.pause()
+            // Finished on its own: nothing left for a later stop to pause,
+            // which by then could be a run's song.
+            tapSyncJob = null
+            publishTapSync(playing = false)
+        }
+    }
+
+    private fun syncTap(atUptimeMillis: Long) {
+        val sync = tapSync ?: return
+        if (_ui.value.tapSync?.playing != true) return
+        // The clock a lane press is judged on, before any offset.
+        if (sync.tap(transport.positionAt(touchNanos(atUptimeMillis)))) publishTapSync(playing = !sync.done)
+    }
+
+    private fun publishTapSync(playing: Boolean) {
+        val sync = tapSync ?: return
+        val beat = _ui.value.tapSync?.beat ?: -1
+        _ui.value = _ui.value.copy(
+            tapSync = GlyphTapSyncUi(
+                playing = playing,
+                taps = sync.taps,
+                needed = GlyphTapSync.NEEDED,
+                offsetMs = sync.offsetMs?.coerceIn(-GlyphCalibration.MAX_OFFSET_MS, GlyphCalibration.MAX_OFFSET_MS),
+                spreadMs = sync.spreadMs,
+                steady = sync.steady,
+                couldBeAClickOff = sync.couldBeAClickOff,
+                beat = beat,
+            ),
+        )
+    }
+
+    /** Stop the click track; whatever was read stays on screen to apply. */
+    private fun stopTapSync() {
+        val job = tapSyncJob ?: return
+        tapSyncJob = null
+        job.cancel()
+        transport.pause()
+        if (_ui.value.tapSync != null) publishTapSync(playing = false)
+    }
+
     private fun setAudioOffset(ms: Int) {
         val clamped = ms.coerceIn(-GlyphCalibration.MAX_OFFSET_MS, GlyphCalibration.MAX_OFFSET_MS)
         prefs.edit().putInt(PREF_AUDIO_OFFSET, clamped).apply()
@@ -2187,6 +2280,10 @@ class GlyphViewModel @Inject constructor(
         const val SAMPLE_MUSIC_DELAY_MS = 250L
 
         const val TAG = "GlyphViewModel"
+
+        /** The click track, written to the cache once from [GlyphSyncTrack]. */
+        const val SYNC_TRACK_FILE = "trypt_mania_sync_140.wav"
+        const val SYNC_TICK_MILLIS = 8L
 
         const val PREFS_NAME = "trypt_mania"
         const val PREF_SKIN = "skin"

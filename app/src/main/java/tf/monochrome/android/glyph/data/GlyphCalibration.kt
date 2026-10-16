@@ -22,8 +22,12 @@ object GlyphCalibration {
     /** Runs needed before there is anything to suggest. */
     const val MIN_RUNS = 3
 
-    /** The offset never goes past this either way. */
-    const val MAX_OFFSET_MS = 200
+    /**
+     * The offset never goes past this either way. Half a second: Bluetooth
+     * headphones commonly run 150 to 300 ms late, some later, and a limit at
+     * 200 cut their reading short.
+     */
+    const val MAX_OFFSET_MS = 500
 
     /**
      * How much later, in whole milliseconds, the player has been hitting than

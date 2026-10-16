@@ -1197,6 +1197,16 @@ Back is never bindable. In the map editor the arrows only move the playhead,
 even where they play the lanes in a run. The editor is a work surface: like
 the playfield it runs without the tab bar and the mini player.
 
+**Tap to sync is heard, never seen.** The pad in Settings › Sync does not
+flash, pulse or count with the click track: a player who follows a flash
+measures the screen, and the offset it sets is for the sound. The track plays
+through the game's own transport and each tap goes through `touchNanos` and
+`positionAt`, as a lane press does, so the reading is exactly what a run would
+judge — never a separate timer. At 140 BPM a beat (428 ms) is shorter than
+Bluetooth's lateness can be, so a tap is never matched to its nearest click:
+the first tap anchors on the first click and the rest follow the running
+median (`GlyphTapSync`). The offset's limit is 500 ms for the same reason.
+
 **Back in a run pauses it; Back from the pause leaves.** The pause panel is
 where "Quit to songs" is, so Back walks the same two steps. Quitting on the
 first Back threw a run away to a stray edge swipe. On the home screen Back

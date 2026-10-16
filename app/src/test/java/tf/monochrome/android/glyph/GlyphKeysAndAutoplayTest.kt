@@ -71,7 +71,7 @@ class GlyphKeysAndAutoplayTest {
         val runs = listOf(run(18f), run(25f), run(21f), run(300f, hits = 4), run(-90f))
         assertEquals(20, GlyphCalibration.lateByMs(runs))
         assertEquals(21, GlyphCalibration.lateByMs(runs + run(30f)))
-        assertEquals(GlyphCalibration.MAX_OFFSET_MS, GlyphCalibration.corrected(190, 40))
+        assertEquals(GlyphCalibration.MAX_OFFSET_MS, GlyphCalibration.corrected(GlyphCalibration.MAX_OFFSET_MS - 10, 40))
         assertEquals(35, GlyphCalibration.corrected(15, 20))
     }
 

@@ -2,6 +2,21 @@
 
 package tf.monochrome.android.ui.glyph
 
+import android.os.SystemClock
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import tf.monochrome.android.glyph.data.GlyphSyncTrack
+import tf.monochrome.android.glyph.data.GlyphTapSync
+import tf.monochrome.android.ui.components.liquidGlass
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -381,6 +396,7 @@ private fun SyncTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    TapSyncPanel(state.tapSync, onEvent)
     val offset = state.audioOffsetMs
     Column {
         GlyphControlHeader("Audio offset", if (offset == 0) "None" else if (offset > 0) "Sound reaches you late" else "Sound reaches you early")
@@ -420,6 +436,157 @@ private fun SyncTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
                 filled = true,
                 onClick = { onEvent(GlyphEvent.ApplyRecentTiming) },
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/**
+ * Tap to sync: a click track at [GlyphSyncTrack.BPM] and a pad to tap along
+ * on. Listening, not watching — the pad deliberately does not flash with the
+ * beat, since a player following a flash measures the screen, not the sound.
+ */
+@Composable
+private fun TapSyncPanel(sync: GlyphTapSyncUi?, onEvent: (GlyphEvent) -> Unit) {
+    GlyphPanel(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "Tap to sync",
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.semantics { heading() },
+        )
+        Spacer(Modifier.height(MonoDimens.spacingXs))
+        val scheme = MaterialTheme.colorScheme
+        when {
+            sync == null -> {
+                Text(
+                    text = "For Bluetooth headphones above all. Put them on, press Start, and tap the pad on " +
+                        "every click you hear: ${GlyphSyncTrack.BPM} beats a minute, ${GlyphTapSync.NEEDED} taps. " +
+                        "Listen with your eyes off the screen.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(MonoDimens.spacingMd))
+                GlyphButton(
+                    text = "Start",
+                    primary = true,
+                    filled = true,
+                    onClick = { onEvent(GlyphEvent.StartTapSync) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            sync.playing -> {
+                // Leaving the tab mid-track stops it rather than leaving the
+                // clicks playing under another page.
+                DisposableEffect(Unit) { onDispose { onEvent(GlyphEvent.StopTapSync) } }
+                TapPad(
+                    caption = if (sync.beat < 0) "Get ready…" else "Tap on every click",
+                    count = "${sync.taps} of ${sync.needed}",
+                    onTap = { onEvent(GlyphEvent.SyncTap(it)) },
+                )
+                Spacer(Modifier.height(MonoDimens.spacingMd))
+                GlyphButton(
+                    text = "Stop",
+                    onClick = { onEvent(GlyphEvent.StopTapSync) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            sync.offsetMs == null -> {
+                Text(
+                    text = "Too few taps to read a timing from. Tap on each click until the count fills.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(MonoDimens.spacingMd))
+                GlyphButton(
+                    text = "Try again",
+                    primary = true,
+                    filled = true,
+                    onClick = { onEvent(GlyphEvent.StartTapSync) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            else -> {
+                val ms = sync.offsetMs
+                Text(
+                    text = when {
+                        ms > 0 -> "Sound reaches you $ms ms late"
+                        ms < 0 -> "Sound reaches you ${-ms} ms early"
+                        else -> "Sound reaches you on time"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+                Text(
+                    text = when {
+                        !sync.steady -> "Your taps wandered by about ±${sync.spreadMs} ms, so this is a rough reading. " +
+                            "Another go, tapping as evenly as you can, will be closer."
+                        sync.couldBeAClickOff -> "Bluetooth can be this late. But if your first tap came on the " +
+                            "second click, this is one click too much: try again from the very first."
+                        else -> "Your taps kept within ±${sync.spreadMs} ms of each other: a steady reading."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(MonoDimens.spacingMd))
+                Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {
+                    GlyphButton(
+                        text = "Try again",
+                        onClick = { onEvent(GlyphEvent.StartTapSync) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    GlyphButton(
+                        text = "Apply ${if (ms > 0) "+" else ""}$ms ms",
+                        primary = true,
+                        filled = true,
+                        onClick = { onEvent(GlyphEvent.ApplyTapSync) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The pad tapped along to the click track. Each tap is sent with the time the
+ * finger came down, not when the event reached here, the way a lane press is.
+ */
+@Composable
+private fun TapPad(caption: String, count: String, onTap: (Long) -> Unit) {
+    val onTapNow by rememberUpdatedState(onTap)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(TAP_PAD_HEIGHT)
+            .liquidGlass(shape = MonoDimens.shapeLg)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    onTapNow(down.uptimeMillis)
+                }
+            }
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = "Tap pad. $caption. $count"
+                onClick(label = "Tap") {
+                    onTapNow(SystemClock.uptimeMillis())
+                    true
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = caption,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = count,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
     }
@@ -658,3 +825,4 @@ private fun NameDialog(current: String, onDone: (String) -> Unit, onDismiss: () 
 /** Android's KEYCODE_ESCAPE: cancels a key being set. */
 private const val KEYCODE_ESCAPE = 111
 private const val OFFSET_STEP_MS = 5
+private val TAP_PAD_HEIGHT = 168.dp

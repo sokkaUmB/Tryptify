@@ -33,6 +33,14 @@ sealed interface GlyphEvent {
     data class SetAudioOffset(val ms: Int) : GlyphEvent
     /** Move the offset by how late the recent runs were hit. */
     data object ApplyRecentTiming : GlyphEvent
+    /** Play the click track and start reading taps against it. */
+    data object StartTapSync : GlyphEvent
+    /** A tap on the sync pad, stamped with the pointer's own uptime. */
+    data class SyncTap(val atUptimeMillis: Long) : GlyphEvent
+    /** Stop the click track; a reading already made is kept to apply. */
+    data object StopTapSync : GlyphEvent
+    /** Set the offset to what the taps said, and close the reading. */
+    data object ApplyTapSync : GlyphEvent
 
     // ── map editor ──────────────────────────────────────────────────────
     /** Open the selected song's [difficulty] in the editor, a new chart if it has none. */

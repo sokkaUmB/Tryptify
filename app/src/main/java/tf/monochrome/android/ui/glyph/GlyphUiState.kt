@@ -82,6 +82,8 @@ data class GlyphUiState(
     val audioOffsetMs: Int = 0,
     /** How late the recent runs were hit, for the Sync settings; null when too few say. */
     val recentLateMs: Int? = null,
+    /** Tap to sync, while the click track plays or its reading waits; null otherwise. */
+    val tapSync: GlyphTapSyncUi? = null,
     val editor: GlyphEditorUi? = null,
 ) {
     val chart: GlyphChart? get() = selectedDifficulty?.let { simfile?.chart(it) }
@@ -345,4 +347,23 @@ data class GlyphPackImportUi(
     val fraction: Float,
     val stage: String,
     val queued: Int,
+)
+
+/**
+ * Tap to sync as the Sync settings show it.
+ *
+ * [offsetMs] is the absolute offset the taps say, not a change to the current
+ * one; null until enough taps have counted.
+ */
+data class GlyphTapSyncUi(
+    val playing: Boolean,
+    val taps: Int,
+    val needed: Int,
+    val offsetMs: Int? = null,
+    val spreadMs: Int? = null,
+    val steady: Boolean = false,
+    /** The reading is late enough to be a whole click off; worth a second go. */
+    val couldBeAClickOff: Boolean = false,
+    /** Which click the track is on, so the pad can pulse with the sound; -1 before the first. */
+    val beat: Int = -1,
 )
