@@ -758,13 +758,13 @@ private fun HeroCoverArt(
     // Wave Candy's scope. Saveable so a rotation keeps it.
     var waveCandy by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     // Wave Candy's two channels apart, or summed into one line.
-    // The kick punch: on while a visual is on the art, so the cover follows
-    // the beat with either style.
+    // The kick: Wave Candy's lines swell on it. The cover itself stays still;
+    // it used to punch in on every kick, and a cover bouncing to the bass
+    // was taken out.
     val kick = rememberKickPulse(
-        enabled = spectrumEnabled && isPlaying && waveSettings?.kickEnabled == true,
+        enabled = spectrumEnabled && waveCandy && isPlaying && waveSettings?.kickEnabled == true,
         onsetRatio = waveSettings?.kickOnsetRatio ?: 1.45f,
     )
-    val stillArt = tf.monochrome.android.ui.theme.reduceMotion()
 
     // The glass spectrum lies on the cover itself, so the cover is what it
     // refracts — always, not only while the blurred background is on as for
@@ -811,15 +811,7 @@ private fun HeroCoverArt(
             contentDescription = track?.title ?: stringResource(R.string.album_art),
             blendMillis = blendMillis,
             userTrackChanges = userTrackChanges,
-            // Punches in on each kick. Read in the layer block, so the 60 fps
-            // pulse redraws the art without recomposing the hero; still with
-            // "Disable animations" on.
-            modifier = Modifier.fillMaxSize().graphicsLayer {
-                val k = if (stillArt) 0f else kick.floatValue
-                val zoom = waveSettings?.kickZoom ?: 0f
-                scaleX = 1f + zoom * k
-                scaleY = 1f + zoom * k
-            },
+            modifier = Modifier.fillMaxSize(),
         )
 
         Box(

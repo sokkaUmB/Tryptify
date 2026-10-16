@@ -1358,12 +1358,11 @@
     <string name="wavecandy_album_colour">Albüm rengi</string>
     <string name="wavecandy_draw_the_waveform_in_the_album_s_accent_instead">Dalga formunu beyaz yerine albümün vurgu rengiyle çiz</string>
     <string name="wavecandy_kick_punch">Davul vuruşu darbesi</string>
-    <string name="wavecandy_the_cover_punches_in_on_each_kick_drum">Kapak her davul vuruşunda içeri çöker</string>
-    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">Albüm kapağındaki osiloskop ve davul vuruşuyla çöken kapak. Kapaktaki dalga formu düğmesiyle ona geçin.</string>
+    <string name="wavecandy_the_lines_swell_on_each_kick_drum">Çizgiler her davul vuruşunda kalınlaşır</string>
+    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">Albüm kapağındaki osiloskop; çizgileri davul vuruşuyla kabarır. Kapaktaki dalga formu düğmesiyle ona geçin.</string>
     <string name="wavecandy_time_window">Zaman penceresi</string>
     <string name="wavecandy_height">Yükseklik</string>
     <string name="wavecandy_thickness">Kalınlık</string>
-    <string name="wavecandy_punch_strength">Darbe gücü</string>
     <string name="wavecandy_kick_sensitivity">Davul vuruşu hassasiyeti</string>
     <string name="hrtf_hrtf_database">HRTF veritabanı</string>
     <string name="hrtf_filter">Filtrele</string>

@@ -1400,12 +1400,11 @@
     <string name="wavecandy_album_colour">Color del álbum</string>
     <string name="wavecandy_draw_the_waveform_in_the_album_s_accent_instead">Dibujar la forma de onda con el color de acento del álbum en lugar de blanco</string>
     <string name="wavecandy_kick_punch">Golpe del bombo</string>
-    <string name="wavecandy_the_cover_punches_in_on_each_kick_drum">La portada da un golpe con cada bombo</string>
-    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">El osciloscopio sobre la portada, y la portada golpeando con el bombo. Cambia a él con el botón de forma de onda de la portada.</string>
+    <string name="wavecandy_the_lines_swell_on_each_kick_drum">Las líneas se ensanchan con cada bombo</string>
+    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">El osciloscopio sobre la portada, con sus líneas que se hinchan con el bombo. Cambia a él con el botón de forma de onda de la portada.</string>
     <string name="wavecandy_time_window">Ventana de tiempo</string>
     <string name="wavecandy_height">Altura</string>
     <string name="wavecandy_thickness">Grosor</string>
-    <string name="wavecandy_punch_strength">Fuerza del golpe</string>
     <string name="wavecandy_kick_sensitivity">Sensibilidad al bombo</string>
     <string name="hrtf_hrtf_database">Base de datos HRTF</string>
     <string name="hrtf_filter">Filtrar</string>

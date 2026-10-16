@@ -1359,12 +1359,11 @@
     <string name="wavecandy_album_colour">Album colour</string>
     <string name="wavecandy_draw_the_waveform_in_the_album_s_accent_instead">Draw the waveform in the album\'s accent instead of white</string>
     <string name="wavecandy_kick_punch">Kick punch</string>
-    <string name="wavecandy_the_cover_punches_in_on_each_kick_drum">The cover punches in on each kick drum</string>
-    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">The oscilloscope on the album art, and the cover punching in on the kick. Switch to it with the waveform button on the art.</string>
+    <string name="wavecandy_the_lines_swell_on_each_kick_drum">The scope\'s lines swell on each kick drum</string>
+    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">The oscilloscope on the album art, its lines swelling on the kick. Switch to it with the waveform button on the art.</string>
     <string name="wavecandy_time_window">Time window</string>
     <string name="wavecandy_height">Height</string>
     <string name="wavecandy_thickness">Thickness</string>
-    <string name="wavecandy_punch_strength">Punch strength</string>
     <string name="wavecandy_kick_sensitivity">Kick sensitivity</string>
     <string name="hrtf_hrtf_database">HRTF Database</string>
     <string name="hrtf_filter">Filter</string>

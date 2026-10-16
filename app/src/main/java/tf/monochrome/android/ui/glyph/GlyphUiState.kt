@@ -316,6 +316,10 @@ data class GlyphGameplayUi(
      * music waits for it, so READY and GO never sit over the first notes.
      */
     val introStartedAtMs: Long = 0L,
+    /** When the life bar emptied, wall-clock ms; 0 while it has not. The screen shakes from here. */
+    val failedAtMs: Long = 0L,
+    /** That fail stopped the run (Immediate): it holds under FAILED, then shows the results. */
+    val failStops: Boolean = false,
 ) {
     val progress: Float
         get() = if (durationSeconds <= 0f) 0f else (positionSeconds / durationSeconds).coerceIn(0f, 1f)

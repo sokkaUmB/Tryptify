@@ -1400,12 +1400,11 @@
     <string name="wavecandy_album_colour">Couleur de l’album</string>
     <string name="wavecandy_draw_the_waveform_in_the_album_s_accent_instead">Dessiner la forme d’onde dans la couleur d’accent de l’album plutôt qu’en blanc</string>
     <string name="wavecandy_kick_punch">Impact de la grosse caisse</string>
-    <string name="wavecandy_the_cover_punches_in_on_each_kick_drum">La pochette donne un coup à chaque grosse caisse</string>
-    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">L’oscilloscope sur la pochette, et la pochette qui frappe avec la grosse caisse. Basculez-y avec le bouton forme d’onde sur la pochette.</string>
+    <string name="wavecandy_the_lines_swell_on_each_kick_drum">Les lignes enflent à chaque grosse caisse</string>
+    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">L’oscilloscope sur la pochette, ses lignes qui gonflent avec la grosse caisse. Basculez-y avec le bouton forme d’onde sur la pochette.</string>
     <string name="wavecandy_time_window">Fenêtre temporelle</string>
     <string name="wavecandy_height">Hauteur</string>
     <string name="wavecandy_thickness">Épaisseur</string>
-    <string name="wavecandy_punch_strength">Force de l’impact</string>
     <string name="wavecandy_kick_sensitivity">Sensibilité à la grosse caisse</string>
     <string name="hrtf_hrtf_database">Base de données HRTF</string>
     <string name="hrtf_filter">Filtrer</string>

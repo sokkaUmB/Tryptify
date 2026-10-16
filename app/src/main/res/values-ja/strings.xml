@@ -1316,12 +1316,11 @@
     <string name="wavecandy_album_colour">アルバムの色</string>
     <string name="wavecandy_draw_the_waveform_in_the_album_s_accent_instead">波形を白ではなくアルバムのアクセントカラーで描きます</string>
     <string name="wavecandy_kick_punch">キックのパンチ</string>
-    <string name="wavecandy_the_cover_punches_in_on_each_kick_drum">キックドラムのたびにカバーが弾みます</string>
-    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">アルバムアート上のオシロスコープと、キックに合わせて弾むカバーです。アート上の波形ボタンで切り替えます。</string>
+    <string name="wavecandy_the_lines_swell_on_each_kick_drum">キックドラムのたびに線が太くなります</string>
+    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">アルバムアート上のオシロスコープ。キックに合わせて線が膨らみます。アート上の波形ボタンで切り替えます。</string>
     <string name="wavecandy_time_window">時間幅</string>
     <string name="wavecandy_height">高さ</string>
     <string name="wavecandy_thickness">太さ</string>
-    <string name="wavecandy_punch_strength">パンチの強さ</string>
     <string name="wavecandy_kick_sensitivity">キックの感度</string>
     <string name="hrtf_hrtf_database">HRTF データベース</string>
     <string name="hrtf_filter">フィルタ</string>

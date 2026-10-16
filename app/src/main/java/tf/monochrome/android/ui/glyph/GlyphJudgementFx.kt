@@ -3,7 +3,9 @@
 package tf.monochrome.android.ui.glyph
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -13,10 +15,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
@@ -27,8 +33,8 @@ import tf.monochrome.android.glyph.engine.GlyphFullCombo
 import tf.monochrome.android.glyph.engine.GlyphJudgement
 
 /**
- * The judgement and the combo, as StepMania's default theme draws them, and
- * held still.
+ * The judgement and the combo, as StepMania's default theme draws them: the
+ * judgement held still, the combo popping as it grows and falling as it breaks.
  *
  * The judgement is the theme's own sprite — FLAWLESS!!, PERFECT!, GREAT, GOOD,
  * BAD, MISS... — in its early or late frame (the dot sits on the side the step
@@ -36,7 +42,9 @@ import tf.monochrome.android.glyph.engine.GlyphJudgement
  * keeps W1 up longest) and fades. Nothing about it waves, tilts or swells: it
  * is read at a glance in the middle of the lanes, and a word that moves is a
  * word read late. The combo is Roboto Bold, the theme's "Combo Numbers",
- * coloured by the full combo still alive.
+ * coloured by the full combo still alive. It springs up a size on each step
+ * it gains (more on every fiftieth), and a broken combo drops and tips away in
+ * red. Reduced motion keeps both still.
  */
 @Composable
 fun GlyphJudgementFx(
@@ -48,9 +56,31 @@ fun GlyphJudgementFx(
     fullCombo: GlyphFullCombo?,
     fonts: GlyphStepFonts,
     modifier: Modifier = Modifier,
+    /** Still: no pop, no fall. */
+    reducedMotion: Boolean = false,
 ) {
     if (judgement == null) return
     val sprite = rememberStepArt(GlyphStepArt.judgement(judgement, early))
+
+    // The combo pops on every step it gains, harder at every fifty, and a
+    // broken combo drops away in red rather than blinking out.
+    val pop = remember { Animatable(1f) }
+    val fall = remember { Animatable(1f) }
+    var broken by remember { mutableIntStateOf(0) }
+    var last by remember { mutableIntStateOf(combo) }
+    LaunchedEffect(combo) {
+        val before = last
+        last = combo
+        if (reducedMotion) return@LaunchedEffect
+        if (combo > before && combo >= SHOW_COMBO_AT) {
+            pop.snapTo(if (combo % COMBO_MILESTONE == 0) MILESTONE_POP else STEP_POP)
+            pop.animateTo(1f, spring(dampingRatio = POP_DAMPING, stiffness = POP_STIFFNESS))
+        } else if (combo < before && before >= SHOW_COMBO_AT) {
+            broken = before
+            fall.snapTo(0f)
+            fall.animateTo(1f, tween(BREAK_MILLIS, easing = FastOutSlowInEasing))
+        }
+    }
 
     // Shown at once, held, then faded: StepMania's sleep then fade, without
     // its zoom.
@@ -88,12 +118,39 @@ fun GlyphJudgementFx(
         }
         // StepMania shows the combo from two.
         if (combo >= SHOW_COMBO_AT) {
-            Row(verticalAlignment = Alignment.Bottom) {
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                // Read in the layer: the pop redraws, it never recomposes.
+                modifier = Modifier.graphicsLayer {
+                    scaleX = pop.value
+                    scaleY = pop.value
+                    transformOrigin = TransformOrigin(0.5f, 0.8f)
+                },
+            ) {
                 Text(text = combo.toString(), style = fonts.combo, color = comboColour(fullCombo))
                 Text(
                     text = " COMBO",
                     style = fonts.rowTitle,
                     color = comboColour(fullCombo).copy(alpha = 0.85f),
+                    modifier = Modifier.graphicsLayer { translationY = -8f },
+                )
+            }
+        } else if (broken >= SHOW_COMBO_AT && fall.isRunning) {
+            // The combo that was, falling and fading.
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.graphicsLayer {
+                    val f = fall.value
+                    translationY = f * BREAK_DROP.toPx()
+                    rotationZ = f * BREAK_TILT_DEGREES
+                    this.alpha = 1f - f
+                },
+            ) {
+                Text(text = broken.toString(), style = fonts.combo, color = BROKEN)
+                Text(
+                    text = " COMBO",
+                    style = fonts.rowTitle,
+                    color = BROKEN.copy(alpha = 0.85f),
                     modifier = Modifier.graphicsLayer { translationY = -8f },
                 )
             }
@@ -110,6 +167,19 @@ fun comboColour(fullCombo: GlyphFullCombo?): Color = when (fullCombo) {
 }
 
 private const val SHOW_COMBO_AT = 2
+
+/** The combo's pop on a step, and on every [COMBO_MILESTONE]th, as a scale it springs back from. */
+private const val STEP_POP = 1.22f
+private const val MILESTONE_POP = 1.55f
+private const val COMBO_MILESTONE = 50
+private const val POP_DAMPING = 0.45f
+private const val POP_STIFFNESS = 700f
+
+/** A broken combo's fall: how long, how far, how far it tips, and its red. */
+private const val BREAK_MILLIS = 450
+private val BREAK_DROP = 28.dp
+private const val BREAK_TILT_DEGREES = 7f
+private val BROKEN = Color(0xFFFF5F6D)
 private const val HOLD_MILLIS = 500L
 private const val HOLD_W1_MILLIS = 800L
 private const val FADE_MILLIS = 100

@@ -1316,12 +1316,11 @@
     <string name="wavecandy_album_colour">专辑颜色</string>
     <string name="wavecandy_draw_the_waveform_in_the_album_s_accent_instead">用专辑的强调色而不是白色绘制波形</string>
     <string name="wavecandy_kick_punch">底鼓冲击</string>
-    <string name="wavecandy_the_cover_punches_in_on_each_kick_drum">每次底鼓时封面都会向内一震</string>
-    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">专辑封面上的示波器，以及随底鼓震动的封面。点按封面上的波形按钮即可切换。</string>
+    <string name="wavecandy_the_lines_swell_on_each_kick_drum">每次底鼓时线条都会变粗</string>
+    <string name="wavecandy_the_oscilloscope_on_the_album_art_and_the_cover">专辑封面上的示波器，线条随底鼓膨胀。点按封面上的波形按钮即可切换。</string>
     <string name="wavecandy_time_window">时间窗口</string>
     <string name="wavecandy_height">高度</string>
     <string name="wavecandy_thickness">粗细</string>
-    <string name="wavecandy_punch_strength">冲击强度</string>
     <string name="wavecandy_kick_sensitivity">底鼓灵敏度</string>
     <string name="hrtf_hrtf_database">HRTF 数据库</string>
     <string name="hrtf_filter">筛选</string>

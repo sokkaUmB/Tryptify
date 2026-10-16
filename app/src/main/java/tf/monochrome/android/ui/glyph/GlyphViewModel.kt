@@ -228,6 +228,8 @@ class GlyphViewModel @Inject constructor(
     /** The run scored StepMania's way, fed the same events as the ghost. */
     private var stepScore: StepManiaScoreKeeper? = null
     private var introJob: Job? = null
+    /** A failed run's hold under FAILED before its results; cancelled by leaving or restarting. */
+    private var failJob: Job? = null
 
     /** The song list's preview from the drop; built on first use. */
     private val preview by lazy { GlyphPreviewPlayer(context, viewModelScope) }
@@ -1197,10 +1199,13 @@ class GlyphViewModel @Inject constructor(
                 percent = 0f,
                 fullCombo = null,
                 introStartedAtMs = if (intro) System.currentTimeMillis() else 0L,
+                failedAtMs = 0L,
+                failStops = false,
             ),
             results = null,
         )
         introJob?.cancel()
+        failJob?.cancel()
         if (intro) {
             introJob = viewModelScope.launch {
                 delay(INTRO_MILLIS)
@@ -1348,12 +1353,28 @@ class GlyphViewModel @Inject constructor(
                         finish()
                         return@launch
                     }
-                    // StepMania's Immediate fail: the bar empties, the run ends.
-                    // Never in Training Ground, which is for getting it wrong.
-                    if (stepScore?.stopsRun == true && _ui.value.screen == GlyphScreen.GAMEPLAY) {
+                    // The bar has emptied. The screen shakes; on StepMania's
+                    // Immediate the run also stops where it is, holds under
+                    // FAILED, then shows its results. Never in Training
+                    // Ground, which is for getting it wrong.
+                    val keeper = stepScore
+                    if (keeper != null && keeper.failed && _ui.value.gameplay.failedAtMs == 0L &&
+                        _ui.value.screen == GlyphScreen.GAMEPLAY
+                    ) {
                         publish(position, running, judged)
-                        finish()
-                        return@launch
+                        val at = System.currentTimeMillis()
+                        _ui.value = _ui.value.copy(
+                            gameplay = _ui.value.gameplay.copy(failedAtMs = at, failStops = keeper.stopsRun),
+                        )
+                        if (keeper.stopsRun) {
+                            transport.pause()
+                            failJob = viewModelScope.launch {
+                                delay(FAIL_HOLD_MILLIS)
+                                // Still this run, still on its screen: not left or restarted meanwhile.
+                                if (_ui.value.screen == GlyphScreen.GAMEPLAY && _ui.value.gameplay.failedAtMs == at) finish()
+                            }
+                            return@launch
+                        }
                     }
                 }
                 delay(TICK_MILLIS)
@@ -1493,6 +1514,9 @@ class GlyphViewModel @Inject constructor(
     }
 
     private fun togglePause() {
+        // A failed run has stopped for good: Resume would only start its music
+        // again under FAILED.
+        if (_ui.value.gameplay.failStops) return
         // Paused during READY/GO: the intro is dropped, and Resume starts the
         // music straight away.
         if (introJob?.isActive == true) {
@@ -1542,8 +1566,11 @@ class GlyphViewModel @Inject constructor(
                 percent = 0f,
                 fullCombo = null,
                 introStartedAtMs = 0L,
+                failedAtMs = 0L,
+                failStops = false,
             ),
         )
+        failJob?.cancel()
         startTick()
     }
 
@@ -1573,6 +1600,7 @@ class GlyphViewModel @Inject constructor(
     private fun quit() {
         stopTick()
         introJob?.cancel()
+        failJob?.cancel()
         transport.pause()
         if (_ui.value.editor?.testing == true) {
             backToEditor(null)
@@ -2478,6 +2506,9 @@ class GlyphViewModel @Inject constructor(
 
         /** READY, then GO!, before the music: StepMania's own intro, shortened for a phone. */
         const val INTRO_MILLIS = 1_800L
+
+        /** A failed run's stop: the shake, FAILED landing, and a beat to read it, before the results. */
+        const val FAIL_HOLD_MILLIS = 2_200L
 
         /** Older than this, a touch stamp is not trusted (see touchNanos). */
         const val MAX_TOUCH_AGE_NANOS = 250_000_000L

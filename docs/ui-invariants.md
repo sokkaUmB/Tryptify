@@ -343,6 +343,12 @@ kick under them pushed every shaft brighter and longer twice a second, so a
 paused song's preview showed shafts its player did not. The sample row, with no
 song behind it, keeps the kick: it is the only way to see the beat settings.
 
+**The cover in the player does not move with the music.** Wave Candy's kick
+swells its own lines and nothing else; the cover used to punch in on every
+kick (with a strength slider), and a cover bouncing to the bass was taken out.
+`WaveCandySettings` no longer has `kickZoom`; an older saved blob that has it
+still reads, since the settings JSON ignores unknown keys.
+
 **God rays drawn in the lyric surface (no backdrop) wrap the lyric list outside
 its side inset and outside the glass.**
 `lyricGodRays` is a RenderEffect, and a layer cannot draw past its own bounds,
@@ -1203,6 +1209,21 @@ body slid on past the receptor. The playfield draws a hit hold's head at the
 body's top, on the receptor while held and carried on with the body once let
 go; hidden, the body's raw end showed under the receptor. The body's short last
 tile is its art cut to fit, never the whole tile squeezed into the gap.
+
+**The run moves at its edges: in, on each step, and out on a fail.** While
+READY shows, the HUD drops in from the top, the field rises into place and the
+life bar fills to its start (`INTRO_IN_MILLIS`); a restart, with no READY,
+starts in place. The percent rolls to each new value; its spoken label is the
+real one. The combo pops on each step it gains and harder at every fiftieth,
+and a broken combo falls away in red instead of blinking out. The judgement
+word itself stays still: it is read at a glance. When the life bar empties the
+whole game picture shakes, hardest first (`SHAKE_MILLIS`); on Immediate the
+music stops, the field sinks under a red veil, FAILED lands on it (held still,
+outside the shake, so it can be read) and the results follow
+(`FAIL_HOLD_MILLIS`). Pause does nothing then: Resume would only restart the
+music under FAILED. Imm. Continue shakes and plays on. Leaving or restarting
+cancels the hold. Reduced motion keeps all of it still: the intro, roll, pop,
+fall and shake are skipped, and FAILED shows at once.
 
 **The TV shader is over the game, never over a menu.** `glyphTvShader`, off by
 default, goes on the gameplay picture (the playfield, the judgements and the

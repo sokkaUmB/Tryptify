@@ -2,6 +2,13 @@
 
 package tf.monochrome.android.ui.glyph
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,7 +44,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +57,10 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import kotlin.math.PI
+import kotlin.math.sin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import tf.monochrome.android.glyph.asset.GlyphAssetRepository
 import tf.monochrome.android.glyph.asset.GlyphLane
 import tf.monochrome.android.glyph.asset.GlyphPalette
@@ -97,6 +111,32 @@ fun GlyphGameplayScreen(
     // crash; a steady map is the harmless stand-in.
     val timing = state.simfile?.timing ?: remember { GlyphTiming.constant(120f) }
     val keyboard = rememberGlyphKeyboardFocus()
+    val reduced = gameplay.modifiers.reducedMotion
+
+    // The way in: while READY shows, the HUD drops in, the field rises into
+    // place and the life bar fills to its start. Set at once without an intro
+    // (a restart, Training Ground) and with reduced motion.
+    // Starts hidden when an intro is coming, so the HUD never shows for a
+    // frame before the effect hides it.
+    val intro = remember { Animatable(if (gameplay.introStartedAtMs > 0L && !reduced) 0f else 1f) }
+    LaunchedEffect(gameplay.introStartedAtMs) {
+        if (gameplay.introStartedAtMs > 0L && !reduced) {
+            intro.snapTo(0f)
+            intro.animateTo(1f, tween(INTRO_IN_MILLIS, easing = FastOutSlowInEasing))
+        } else {
+            intro.snapTo(1f)
+        }
+    }
+    // The fail: the screen shakes as the bar empties, hardest at first.
+    val shake = remember { Animatable(1f) }
+    LaunchedEffect(gameplay.failedAtMs) {
+        if (gameplay.failedAtMs > 0L && !reduced) {
+            shake.snapTo(0f)
+            shake.animateTo(1f, tween(SHAKE_MILLIS, easing = LinearEasing))
+        } else {
+            shake.snapTo(1f)
+        }
+    }
 
     Box(
         modifier = modifier
@@ -119,90 +159,133 @@ fun GlyphGameplayScreen(
                 .fillMaxSize()
                 .glyphTvShader(gameplay.modifiers.graphics),
         ) {
-            // The stage, under everything and across the whole screen, the
-            // field's column included: seen through the TV with the rest.
-            GlyphDanceStage(
-                heldLanes = gameplay.heldLanes,
-                explosionProvider = explosionProvider,
-                reducedMotion = gameplay.modifiers.reducedMotion,
-            )
-
-            GlyphPlayfield(
-                engine = engine,
-                assets = assets,
-                palette = palette,
-                positionProvider = positionProvider,
-                heldLanes = gameplay.heldLanes,
-                scrollMode = gameplay.modifiers.scrollMode,
-                timing = timing,
-                reducedMotion = gameplay.modifiers.reducedMotion,
-                skin = gameplay.modifiers.skin,
-                explosionProvider = explosionProvider,
-                comboBurstProvider = comboBurstProvider,
-                comboProvider = comboProvider,
-                look = GlyphFieldLook.of(gameplay.modifiers),
-                // Held sideways, a centred column of the setting's width, its
-                // receptors nearer the bottom: thumbs come from the sides.
-                receptorInset = if (landscape && !gameplay.modifiers.reverse) LANDSCAPE_RECEPTOR_INSET else null,
+            // The whole game picture, which a fail shakes. FAILED, over it,
+            // holds still: a word that shook with it would be hard to read.
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .glyphFieldColumn(fieldFraction),
-            )
-
-            // The lane input sits over the playfield rather than under a row of
-            // buttons: the whole lane is the target, which is what makes the mode
-            // playable with thumbs.
-            GlyphLaneInput(
-                onPress = { lane, at -> onEvent(GlyphEvent.LanePressed(lane, at)) },
-                onRelease = { lane, at -> onEvent(GlyphEvent.LaneReleased(lane, at)) },
-                hitboxScale = gameplay.modifiers.hitboxScale,
-                fieldFraction = fieldFraction,
-                modifier = Modifier.fillMaxSize(),
-            )
-
-            if (gameplay.countInBeatsRemaining > 0) {
-                CountIn(
-                    beatsRemaining = gameplay.countInBeatsRemaining,
-                    typography = typography,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            }
-
-            JudgementOverlay(
-                judgement = gameplay.lastJudgement,
-                early = gameplay.lastJudgementEarly,
-                shownAtMs = gameplay.lastJudgementAtMs,
-                combo = gameplay.score.combo,
-                fullCombo = gameplay.fullCombo,
-                fonts = fonts,
-                modifier = Modifier.align(Alignment.Center),
-            )
-
-            if (gameplay.introStartedAtMs > 0L) {
-                ReadyGo(
-                    startedAtMs = gameplay.introStartedAtMs,
-                    fonts = fonts,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            }
-
-            // Clear of the status bar and the cutout when they are there, and only
-            // of those: the route runs full-bleed while playing and the system
-            // bars are usually hidden, and the HUD is pinned to the top, so a
-            // bottom inset here would only pad a column nobody sees the end of.
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-                    ),
+                    .graphicsLayer {
+                        val t = shake.value
+                        if (t < 1f) {
+                            val decay = (1f - t) * (1f - t)
+                            val amplitude = SHAKE_AMPLITUDE.toPx() * decay
+                            translationX = amplitude * sin(t * SHAKE_X_TURNS * TAU)
+                            translationY = amplitude * SHAKE_Y_SHARE * sin(t * SHAKE_Y_TURNS * TAU + 1f)
+                            rotationZ = SHAKE_TILT_DEGREES * decay * sin(t * SHAKE_TILT_TURNS * TAU)
+                        } else {
+                            translationX = 0f
+                            translationY = 0f
+                            rotationZ = 0f
+                        }
+                    },
             ) {
-                GameplayHud(
-                    state = state,
-                    typography = typography,
+                // The stage, under everything and across the whole screen, the
+                // field's column included: seen through the TV with the rest.
+                GlyphDanceStage(
+                    heldLanes = gameplay.heldLanes,
+                    explosionProvider = explosionProvider,
+                    reducedMotion = gameplay.modifiers.reducedMotion,
+                )
+
+                GlyphPlayfield(
+                    engine = engine,
+                    assets = assets,
+                    palette = palette,
+                    positionProvider = positionProvider,
+                    heldLanes = gameplay.heldLanes,
+                    scrollMode = gameplay.modifiers.scrollMode,
+                    timing = timing,
+                    reducedMotion = gameplay.modifiers.reducedMotion,
+                    skin = gameplay.modifiers.skin,
+                    explosionProvider = explosionProvider,
+                    comboBurstProvider = comboBurstProvider,
+                    comboProvider = comboProvider,
+                    look = GlyphFieldLook.of(gameplay.modifiers),
+                    // Held sideways, a centred column of the setting's width, its
+                    // receptors nearer the bottom: thumbs come from the sides.
+                    receptorInset = if (landscape && !gameplay.modifiers.reverse) LANDSCAPE_RECEPTOR_INSET else null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .glyphFieldColumn(fieldFraction)
+                        // Rises into place during READY.
+                        .graphicsLayer {
+                            alpha = intro.value
+                            translationY = (1f - intro.value) * INTRO_RISE.toPx()
+                        },
+                )
+
+                // The lane input sits over the playfield rather than under a row of
+                // buttons: the whole lane is the target, which is what makes the mode
+                // playable with thumbs.
+                GlyphLaneInput(
+                    onPress = { lane, at -> onEvent(GlyphEvent.LanePressed(lane, at)) },
+                    onRelease = { lane, at -> onEvent(GlyphEvent.LaneReleased(lane, at)) },
+                    hitboxScale = gameplay.modifiers.hitboxScale,
+                    fieldFraction = fieldFraction,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                if (gameplay.countInBeatsRemaining > 0) {
+                    CountIn(
+                        beatsRemaining = gameplay.countInBeatsRemaining,
+                        typography = typography,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
+
+                JudgementOverlay(
+                    judgement = gameplay.lastJudgement,
+                    early = gameplay.lastJudgementEarly,
+                    shownAtMs = gameplay.lastJudgementAtMs,
+                    combo = gameplay.score.combo,
+                    fullCombo = gameplay.fullCombo,
                     fonts = fonts,
-                    onEvent = onEvent,
+                    reducedMotion = reduced,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+
+                if (gameplay.introStartedAtMs > 0L) {
+                    ReadyGo(
+                        startedAtMs = gameplay.introStartedAtMs,
+                        fonts = fonts,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
+
+                // Clear of the status bar and the cutout when they are there, and only
+                // of those: the route runs full-bleed while playing and the system
+                // bars are usually hidden, and the HUD is pinned to the top, so a
+                // bottom inset here would only pad a column nobody sees the end of.
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .windowInsetsPadding(
+                            WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+                        )
+                        // Drops in from the top during READY.
+                        .graphicsLayer {
+                            alpha = intro.value
+                            translationY = -(1f - intro.value) * INTRO_DROP.toPx()
+                        },
+                ) {
+                    GameplayHud(
+                        state = state,
+                        typography = typography,
+                        fonts = fonts,
+                        onEvent = onEvent,
+                        // The bar fills to its start as the run comes in.
+                        lifeShown = gameplay.life * intro.value,
+                        reducedMotion = reduced,
+                    )
+                }
+            }
+
+            if (gameplay.failStops && gameplay.failedAtMs > 0L) {
+                FailedOverlay(
+                    fonts = fonts,
+                    reducedMotion = reduced,
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }
@@ -230,8 +313,17 @@ private fun GameplayHud(
     typography: GlyphTypography,
     fonts: GlyphStepFonts,
     onEvent: (GlyphEvent) -> Unit,
+    /** The life the bar draws: the run's, or less while it fills at the start. */
+    lifeShown: Float = state.gameplay.life,
+    reducedMotion: Boolean = false,
 ) {
     val gameplay = state.gameplay
+    // The percent rolls to each new value rather than jumping to it.
+    val percentShown by animateFloatAsState(
+        targetValue = gameplay.percent,
+        animationSpec = if (reducedMotion) snap() else tween(SCORE_ROLL_MILLIS, easing = FastOutSlowInEasing),
+        label = "score roll",
+    )
 
     Column(modifier = Modifier.padding(horizontal = GlyphTheme.Grid * 2)) {
         // StepMania's top row: the life bar, the percent, and the way out.
@@ -241,11 +333,11 @@ private fun GameplayHud(
             horizontalArrangement = Arrangement.spacedBy(GlyphTheme.Grid * 2),
         ) {
             GlyphLifeBar(
-                life = gameplay.life,
+                life = lifeShown,
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = StepManiaScoreKeeper.formatPercent(gameplay.percent),
+                text = StepManiaScoreKeeper.formatPercent(percentShown),
                 style = fonts.score,
                 color = GlyphTheme.Paper,
                 modifier = Modifier.semantics {
@@ -314,6 +406,7 @@ private fun JudgementOverlay(
     fullCombo: GlyphFullCombo?,
     fonts: GlyphStepFonts,
     modifier: Modifier = Modifier,
+    reducedMotion: Boolean = false,
 ) {
     if (judgement == null) return
     Box(
@@ -334,6 +427,7 @@ private fun JudgementOverlay(
             combo = combo,
             fullCombo = fullCombo,
             fonts = fonts,
+            reducedMotion = reducedMotion,
         )
     }
 }
@@ -379,6 +473,75 @@ private fun ReadyGo(startedAtMs: Long, fonts: GlyphStepFonts, modifier: Modifier
 
 private const val READY_MILLIS = 1_000L
 private const val GO_MILLIS = 800L
+
+/** The way in: how long the HUD and the field take, and how far they travel. */
+private const val INTRO_IN_MILLIS = 900
+private val INTRO_DROP = 48.dp
+private val INTRO_RISE = 40.dp
+
+/** How long the percent takes to roll to a new value. */
+private const val SCORE_ROLL_MILLIS = 220
+
+/** The fail shake: how long, how far, and how many swings each way. */
+private const val SHAKE_MILLIS = 650
+private val SHAKE_AMPLITUDE = 22.dp
+private const val SHAKE_X_TURNS = 9f
+private const val SHAKE_Y_TURNS = 7f
+private const val SHAKE_Y_SHARE = 0.4f
+private const val SHAKE_TILT_TURNS = 5f
+private const val SHAKE_TILT_DEGREES = 1.4f
+private const val TAU = (2.0 * PI).toFloat()
+
+/** FAILED lands once the shake is under way. */
+private const val FAILED_LANDS_AFTER_MILLIS = 180L
+private val FAILED_RED = Color(0xFFFF3B4A)
+
+/**
+ * A run that has failed and stopped: the stopped field sinks under a dark red
+ * veil, and FAILED slams down onto it from large, springing as it lands. The
+ * results follow on their own ([GlyphViewModel.FAIL_HOLD_MILLIS]). Reduced
+ * motion shows both at once.
+ */
+@Composable
+private fun FailedOverlay(fonts: GlyphStepFonts, reducedMotion: Boolean, modifier: Modifier = Modifier) {
+    val veil = remember { Animatable(if (reducedMotion) 1f else 0f) }
+    val slam = remember { Animatable(if (reducedMotion) 1f else 0f) }
+    LaunchedEffect(Unit) {
+        if (reducedMotion) return@LaunchedEffect
+        launch { veil.animateTo(1f, tween(VEIL_MILLIS)) }
+        delay(FAILED_LANDS_AFTER_MILLIS)
+        slam.animateTo(1f, spring(dampingRatio = 0.42f, stiffness = 420f))
+    }
+    Box(
+        modifier = modifier.semantics {
+            liveRegion = LiveRegionMode.Assertive
+            contentDescription = "Failed"
+        },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .matchParentSize()
+                .graphicsLayer { alpha = veil.value }
+                .background(Brush.verticalGradient(listOf(Color(0xB31A0006), Color(0xD9050008)))),
+        )
+        Text(
+            text = "FAILED",
+            style = fonts.banner.copy(shadow = Shadow(Color.Black, Offset(0f, 6f), 18f)),
+            color = FAILED_RED,
+            modifier = Modifier.graphicsLayer {
+                val s = slam.value
+                alpha = s.coerceIn(0f, 1f)
+                // From more than twice its size down to it, and a little past.
+                val scale = 2.4f - 1.4f * s
+                scaleX = scale
+                scaleY = scale
+            },
+        )
+    }
+}
+
+private const val VEIL_MILLIS = 450
 
 /**
  * The count-in.
