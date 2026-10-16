@@ -338,7 +338,11 @@ class GlyphViewModel @Inject constructor(
             is GlyphEvent.SetPreviews -> {
                 prefs.edit().putBoolean(PREF_PREVIEWS, event.on).apply()
                 _ui.value = _ui.value.copy(previews = event.on)
-                if (!event.on) stopPreview()
+                if (!event.on) {
+                    stopPreview()
+                    // Without sound the picture follows the choice: the chosen song keeps its own.
+                    if (_ui.value.screen == GlyphScreen.HOME) showBackdrop(_ui.value.selectedSong)
+                }
             }
             // Back to wherever it was opened from: the menu or the song list.
             GlyphEvent.CloseLeaderboard -> _ui.value = _ui.value.copy(screen = leaderboardFrom)
@@ -520,6 +524,8 @@ class GlyphViewModel @Inject constructor(
         previewStopped = false
         if (!_ui.value.previews || song.filePath.isBlank()) {
             preview.stop()
+            // No sound for the picture to follow: it changes as the song is chosen.
+            showBackdrop(song)
             return
         }
         previewJob = viewModelScope.launch {
@@ -548,7 +554,15 @@ class GlyphViewModel @Inject constructor(
             // gone to the background in the meantime.
             if (!foreground) return@launch
             preview.play(song.audioUri, start, length)
+            // The picture behind the list changes with the music, not before it.
+            showBackdrop(song)
         }
+    }
+
+    /** [song]'s picture behind the song list; null takes it away. */
+    private fun showBackdrop(song: GlyphSong?) {
+        val next = song?.let { GlyphBackdrop(it.trackId, it.backdropUri) }
+        if (_ui.value.backdrop != next) _ui.value = _ui.value.copy(backdrop = next)
     }
 
     /** The drop from the selection's loudness bars, once they have decoded. */
@@ -573,6 +587,8 @@ class GlyphViewModel @Inject constructor(
         previewJob?.cancel()
         preview.stop()
         previewStopped = true
+        // The picture goes as the music does.
+        showBackdrop(null)
     }
 
     /**

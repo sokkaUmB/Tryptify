@@ -343,6 +343,7 @@ class PackImporter(
         val music = files.first { it.path.last() == musicName }
         val musicUri = music.uri ?: return null
         val art = StepManiaPack.artName(names, ssc)?.let { name -> files.first { it.path.last() == name } }
+        val background = StepManiaPack.backgroundName(names, ssc)?.let { name -> files.first { it.path.last() == name } }
 
         var folderName = StepManiaPack.safeName(song.lastOrNull() ?: simfile.title)
         while (!usedNames.add(folderName.lowercase())) folderName = "$folderName (2)"
@@ -360,6 +361,8 @@ class PackImporter(
             bpm = simfile.listedBpm,
             musicUri = musicUri,
             artUri = art?.uri,
+            background = background?.path?.last(),
+            backgroundUri = background?.uri,
         )
     }
 
@@ -453,6 +456,7 @@ class PackImporter(
             chart = chart.name,
             music = music.name,
             art = StepManiaPack.art(folder, ssc)?.name,
+            background = StepManiaPack.background(folder, ssc)?.name,
             title = simfile.title,
             artist = simfile.artist,
             durationSeconds = runCatching { durationOf(music) }.getOrDefault(0),

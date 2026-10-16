@@ -119,6 +119,14 @@ fun GlyphGameplayScreen(
                 .fillMaxSize()
                 .glyphTvShader(gameplay.modifiers.graphics),
         ) {
+            // The stage, under everything and across the whole screen, the
+            // field's column included: seen through the TV with the rest.
+            GlyphDanceStage(
+                heldLanes = gameplay.heldLanes,
+                explosionProvider = explosionProvider,
+                reducedMotion = gameplay.modifiers.reducedMotion,
+            )
+
             GlyphPlayfield(
                 engine = engine,
                 assets = assets,

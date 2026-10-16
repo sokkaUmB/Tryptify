@@ -1101,6 +1101,16 @@ column, with nothing to jump between.
   opens, not on the first song. A song's first preview waits 700 ms for its
   drop (`DropFinder` reads the whole song's loudness), then starts a third of
   the way in; the drop found after is the next visit's start.
+* The picture behind the wheel follows the preview (`GlyphSongBackdrop`, fed
+  `GlyphUiState.backdrop`): the song's chart background (`#BACKGROUND`), else
+  its artwork, else the grid (`GlyphRankingGrid`). It comes up as the preview
+  starts, over `GlyphPreviewPlayer.FADE_IN_MILLIS`, and goes as a preview
+  stops, over `STOP_FADE_MILLIS`; a folder that stops the music takes it too.
+  With previews off it follows the choice instead. It waits for its decode
+  before fading up, so a slow picture never pops in after its fade.
+* The picture is inside the panels' haze source, under the wheel, with a scrim
+  of the page's own colour over it so the rows read in any theme. The grid is
+  still: anything moving under the frosted glass makes it re-blur every frame.
 * The centre is reported by the item, not by its place: a new list with a
   different song at the same place is a new centre. Reported by place, the
   panel kept offering Play for the song that used to be there.
@@ -1176,6 +1186,23 @@ and spread â€” two numbers, so it says it is a curve of them, not of the hits â€
 and offers a correction only from the recent runs' agreed lateness
 (`ApplyRecentTiming`), never from one run. Every count keeps its spoken
 "Label: value", and everything lands at once under reduced motion.
+
+**The play has a stage behind it, and only the play.** `GlyphDanceStage`, under
+the playfield inside the TV shader: two speakers over a dance pad in a dark blue
+room, under a veil. Its pad's arrow panels light as the player steps, softly
+while a lane is held and brighter for a moment on a hit (`stageLight`); reduced
+motion keeps the held glow and drops the flash. The room is drawn into its own
+layer and replayed: the playfield redraws every frame above it, and without the
+layer it was redrawn with it. Nothing else on the stage moves.
+
+**A held hold is cut at the receptor, with its head on it.** Both engines pin a
+held body's top to the receptor for the whole hold, pressed early or late
+(`fillVisible`; `GlyphEngineWindowTest` and the native test hold the same
+case). The pin used to apply only before the head's moment, so after it the
+body slid on past the receptor. The playfield draws a hit hold's head at the
+body's top, on the receptor while held and carried on with the body once let
+go; hidden, the body's raw end showed under the receptor. The body's short last
+tile is its art cut to fit, never the whole tile squeezed into the gap.
 
 **The TV shader is over the game, never over a menu.** `glyphTvShader`, off by
 default, goes on the gameplay picture (the playfield, the judgements and the

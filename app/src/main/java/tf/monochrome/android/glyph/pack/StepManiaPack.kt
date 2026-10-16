@@ -88,6 +88,13 @@ object StepManiaPack {
         listOf("JACKET", "BANNER", "BACKGROUND").firstNotNullOfOrNull { resolveName(names, tag(ssc, it)) }
             ?: names.filter { extension(it) in IMAGE_EXTENSIONS }.minOrNull()
 
+    /**
+     * The song's full-screen background among [names]: what `#BACKGROUND`
+     * names, and nothing else. A jacket or banner is cut for a list row, not
+     * a screen; a song without its own background has none.
+     */
+    fun backgroundName(names: List<String>, ssc: String): String? = resolveName(names, tag(ssc, "BACKGROUND"))
+
     private fun fileNames(folder: File): List<String> = folder.listFiles()?.filter { it.isFile }?.map { it.name }.orEmpty()
 
     /** The file in [folder] a tag names. */
@@ -98,6 +105,9 @@ object StepManiaPack {
 
     /** Art for the song list in [folder]. */
     fun art(folder: File, ssc: String): File? = artName(fileNames(folder), ssc)?.let { File(folder, it) }
+
+    /** The song's own background in [folder]. */
+    fun background(folder: File, ssc: String): File? = backgroundName(fileNames(folder), ssc)?.let { File(folder, it) }
 
     /** A `Pack.ini` in ITGmania's format, which StepMania 5 also reads. */
     fun packIni(title: String, year: Int, banner: String = ""): String = buildString {
@@ -145,6 +155,10 @@ data class PackIndex(
         /** A pack read in place: the music and art as documents in [PackIndex.source]. */
         val musicUri: String? = null,
         val artUri: String? = null,
+        /** What the chart's `#BACKGROUND` names; null when it names nothing there. */
+        val background: String? = null,
+        /** The same, as a document in [PackIndex.source], for a pack read in place. */
+        val backgroundUri: String? = null,
     )
 }
 

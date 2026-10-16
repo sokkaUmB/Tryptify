@@ -362,8 +362,10 @@ int32_t Engine::fillVisible(float fromSeconds, float toSeconds, float positionSe
             v.isHeld = r.holding;
             v.isHeadJudged = r.judgement != kNoJudgement;
             v.headUnits = units(note.timeSeconds, headBeat_[i]);
-            // A held body's top stops at the receptor while its tail travels.
-            if (r.holding && positionSeconds < note.timeSeconds) {
+            // A held body's top stops at the receptor while its tail travels,
+            // from the press to the release: pressed early, before the head
+            // arrives, and all the way down the hold after it has passed.
+            if (r.holding) {
                 v.bodyHeadUnits = units(positionSeconds, positionBeat);
             } else {
                 v.bodyHeadUnits = v.headUnits;

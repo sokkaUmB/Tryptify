@@ -385,12 +385,20 @@ fun GlyphPlayfield(
                 }
             }
 
-            // Pass three: heads and taps, above the receptors.
+            // Pass three: heads and taps, above the receptors. A hit hold's
+            // head rides the top of its body, as StepMania's does: held, it
+            // sits on the receptor and covers the body's cut end; let go, it
+            // carries on past with the body. Hidden, the body's raw end
+            // showed under the receptor for the whole hold.
             for (i in 0 until frame.count) {
                 val note = notes[frame.noteIndex(i)]
-                if (frame.isHeadJudged(i) && note.type.isHoldLike) continue
+                val units = if (note.type.isHoldLike && frame.isHeadJudged(i)) {
+                    frame.bodyHeadUnits(i)
+                } else {
+                    frame.headUnits(i)
+                }
 
-                val travelled = frame.headUnits(i) * pixelsPerUnit
+                val travelled = units * pixelsPerUnit
                 val y = receptorYPx - travelled * direction
                 if (y < -noteSizePx || y > size.height + noteSizePx) continue
                 // Hidden, Sudden and Stealth: how much of the note shows at
@@ -581,13 +589,16 @@ private fun DrawScope.drawWithLight(
     extent: IntSize,
     light: GlyphHitLight?,
     alpha: Float = 1f,
+    /** How much of [image] is drawn, from its top-left: all of it unless cut. */
+    srcSize: IntSize = IntSize(image.width, image.height),
 ) {
-    drawImage(image = image, dstOffset = offset, dstSize = extent, alpha = alpha)
+    drawImage(image = image, srcSize = srcSize, dstOffset = offset, dstSize = extent, alpha = alpha)
     if (light == null || !light.isLit) return
     val amount = light.at(offset.x + extent.width / 2f, offset.y + extent.height / 2f) * alpha
     if (amount <= LIT_THRESHOLD) return
     drawImage(
         image = image,
+        srcSize = srcSize,
         dstOffset = offset,
         dstSize = extent,
         alpha = amount,
@@ -642,12 +653,17 @@ private fun DrawScope.drawHoldBody(
         if (remaining <= 0) break
         val shown = alphaAt(y + noteSizePx / 2f)
         if (shown > 0f) {
+            val tile = minOf(noteSizePx, remaining)
             drawWithLight(
                 image = body,
                 offset = IntOffset(left, y.roundToInt()),
-                extent = IntSize(noteSizePx, minOf(noteSizePx, remaining)),
+                extent = IntSize(noteSizePx, tile),
                 light = light,
                 alpha = shown,
+                // The short last tile is the art cut to fit, never the whole
+                // tile squeezed into the gap: squeezed, it bunched up at the
+                // receptor and shrank on every frame of a held note.
+                srcSize = IntSize(body.width, (body.height * tile / noteSizePx).coerceIn(1, body.height)),
             )
         }
         y += noteSizePx

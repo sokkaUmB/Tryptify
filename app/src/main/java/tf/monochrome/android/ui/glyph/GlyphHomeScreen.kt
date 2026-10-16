@@ -335,6 +335,13 @@ fun GlyphHomeScreen(
                             .fillMaxSize()
                             .hazeSource(panelHaze),
                     ) {
+                        // The song up's picture, under the wheel and inside the
+                        // haze source, so the glass over the wheel frosts it.
+                        GlyphSongBackdrop(
+                            backdrop = state.backdrop,
+                            reducedMotion = reducedMotion,
+                            modifier = Modifier.fillMaxSize(),
+                        )
                         val messageTop = searchInset + floatingInset
                         when {
                             state.isLoadingSongs -> CentredMessage("Reading the library…", messageTop)

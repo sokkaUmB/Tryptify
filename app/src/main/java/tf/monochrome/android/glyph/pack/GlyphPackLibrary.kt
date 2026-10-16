@@ -130,7 +130,29 @@ class GlyphPackLibrary @Inject constructor(
             difficulties = levels,
             chartState = if (levels.isNotEmpty()) GlyphChartState.READY else GlyphChartState.UNREADABLE,
             pack = packName,
+            backgroundUri = backgroundUri
+                ?: (background ?: headerBackground(songFolder, chart, music))
+                    ?.let { Uri.fromFile(File(songFolder, it)).toString() },
         )
+    }
+
+    /**
+     * The `#BACKGROUND` of a pack imported before the index kept it, read from
+     * the chart's header and found among the song's files. Only for a pack
+     * copied in: one read in place has its pictures behind a folder grant, and
+     * shows its jacket until it is linked again. The header comes before the
+     * notes, so the start of the file is all that is read.
+     */
+    private fun headerBackground(songFolder: File, chart: String, music: String): String? {
+        if (!File(songFolder, music).exists()) return null
+        val header = runCatching {
+            File(songFolder, chart).bufferedReader().use { reader ->
+                val buffer = CharArray(HEADER_CHARS)
+                val read = reader.read(buffer)
+                if (read <= 0) "" else String(buffer, 0, read)
+            }
+        }.getOrNull() ?: return null
+        return StepManiaPack.background(songFolder, header)?.name
     }
 
     private fun durationOf(file: File): Int {
@@ -159,6 +181,9 @@ class GlyphPackLibrary @Inject constructor(
 
     companion object {
         const val PREFIX = "pack:"
+
+        /** How much of a chart is read for its header's tags: they all come before the notes. */
+        private const val HEADER_CHARS = 16 * 1024
 
         fun isPackSong(trackId: String): Boolean = trackId.startsWith(PREFIX)
 

@@ -207,8 +207,17 @@ data class GlyphSong(
     val chartState: GlyphChartState,
     /** The imported StepMania pack the song came in; null for a song of the library. */
     val pack: String? = null,
+    /** A pack song's own full-screen background, what its `#BACKGROUND` names; null for any other. */
+    val backgroundUri: String? = null,
 ) {
     val hasChart: Boolean get() = chartState == GlyphChartState.READY
+
+    /**
+     * What the song list shows behind the wheel while this song is up: its
+     * chart's own background, else its artwork (a pack's jacket, a library
+     * song's cover), else nothing, which the list draws as its grid.
+     */
+    val backdropUri: String? get() = backgroundUri ?: artworkUri
 
     val formattedDuration: String
         get() = "%d:%02d".format(durationSeconds / 60, durationSeconds % 60)

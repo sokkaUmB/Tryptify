@@ -146,6 +146,38 @@ class GlyphEngineWindowTest {
     }
 
     @Test
+    fun aHeldBodyStaysAtTheReceptorAfterItsHeadHasPassed() {
+        val engine = GlyphGameplayEngine(chart(note(1f, type = GlyphNoteType.HOLD, endSeconds = 3f)))
+        engine.advanceTo(0.99f)
+        engine.press(GlyphLane.LEFT, 1f)
+        engine.advanceTo(2f)
+        val frame = GlyphVisibleFrame()
+        engine.fillVisible(1.5f, 4f, 2f, GlyphScrollMode.CMod(400f), frame)
+        assertEquals(1, frame.count)
+        assertTrue(frame.isHeld(0))
+        // Half way down the hold: the head's moment is a second gone, and the
+        // body is still cut off at the receptor rather than sliding past it.
+        assertTrue(frame.headUnits(0) < 0f)
+        assertEquals(0f, frame.bodyHeadUnits(0), 1e-6f)
+        assertTrue(frame.tailUnits(0) > 0f)
+    }
+
+    @Test
+    fun aLetGoBodyCarriesOnPastTheReceptor() {
+        val engine = GlyphGameplayEngine(chart(note(1f, type = GlyphNoteType.HOLD, endSeconds = 3f)))
+        engine.advanceTo(0.99f)
+        engine.press(GlyphLane.LEFT, 1f)
+        engine.advanceTo(1.5f)
+        engine.release(GlyphLane.LEFT, 1.5f)
+        engine.advanceTo(1.6f)
+        val frame = GlyphVisibleFrame()
+        engine.fillVisible(1.2f, 4f, 1.6f, GlyphScrollMode.CMod(400f), frame)
+        if (frame.count == 0) return
+        assertFalse(frame.isHeld(0))
+        assertEquals(frame.headUnits(0), frame.bodyHeadUnits(0), 0f)
+    }
+
+    @Test
     fun judgedTapsLeaveTheFieldAndTheQueryStartsAtTheCursor() {
         val notes = (0 until 5000).map { i ->
             note(1f + i * 0.1f, lane = GlyphLane.entries[i % 4])

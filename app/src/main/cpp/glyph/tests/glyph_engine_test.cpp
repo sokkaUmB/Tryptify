@@ -459,6 +459,22 @@ void heldBodyStopsAtTheReceptor() {
     CHECK(v[0].headUnits > 0.0f);
 }
 
+void heldBodyStaysAtTheReceptorAfterItsHeadHasPassed() {
+    Engine e = engine({note(1.0f, kHold, 3.0f)});
+    e.advanceTo(0.99f);
+    e.press(L, 1.0f, nullptr);
+    e.advanceTo(2.0f);
+    Scroll c;
+    VisibleNote v[2];
+    CHECK_EQ(e.fillVisible(1.5f, 4.0f, 2.0f, c, v, 2), 1);
+    CHECK(v[0].isHeld);
+    // Half way down the hold: the head's moment is a second gone, and the
+    // body is still cut off at the receptor rather than sliding past it.
+    CHECK(v[0].headUnits < 0.0f);
+    CHECK_NEAR(v[0].bodyHeadUnits, 0.0f, 1e-6);
+    CHECK(v[0].tailUnits > 0.0f);
+}
+
 void judgedTapsLeaveTheField() {
     Engine e = engine({note(1.0f), note(1.5f)});
     e.advanceTo(0.95f);
@@ -513,6 +529,7 @@ int main() {
     scrollModesMatchTheKotlinNumbers();
     visibleQueryPlacesNotesLikeScrollUnits();
     heldBodyStopsAtTheReceptor();
+    heldBodyStaysAtTheReceptorAfterItsHeadHasPassed();
     judgedTapsLeaveTheField();
     longChartQueryStartsAtTheCursor();
 

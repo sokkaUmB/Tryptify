@@ -341,8 +341,10 @@ internal class KotlinGlyphEngineCore(
         forEachVisible(fromSeconds, toSeconds) { runtime ->
             val note = runtime.note
             val head = scrollMode.scrollUnits(timing, positionSeconds, note.timeSeconds)
-            // A held body's top stops at the receptor while its tail travels.
-            val bodyHead = if (runtime.holding && positionSeconds < note.timeSeconds) {
+            // A held body's top stops at the receptor while its tail travels,
+            // from the press to the release: pressed early, before the head
+            // arrives, and all the way down the hold after it has passed.
+            val bodyHead = if (runtime.holding) {
                 scrollMode.scrollUnits(timing, positionSeconds, positionSeconds)
             } else {
                 head

@@ -76,6 +76,11 @@ data class GlyphUiState(
     val playerName: String = "",
     /** Tapping a song plays it from its drop; kept between sessions. */
     val previews: Boolean = true,
+    /**
+     * The song whose picture is behind the song list, which changes as its
+     * preview starts and goes as the preview stops; null between them.
+     */
+    val backdrop: GlyphBackdrop? = null,
     /** Best StepMania grade per difficulty of the selected song, for the menu. */
     val bestGrades: Map<StepManiaDifficulty, GlyphAttempt> = emptyMap(),
     val gameplay: GlyphGameplayUi = GlyphGameplayUi(),
@@ -95,6 +100,13 @@ data class GlyphUiState(
 ) {
     val chart: GlyphChart? get() = selectedDifficulty?.let { simfile?.chart(it) }
 }
+
+/**
+ * The picture behind the song list: [trackId]'s chart background or artwork
+ * ([tf.monochrome.android.glyph.data.GlyphSong.backdropUri]), or, when
+ * [imageUri] is null, the list's own grid.
+ */
+data class GlyphBackdrop(val trackId: String, val imageUri: String?)
 
 /**
  * Where the mode is. [MENU] is the front door; [HOME] is the song list, which

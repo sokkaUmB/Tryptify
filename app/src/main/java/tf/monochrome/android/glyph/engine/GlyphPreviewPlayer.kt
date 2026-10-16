@@ -134,10 +134,12 @@ class GlyphPreviewPlayer(
         /**
          * A breath, not a swell: half a second from silence made the first
          * moment of every preview read as late. Long enough not to click.
+         * The song list's picture comes up at the same speed.
          */
-        private const val FADE_IN_MILLIS = 120f
+        const val FADE_IN_MILLIS = 120f
         private const val FADE_OUT_MILLIS = 1_500f
-        private const val STOP_FADE_MILLIS = 250L
+        /** How long a stopped preview takes to fade away, and the song list's picture with it. */
+        const val STOP_FADE_MILLIS = 250L
         private const val ENVELOPE_TICK_MILLIS = 25L
 
         /** Volume at [positionMs] into a clip [lengthMs] long: up over the start, down into the end. */
