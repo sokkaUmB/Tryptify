@@ -85,12 +85,17 @@ sealed interface GlyphEvent {
     data object CancelGeneration : GlyphEvent
     data object DismissError : GlyphEvent
 
-    // ── separation model ────────────────────────────────────────────────
-    /** Install a model file the player picked from their own storage. */
-    data class ImportModel(val uri: Uri) : GlyphEvent
-    data object CancelModelImport : GlyphEvent
-    data object RemoveModel : GlyphEvent
-    data object DismissModelMessage : GlyphEvent
+    // ── batches and modes ───────────────────────────────────────────────
+    /** Offer to chart every song in the wheel folder [name] that has no chart. */
+    data class ChartFolder(val name: String) : GlyphEvent
+    /** Offer to chart every song that has no chart. */
+    data object ChartEverything : GlyphEvent
+    /** The offer's mode, changed in its dialog. */
+    data class ChooseBatchMode(val mode: tf.monochrome.android.audio.stepmania.ChartMode) : GlyphEvent
+    data object ConfirmBatch : GlyphEvent
+    data object DismissBatch : GlyphEvent
+    /** Fast (GPU) or Slow (CPU), for every chart from now on. */
+    data class SetChartMode(val mode: tf.monochrome.android.audio.stepmania.ChartMode) : GlyphEvent
 
     // ── packs ───────────────────────────────────────────────────────────
     data object OpenPacks : GlyphEvent

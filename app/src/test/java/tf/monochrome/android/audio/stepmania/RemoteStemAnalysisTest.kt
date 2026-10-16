@@ -11,6 +11,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import tf.monochrome.android.data.api.ApiServer
 import tf.monochrome.android.data.api.ApiServerProber
 import tf.monochrome.android.data.api.ApiService
 
@@ -32,7 +33,8 @@ class RemoteStemAnalysisTest {
             "\"$it\":{\"raw\":\"${b64(raw)}\",\"rates\":\"${b64(rates)}\"}"
         }
         return """{"success":true,"data":{"service":"tryptmania-parser","model":"htdemucs_ft","device":"$device",
-            "sampleRate":44100,"frames":220500,"envelopeHz":100,"envelopes":{$envelopes}}}"""
+            "sampleRate":44100,"frames":220500,"envelopeHz":100,"pricePerHour":0.8,"idleSeconds":300,
+            "seconds":{"upload":0.5,"decode":0.2,"separate":0.9,"envelopes":0.1},"envelopes":{$envelopes}}}"""
     }
 
     @Test
@@ -75,5 +77,42 @@ class RemoteStemAnalysisTest {
     @Test
     fun theHostIsWhatTheProgressNames() {
         assertEquals("abc--tryptmania-parser-web.modal.run", RemoteStemAnalysis.hostOf("https://abc--tryptmania-parser-web.modal.run/s3cret"))
+    }
+
+    @Test
+    fun anAnswerSaysHowLongItTookAndWhatItCosts() {
+        val run = RemoteStemAnalysis.parse(json, answer("cuda", listOf("bass")), "host").run
+        assertEquals("cuda", run.device)
+        assertEquals(5.0, run.audioSeconds, 1e-9)
+        assertEquals(1.0, run.separateSeconds, 1e-9)
+        assertEquals(0.8, run.pricePerHour!!, 1e-9)
+        assertEquals(300, run.idleSeconds)
+        // Separating (1.0 s) outlasts getting it there (0.7 s): 1.0 s for 5 s of audio.
+        assertEquals(0.2, run.batchSecondsPerAudioSecond!!, 1e-9)
+    }
+
+    private fun server(url: String, device: String?) =
+        ApiServer(url, setOf(ApiService.STEMS), stemDevice = device)
+
+    @Test
+    fun fastTriesTheGpuThenTheCpuAndSlowNeverTheGpu() {
+        val cpu = server("https://railway", "cpu")
+        val gpu = server("https://modal", "cuda")
+        val unknown = server("https://old", null)
+        val servers = listOf(cpu, unknown, gpu)
+        assertEquals(listOf(gpu, unknown, cpu), RemoteStemAnalysis.planFor(servers, ChartMode.FAST))
+        // An unknown one may be a GPU: Slow must not bill one.
+        assertEquals(listOf(cpu), RemoteStemAnalysis.planFor(servers, ChartMode.SLOW))
+        assertEquals(emptyList<ApiServer>(), RemoteStemAnalysis.planFor(listOf(gpu), ChartMode.SLOW))
+    }
+
+    @Test
+    fun theProbeReadsWhatAServerSeparatesOn() {
+        val info = """{"success":true,"data":{"service":"tryptmania-parser","device":"cpu","model":"htdemucs_6s_onnx"}}"""
+        assertEquals("cpu", ApiServerProber.deviceOf(info, json))
+        assertEquals(null, ApiServerProber.deviceOf("<html>", json))
+        assertEquals(false, server("u", "cpu").separatesOnGpu)
+        assertEquals(true, server("u", "cuda").separatesOnGpu)
+        assertEquals(null, server("u", null).separatesOnGpu)
     }
 }

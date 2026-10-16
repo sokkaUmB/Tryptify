@@ -4,8 +4,6 @@ package tf.monochrome.android.ui.glyph
 
 import android.os.SystemClock
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -32,7 +30,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -84,8 +81,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import tf.monochrome.android.R
-import tf.monochrome.android.audio.sampler.stems.KnownModels
-import tf.monochrome.android.audio.sampler.stems.StemModelManager
+import tf.monochrome.android.audio.stepmania.ChartMode
 import tf.monochrome.android.glyph.asset.GlyphAssetRepository
 import tf.monochrome.android.glyph.asset.GlyphLane
 import tf.monochrome.android.glyph.asset.GlyphPalette
@@ -904,7 +900,7 @@ private fun MoreTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
             onClick = { editingName = true },
         )
     }
-    ModelSection(state.model, onEvent)
+    ChartModeSection(state, onEvent)
 
     if (editingName) {
         NameDialog(
@@ -919,88 +915,46 @@ private fun MoreTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
 }
 
 /**
- * The drum separation model: which one charts are generated with, imported
- * from the phone's own storage since the app ships without one.
+ * Fast or Slow: which separation server a chart goes to. The phone separates
+ * nothing; this says where it happens and what it costs, and what is missing
+ * when the chosen mode has no server to go to.
  */
 @Composable
-private fun ModelSection(model: GlyphModelUi, onEvent: (GlyphEvent) -> Unit) {
-    // A model file has no MIME type Android knows (.onnx), so the picker takes
-    // anything; the installer identifies the file by its hash.
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) onEvent(GlyphEvent.ImportModel(uri))
-    }
-    GlyphPanel(modifier = Modifier.fillMaxWidth()) {
-        val scheme = MaterialTheme.colorScheme
-        Text(
-            text = "Stem separation model",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.semantics { heading() },
-        )
-        Spacer(Modifier.height(MonoDimens.spacingXs))
-        val installed = model.installedName
-        Text(
-            text = if (installed != null) {
-                "$installed · ${StemModelManager.formatBytes(model.sizeBytes)}. New charts read the rhythm off its drums and follow the vocals, melody and bass."
-            } else {
-                "None installed. Charts use the built-in separator, which hears drums less cleanly. " +
-                    "Import a model file from your phone to use it instead."
+private fun ChartModeSection(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
+    val servers = state.chartServers
+    Column {
+        GlyphControlHeader(
+            "Chart processing",
+            when (state.chartMode) {
+                ChartMode.FAST -> "On a GPU server: seconds a song, billed by the second"
+                ChartMode.SLOW -> "On a CPU server: minutes a song"
             },
-            style = MaterialTheme.typography.bodyMedium,
-            color = scheme.onSurfaceVariant,
         )
-        if (model.importing) {
-            Spacer(Modifier.height(MonoDimens.spacingMd))
-            val percent = model.progress?.let { (it * 100).toInt() }
+        GlyphSegmented(
+            options = ChartMode.entries.toList(),
+            selected = state.chartMode,
+            label = { "${it.label} · ${it.hardware}" },
+            onSelect = { onEvent(GlyphEvent.SetChartMode(it)) },
+            description = "Chart processing",
+        )
+        val missing = when {
+            !servers.any -> "No separation server yet. Add one under Settings › Connections."
+            state.chartMode == ChartMode.SLOW && !servers.cpu ->
+                "Slow needs a CPU server (Railway). Add one under Settings › Connections."
+            state.chartMode == ChartMode.FAST && !servers.gpu && !servers.unknown ->
+                "No GPU server, so Fast charts on the CPU server."
+            state.chartMode == ChartMode.FAST && !servers.cpu ->
+                "Add a CPU server too, and Fast falls back to it when the GPU cannot be reached."
+            else -> null
+        }
+        if (missing != null) {
+            Spacer(Modifier.height(MonoDimens.spacingXs))
             Text(
-                text = listOfNotNull(model.stage ?: "Importing", percent?.let { "$it%" }).joinToString(" · "),
-                style = MaterialTheme.typography.bodyMedium,
+                text = missing,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(MonoDimens.spacingSm))
-            GlyphMeter(
-                fraction = model.progress ?: 0f,
-                color = scheme.onSurface,
-                description = listOfNotNull(model.stage, percent?.let { "$it percent" }).joinToString(", "),
-            )
-            Spacer(Modifier.height(MonoDimens.spacingMd))
-            GlyphButton(
-                text = "Cancel",
-                onClick = { onEvent(GlyphEvent.CancelModelImport) },
-                onClickLabel = "Cancel the model import",
-                height = 44.dp,
-            )
-            return@GlyphPanel
         }
-        model.message?.let { message ->
-            Spacer(Modifier.height(MonoDimens.spacingSm))
-            Text(text = message, style = MaterialTheme.typography.bodyMedium)
-        }
-        Spacer(Modifier.height(MonoDimens.spacingMd))
-        Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {
-            GlyphButton(
-                text = if (installed != null) "Replace…" else "Import model…",
-                icon = Icons.Default.FolderOpen,
-                primary = installed == null,
-                onClick = {
-                    onEvent(GlyphEvent.DismissModelMessage)
-                    picker.launch(arrayOf("*/*"))
-                },
-                modifier = Modifier.weight(1f),
-            )
-            if (installed != null) {
-                GlyphButton(
-                    text = "Remove",
-                    onClick = { onEvent(GlyphEvent.RemoveModel) },
-                    onClickLabel = "Remove $installed",
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-        Spacer(Modifier.height(MonoDimens.spacingSm))
-        Text(
-            text = "Accepts " + KnownModels.supportedFileNames().joinToString(", "),
-            style = MaterialTheme.typography.labelSmall,
-            color = scheme.onSurfaceVariant,
-        )
     }
 }
 

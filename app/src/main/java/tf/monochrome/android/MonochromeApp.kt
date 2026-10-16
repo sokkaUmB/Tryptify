@@ -193,6 +193,16 @@ class MonochromeApp : Application(), Configuration.Provider, SingletonImageLoade
         appScope.launch {
             runCatching { tf.monochrome.android.audio.usb.UsbNativeLoader.ensureLoaded() }
         }
+        // Charts are separated on a server now. A stem model the player
+        // imported, and the NPU's compiled copy of it, are hundreds of
+        // megabytes nothing will read again.
+        appScope.launch {
+            runCatching {
+                java.io.File(filesDir, "stem-models").deleteRecursively()
+                java.io.File(filesDir, "stem_npu_cache").deleteRecursively()
+                deleteSharedPreferences("stem_accelerators")
+            }
+        }
         // Wire the Exclusive USB DAC toggle to actual driver lifecycle
         // and start publishing real status to Settings UI. Without this,
         // the toggle is a persisted boolean with no observable effect.

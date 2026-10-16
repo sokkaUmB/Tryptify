@@ -4,29 +4,15 @@ package tf.monochrome.android.audio.stepmania
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.channels.trySendBlocking
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import tf.monochrome.android.audio.sampler.PcmDecoder
-import tf.monochrome.android.audio.sampler.SampleEdits
-import tf.monochrome.android.audio.sampler.stems.BackendKind
-import tf.monochrome.android.audio.sampler.stems.SeparationOptions
-import tf.monochrome.android.audio.sampler.stems.Stem
-import tf.monochrome.android.audio.sampler.stems.StemBackendRegistry
-import tf.monochrome.android.audio.sampler.stems.StemQuality
-import tf.monochrome.android.audio.sampler.stems.StemProgress
-import tf.monochrome.android.audio.sampler.stems.StemSeparationBackend
-import android.util.Log
+import tf.monochrome.android.data.api.ApiServer
 
 data class StepManiaConversionProgress(
     val fraction: Float,
@@ -35,20 +21,24 @@ data class StepManiaConversionProgress(
 
 data class StepManiaConversionResult(
     val simfile: GeneratedSimfile,
-    /** The backend actually used, including an honest fallback to CPU or DSP. */
+    /** Which server separated the song: its model, its host, and whether on a GPU. */
     val backendName: String,
+    /** How the server's part went, for a batch's estimates. */
+    val remote: RemoteRun,
 )
 
 /**
- * End-to-end, offline MP3/FLAC to StepMania conversion.
+ * MP3/FLAC to StepMania conversion, separated on a TryptMania Parser server.
  *
- * The existing decoder and stem registry stay authoritative. This service does
- * not create a second audio engine and never enters a playback callback.
+ * The phone separates nothing. A song goes to the servers [ChartMode] picks
+ * ([RemoteStemAnalysis.planFor]) — in Fast mode a GPU, then a CPU server if
+ * the GPU cannot be reached; in Slow mode a CPU server — and what comes back
+ * is the drums' and each layer's envelope, which the chart generator reads
+ * here. This service never enters a playback callback.
  */
 @Singleton
 class StepManiaConversionService @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val stemBackends: StemBackendRegistry,
     private val remoteStems: RemoteStemAnalysis,
 ) {
     private val generator = StepManiaMapGenerator()
@@ -58,66 +48,61 @@ class StepManiaConversionService @Inject constructor(
         source: Uri,
         destination: Uri,
         request: StepManiaRequest,
-        quality: StemQuality = StemQuality.BALANCED,
+        mode: ChartMode,
         onProgress: (StepManiaConversionProgress) -> Unit = {},
     ): Result<StepManiaConversionResult> = try {
-        // A separation server under Settings › Connections goes first: a GPU
-        // separates a song in seconds. Anything wrong with it — unreachable,
-        // asleep past the timeout, an error — and the phone does it, as before.
-        val remote = remoteStems.server()?.let { server -> separateOnServer(server, source, onProgress) }
-        if (remote != null) {
-            finish(remote.drums, remote.layers, request, destination, remote.label, onProgress)
-        } else {
-            // Said while it happens: the NPU compiles the model the first time
-            // after an update, which takes minutes, and "Decoding audio" at 0%
-            // for that long read as a job that had stuck.
-            val separation = Separation(
-                stemBackends.ready(onTrying = { kind -> onProgress(StepManiaConversionProgress(0f, preparing(kind))) })
-                    ?: throw IllegalStateException("No stem separation backend is available"),
-            )
-            onProgress(StepManiaConversionProgress(0f, "Decoding audio"))
-
-            val (envelope, layers) = withContext(Dispatchers.Default) {
-                separateStreaming(source, quality, separation, onProgress)
-            }
-
-            finish(envelope, layers, request, destination, separation.displayName, onProgress)
-        }
+        val plan = remoteStems.plan(mode)
+        if (plan.isEmpty()) throw IOException(noServer(mode))
+        val remote = separate(plan, source, onProgress)
+        finish(remote, request, destination, onProgress)
     } catch (cancelled: CancellationException) {
         throw cancelled
     } catch (failure: Throwable) {
         Result.failure(failure)
     }
 
-    /** The song separated on [server], or null to separate it on the phone. */
-    private suspend fun separateOnServer(
-        server: String,
+    /** The song separated on the first server of [plan] that manages it. */
+    private suspend fun separate(
+        plan: List<ApiServer>,
         source: Uri,
         onProgress: (StepManiaConversionProgress) -> Unit,
-    ): RemoteEnvelopes? {
-        onProgress(StepManiaConversionProgress(0.02f, "Separating on ${RemoteStemAnalysis.hostOf(server)}"))
-        return try {
-            remoteStems.analyze(server, source).also { Log.i(TAG, "Separated on ${it.label}") }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (failure: Throwable) {
-            Log.w(TAG, "The separation server failed; separating on the phone", failure)
-            null
+    ): RemoteEnvelopes {
+        var lastFailure: Throwable? = null
+        for (server in plan) {
+            val where = when (server.separatesOnGpu) {
+                true -> "the GPU"
+                false -> "the CPU server"
+                null -> RemoteStemAnalysis.hostOf(server.url)
+            }
+            onProgress(StepManiaConversionProgress(0.02f, "Separating on $where"))
+            try {
+                val remote = remoteStems.analyze(server.url, source)
+                Log.i(TAG, "Separated on ${remote.label}")
+                remoteStems.learnDevice(server.url, remote.run.device)
+                return remote
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Throwable) {
+                Log.w(TAG, "${server.url} could not separate it; trying the next server", failure)
+                lastFailure = failure
+            }
         }
+        throw IOException(
+            "No separation server could chart it" + (lastFailure?.message?.let { ": $it" } ?: "."),
+            lastFailure,
+        )
     }
 
-    /** Charts from the envelopes, written to [destination]: the same whichever separated the song. */
+    /** Charts from the envelopes, written to [destination]. */
     private suspend fun finish(
-        envelope: TransientEnvelopeBuilder,
-        layers: StemLayerEnvelopes,
+        remote: RemoteEnvelopes,
         request: StepManiaRequest,
         destination: Uri,
-        separatedBy: String,
         onProgress: (StepManiaConversionProgress) -> Unit,
     ): Result<StepManiaConversionResult> {
         onProgress(StepManiaConversionProgress(0.88f, "Generating charts"))
         val generated = withContext(Dispatchers.Default) {
-            generator.generate(analyzer.analyze(envelope, layers), request)
+            generator.generate(analyzer.analyze(remote.drums, remote.layers), request)
         }
         withContext(Dispatchers.IO) {
             onProgress(StepManiaConversionProgress(0.97f, "Writing simfile"))
@@ -126,161 +111,17 @@ class StepManiaConversionService @Inject constructor(
             output.bufferedWriter(Charsets.UTF_8).use { it.write(generated.ssc) }
         }
         onProgress(StepManiaConversionProgress(1f, "Complete"))
-        return Result.success(StepManiaConversionResult(generated, separatedBy))
-    }
-
-    /**
-     * Decode, separate and reduce the song to its rhythm envelope, a piece at a
-     * time.
-     *
-     * The whole song is never in memory. It used to be: decoded whole, then
-     * separated whole into a drum stem as large again, plus whatever the
-     * separator holds while it works — several hundred megabytes for a long
-     * song, past what the app's heap allows. Now a decoder thread cuts the
-     * song into [CHUNK_SECONDS] pieces ([SeparationChunker]) and hands them over
-     * one at a time; each is separated, its drums folded into the envelope,
-     * and dropped. The queue between the two holds one piece, so decoding
-     * waits for separation instead of running ahead of it.
-     *
-     * Only each stem's core is kept from each piece. When the separator
-     * gives back no drums, or a stem that does not line up with what it was
-     * given, the piece's own mix stands in, as the analyzer did for the whole
-     * song before.
-     *
-     * Every stem the separator can make is asked for, not just the drums: the
-     * vocals, bass and melody are folded into envelopes of their own
-     * ([StemLayerEnvelopes]) for the chart to follow the tune with. A model
-     * computes all its stems in one pass whatever is asked for, so this costs
-     * a model almost nothing; it costs the built-in separator a mask per stem.
-     */
-    private suspend fun separateStreaming(
-        source: Uri,
-        quality: StemQuality,
-        separation: Separation,
-        onProgress: (StepManiaConversionProgress) -> Unit,
-    ): Pair<TransientEnvelopeBuilder, StemLayerEnvelopes> = coroutineScope {
-        val chunks = Channel<SeparationChunker.Chunk>(capacity = 1)
-        var expectedFrames = 0L
-        var envelope: TransientEnvelopeBuilder? = null
-        var layers: StemLayerEnvelopes? = null
-
-        launch(Dispatchers.IO) {
-            try {
-                var chunker: SeparationChunker? = null
-                PcmDecoder.stream(
-                    context = context,
-                    uri = source,
-                    maxFrames = MAX_DECODED_FRAMES,
-                    isActive = { isActive },
-                    onFormat = { format ->
-                        expectedFrames = format.estimatedFrames
-                        envelope = TransientEnvelopeBuilder(format.sampleRate)
-                        layers = StemLayerEnvelopes(format.sampleRate)
-                        chunker = SeparationChunker(
-                            coreFrames = format.sampleRate * CHUNK_SECONDS,
-                            contextFrames = format.sampleRate * CONTEXT_SECONDS,
-                            stereo = format.channels >= 2,
-                        ) { chunk -> chunks.trySendBlocking(chunk).getOrThrow() }
-                    },
-                ) { left, right, frames -> chunker?.add(left, right, frames) }
-                chunker?.finish()
-            } finally {
-                chunks.close()
-            }
-        }
-
-        chunks.consumeEach { chunk ->
-            val sink = envelope ?: return@consumeEach
-            val layerSink = layers ?: return@consumeEach
-            val mix = SampleEdits.Buffer(chunk.left, chunk.right, sink.sampleRate)
-            // How far through the song this piece starts and ends, for the bar.
-            fun songFraction(within: Float): Float {
-                if (expectedFrames <= 0L) return 0f
-                val done = chunk.startFrame + chunk.coreFrames * within.coerceIn(0f, 1f)
-                return (done / expectedFrames).coerceIn(0f, 1f)
-            }
-            val separated = separation.separate(mix, quality) { progress ->
-                onProgress(
-                    StepManiaConversionProgress(
-                        fraction = 0.02f + songFraction(progress.fraction) * 0.84f,
-                        stage = progress.stage,
-                    ),
-                )
-            }
-            val drums = separated[Stem.DRUMS]?.takeIf {
-                it.sampleRate == mix.sampleRate && it.frames == mix.frames
-            } ?: mix
-            sink.add(drums.left, drums.right, chunk.coreOffset, chunk.coreOffset + chunk.coreFrames)
-            layerSink.add(separated, mix.frames, chunk.coreOffset, chunk.coreFrames)
-        }
-
-        val drums = envelope ?: throw IOException("No audio could be decoded from that file")
-        drums to (layers ?: StemLayerEnvelopes(drums.sampleRate))
-    }
-
-    /**
-     * The backend separating this song, and the ones it has fallen back from.
-     *
-     * An accelerator that loaded can still fail on a piece. Rather than lose
-     * the minutes already spent, that piece is handed to the next backend down
-     * — the same model on the CPU, or the built-in separator — and the song
-     * carries on there. [displayName] names each one that ran, in order, so a
-     * chart that finished on the CPU never claims the NPU made it.
-     */
-    private inner class Separation(private var backend: StemSeparationBackend) {
-        private val used = mutableListOf(backend.status().displayName)
-
-        val displayName: String get() = used.distinct().joinToString(", then ")
-
-        suspend fun separate(
-            input: SampleEdits.Buffer,
-            quality: StemQuality,
-            onProgress: (StemProgress) -> Unit,
-        ): Map<Stem, SampleEdits.Buffer> {
-            while (true) {
-                try {
-                    return backend.separate(
-                        input = input,
-                        requested = StemLayer.REQUESTED,
-                        options = SeparationOptions(quality = quality),
-                        onProgress = onProgress,
-                    )
-                } catch (cancelled: CancellationException) {
-                    throw cancelled
-                } catch (failure: Throwable) {
-                    if (!backend.kind.isAccelerated) throw failure
-                    Log.w(TAG, "${backend.kind.label} failed mid-song; continuing below it", failure)
-                    val failed = backend
-                    failed.release()
-                    backend = stemBackends.ready(after = failed.kind) ?: throw failure
-                    used += backend.status().displayName
-                }
-            }
-        }
-    }
-
-    private fun preparing(kind: BackendKind): String = when (kind) {
-        BackendKind.QNN -> "Preparing the ${kind.label}. The first song after an update takes a few minutes."
-        else -> "Preparing the ${kind.label}"
+        return Result.success(StepManiaConversionResult(generated, remote.label, remote.run))
     }
 
     private companion object {
         const val TAG = "StepManiaConversion"
 
-        // Ten minutes at 48 kHz. Memory no longer depends on it — the song is
-        // streamed — but separating a podcast picked by accident would still
-        // take the better part of an hour.
-        const val MAX_DECODED_FRAMES = 48_000L * 60 * 10
-
-        /**
-         * How much of the song is separated at once. A separator holds every
-         * stem it returns for the whole piece, and charts ask for all of them —
-         * six on a six-stem model — so a piece is kept short enough for six
-         * stems of it to sit comfortably on the heap.
-         */
-        const val CHUNK_SECONDS = 20
-
-        /** What each piece hears either side of its own, so its edges come out clean. */
-        const val CONTEXT_SECONDS = 3
+        fun noServer(mode: ChartMode): String = when (mode) {
+            ChartMode.FAST ->
+                "No separation server. Add one under Settings › Connections: a GPU server for Fast mode."
+            ChartMode.SLOW ->
+                "Slow mode needs a CPU separation server. Add one under Settings › Connections, or chart in Fast mode."
+        }
     }
 }

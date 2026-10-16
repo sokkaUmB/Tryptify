@@ -64,7 +64,7 @@ private fun ApiService.sourceType(): SourceType? = when (this) {
 
 /** A detected service: its brand pill, or a plain one with its name. */
 @Composable
-private fun ServicePill(service: ApiService) {
+private fun ServicePill(service: ApiService, stemDevice: String? = null) {
     val source = service.sourceType()
     if (source != null) {
         SourcePill(source)
@@ -73,7 +73,13 @@ private fun ServicePill(service: ApiService) {
     val ink = MaterialTheme.colorScheme.onSurface
     androidx.compose.material3.Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(999.dp), color = ink.copy(alpha = 0.1f)) {
         Text(
-            text = service.label,
+            // A stem server says what it separates on: Trypt Mania's Fast mode
+            // goes to the GPU one, Slow to the CPU one.
+            text = when {
+                service != ApiService.STEMS || stemDevice == null -> service.label
+                stemDevice == "cuda" -> "${service.label} · GPU"
+                else -> "${service.label} · CPU"
+            },
             style = MaterialTheme.typography.labelSmall,
             color = ink,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
@@ -197,7 +203,7 @@ private fun ApiServerCard(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         ApiService.entries.filter { it in server.services }
-                            .forEach { ServicePill(it) }
+                            .forEach { ServicePill(it, server.stemDevice) }
                     }
                 }
             }
@@ -302,7 +308,7 @@ private fun ProbeResultView(result: ProbeResult) {
         Text(stringResource(R.string.api_serves), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(4.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            ApiService.entries.filter { it in result.services }.forEach { ServicePill(it) }
+            ApiService.entries.filter { it in result.services }.forEach { ServicePill(it, result.stemDevice) }
         }
     }
     if (result.reasons.isNotEmpty()) {

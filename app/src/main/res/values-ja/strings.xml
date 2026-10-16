@@ -20,6 +20,7 @@
     <string name="action_skip_next">次の曲へ</string>
     <string name="action_play_next">次に再生</string>
     <string name="action_add_to_queue">キューに追加</string>
+    <string name="action_play_in_trypt_mania">Trypt Mania でプレイ</string>
     <string name="action_like">お気に入りに追加</string>
     <string name="action_unlike">お気に入りから削除</string>
     <string name="action_add_to_playlist">プレイリストに追加</string>

@@ -39,7 +39,16 @@ data class ApiServer(
     val services: Set<ApiService> = emptySet(),
     /** When [services] was last established, epoch millis; 0 = never checked. */
     val checkedAt: Long = 0L,
-)
+    /**
+     * For a stem separation server, what it separates on, as it says
+     * (`cuda` or `cpu`): Trypt Mania's Fast mode goes to a GPU, Slow to a CPU.
+     * Null when unknown — a server added before servers were asked.
+     */
+    val stemDevice: String? = null,
+) {
+    /** Whether this server separates on a GPU; null when it has not said. */
+    val separatesOnGpu: Boolean? get() = stemDevice?.let { it == "cuda" }
+}
 
 object ApiServers {
 

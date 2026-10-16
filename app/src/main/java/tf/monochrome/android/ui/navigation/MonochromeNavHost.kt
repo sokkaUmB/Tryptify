@@ -576,6 +576,13 @@ fun MonochromeNavHost(initialRoute: String? = null) {
         // so coming back to Library would reset to the Overview sub-tab and
         // scroll to the top.
         val tabStateHolder = rememberSaveableStateHolder()
+        val playInTryptMania: (tf.monochrome.android.glyph.data.TryptManiaRequest) -> Unit =
+            remember(navController) {
+                { request ->
+                    tf.monochrome.android.glyph.data.TryptManiaRequests.send(request)
+                    navController.navigateTool(Screen.Glyph)
+                }
+            }
 
         CompositionLocalProvider(
             // A pushed screen stops above the system bar (the NavHost is padded
@@ -595,6 +602,9 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             LocalGlassOverlayHost provides glassOverlayHost,
             tf.monochrome.android.ui.components.LocalMiniPlayerSlot provides miniPlayerSlot,
             tf.monochrome.android.ui.components.LocalAppChrome provides appChrome,
+            // Every song menu's "Play in Trypt Mania": the request handed over,
+            // and the mode opened to take it.
+            tf.monochrome.android.ui.components.LocalPlayInTryptMania provides playInTryptMania,
         ) {
         Box(modifier = Modifier.fillMaxSize().hazeSource(hazeState).nestedScroll(collapseOnScroll)) {
             // Pager for main tabs — fills entire screen

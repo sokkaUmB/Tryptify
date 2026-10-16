@@ -163,13 +163,6 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
     ),
     entry("Playback speed", R.string.settings_playback_speed, "Audio", listOf("tempo", "faster", "slower", "pitch")),
     entry("Multichannel downmix", R.string.settings_downmix_multichannel_to_stereo, "Audio", listOf("surround", "5.1", "atmos", "stereo")),
-    // "Stem" and "separation" are what someone types; "AI" and "model" are what
-    // the section is called. Both have to find it.
-    entry(
-        "Audio AI", null,
-        "Audio",
-        listOf("stem", "stems", "separation", "separate", "model", "demucs", "onnx", "vocals"),
-    ),
     entry("Spatial renderer", R.string.settings_atmos_renderer_configuration, "Audio", listOf("atmos", "hrtf", "binaural", "spatial"))
         .at(SettingsDestination.Route("atmos_renderer")),
     entry("HRTF database", R.string.search_hrtf_database, "Audio", listOf("binaural", "head", "spatial", "sofa"))
@@ -245,7 +238,9 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
     entry(
         "APIs", R.string.search_apis, "Connections",
         listOf("server", "instance", "url", "endpoint", "source", "catalogue", "catalog",
-            "tidal", "qobuz", "apple", "deezer", "hifi", "add"),
+            "tidal", "qobuz", "apple", "deezer", "hifi", "add",
+            // Trypt Mania's charts are separated on a server listed here.
+            "stem", "stems", "separation", "separate", "demucs", "gpu", "modal", "railway"),
     ),
     entry("Show what I'm playing", R.string.settings_show_what_i_m_playing, "Connections", listOf("discord", "presence", "rich", "status", "playing")),
     entry("Spotify", null, "Connections", listOf("import", "playlist", "account", "transfer")),

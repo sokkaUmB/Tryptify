@@ -22,16 +22,19 @@ import java.nio.ByteOrder
 import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
-import tf.monochrome.android.data.api.ApiServers
+import tf.monochrome.android.data.api.ApiServer
 import tf.monochrome.android.data.api.ApiService
 import tf.monochrome.android.data.preferences.PreferencesManager
 
@@ -57,9 +60,25 @@ class RemoteStemAnalysis @Inject constructor(
     private val json: Json,
 ) {
 
-    /** The first server under Settings › Connections that separates stems, or null. */
-    suspend fun server(): String? =
-        ApiServers.serverFor(preferences.apiServers.first(), ApiService.STEMS)?.url
+    /** Every server under Settings › Connections that separates stems, in the list's order. */
+    val stemServerFlow: Flow<List<ApiServer>> =
+        preferences.apiServers.map { servers -> servers.filter { ApiService.STEMS in it.services } }
+
+    suspend fun stemServers(): List<ApiServer> = stemServerFlow.first()
+
+    /** The servers [mode] tries, in the order it tries them; empty when it has none. */
+    suspend fun plan(mode: ChartMode): List<ApiServer> = planFor(stemServers(), mode)
+
+    /**
+     * Remembers what [server] separates on, from its own answer: a server
+     * added before servers were asked learns it from its first song.
+     */
+    suspend fun learnDevice(server: String, device: String?) {
+        if (device == null) return
+        val servers = preferences.apiServers.first()
+        if (servers.none { it.url == server && it.stemDevice != device }) return
+        preferences.setApiServers(servers.map { if (it.url == server) it.copy(stemDevice = device) else it })
+    }
 
     suspend fun analyze(server: String, source: Uri): RemoteEnvelopes {
         val length = sizeOf(source)
@@ -93,6 +112,20 @@ class RemoteStemAnalysis @Inject constructor(
 
     companion object {
         private const val TIMEOUT_MS = 10 * 60 * 1000L
+
+        /**
+         * [FAST][ChartMode.FAST]: the GPU servers, then any that has not said
+         * what it runs on, then the CPU ones as the fallback.
+         * [SLOW][ChartMode.SLOW]: the CPU servers alone — an unknown one may
+         * be a GPU, and Slow must not bill one.
+         */
+        fun planFor(servers: List<ApiServer>, mode: ChartMode): List<ApiServer> = when (mode) {
+            ChartMode.FAST ->
+                servers.filter { it.separatesOnGpu == true } +
+                    servers.filter { it.separatesOnGpu == null } +
+                    servers.filter { it.separatesOnGpu == false }
+            ChartMode.SLOW -> servers.filter { it.separatesOnGpu == false }
+        }
 
         fun hostOf(server: String): String = server.substringAfter("://").substringBefore('/')
 
@@ -129,6 +162,7 @@ class RemoteStemAnalysis @Inject constructor(
                         ?: TransientEnvelopeBuilder.restored(sampleRate, FloatArray(drums.raw().size), FloatArray(drums.raw().size), frames)
                 },
             )
+            val run = runOf(data, sampleRate, frames)
             val model = data["model"]?.jsonPrimitive?.contentOrNull ?: "a server"
             val device = data["device"]?.jsonPrimitive?.contentOrNull
             val label = buildString {
@@ -137,7 +171,22 @@ class RemoteStemAnalysis @Inject constructor(
                 append(host)
                 if (device == "cuda") append(" (GPU)")
             }
-            return RemoteEnvelopes(drums, layers, label)
+            return RemoteEnvelopes(drums, layers, label, run)
+        }
+
+        /** The server's timings and terms, as far as it gave them. */
+        private fun runOf(data: JsonObject, sampleRate: Int, frames: Long): RemoteRun {
+            val seconds = data["seconds"] as? JsonObject
+            fun timing(name: String): Double = seconds?.get(name)?.jsonPrimitive?.doubleOrNull ?: 0.0
+            return RemoteRun(
+                device = data["device"]?.jsonPrimitive?.contentOrNull,
+                audioSeconds = frames.toDouble() / sampleRate.coerceAtLeast(1),
+                uploadSeconds = timing("upload"),
+                decodeSeconds = timing("decode"),
+                separateSeconds = timing("separate") + timing("envelopes"),
+                pricePerHour = data["pricePerHour"]?.jsonPrimitive?.doubleOrNull,
+                idleSeconds = data["idleSeconds"]?.jsonPrimitive?.intOrNull,
+            )
         }
 
         private fun floats(base64: String): FloatArray {
@@ -153,4 +202,31 @@ class RemoteEnvelopes(
     val drums: TransientEnvelopeBuilder,
     val layers: StemLayerEnvelopes,
     val label: String,
+    val run: RemoteRun,
 )
+
+/**
+ * How long a server took over one song, and what it charges, from its own
+ * answer: what [ChartPace] learns a batch's estimate from.
+ */
+data class RemoteRun(
+    /** What the server separated on, as it said: `cuda` or `cpu`. */
+    val device: String?,
+    val audioSeconds: Double,
+    /** Receiving the song from the phone: the phone's upload, as the server saw it. */
+    val uploadSeconds: Double,
+    val decodeSeconds: Double,
+    /** Separation and the envelopes: the server's one-at-a-time part. */
+    val separateSeconds: Double,
+    /** Null when the deploy does not say (a server not on Modal, or an older one). */
+    val pricePerHour: Double?,
+    val idleSeconds: Int?,
+) {
+    /**
+     * Seconds of a batch this song costs, per second of its audio. A batch
+     * sends the next song while this one separates, so a song costs whichever
+     * is longer, getting it there or separating it, not both.
+     */
+    val batchSecondsPerAudioSecond: Double?
+        get() = if (audioSeconds <= 0.0) null else maxOf(separateSeconds, uploadSeconds + decodeSeconds) / audioSeconds
+}

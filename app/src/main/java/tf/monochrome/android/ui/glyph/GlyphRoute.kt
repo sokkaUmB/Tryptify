@@ -123,6 +123,7 @@ fun GlyphRoute(
 
     // Asked before the first chart is made, from whichever screen made it.
     if (state.askPackFolder) GlyphPackFolderDialog(viewModel::onEvent)
+    state.batchOffer?.let { GlyphBatchDialog(it, viewModel::onEvent) }
 
     // Read straight from the transport's clock rather than from the state: this
     // is called inside the playfield's draw scope, and routing it through

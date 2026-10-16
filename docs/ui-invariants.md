@@ -1230,6 +1230,29 @@ Bluetooth's lateness can be, so a tap is never matched to its nearest click:
 the first tap anchors on the first click and the rest follow the running
 median (`GlyphTapSync`). The offset's limit is 500 ms for the same reason.
 
+**Charting is a line, and a batch is asked before it starts.** Generate puts
+the song in `ChartQueue` and never cancels the one being charted; while a song
+is in the line its button says Queued or Charting… and cannot be pressed
+twice. A folder heading centred on the wheel shows one pill, "Chart N songs",
+in the selection's place, and the ⋮ menu has "Chart every song without one".
+Both open `GlyphBatchDialog` first: how much music, and each mode's time and
+cost, Fast (GPU) and Slow (CPU), from what the servers have shown
+(`ChartPace`) — asking a sleeping GPU would wake it and bill its idle minutes.
+The wheel keeps the pill's room while any folder has a song to chart, not only
+while a heading is centred, so it does not rise and fall as it turns. The
+generation panel counts a batch ("3 of 12 charted") with the song in flight
+under it, and its button cancels all.
+
+**Every song menu offers Play in Trypt Mania.** `TrackContextMenu`, wherever
+it is opened, has the item with Trypt Mania's mark: the noteskin's own arrow,
+hollow, turned to point up and right (`TryptManiaArrow`), one colour so it
+takes the menu's tint. The action comes from the app's root
+(`LocalPlayInTryptMania`) and is read where the menu is asked for, not inside
+the overlay, whose host may sit outside what the root provides. Trypt Mania
+takes the request when it is up, finds the song by its file, its download or
+its name, centres and chooses it, and makes its chart when it has none; a song
+not on the phone, or not an MP3 or FLAC in the library, says so.
+
 **Back in a run pauses it; Back from the pause leaves.** The pause panel is
 where "Quit to songs" is, so Back walks the same two steps. Quitting on the
 first Back threw a run away to a stray edge swipe. On the home screen Back

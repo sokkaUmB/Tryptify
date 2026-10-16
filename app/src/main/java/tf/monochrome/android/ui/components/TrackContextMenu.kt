@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import tf.monochrome.android.domain.model.Track
+import tf.monochrome.android.glyph.data.TryptManiaRequest
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
 import tf.monochrome.android.ui.theme.reduceMotion
@@ -85,6 +86,9 @@ fun TrackContextMenu(
     // Outside the overlay's content, which is composed in the overlay host:
     // state there would not survive the caller's recompositions.
     var showingInfo by remember(track.id) { mutableStateOf(false) }
+    // Read here, where the menu is asked for, for the same reason: the
+    // overlay host may sit outside what the app's root provides.
+    val playInTryptMania = LocalPlayInTryptMania.current
 
     GlassOverlay(onDismiss = onDismiss, alignment = Alignment.BottomCenter) {
         // "Disable animations": the pages swap at once, at their own heights.
@@ -167,6 +171,25 @@ fun TrackContextMenu(
                         label = stringResource(R.string.action_add_to_queue),
                         onClick = { onAddToQueue(); onDismiss() }
                     )
+                    if (playInTryptMania != null) {
+                        ContextMenuItem(
+                            icon = TryptManiaArrow,
+                            label = stringResource(R.string.action_play_in_trypt_mania),
+                            onClick = {
+                                playInTryptMania(
+                                    TryptManiaRequest(
+                                        title = track.title,
+                                        artist = track.artist?.name ?: track.artists.firstOrNull()?.name.orEmpty(),
+                                        album = track.album?.title?.takeIf { it.isNotBlank() },
+                                        durationSeconds = track.duration,
+                                        catalogTrackId = track.id,
+                                        filePath = filePath,
+                                    ),
+                                )
+                                onDismiss()
+                            }
+                        )
+                    }
                     ContextMenuItem(
                         icon = Icons.Default.Favorite,
                         label = if (isLiked) stringResource(R.string.action_unlike) else stringResource(R.string.action_like),

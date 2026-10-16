@@ -23,10 +23,15 @@ import androidx.work.ForegroundInfo
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.withContext
 import tf.monochrome.android.R
 import tf.monochrome.android.glyph.pack.OwnPackStore
 import tf.monochrome.android.glyph.pack.PackWriter
@@ -34,21 +39,22 @@ import tf.monochrome.android.glyph.pack.StepManiaPack
 import tf.monochrome.android.glyph.pack.TreePackSink
 
 /**
- * Chart generation as a background job.
+ * Chart generation as a background job: the worker that drains [ChartQueue].
  *
- * Separating a song takes minutes, and it used to live in the Trypt Mania
+ * Separating a song takes time, and it used to live in the Trypt Mania
  * screen's view model: leave the screen, or let the phone put the app away,
  * and the job went with it. Here WorkManager owns it instead. It runs as a
  * foreground job with its progress in a notification — the only way Android
  * lets an app keep working for that long once it is out of sight — and says
- * how it ended in one when it is done.
+ * how the batch ended in one when it is done.
  *
- * One at a time: separation holds a model and several stems of a piece in
- * memory, and two at once would hold twice that for no gain. A new one
- * replaces whatever was running, as the screen's Generate button always did.
+ * It charts the line's songs until none is left, a song that fails noted and
+ * passed over rather than ending the batch. Two are in flight at once: the
+ * next song uploads while the server separates this one, which it does one at
+ * a time anyway, so the upload costs the batch nothing.
  *
- * The screen watches the job ([WORK_NAME]) instead of running it, so leaving
- * and coming back shows the same progress.
+ * The screen watches [ChartQueue] rather than this job, so leaving and coming
+ * back shows the same progress, and the songs waiting behind it.
  */
 @HiltWorker
 class StepManiaGenerationWorker @AssistedInject constructor(
@@ -56,34 +62,74 @@ class StepManiaGenerationWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val conversion: StepManiaConversionService,
     private val ownPack: OwnPackStore,
+    private val queue: ChartQueue,
+    private val pace: ChartPace,
 ) : CoroutineWorker(context, params) {
 
-    private val title: String get() = inputData.getString(KEY_TITLE).orEmpty()
     private var lastShownAt = 0L
-    private var lastShown: Pair<Int, String>? = null
+    private var lastShown: String? = null
+    private val lastReported = HashMap<String, Pair<Int, String>>()
 
     override suspend fun doWork(): Result {
-        val trackId = inputData.getString(KEY_TRACK_ID) ?: return Result.failure()
-        val source = inputData.getString(KEY_SOURCE)?.let(Uri::parse) ?: return Result.failure()
-        val destination = inputData.getString(KEY_DESTINATION)?.let(::File) ?: return Result.failure()
-        val request = StepManiaRequest(
-            title = title,
-            artist = inputData.getString(KEY_ARTIST).orEmpty(),
-            musicFileName = inputData.getString(KEY_MUSIC_FILE).orEmpty(),
-            difficulties = StepManiaDifficulty.entries.toSet(),
-        )
-
+        // A spare worker, appended behind one that emptied the line, has nothing to do.
+        if (!queue.hasWork()) return Result.success()
+        queue.startDraining()
         // Best effort, as for downloads: Android 12+ refuses a foreground start
         // from the background, and a job that merely loses its notification is
         // better than one that never runs.
-        runCatching { setForeground(foregroundInfo(0f, "Preparing")) }
+        runCatching { setForeground(foregroundInfo(queue.state.value)) }
 
+        val outcomes = mutableListOf<ChartOutcome>()
+        try {
+            val slots = Semaphore(LANES)
+            coroutineScope {
+                while (true) {
+                    slots.acquire()
+                    val job = queue.next()
+                    if (job == null) {
+                        slots.release()
+                        break
+                    }
+                    launch {
+                        try {
+                            val outcome = chart(job)
+                            queue.finish(outcome)
+                            synchronized(outcomes) { outcomes += outcome }
+                        } catch (stopped: CancellationException) {
+                            // Stopped by the system, it is charted again when the
+                            // worker restarts; cancelled, the line is gone already.
+                            withContext(NonCancellable) { queue.putBack(job) }
+                            throw stopped
+                        } finally {
+                            slots.release()
+                        }
+                    }
+                }
+            }
+        } finally {
+            withContext(NonCancellable) { queue.stopDraining() }
+        }
+        notifyFinished(outcomes)
+        return Result.success()
+    }
+
+    /** One song, start to finish; how it went, never an exception. */
+    private suspend fun chart(job: ChartJob): ChartOutcome {
+        val source = Uri.parse(job.source)
+        val destination = File(job.destination)
+        val request = StepManiaRequest(
+            title = job.title,
+            artist = job.artist,
+            musicFileName = job.musicFileName,
+            difficulties = StepManiaDifficulty.entries.toSet(),
+        )
         val result = try {
             conversion.convert(
                 source = source,
                 destination = Uri.fromFile(destination),
                 request = request,
-            ) { progress -> report(trackId, progress) }
+                mode = job.mode,
+            ) { progress -> report(job, progress) }
         } finally {
             // A picked file was granted for this job; nothing reads it after.
             if (source.scheme == "content") {
@@ -95,32 +141,20 @@ class StepManiaGenerationWorker @AssistedInject constructor(
                 }
             }
         }
-
         return result.fold(
             onSuccess = { success ->
+                pace.recordServer(success.remote)
                 val saved = saveToOwnPack(destination, source, request)
-                notifyFinished(
-                    "Chart ready",
-                    when {
-                        saved == null -> "$title is ready to play."
-                        saved.isSuccess -> "$title is ready to play, and saved to your ${StepManiaPack.OWN_PACK} pack."
-                        else -> "$title is ready to play here, but a copy could not be saved to your pack folder: " +
-                            (saved.exceptionOrNull()?.message ?: "unknown error")
-                    },
-                )
-                Result.success(
-                    workDataOf(
-                        KEY_TRACK_ID to trackId,
-                        KEY_BACKEND to success.backendName,
-                        KEY_SAVED to (saved?.isSuccess == true),
-                        KEY_SAVE_FAILURE to saved?.exceptionOrNull()?.message,
-                    ),
+                ChartOutcome(
+                    trackId = job.trackId,
+                    title = job.title,
+                    backendName = success.backendName,
+                    savedToPack = saved?.isSuccess == true,
+                    packFailure = saved?.exceptionOrNull()?.let { it.message ?: "unknown error" },
                 )
             },
             onFailure = { failure ->
-                val reason = failure.message ?: "Chart generation failed."
-                notifyFinished("Chart not made", "$title: $reason")
-                Result.failure(workDataOf(KEY_TRACK_ID to trackId, KEY_FAILURE to reason))
+                ChartOutcome(job.trackId, job.title, failure = failure.message ?: "Chart generation failed.")
             },
         )
     }
@@ -149,44 +183,52 @@ class StepManiaGenerationWorker @AssistedInject constructor(
         }
     }
 
-    override suspend fun getForegroundInfo(): ForegroundInfo = foregroundInfo(0f, "Preparing")
+    override suspend fun getForegroundInfo(): ForegroundInfo = foregroundInfo(queue.state.value)
 
     /**
-     * Progress for the screen and the notification, at most a few times a
-     * second: the service reports far more often than that, and Android drops
-     * notification updates that come too fast.
+     * Progress for the screen and the notification. The screen hears a song's
+     * every whole percent and new stage; the notification at most a few times
+     * a second, since Android drops updates that come faster.
      */
     @Synchronized
-    private fun report(trackId: String, progress: StepManiaConversionProgress) {
-        val percent = (progress.fraction * 100).toInt()
-        val shown = percent to progress.stage
+    private fun report(job: ChartJob, progress: StepManiaConversionProgress) {
+        val shown = (progress.fraction * 100).toInt() to progress.stage
+        if (lastReported[job.trackId] == shown) return
+        lastReported[job.trackId] = shown
+        queue.progress(job.trackId, progress.fraction, progress.stage)
+
+        val state = queue.state.value
+        val summary = "${(state.fraction * 100).toInt()} ${state.running.firstOrNull()?.stage}"
         val now = SystemClock.elapsedRealtime()
-        if (shown == lastShown || (now - lastShownAt < UPDATE_MS && shown.second == lastShown?.second)) return
-        lastShown = shown
+        if (summary == lastShown || now - lastShownAt < UPDATE_MS) return
+        lastShown = summary
         lastShownAt = now
-        // The service reports from its own threads and does not suspend, so
-        // both go through WorkManager's fire-and-forget calls.
-        setProgressAsync(
-            workDataOf(
-                KEY_TRACK_ID to trackId,
-                KEY_FRACTION to progress.fraction,
-                KEY_STAGE to progress.stage,
-            ),
-        )
-        runCatching { setForegroundAsync(foregroundInfo(progress.fraction, progress.stage)) }
+        // The service reports from its own threads and does not suspend.
+        runCatching { setForegroundAsync(foregroundInfo(state)) }
     }
 
-    private fun foregroundInfo(fraction: Float, stage: String): ForegroundInfo {
+    private fun foregroundInfo(state: ChartQueueState): ForegroundInfo {
         createChannel(applicationContext)
+        val current = state.running.firstOrNull()
+        val title = when {
+            state.total > 1 -> "Charting ${(state.finished.size + 1).coerceAtMost(state.total)} of ${state.total}"
+            current != null -> "Charting ${current.job.title}"
+            else -> "Charting a song"
+        }
+        val text = when {
+            current == null -> "Preparing"
+            state.total > 1 -> "${current.job.title} · ${current.stage}"
+            else -> current.stage
+        }
         val notification: Notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(if (title.isNotBlank()) "Charting $title" else "Charting a song")
-            .setContentText(stage)
+            .setContentTitle(title)
+            .setContentText(text)
             .setContentIntent(openApp())
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
-            .setProgress(100, (fraction * 100).toInt().coerceIn(0, 100), fraction <= 0f)
+            .setProgress(100, (state.fraction * 100).toInt().coerceIn(0, 100), state.fraction <= 0f)
             .build()
         return when {
             // Android 15 has a type for exactly this: long work on media
@@ -199,8 +241,9 @@ class StepManiaGenerationWorker @AssistedInject constructor(
         }
     }
 
-    /** How it ended, for a player who has long since left the screen. */
-    private fun notifyFinished(heading: String, text: String) {
+    /** How the batch ended, for a player who has long since left the screen. */
+    private fun notifyFinished(outcomes: List<ChartOutcome>) {
+        val (heading, text) = finishedMessage(outcomes) ?: return
         val context = applicationContext
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -236,50 +279,57 @@ class StepManiaGenerationWorker @AssistedInject constructor(
     companion object {
         const val WORK_NAME = "trypt_mania_chart"
 
-        /** Prefix of the tag naming the song a job is for, readable before any progress arrives. */
-        const val TRACK_TAG = "trypt_mania_track:"
-
-        const val KEY_TRACK_ID = "track_id"
-        const val KEY_FRACTION = "fraction"
-        const val KEY_STAGE = "stage"
-        const val KEY_BACKEND = "backend"
-        const val KEY_FAILURE = "failure"
-        const val KEY_SAVED = "saved"
-        const val KEY_SAVE_FAILURE = "save_failure"
-
-        private const val KEY_SOURCE = "source"
-        private const val KEY_DESTINATION = "destination"
-        private const val KEY_TITLE = "title"
-        private const val KEY_ARTIST = "artist"
-        private const val KEY_MUSIC_FILE = "music_file"
+        /** Songs in flight at once: one uploading while the server separates the other. */
+        private const val LANES = 2
 
         private const val CHANNEL_ID = "trypt_mania_charts"
         private const val NOTIFICATION_ID = 8200
         private const val DONE_NOTIFICATION_ID = 8201
         private const val UPDATE_MS = 500L
 
-        /** Start charting [source] into [destination], replacing any job already running. */
-        fun enqueue(
-            context: Context,
-            trackId: String,
-            source: Uri,
-            destination: File,
-            request: StepManiaRequest,
-        ) {
-            val work = OneTimeWorkRequestBuilder<StepManiaGenerationWorker>()
-                .setInputData(
-                    workDataOf(
-                        KEY_TRACK_ID to trackId,
-                        KEY_SOURCE to source.toString(),
-                        KEY_DESTINATION to destination.absolutePath,
-                        KEY_TITLE to request.title,
-                        KEY_ARTIST to request.artist,
-                        KEY_MUSIC_FILE to request.musicFileName,
-                    ),
-                )
-                .addTag(TRACK_TAG + trackId)
-                .build()
-            WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, work)
+        /**
+         * The notification for a finished run: one song as it always was, a
+         * batch as a count with what failed. Null for a run that charted nothing.
+         */
+        internal fun finishedMessage(outcomes: List<ChartOutcome>): Pair<String, String>? {
+            val single = outcomes.singleOrNull()
+            if (single != null) {
+                return if (single.failure != null) {
+                    "Chart not made" to "${single.title}: ${single.failure}"
+                } else {
+                    "Chart ready" to when {
+                        single.packFailure != null -> "${single.title} is ready to play here, but a copy could not be saved to your pack folder: ${single.packFailure}"
+                        single.savedToPack -> "${single.title} is ready to play, and saved to your ${StepManiaPack.OWN_PACK} pack."
+                        else -> "${single.title} is ready to play."
+                    }
+                }
+            }
+            if (outcomes.isEmpty()) return null
+            val failed = outcomes.filter { it.failure != null }
+            val made = outcomes.size - failed.size
+            val heading = when {
+                made == 0 -> "No charts made"
+                failed.isEmpty() -> "$made charts ready"
+                else -> "$made of ${outcomes.size} charts ready"
+            }
+            val text = buildString {
+                if (failed.isEmpty()) append("All ${outcomes.size} songs are ready to play.")
+                else {
+                    val first = failed.first()
+                    append("Not made: ${first.title}: ${first.failure}")
+                    if (failed.size > 1) append(", and ${failed.size - 1} more")
+                    append('.')
+                }
+                val unsaved = outcomes.count { it.packFailure != null }
+                if (unsaved > 0) append(" $unsaved could not be saved to your pack folder.")
+            }
+            return heading to text
+        }
+
+        /** Start a worker on the line, after any one still finishing. */
+        fun start(context: Context) {
+            val work = OneTimeWorkRequestBuilder<StepManiaGenerationWorker>().build()
+            WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.APPEND_OR_REPLACE, work)
         }
 
         fun cancel(context: Context) {

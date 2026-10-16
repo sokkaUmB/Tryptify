@@ -59,7 +59,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import tf.monochrome.android.R
-import tf.monochrome.android.audio.sampler.stems.StemModelManager
 import tf.monochrome.android.glyph.pack.StepManiaPack
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
 import tf.monochrome.android.ui.theme.MonoDimens
@@ -258,7 +257,7 @@ fun GlyphPacksScreen(
                             Text(
                                 "${pack.songs} song${if (pack.songs == 1) "" else "s"} · " +
                                     // Its music stays in the player's folder: its size here is only the charts.
-                                    if (pack.inPlace) "read in place" else StemModelManager.formatBytes(pack.bytes),
+                                    if (pack.inPlace) "read in place" else formatBytes(pack.bytes),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = scheme.onSurfaceVariant,
                             )
@@ -449,4 +448,12 @@ private const val STEPMANIA_ONLINE = "https://stepmaniaonline.net/"
 private fun isStepManiaOnline(url: Uri): Boolean {
     val host = url.host?.lowercase() ?: return false
     return host == "stepmaniaonline.net" || host.endsWith(".stepmaniaonline.net")
+}
+
+/** "1.2 GB", "340 MB", "12 kB": a pack's size on disk. */
+private fun formatBytes(bytes: Long): String = when {
+    bytes >= 1_000_000_000L -> "%.1f GB".format(bytes / 1_000_000_000.0)
+    bytes >= 1_000_000L -> "%.0f MB".format(bytes / 1_000_000.0)
+    bytes >= 1_000L -> "%.0f kB".format(bytes / 1_000.0)
+    else -> "$bytes B"
 }

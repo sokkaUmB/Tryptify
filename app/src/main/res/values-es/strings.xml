@@ -20,6 +20,7 @@
     <string name="action_skip_next">Siguiente</string>
     <string name="action_play_next">Reproducir a continuación</string>
     <string name="action_add_to_queue">Añadir a la cola</string>
+    <string name="action_play_in_trypt_mania">Jugar en Trypt Mania</string>
     <string name="action_like">Me gusta</string>
     <string name="action_unlike">Ya no me gusta</string>
     <string name="action_add_to_playlist">Añadir a una playlist</string>

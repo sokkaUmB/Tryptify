@@ -20,6 +20,8 @@ data class ProbeResult(
     val services: Set<ApiService>,
     /** Service -> one line saying why it didn't count. Only the ones that failed. */
     val reasons: Map<ApiService, String>,
+    /** What a stem separation server separates on (`cuda` or `cpu`), as it said; null for any other. */
+    val stemDevice: String? = null,
 )
 
 /**
@@ -37,32 +39,49 @@ class ApiServerProber @Inject constructor(
     private val json: Json,
 ) {
     suspend fun probe(url: String): ProbeResult = coroutineScope {
+        var stemDevice: String? = null
         val outcomes = ApiService.entries.map { service ->
-            async { service to probeOne(url, service) }
+            async {
+                service to probeOne(url, service) { body ->
+                    if (service == ApiService.STEMS) stemDevice = deviceOf(body, json)
+                }
+            }
         }.map { it.await() }
+        val services = outcomes.filter { it.second == null }.map { it.first }.toSet()
         ProbeResult(
             url = url,
-            services = outcomes.filter { it.second == null }.map { it.first }.toSet(),
+            services = services,
             reasons = outcomes.mapNotNull { (service, reason) -> reason?.let { service to it } }.toMap(),
+            stemDevice = stemDevice.takeIf { ApiService.STEMS in services },
         )
     }
 
-    /** Null when [service] answered; otherwise why not. */
-    private suspend fun probeOne(url: String, service: ApiService): String? {
-        val response = withTimeoutOrNull(PROBE_TIMEOUT_MS) {
+    /** Null when [service] answered; otherwise why not. [onBody] hears an answer's text. */
+    private suspend fun probeOne(url: String, service: ApiService, onBody: (String) -> Unit = {}): String? {
+        // A sleeping GPU server takes its cold start to answer.
+        val timeout = if (service == ApiService.STEMS) STEMS_PROBE_TIMEOUT_MS else PROBE_TIMEOUT_MS
+        val response = withTimeoutOrNull(timeout) {
             runCatching {
                 val res = httpClient.get(url + service.probePath)
                 res.status.value to res.bodyAsText()
             }
-        } ?: return "no answer within ${PROBE_TIMEOUT_MS / 1000} s"
+        } ?: return "no answer within ${timeout / 1000} s"
         val (status, body) = response.getOrElse { e ->
             return "couldn't connect (${e.message?.take(60) ?: e::class.simpleName})"
         }
+        onBody(body)
         return verdict(service, status, body, json)
     }
 
     companion object {
         private const val PROBE_TIMEOUT_MS = 10_000L
+        private const val STEMS_PROBE_TIMEOUT_MS = 60_000L
+
+        /** `data.device` of a stem server's info: `cuda` or `cpu`, or null. */
+        fun deviceOf(body: String, json: Json): String? = runCatching {
+            ((json.parseToJsonElement(body) as? JsonObject)?.get("data") as? JsonObject)
+                ?.get("device")?.jsonPrimitive?.contentOrNull
+        }.getOrNull()
 
         /**
          * Whether a probe's response means the service is there: null if it

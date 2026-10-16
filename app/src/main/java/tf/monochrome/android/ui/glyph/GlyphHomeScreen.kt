@@ -20,20 +20,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -51,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
@@ -62,6 +68,8 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import tf.monochrome.android.R
+import tf.monochrome.android.audio.stepmania.ChartMode
+import tf.monochrome.android.audio.stepmania.ChartPace
 import tf.monochrome.android.audio.stepmania.StepManiaDifficulty
 import tf.monochrome.android.domain.model.PlayerGlassSettings
 import tf.monochrome.android.glyph.asset.GlyphAssetRepository
@@ -204,11 +212,19 @@ fun GlyphHomeScreen(
     val panelSong = state.selectedSong?.takeIf { selected ->
         (focusedItem as? GlyphWheel.Item.Song)?.song?.trackId == selected.trackId
     }
+    // A folder heading's own pill charts every song in it that has none. Its
+    // room is kept while any folder has such a song, not only while one is
+    // centred, for the same reason as the panel's below.
+    val folderToChart = (focusedItem as? GlyphWheel.Item.Folder)?.section?.takeIf { panelSong == null }
+    val folderUncharted = folderToChart?.songs?.count { isChartable(it, state) } ?: 0
+    val anyFolderPill = remember(sections, state.queuedTracks) {
+        sections.any { section -> section.songs.any { isChartable(it, state) } }
+    }
     // Room for the panel is kept while a song is chosen, whatever is centred:
     // sized to the centred item instead, the wheel rose and fell by half a
     // panel at every folder heading it turned past.
     val wheelBottom by animateDpAsState(
-        targetValue = if (state.selectedSong != null) {
+        targetValue = if (state.selectedSong != null || anyFolderPill) {
             chromeInset + selectionInsetDp.dp + MonoDimens.spacingSm
         } else {
             listBottom
@@ -279,6 +295,22 @@ fun GlyphHomeScreen(
                                     picker.launch(arrayOf("audio/mpeg", "audio/flac", "audio/x-flac"))
                                 },
                             )
+                            // Every song without a chart, asked first: how many,
+                            // how long and what it costs, Fast or Slow.
+                            val uncharted = state.songs.count { song ->
+                                song.chartState == GlyphChartState.NOT_GENERATED && song.filePath.isNotBlank() &&
+                                    song.trackId !in state.queuedTracks
+                            }
+                            if (uncharted > 0) {
+                                DropdownMenuItem(
+                                    text = { Text("Chart every song without one ($uncharted)") },
+                                    leadingIcon = { Icon(Icons.Default.DoneAll, contentDescription = null) },
+                                    onClick = {
+                                        more = false
+                                        onEvent(GlyphEvent.ChartEverything)
+                                    },
+                                )
+                            }
                         }
                     }
                 },
@@ -440,6 +472,34 @@ fun GlyphHomeScreen(
                             )
                         }
                     }
+
+                    // The folder's pill, in the panel's place while a heading is centred.
+                    val shownFolder = remember { mutableStateOf<Pair<String, Int>?>(null) }
+                    SideEffect {
+                        if (folderToChart != null && folderUncharted > 0) shownFolder.value = folderToChart.name to folderUncharted
+                    }
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = folderToChart != null && folderUncharted > 0,
+                        enter = fadeIn(tween(motionMillis(160))),
+                        exit = fadeOut(tween(motionMillis(160))),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = chromeNow)
+                            .onSizeChanged {
+                                // Room for it before any song has been chosen to size the panel's.
+                                if (it.height > 0 && selectionInsetDp == 0f) {
+                                    selectionInsetDp = with(density) { it.height.toDp() }.value
+                                }
+                            },
+                    ) {
+                        shownFolder.value?.let { (name, count) ->
+                            FolderChartPill(
+                                count = count,
+                                haze = panelHaze,
+                                onClick = { if (folderToChart != null) onEvent(GlyphEvent.ChartFolder(name)) },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -447,6 +507,32 @@ fun GlyphHomeScreen(
 }
 
 private enum class CardRoom { FULL, COMPACT, NONE }
+
+/** Whether the batch buttons would chart [song]: a file to read, no chart, and not already in the line. */
+private fun isChartable(song: GlyphSong, state: GlyphUiState): Boolean =
+    song.chartState == GlyphChartState.NOT_GENERATED && song.filePath.isNotBlank() &&
+        song.trackId !in state.queuedTracks
+
+/**
+ * A folder heading's action, a free pill of glass as the selection's are:
+ * chart every song in the folder that has no chart, after the batch's
+ * question of how long and how much.
+ */
+@Composable
+private fun FolderChartPill(count: Int, haze: HazeState, onClick: () -> Unit) {
+    CompositionLocalProvider(LocalGlassBackdrop provides haze) {
+        GlyphButton(
+            text = if (count == 1) "Chart 1 song" else "Chart $count songs",
+            primary = true,
+            height = ACTION_HEIGHT,
+            onClickLabel = "Chart every song in this folder that has no chart",
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingSm),
+        )
+    }
+}
 
 /** Screen heights for the card: the whole card, or one without its radar and graph. */
 private val FULL_CARD_HEIGHT = 720.dp
@@ -483,15 +569,19 @@ private fun SelectionPanel(
         ) {
             when {
                 state.songListMode == GlyphSongListMode.EDIT -> EditChoice(song = song, state = state, onEvent = onEvent)
-                // The card says why there is no chart; the pill makes one.
-                !song.hasChart -> GlyphButton(
-                    text = "Generate chart",
-                    primary = true,
-                    enabled = state.generation == null,
-                    height = ACTION_HEIGHT,
-                    onClick = { onEvent(GlyphEvent.GenerateChart) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                // The card says why there is no chart; the pill makes one, or
+                // puts it in the line behind the songs being charted.
+                !song.hasChart -> {
+                    val (label, enabled) = generateLabel(state, song, short = false)
+                    GlyphButton(
+                        text = label,
+                        primary = true,
+                        enabled = enabled,
+                        height = ACTION_HEIGHT,
+                        onClick = { onEvent(GlyphEvent.GenerateChart) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 else -> {
                     // The whole width, scrolling when a song has more charts
                     // than fit, so none is cut off by the pills beside it.
@@ -544,10 +634,11 @@ private fun EditChoice(song: GlyphSong, state: GlyphUiState, onEvent: (GlyphEven
     LaunchedEffect(state.selectedDifficulty) { state.selectedDifficulty?.let { difficulty = it } }
     if (song.chartState == GlyphChartState.UNREADABLE) {
         // The card says the chart could not be read; generating replaces it.
+        val (label, enabled) = generateLabel(state, song, short = false)
         GlyphButton(
-            text = "Generate chart",
+            text = label,
             primary = true,
-            enabled = state.generation == null,
+            enabled = enabled,
             height = ACTION_HEIGHT,
             onClick = { onEvent(GlyphEvent.GenerateChart) },
             modifier = Modifier.fillMaxWidth(),
@@ -572,15 +663,28 @@ private fun EditChoice(song: GlyphSong, state: GlyphUiState, onEvent: (GlyphEven
             modifier = Modifier.weight(1f),
         )
         if (!song.hasChart) {
+            val (label, enabled) = generateLabel(state, song, short = true)
             GlyphButton(
-                text = "Generate",
-                enabled = state.generation == null,
+                text = label,
+                enabled = enabled,
                 height = ACTION_HEIGHT,
                 onClick = { onEvent(GlyphEvent.GenerateChart) },
                 modifier = Modifier.weight(1f),
             )
         }
     }
+}
+
+/**
+ * Generate's words, and whether it can be pressed. With nothing charting it
+ * makes the chart; with a batch running it joins the line; a song already in
+ * the line says so rather than offering to queue it twice.
+ */
+private fun generateLabel(state: GlyphUiState, song: GlyphSong, short: Boolean): Pair<String, Boolean> = when {
+    song.trackId in state.queuedTracks ->
+        (if (state.generation?.trackId == song.trackId) "Charting…" else "Queued") to false
+    state.generation?.active == true -> (if (short) "Queue" else "Add to queue") to true
+    else -> (if (short) "Generate" else "Generate chart") to true
 }
 
 /** The grade sprite and percent of this phone's best run, and whose it is. */
@@ -613,7 +717,10 @@ internal fun PersonalBest(best: GlyphAttempt) {
 private fun meterOf(state: GlyphUiState, difficulty: StepManiaDifficulty): Int =
     state.simfile?.chart(difficulty)?.meter ?: difficulty.meter
 
-/** Decoding, separation, generation and writing, as the service reports them. */
+/**
+ * Charting, as the line has it: one song's separation, generation and
+ * writing as the service reports them, or a batch's count and how far it is.
+ */
 @Composable
 private fun GenerationPanel(
     generation: GlyphGenerationState,
@@ -634,12 +741,18 @@ private fun GenerationPanel(
         CompositionLocalProvider(LocalGlassBackdrop provides haze) {
             Column(modifier = Modifier.padding(MonoDimens.spacingLg)) {
                 val scheme = MaterialTheme.colorScheme
+                val headline = when {
+                    !generation.isBatch -> generation.failure ?: generation.stage
+                    generation.active -> "${generation.done} of ${generation.total} charted"
+                    generation.failed == 0 -> "${generation.total} charts ready"
+                    else -> "${generation.done - generation.failed} of ${generation.total} charts ready"
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // In the glass's ink either way: the theme's error red is
                     // chosen for the page, not for this pane. The meter below
                     // turns red, and the words say what failed.
                     Text(
-                        text = generation.failure ?: generation.stage,
+                        text = headline,
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f),
                     )
@@ -652,13 +765,33 @@ private fun GenerationPanel(
                     )
                 }
                 Spacer(Modifier.height(MonoDimens.spacingSm))
+                val failed = generation.failure != null || (generation.isBatch && !generation.active && generation.failed == generation.total)
                 GlyphMeter(
                     fraction = generation.fraction,
-                    color = if (generation.failure != null) scheme.error else scheme.primary,
-                    description = "${generation.stage}, $percent percent",
+                    color = if (failed) scheme.error else scheme.primary,
+                    description = "$headline, $percent percent",
                 )
-                // Which separator actually ran, verbatim from the service — a fallback
-                // to the CPU should never pass itself off as the model.
+                // The song in flight and what it is at, under a batch's count.
+                if (generation.isBatch && generation.active) {
+                    Spacer(Modifier.height(MonoDimens.spacingSm))
+                    Text(
+                        text = listOf(generation.title, generation.stage).filter { it.isNotBlank() }.joinToString(" · "),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = scheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                generation.firstFailure?.let { first ->
+                    Spacer(Modifier.height(MonoDimens.spacingSm))
+                    Text(
+                        text = "Not made: $first" + if (generation.failed > 1) ", and ${generation.failed - 1} more" else "",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = scheme.onSurfaceVariant,
+                    )
+                }
+                // Which server actually separated it, verbatim from the service —
+                // a fallback to the CPU server never passes itself off as the GPU.
                 generation.backendName?.let { backend ->
                     Spacer(Modifier.height(MonoDimens.spacingSm))
                     Text(
@@ -668,13 +801,21 @@ private fun GenerationPanel(
                     )
                 }
                 // Cancel while it runs; Close once it has finished, since the
-                // job now outlives the screen and its result would otherwise
-                // sit here, holding the Generate buttons off.
+                // job outlives the screen and its result would otherwise sit
+                // here over the wheel.
                 Spacer(Modifier.height(MonoDimens.spacingMd))
                 GlyphButton(
-                    text = if (generation.isFinished) "Close" else "Cancel",
+                    text = when {
+                        generation.isFinished -> "Close"
+                        generation.isBatch -> "Cancel all"
+                        else -> "Cancel"
+                    },
                     onClick = onCancel,
-                    onClickLabel = if (generation.isFinished) "Close" else "Cancel chart generation",
+                    onClickLabel = when {
+                        generation.isFinished -> "Close"
+                        generation.isBatch -> "Cancel every chart in the line"
+                        else -> "Cancel chart generation"
+                    },
                     height = 40.dp,
                 )
             }
@@ -743,5 +884,79 @@ private fun CentredMessage(text: String, top: androidx.compose.ui.unit.Dp) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+    }
+}
+
+/**
+ * "Chart these songs?": how many, how much music, and what each mode would
+ * take — Fast on a GPU, Slow on a CPU server — before a folder or the whole
+ * library joins the line. A mode with no server says what it needs instead.
+ */
+@Composable
+internal fun GlyphBatchDialog(offer: GlyphBatchOffer, onEvent: (GlyphEvent) -> Unit) {
+    val count = offer.trackIds.size
+    val songsLabel = if (count == 1) "1 song" else "$count songs"
+    val chosen = if (offer.mode == ChartMode.FAST) offer.fast else offer.slow
+    AlertDialog(
+        onDismissRequest = { onEvent(GlyphEvent.DismissBatch) },
+        title = { Text(if (offer.folder != null) "Chart $songsLabel in ${offer.folder}?" else "Chart $songsLabel?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {
+                Text(
+                    text = "${ChartPace.describeDuration(offer.audioSeconds).removePrefix("about ").replaceFirstChar { it.uppercase() }} of music.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                for (mode in ChartMode.entries) {
+                    val estimate = if (mode == ChartMode.FAST) offer.fast else offer.slow
+                    BatchModeRow(
+                        mode = mode,
+                        estimate = estimate,
+                        selected = offer.mode == mode,
+                        onSelect = { onEvent(GlyphEvent.ChooseBatchMode(mode)) },
+                    )
+                }
+                Text(
+                    text = "Charted in the background, two at a time. You can keep playing.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onEvent(GlyphEvent.ConfirmBatch) }, enabled = chosen.available) {
+                Text("Chart $songsLabel")
+            }
+        },
+        dismissButton = { TextButton(onClick = { onEvent(GlyphEvent.DismissBatch) }) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun BatchModeRow(mode: ChartMode, estimate: GlyphModeEstimate, selected: Boolean, onSelect: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, enabled = estimate.available, role = Role.RadioButton, onClick = onSelect),
+    ) {
+        RadioButton(selected = selected, onClick = null, enabled = estimate.available)
+        Spacer(Modifier.width(MonoDimens.spacingSm))
+        Column {
+            Text(
+                text = "${mode.label} · ${mode.hardware}",
+                style = MaterialTheme.typography.titleSmall,
+                color = if (estimate.available) scheme.onSurface else scheme.onSurfaceVariant,
+            )
+            Text(
+                text = if (estimate.available) {
+                    listOfNotNull(estimate.time, estimate.cost, estimate.note).joinToString(" · ")
+                } else {
+                    estimate.note.replaceFirstChar { it.uppercase() }
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant,
+            )
+        }
     }
 }

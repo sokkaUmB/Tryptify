@@ -20,6 +20,7 @@
     <string name="action_skip_next">下一首</string>
     <string name="action_play_next">下一首播放</string>
     <string name="action_add_to_queue">添加到播放队列</string>
+    <string name="action_play_in_trypt_mania">在 Trypt Mania 中游玩</string>
     <string name="action_like">喜欢</string>
     <string name="action_unlike">取消喜欢</string>
     <string name="action_add_to_playlist">添加到歌单</string>

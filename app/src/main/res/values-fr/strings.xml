@@ -20,6 +20,7 @@
     <string name="action_skip_next">Titre suivant</string>
     <string name="action_play_next">Lire ensuite</string>
     <string name="action_add_to_queue">Ajouter à la file d’attente</string>
+    <string name="action_play_in_trypt_mania">Jouer dans Trypt Mania</string>
     <string name="action_like">J’aime</string>
     <string name="action_unlike">Je n’aime plus</string>
     <string name="action_add_to_playlist">Ajouter à une playlist</string>

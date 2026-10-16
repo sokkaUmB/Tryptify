@@ -61,8 +61,15 @@ data class GlyphUiState(
     val simfile: GlyphSimfile? = null,
     val selectedDifficulty: StepManiaDifficulty? = null,
     val generation: GlyphGenerationState? = null,
-    val model: GlyphModelUi = GlyphModelUi(),
     val packs: GlyphPacksUi = GlyphPacksUi(),
+    /** Fast (a GPU server) or Slow (a CPU server); kept between sessions. */
+    val chartMode: tf.monochrome.android.audio.stepmania.ChartMode = tf.monochrome.android.audio.stepmania.ChartMode.FAST,
+    /** The separation servers there are, for what each mode can do. */
+    val chartServers: GlyphChartServers = GlyphChartServers(),
+    /** Songs waiting or being charted, so their Generate says so. */
+    val queuedTracks: Set<String> = emptySet(),
+    /** "Chart these songs?", while it is being asked. */
+    val batchOffer: GlyphBatchOffer? = null,
     /** Set when a chart is about to be made and no folder for the own pack is chosen yet: ask. */
     val askPackFolder: Boolean = false,
     /** The name on the high score tables. */
@@ -152,40 +159,121 @@ data class GlyphBoard(
 )
 
 /**
- * Conversion progress, mirroring the service's own stages.
+ * Charting, as [tf.monochrome.android.audio.stepmania.ChartQueue] has it: one
+ * song, or a batch of them.
  *
  * [stage] is the service's text verbatim rather than a re-worded version, so
- * what the player reads is what is actually happening — including an honest
- * "separating on the CPU" when no model backend is installed.
+ * what the player reads is what is actually happening: which server is
+ * separating the song, and which one it fell back to.
  */
 data class GlyphGenerationState(
+    /** The song shown: the first one in flight, else the last one finished. */
     val trackId: String,
+    val title: String = "",
+    /** One song's progress, or the whole batch's; 0 to 1. */
     val fraction: Float,
     val stage: String,
     val backendName: String? = null,
+    /** Why a lone song failed; a batch counts its failures in [failed]. */
     val failure: String? = null,
+    /** Whether anything is waiting or in flight. */
+    val active: Boolean = true,
+    /** Songs finished in the batch, failed ones included, and the batch's size. */
+    val done: Int = 0,
+    val total: Int = 1,
+    val failed: Int = 0,
+    /** The first failed song of a batch, with why. */
+    val firstFailure: String? = null,
 ) {
-    val isFinished: Boolean get() = fraction >= 1f || failure != null
+    val isFinished: Boolean get() = !active
+    val isBatch: Boolean get() = total > 1
 }
 
 /**
- * The drum separation model the chart generator can use.
- *
- * The app does not ship one: it is hundreds of megabytes, and charts still
- * generate without it, from the built-in separator. A player who wants the
- * better charts imports the model file from their own storage, here.
+ * The line as the panel shows it: one song with its own progress and stages,
+ * as a single chart always was, or a batch with how far it is in all. Null
+ * when there is nothing to show.
  */
-data class GlyphModelUi(
-    /** The installed model's name, or null when charts use the built-in separator. */
-    val installedName: String? = null,
-    val sizeBytes: Long = 0L,
-    val importing: Boolean = false,
-    /** How far the copy is, 0 to 1, or null when the file's size is unknown. */
-    val progress: Float? = null,
-    val stage: String? = null,
-    /** The outcome of the last import or removal, until the panel is closed. */
-    val message: String? = null,
+internal fun generationOf(queue: tf.monochrome.android.audio.stepmania.ChartQueueState): GlyphGenerationState? {
+    if (queue.total == 0) return null
+    val current = queue.running.firstOrNull()
+    if (queue.total == 1) {
+        val outcome = queue.finished.singleOrNull()
+        val job = current?.job ?: queue.waiting.firstOrNull()
+        return GlyphGenerationState(
+            trackId = job?.trackId ?: outcome?.trackId.orEmpty(),
+            title = job?.title ?: outcome?.title.orEmpty(),
+            fraction = when {
+                outcome != null -> if (outcome.failure == null) 1f else 0f
+                else -> current?.fraction ?: 0f
+            },
+            stage = when {
+                outcome?.failure != null -> "Failed"
+                outcome != null -> "Complete"
+                else -> current?.stage ?: "Waiting"
+            },
+            backendName = outcome?.backendName,
+            failure = outcome?.failure,
+            active = queue.active,
+            done = queue.finished.size,
+            total = 1,
+            failed = queue.failed,
+        )
+    }
+    val last = queue.finished.lastOrNull()
+    val next = queue.waiting.firstOrNull()
+    val backends = queue.finished.mapNotNull { it.backendName }.distinct()
+    return GlyphGenerationState(
+        trackId = current?.job?.trackId ?: last?.trackId ?: next?.trackId.orEmpty(),
+        title = current?.job?.title ?: last?.title ?: next?.title.orEmpty(),
+        fraction = if (queue.active) queue.fraction else 1f,
+        stage = current?.stage ?: if (queue.active) "Waiting" else "Complete",
+        // Named when one server made them all; a batch that fell back says so in its notification.
+        backendName = if (!queue.active) backends.singleOrNull() else null,
+        active = queue.active,
+        done = queue.finished.size,
+        total = queue.total,
+        failed = queue.failed,
+        firstFailure = queue.finished.firstOrNull { it.failure != null }?.let { "${it.title}: ${it.failure}" },
+    )
+}
+
+/**
+ * "Chart these songs?", before a folder or the whole library joins the line:
+ * how many, how much music, and what each mode would take.
+ */
+data class GlyphBatchOffer(
+    /** What is being charted: a folder's name, or null for every song. */
+    val folder: String?,
+    val trackIds: List<String>,
+    val audioSeconds: Long,
+    /** The mode chosen in the dialog; starts as the setting. */
+    val mode: tf.monochrome.android.audio.stepmania.ChartMode,
+    val fast: GlyphModeEstimate,
+    val slow: GlyphModeEstimate,
 )
+
+/** Which separation servers Settings › Connections has, by what they run on. */
+data class GlyphChartServers(
+    val gpu: Boolean = false,
+    val cpu: Boolean = false,
+    /** A server that has not said yet: added before servers were asked. */
+    val unknown: Boolean = false,
+) {
+    val any: Boolean get() = gpu || cpu || unknown
+}
+
+/** What one mode would take for a batch, or why it cannot. */
+data class GlyphModeEstimate(
+    /** "about 6 minutes"; null when the mode has no server. */
+    val time: String?,
+    /** "about 7¢"; null when the server does not say what it charges. */
+    val cost: String?,
+    /** Where it runs, or what is missing: "on the GPU", "needs a CPU server". */
+    val note: String,
+) {
+    val available: Boolean get() = time != null
+}
 
 /** Live gameplay readouts. Updated at a rate the eye can follow, not per frame. */
 data class GlyphGameplayUi(

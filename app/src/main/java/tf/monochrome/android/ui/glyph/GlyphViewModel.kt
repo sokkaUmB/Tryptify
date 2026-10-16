@@ -25,18 +25,19 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tf.monochrome.android.audio.sampler.PcmDecoder
-import tf.monochrome.android.audio.sampler.stems.InstallResult
-import tf.monochrome.android.audio.sampler.stems.StemBackendRegistry
-import tf.monochrome.android.audio.sampler.stems.StemModelManager
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import tf.monochrome.android.audio.stepmania.ChartJob
+import tf.monochrome.android.audio.stepmania.ChartMode
+import tf.monochrome.android.audio.stepmania.ChartPace
+import tf.monochrome.android.audio.stepmania.ChartQueue
+import tf.monochrome.android.audio.stepmania.RemoteStemAnalysis
 import tf.monochrome.android.audio.stepmania.StepManiaGenerationWorker
 import tf.monochrome.android.glyph.pack.GlyphPackLibrary
 import tf.monochrome.android.glyph.data.GlyphWheel
 import tf.monochrome.android.glyph.pack.OwnPackStore
 import tf.monochrome.android.glyph.pack.PackImportWorker
 import tf.monochrome.android.glyph.pack.TreePackSink
-import tf.monochrome.android.audio.sampler.stems.QnnStemBackend
 import tf.monochrome.android.audio.stepmania.DropFinder
 import tf.monochrome.android.audio.stepmania.StepManiaDifficulty
 import tf.monochrome.android.audio.stepmania.StepManiaRequest
@@ -55,7 +56,10 @@ import tf.monochrome.android.glyph.data.GlyphSyncTrack
 import tf.monochrome.android.glyph.data.GlyphTapSync
 import tf.monochrome.android.glyph.data.GlyphGhost
 import tf.monochrome.android.glyph.data.GlyphGhostRecorder
+import tf.monochrome.android.glyph.data.GlyphChartState
 import tf.monochrome.android.glyph.data.GlyphSong
+import tf.monochrome.android.glyph.data.TryptManiaRequest
+import tf.monochrome.android.glyph.data.TryptManiaRequests
 import tf.monochrome.android.glyph.data.audioFileName
 import tf.monochrome.android.glyph.data.audioUri
 import tf.monochrome.android.glyph.data.GlyphSongSort
@@ -107,8 +111,10 @@ class GlyphViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val songs: GlyphSongRepository,
     private val attempts: GlyphAttemptStore,
-    private val stemModels: StemModelManager,
-    private val stemBackends: StemBackendRegistry,
+    private val chartQueue: ChartQueue,
+    private val chartPace: ChartPace,
+    private val remoteStems: RemoteStemAnalysis,
+    private val trackLocator: tf.monochrome.android.player.LocalTrackLocator,
     private val packLibrary: GlyphPackLibrary,
     private val ownPack: OwnPackStore,
     /**
@@ -230,14 +236,6 @@ class GlyphViewModel @Inject constructor(
     private var selectionJob: Job? = null
     private var lastPublishNanos = 0L
     private var countInEndsAtSeconds: Float? = null
-    /**
-     * The background jobs this screen has seen queued or running. A finished
-     * job is only shown if it is one of these: WorkManager keeps finished jobs
-     * for a day, and one that ended long before the screen opened is not news.
-     */
-    private val watchedGenerations = HashSet<java.util.UUID>()
-    private val handledGenerations = HashSet<java.util.UUID>()
-    private var modelJob: Job? = null
     private var runStartedAtMs = 0L
 
     /** Trypt Mania's own preferences: the player options and the high score name. */
@@ -245,8 +243,9 @@ class GlyphViewModel @Inject constructor(
 
     init {
         loadOptions()
-        refreshModel()
-        watchGeneration()
+        watchCharts()
+        watchChartServers()
+        watchPlayRequests()
         watchPacks()
         viewModelScope.launch {
             songs.songs()
@@ -357,10 +356,13 @@ class GlyphViewModel @Inject constructor(
 
             GlyphEvent.GenerateChart -> generateForSelected()
             is GlyphEvent.GenerateChartFrom -> generate(event.uri, displayNameOf(event.uri), null)
-            // Cancels a job still running; closes the panel of one that finished.
-            GlyphEvent.CancelGeneration -> {
-                if (isGenerating) StepManiaGenerationWorker.cancel(context)
-                _ui.value = _ui.value.copy(generation = null)
+            // Cancels the batch still running; closes the panel of one that finished.
+            GlyphEvent.CancelGeneration -> viewModelScope.launch {
+                if (isGenerating) {
+                    chartQueue.cancelAll()
+                    StepManiaGenerationWorker.cancel(context)
+                }
+                chartQueue.clearFinished()
             }
             GlyphEvent.DismissError -> _ui.value = _ui.value.copy(error = null)
 
@@ -385,10 +387,16 @@ class GlyphViewModel @Inject constructor(
             is GlyphEvent.ZipOwnPack -> writeOwnPack(event.destination)
             GlyphEvent.DismissPacksMessage -> updatePacks { it.copy(message = null) }
 
-            is GlyphEvent.ImportModel -> importModel(event.uri)
-            GlyphEvent.CancelModelImport -> modelJob?.cancel()
-            GlyphEvent.RemoveModel -> removeModel()
-            GlyphEvent.DismissModelMessage -> updateModel { it.copy(message = null) }
+            is GlyphEvent.ChartFolder -> offerBatch(folder = event.name)
+            GlyphEvent.ChartEverything -> offerBatch(folder = null)
+            is GlyphEvent.ChooseBatchMode ->
+                _ui.value.batchOffer?.let { _ui.value = _ui.value.copy(batchOffer = it.copy(mode = event.mode)) }
+            GlyphEvent.ConfirmBatch -> confirmBatch()
+            GlyphEvent.DismissBatch -> _ui.value = _ui.value.copy(batchOffer = null)
+            is GlyphEvent.SetChartMode -> {
+                prefs.edit().putString(PREF_CHART_MODE, event.mode.name).apply()
+                _ui.value = _ui.value.copy(chartMode = event.mode)
+            }
 
             GlyphEvent.OpenOptions -> if (_ui.value.chart != null) {
                 // A song the wheel was about to choose must not replace the
@@ -664,120 +672,8 @@ class GlyphViewModel @Inject constructor(
             ?: "audio"
     }
 
-    // ── separation model ────────────────────────────────────────────────
-
-    private inline fun updateModel(change: (GlyphModelUi) -> GlyphModelUi) {
-        _ui.value = _ui.value.copy(model = change(_ui.value.model))
-    }
-
-    /** Reads what is installed. Disk only, and one small file. */
-    private fun refreshModel() {
-        viewModelScope.launch {
-            val (installed, bytes) = withContext(Dispatchers.IO) {
-                stemModels.installed() to stemModels.installedBytes()
-            }
-            updateModel { it.copy(installedName = installed?.name, sizeBytes = bytes) }
-        }
-    }
-
     private val isGenerating: Boolean
-        get() = _ui.value.generation?.isFinished == false
-
-    /**
-     * Copy a model file off the player's storage into the app, through the
-     * same installer Settings reads, so the two always agree on what is
-     * installed. The installer identifies the file by its hash and refuses
-     * one it does not know how to run, since a model whose outputs are read in
-     * the wrong order separates the wrong instrument without any error.
-     */
-    private fun importModel(uri: Uri) {
-        if (_ui.value.model.importing) return
-        // The generator holds the current model open while it separates.
-        if (isGenerating) {
-            updateModel { it.copy(message = "Wait for the chart to finish, then import.") }
-            return
-        }
-        val total = sizeOf(uri)
-        modelJob = viewModelScope.launch {
-            updateModel {
-                it.copy(importing = true, progress = if (total > 0) 0f else null, stage = "Reading file", message = null)
-            }
-            var shownBytes = 0L
-            val result = try {
-                withContext(Dispatchers.IO) {
-                    stemModels.importLocal(
-                        open = {
-                            context.contentResolver.openInputStream(uri)
-                                ?: throw java.io.IOException("That file could not be opened.")
-                        },
-                    ) { progress ->
-                        // A copy reports every 64 kB; the panel needs a
-                        // megabyte at a time, or a stage change.
-                        val bytes = progress.bytesDownloaded
-                        if (bytes - shownBytes < PROGRESS_STEP_BYTES && progress.stage == _ui.value.model.stage) {
-                            return@importLocal
-                        }
-                        shownBytes = bytes
-                        updateModel {
-                            it.copy(
-                                progress = if (total > 0) (bytes.toFloat() / total).coerceIn(0f, 1f) else null,
-                                stage = progress.stage,
-                            )
-                        }
-                    }
-                }
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                updateModel { it.copy(importing = false, progress = null, stage = null, message = "Import cancelled.") }
-                throw cancelled
-            }
-            val installed = withContext(Dispatchers.IO) { stemModels.installed() to stemModels.installedBytes() }
-            updateModel {
-                it.copy(
-                    importing = false,
-                    progress = null,
-                    stage = null,
-                    installedName = installed.first?.name,
-                    sizeBytes = installed.second,
-                    message = when (result) {
-                        is InstallResult.Installed -> "${result.model.name} is ready. New charts will use it."
-                        is InstallResult.Failed -> result.reason
-                    },
-                )
-            }
-        }
-    }
-
-    private fun removeModel() {
-        if (_ui.value.model.importing) return
-        if (isGenerating) {
-            updateModel { it.copy(message = "Wait for the chart to finish, then remove the model.") }
-            return
-        }
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                // Free the loaded session too: it holds the whole model in
-                // native memory, and nothing would use it again.
-                stemBackends.all().forEach { it.release() }
-                stemModels.uninstall()
-                // The NPU's compiled copy of the model, and what it failed on.
-                QnnStemBackend.clear(context)
-            }
-            updateModel {
-                it.copy(
-                    installedName = null,
-                    sizeBytes = 0L,
-                    message = "Model removed. Charts use the built-in separator.",
-                )
-            }
-        }
-    }
-
-    /** The picked file's size, for a progress meter; 0 when the provider does not say. */
-    private fun sizeOf(uri: Uri): Long = runCatching {
-        context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null)
-            ?.use { cursor -> if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else 0L }
-            ?: 0L
-    }.getOrDefault(0L)
+        get() = _ui.value.generation?.active == true
 
     private fun generateForSelected() {
         val song = _ui.value.selectedSong ?: return
@@ -789,24 +685,16 @@ class GlyphViewModel @Inject constructor(
     }
 
     /**
-     * Hand the song to the background chart job ([StepManiaGenerationWorker]).
+     * Put the song in the line for the background chart job
+     * ([StepManiaGenerationWorker]), in the mode the settings say.
      *
-     * Nothing about decoding, separation or chart generation is reimplemented
-     * here — this only chooses the destination. The job runs the conversion
-     * service and outlives this screen; [watchGeneration] relays its progress,
-     * including which backend actually ran, unchanged.
+     * Nothing about separation or chart generation is reimplemented here —
+     * this only chooses the destination. The job outlives this screen;
+     * [watchCharts] relays the line, including which server separated each
+     * song, unchanged.
      */
     private fun generate(source: Uri, displayName: String, song: GlyphSong?) {
-        // The first chart made asks where the player's own pack is kept; the
-        // answer is remembered, and "not now" is too.
-        if (ownPack.folder.value == null && !ownPack.declined) {
-            pendingGeneration = { generate(source, displayName, song) }
-            _ui.value = _ui.value.copy(askPackFolder = true)
-            return
-        }
         stopPreview()
-        val trackId = song?.trackId ?: displayName
-        val destination = songs.simfileFile(trackId)
         // A picked file is only readable while the picker's grant lasts; the
         // job may outlive this process, so it keeps the grant until it is done.
         if (source.scheme == "content") {
@@ -817,22 +705,122 @@ class GlyphViewModel @Inject constructor(
                 )
             }
         }
-        _ui.value = _ui.value.copy(
-            generation = GlyphGenerationState(trackId, 0f, "Preparing"),
-            error = null,
-        )
-        StepManiaGenerationWorker.enqueue(
-            context = context,
-            trackId = trackId,
-            source = source,
-            destination = destination,
-            request = StepManiaRequest(
-                title = song?.title ?: displayName.substringBeforeLast('.'),
-                artist = song?.artist.orEmpty(),
-                musicFileName = displayName,
-                difficulties = StepManiaDifficulty.entries.toSet(),
+        val trackId = song?.trackId ?: displayName
+        queueCharts(
+            listOf(
+                ChartJob(
+                    trackId = trackId,
+                    source = source.toString(),
+                    destination = songs.simfileFile(trackId).absolutePath,
+                    title = song?.title ?: displayName.substringBeforeLast('.'),
+                    artist = song?.artist.orEmpty(),
+                    musicFileName = displayName,
+                    durationSeconds = song?.durationSeconds ?: 0,
+                    mode = _ui.value.chartMode,
+                ),
             ),
         )
+    }
+
+    /**
+     * [jobs] into the line, and a worker started when none is draining it.
+     * The first chart made asks where the player's own pack is kept; the
+     * answer is remembered, and "not now" is too.
+     */
+    private fun queueCharts(jobs: List<ChartJob>) {
+        if (jobs.isEmpty()) return
+        if (ownPack.folder.value == null && !ownPack.declined) {
+            pendingGeneration = { queueCharts(jobs) }
+            _ui.value = _ui.value.copy(askPackFolder = true)
+            return
+        }
+        _ui.value = _ui.value.copy(error = null)
+        viewModelScope.launch {
+            val added = chartQueue.add(jobs)
+            if (added.startWorker) StepManiaGenerationWorker.start(context)
+        }
+    }
+
+    /** Songs the batch buttons chart: a file to read, no chart, and not already in the line. */
+    private fun chartable(song: GlyphSong): Boolean =
+        song.chartState == GlyphChartState.NOT_GENERATED && song.filePath.isNotBlank() &&
+            song.trackId !in _ui.value.queuedTracks
+
+    /**
+     * "Chart these songs?" for a wheel folder, or for every song when
+     * [folder] is null: each mode's time and cost from [ChartPace], without
+     * waking a server to ask.
+     */
+    private fun offerBatch(folder: String?) {
+        val state = _ui.value
+        val pool = if (folder == null) {
+            state.songs
+        } else {
+            GlyphWheel.sections(state.songs, state.songSort, state.songQuery)
+                .firstOrNull { it.name == folder }?.songs.orEmpty()
+        }
+        val picked = pool.filter(::chartable)
+        if (picked.isEmpty()) {
+            _ui.value = state.copy(error = "Every song here has a chart, or is being charted.")
+            return
+        }
+        viewModelScope.launch {
+            val audioSeconds = picked.sumOf { it.durationSeconds.toLong() }
+            val servers = remoteStems.stemServers()
+            fun estimateFor(mode: ChartMode): GlyphModeEstimate {
+                val first = RemoteStemAnalysis.planFor(servers, mode).firstOrNull()
+                    ?: return GlyphModeEstimate(
+                        time = null,
+                        cost = null,
+                        note = if (mode == ChartMode.SLOW) "needs a CPU server" else "needs a separation server",
+                    )
+                // A server that has not said is taken for what Fast first tries: a GPU.
+                val gpu = first.separatesOnGpu ?: true
+                val estimate = ChartPace.estimate(audioSeconds, gpu, chartPace.snapshot(gpu))
+                return GlyphModeEstimate(
+                    time = ChartPace.describeDuration(estimate.seconds),
+                    cost = estimate.costDollars?.let(ChartPace::describeCost),
+                    note = if (gpu) "on the GPU" else "on the CPU server",
+                )
+            }
+            val fast = estimateFor(ChartMode.FAST)
+            val slow = estimateFor(ChartMode.SLOW)
+            val preferred = _ui.value.chartMode
+            val mode = when {
+                preferred == ChartMode.SLOW && !slow.available && fast.available -> ChartMode.FAST
+                else -> preferred
+            }
+            _ui.value = _ui.value.copy(
+                batchOffer = GlyphBatchOffer(
+                    folder = folder,
+                    trackIds = picked.map { it.trackId },
+                    audioSeconds = audioSeconds,
+                    mode = mode,
+                    fast = fast,
+                    slow = slow,
+                ),
+            )
+        }
+    }
+
+    private fun confirmBatch() {
+        val offer = _ui.value.batchOffer ?: return
+        _ui.value = _ui.value.copy(batchOffer = null)
+        val byId = _ui.value.songs.associateBy { it.trackId }
+        val jobs = offer.trackIds.mapNotNull(byId::get).filter(::chartable).map { song ->
+            ChartJob(
+                trackId = song.trackId,
+                source = song.audioUri.toString(),
+                destination = songs.simfileFile(song.trackId).absolutePath,
+                title = song.title,
+                artist = song.artist,
+                musicFileName = song.audioFileName,
+                durationSeconds = song.durationSeconds,
+                mode = offer.mode,
+            )
+        }
+        stopPreview()
+        queueCharts(jobs)
     }
 
     // ── the music wheel ─────────────────────────────────────────────────
@@ -990,70 +978,119 @@ class GlyphViewModel @Inject constructor(
         }
     }
 
-    /** Mirror the background chart job into [GlyphUiState.generation], for as long as the screen lives. */
-    private fun watchGeneration() {
+    /**
+     * Mirror the line ([ChartQueue]) into [GlyphUiState.generation] and the
+     * songs waiting, for as long as the screen lives; refresh each song whose
+     * chart lands, since the library's flow never sees a chart file written.
+     */
+    private fun watchCharts() {
         viewModelScope.launch {
-            WorkManager.getInstance(context)
-                .getWorkInfosForUniqueWorkFlow(StepManiaGenerationWorker.WORK_NAME)
-                // A replaced job and its replacement can both be listed for a
-                // moment; the one still going is the one to show.
-                .collect { infos ->
-                    (infos.firstOrNull { !it.state.isFinished } ?: infos.lastOrNull())?.let(::showGeneration)
-                }
+            // A batch a stopped worker left behind gets a worker again.
+            if (chartQueue.claimIfIdle()) StepManiaGenerationWorker.start(context)
+            var landed = emptySet<String>()
+            chartQueue.state.collect { queue ->
+                val made = queue.finished.filter { it.failure == null }.mapTo(HashSet()) { it.trackId }
+                (made - landed).forEach(::refreshCharted)
+                landed = made
+                _ui.value = _ui.value.copy(
+                    generation = generationOf(queue),
+                    queuedTracks = queue.waiting.mapTo(HashSet()) { it.trackId } +
+                        queue.running.map { it.job.trackId },
+                )
+            }
         }
     }
 
-    private fun showGeneration(info: WorkInfo) {
-        val trackId = info.tags
-            .firstOrNull { it.startsWith(StepManiaGenerationWorker.TRACK_TAG) }
-            ?.removePrefix(StepManiaGenerationWorker.TRACK_TAG)
-            ?: return
-        when (info.state) {
-            WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING, WorkInfo.State.BLOCKED -> {
-                watchedGenerations += info.id
-                val progress = info.progress
+    /** Which separation servers there are, for the settings and the batch dialog. */
+    private fun watchChartServers() {
+        viewModelScope.launch {
+            remoteStems.stemServerFlow.collect { servers ->
                 _ui.value = _ui.value.copy(
-                    generation = GlyphGenerationState(
-                        trackId = trackId,
-                        fraction = progress.getFloat(StepManiaGenerationWorker.KEY_FRACTION, 0f),
-                        stage = progress.getString(StepManiaGenerationWorker.KEY_STAGE) ?: "Preparing",
+                    chartServers = GlyphChartServers(
+                        gpu = servers.any { it.separatesOnGpu == true },
+                        cpu = servers.any { it.separatesOnGpu == false },
+                        unknown = servers.any { it.separatesOnGpu == null },
                     ),
                 )
             }
-            WorkInfo.State.SUCCEEDED -> {
-                if (!handledGenerations.add(info.id)) return
-                if (info.id in watchedGenerations) {
-                    _ui.value = _ui.value.copy(
-                        generation = GlyphGenerationState(
-                            trackId = trackId,
-                            fraction = 1f,
-                            stage = "Complete",
-                            backendName = info.outputData.getString(StepManiaGenerationWorker.KEY_BACKEND),
-                        ),
-                    )
+        }
+    }
+
+    /**
+     * "Play in Trypt Mania" from a song's menu elsewhere in the app: the song
+     * found on the wheel and chosen, its chart made first when it has none.
+     * A song not on the phone, or not one the mode plays, says why.
+     */
+    private fun watchPlayRequests() {
+        viewModelScope.launch {
+            TryptManiaRequests.pending.collect { pending ->
+                if (pending == null) return@collect
+                val request = TryptManiaRequests.take() ?: return@collect
+                val library = ui.first { !it.isLoadingSongs }.songs
+                val (song, why) = findRequested(request, library)
+                wheelFocusJob?.cancel()
+                stopPreview()
+                if (song == null) {
+                    _ui.value = _ui.value.copy(screen = GlyphScreen.HOME, songListMode = GlyphSongListMode.PLAY, error = why)
+                    return@collect
                 }
-                // Re-read from disk rather than waiting for the library flow,
-                // which never fires for a file written into app storage.
-                _ui.value.selectedSong?.takeIf { it.trackId == trackId }?.let(::loadSelection)
-            }
-            WorkInfo.State.FAILED -> {
-                if (!handledGenerations.add(info.id) || info.id !in watchedGenerations) return
-                val failure = info.outputData.getString(StepManiaGenerationWorker.KEY_FAILURE)
-                    ?: "Chart generation failed."
-                Log.w(TAG, "chart generation failed: $failure")
                 _ui.value = _ui.value.copy(
-                    generation = GlyphGenerationState(
-                        trackId = trackId,
-                        fraction = 0f,
-                        stage = "Failed",
-                        failure = failure,
-                    ),
+                    screen = GlyphScreen.HOME,
+                    songListMode = GlyphSongListMode.PLAY,
+                    songQuery = "",
+                    wheelFocus = GlyphWheel.songKey(song.trackId),
+                    error = null,
                 )
+                selectSong(song.trackId)
+                if (song.chartState == GlyphChartState.NOT_GENERATED && song.trackId !in _ui.value.queuedTracks) {
+                    generate(song.audioUri, song.audioFileName, song)
+                }
             }
-            WorkInfo.State.CANCELLED -> {
-                if (!handledGenerations.add(info.id) || info.id !in watchedGenerations) return
-                if (_ui.value.generation?.trackId == trackId) _ui.value = _ui.value.copy(generation = null)
-            }
+        }
+    }
+
+    /**
+     * The wheel's song for [request]: by its file where the menu knew it, by
+     * its download or library copy ([tf.monochrome.android.player.LocalTrackLocator]),
+     * then by title, artist and length. Null, with why, when there is none.
+     */
+    private suspend fun findRequested(request: TryptManiaRequest, library: List<GlyphSong>): Pair<GlyphSong?, String?> {
+        fun pathOf(path: String) = path.removePrefix("file://")
+        fun byPath(path: String?) = path?.let { wanted -> library.firstOrNull { pathOf(it.filePath) == pathOf(wanted) } }
+        byPath(request.filePath)?.let { return it to null }
+        val local = runCatching {
+            trackLocator.findLocalSource(
+                title = request.title,
+                artist = request.artist,
+                albumTitle = request.album,
+                durationSeconds = request.durationSeconds,
+                catalogTrackId = request.catalogTrackId,
+            )
+        }.getOrNull()
+        byPath(local?.filePath)?.let { return it to null }
+        library.firstOrNull {
+            it.title.equals(request.title, ignoreCase = true) &&
+                it.artist.equals(request.artist, ignoreCase = true) &&
+                (request.durationSeconds <= 0 || kotlin.math.abs(it.durationSeconds - request.durationSeconds) <= 2)
+        }?.let { return it to null }
+        val onPhone = request.filePath != null || local != null
+        return null to if (onPhone) {
+            "Trypt Mania plays the MP3 and FLAC files in your library, and \"${request.title}\" is not one of them."
+        } else {
+            "\"${request.title}\" is not on your phone. Download it first: Trypt Mania plays songs saved on the phone."
+        }
+    }
+
+    /** [trackId]'s row, and the selection when it is the chosen song, re-read with its new chart. */
+    private fun refreshCharted(trackId: String) {
+        val song = _ui.value.songs.firstOrNull { it.trackId == trackId } ?: return
+        if (_ui.value.selectedSong?.trackId == trackId) {
+            loadSelection(song)
+            return
+        }
+        viewModelScope.launch {
+            val (refreshed, _) = songs.withCurrentChart(song)
+            _ui.value = _ui.value.copy(songs = _ui.value.songs.map { if (it.trackId == trackId) refreshed else it })
         }
     }
 
@@ -1583,6 +1620,9 @@ class GlyphViewModel @Inject constructor(
 
     private fun loadOptions() {
         if (prefs.contains(LEGACY_PREF_DARK)) prefs.edit().remove(LEGACY_PREF_DARK).apply()
+        _ui.value = _ui.value.copy(
+            chartMode = ChartMode.entries.firstOrNull { it.name == prefs.getString(PREF_CHART_MODE, null) } ?: ChartMode.FAST,
+        )
         val mode = when (prefs.getString(PREF_SCROLL_FAMILY, null)) {
             GlyphScrollFamily.X.name -> GlyphScrollMode.XMod(prefs.getFloat(PREF_SCROLL_VALUE, 2f))
             GlyphScrollFamily.M.name -> GlyphScrollMode.MMod(prefs.getFloat(PREF_SCROLL_VALUE, 400f), 0f)
@@ -2344,6 +2384,7 @@ class GlyphViewModel @Inject constructor(
         const val PREF_METRONOME = "metronome"
         const val PREF_JUDGE = "judge"
         const val PREF_LANDSCAPE_FIELD = "landscape_field"
+        const val PREF_CHART_MODE = "chart_mode"
         const val PREF_NAME = "player_name"
         const val PREF_SORT_KEY = "song_sort"
         const val PREF_PREVIEWS = "previews"
@@ -2386,8 +2427,6 @@ class GlyphViewModel @Inject constructor(
 
         /** READY, then GO!, before the music: StepMania's own intro, shortened for a phone. */
         const val INTRO_MILLIS = 1_800L
-
-        const val PROGRESS_STEP_BYTES = 1L shl 20
 
         /** Older than this, a touch stamp is not trusted (see touchNanos). */
         const val MAX_TOUCH_AGE_NANOS = 250_000_000L

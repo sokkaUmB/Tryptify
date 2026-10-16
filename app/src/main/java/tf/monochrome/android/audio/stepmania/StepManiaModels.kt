@@ -80,12 +80,6 @@ enum class StemLayer(
      * guitar. Summed back together, both describe the same instruments.
      */
     MELODY(setOf(Stem.OTHER, Stem.PIANO, Stem.GUITAR), "melody"),
-    ;
-
-    companion object {
-        /** Every stem chart generation asks the separator for: the drums and each layer's. */
-        val REQUESTED: Set<Stem> = setOf(Stem.DRUMS) + entries.flatMap { it.stems }
-    }
 }
 
 /**

@@ -21,6 +21,7 @@
     <string name="action_skip_next">Skip next</string>
     <string name="action_play_next">Play next</string>
     <string name="action_add_to_queue">Add to queue</string>
+    <string name="action_play_in_trypt_mania">Play in Trypt Mania</string>
     <string name="action_like">Like</string>
     <string name="action_unlike">Unlike</string>
     <string name="action_add_to_playlist">Add to playlist</string>
