@@ -2465,6 +2465,7 @@
     <string name="fx_curvature_desc">How far the glass bows toward the top and bottom edges, like an old CRT screen. The middle stays as it is, the edges bow outward and the corners round off. About 16° is the classic tube; the buttons move it a tenth of a degree. Android 13 and later.</string>
     <string name="fx_curvature_sides">Curve: sides</string>
     <string name="fx_curvature_sides_desc">How far it bows toward the left and right edges. About 14° is the classic tube.</string>
+    <string name="fx_curvature_crt_app">The CRT effect is curving the whole app, so the lyrics are not curved again. Flatten its curve, or set it to draw over the lyrics only, to use these.</string>
     <string name="fx_curve_target">Curve</string>
     <string name="fx_curve_all">All lyrics</string>
     <string name="fx_curve_line">Sung line</string>

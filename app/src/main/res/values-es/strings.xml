@@ -2526,6 +2526,7 @@
     <string name="fx_curvature_desc">Cuánto se curva el cristal hacia los bordes de arriba y abajo, como una vieja pantalla CRT. El centro queda igual, los bordes se arquean y las esquinas se redondean. Unos 16° es el tubo clásico; los botones lo mueven una décima de grado. Android 13 o posterior.</string>
     <string name="fx_curvature_sides">Curva: lados</string>
     <string name="fx_curvature_sides_desc">Cuánto se curva hacia los bordes izquierdo y derecho. Unos 14° es el tubo clásico.</string>
+    <string name="fx_curvature_crt_app">El efecto CRT curva toda la app, así que la letra no se curva otra vez. Aplana su curva o haz que solo se dibuje sobre la letra para usar estos.</string>
     <string name="fx_curve_target">Curvar</string>
     <string name="fx_curve_all">Toda la letra</string>
     <string name="fx_curve_line">Línea cantada</string>

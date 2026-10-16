@@ -17,6 +17,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -97,6 +98,27 @@ fun Modifier.tvShader(shader: GlyphTvShader, tv: GlyphTvTuning = GlyphTvTuning()
 class LyricsTv(val shader: GlyphTvShader, val tuning: () -> GlyphTvTuning)
 
 val LocalLyricsTv = compositionLocalOf<LyricsTv?> { null }
+
+/**
+ * Settings › Appearance › CRT effect's sliders as the whole app is drawn with
+ * them now, while it is drawn over every screen; null when it is off or over
+ * the lyrics alone.
+ */
+val LocalAppTube = compositionLocalOf<(() -> GlyphTvTuning)?> { null }
+
+/**
+ * Whether the CRT effect over the whole app bows it now. The lyrics leave
+ * their own curve (Lyrics FX › Curvature) off while it does: the tube already
+ * bends them with every other screen, and a second curve on the lyrics alone
+ * was a bowl inside a bowl. Only a change of the answer recomposes, not each
+ * frame of a slider drag.
+ */
+@Composable
+fun appTubeCurved(): Boolean {
+    val tube = LocalAppTube.current ?: return false
+    val curved by remember(tube) { derivedStateOf { tube().curved } }
+    return curved
+}
 
 /**
  * The lyric surface through the CRT effect, when it is set to the lyrics

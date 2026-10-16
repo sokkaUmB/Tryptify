@@ -1311,6 +1311,20 @@ the lyrics it is handed down as `LocalLyricsTv` and put on the synced and the
 unsynced lyric surfaces (`lyricsTv`), with the same look and sliders; a bowed
 tube's corners are clear there rather than black, and taps are not bent.
 
+**The lyrics are bent once.** While the CRT effect draws over the whole app
+with a curve (`LocalAppTube`, `appTubeCurved`), the lyrics' own curve is left
+flat in the player and in the Studio's preview: the tube already bows them with
+every other screen, and both was a bowl inside a bowl. The angles are kept, and
+Lyrics FX says why they do nothing under them. The modifier stays in place at
+0° (see below), so nothing is inserted into the letters' copy when the CRT's
+curve comes and goes.
+
+**The Lyrics FX Studio's Lyrics tab ends with the CRT effect's controls**
+(`CrtEffectSetting`, `CrtEffectControls.kt`): the same switch, look, Draw over,
+sliders, Old TV look and Reset as Settings › Appearance, over the same three
+preferences (`CrtEffectPrefs`, which both view models implement), so either
+place sets the one effect.
+
 **Nothing appears or disappears inside the letters' copy while the lyrics are
 up.** `captureLetters` records the lyric surface into a layer that both the
 glass layer outward of it and the backdrop draw. When the curvature slider left

@@ -2460,6 +2460,7 @@
     <string name="fx_curvature_desc">Camın üst ve alt kenarlara doğru ne kadar kavislendiği, eski bir CRT ekran gibi. Orta olduğu gibi kalır, kenarlar dışa kıvrılır ve köşeler yuvarlanır. Yaklaşık 16° klasik tüptür; düğmeler onda bir derece oynatır. Android 13 ve sonrası.</string>
     <string name="fx_curvature_sides">Eğrilik: yanlar</string>
     <string name="fx_curvature_sides_desc">Sol ve sağ kenarlara doğru ne kadar kavislendiği. Yaklaşık 14° klasik tüptür.</string>
+    <string name="fx_curvature_crt_app">CRT efekti tüm uygulamayı kavislendiriyor, bu yüzden sözler bir kez daha kavislenmez. Bunları kullanmak için kavisini düzleştir ya da yalnızca sözlerin üzerine çizecek şekilde ayarla.</string>
     <string name="fx_curve_target">Kavis yeri</string>
     <string name="fx_curve_all">Tüm sözler</string>
     <string name="fx_curve_line">Söylenen satır</string>

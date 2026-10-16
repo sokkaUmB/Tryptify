@@ -2460,6 +2460,7 @@
     <string name="fx_curvature_desc">Wie stark sich das Glas zum oberen und unteren Rand wölbt, wie bei einem alten Röhrenbildschirm. Die Mitte bleibt, wie sie ist, die Ränder biegen sich nach außen, die Ecken runden sich. Etwa 16° ist die klassische Röhre; die Tasten verstellen um ein Zehntelgrad. Ab Android 13.</string>
     <string name="fx_curvature_sides">Wölbung: seitlich</string>
     <string name="fx_curvature_sides_desc">Wie stark es sich zum linken und rechten Rand wölbt. Etwa 14° ist die klassische Röhre.</string>
+    <string name="fx_curvature_crt_app">Der CRT-Effekt wölbt die ganze App, deshalb werden die Lyrics nicht noch einmal gewölbt. Mach seine Wölbung flach oder lass ihn nur über die Lyrics zeichnen, um diese zu nutzen.</string>
     <string name="fx_curve_target">Wölbung auf</string>
     <string name="fx_curve_all">Alle Zeilen</string>
     <string name="fx_curve_line">Gesungene Zeile</string>

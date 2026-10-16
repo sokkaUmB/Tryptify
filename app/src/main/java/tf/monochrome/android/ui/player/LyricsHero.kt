@@ -417,8 +417,13 @@ internal fun SyncedLyricsView(
     // whichever layer draws the light, so the shafts follow the scroll glide
     // and hop from word to word without recomposing anything.
     val followWord = fx.godRays && fx.godRaysFollowWord
+    // No curve of their own while the CRT effect bows the whole app: the
+    // tube bends the lyrics already (appTubeCurved).
+    val appCurved = tf.monochrome.android.ui.glyph.appTubeCurved()
+    val curveTop = if (appCurved) 0f else fx.curvatureDeg
+    val curveSide = if (appCurved) 0f else fx.effectiveCurvatureSideDeg
     // The curve over the sung line or the sung word alone (Lyrics FX › Curve).
-    val curveTarget = if (fx.curved) fx.curvatureTarget else LyricsFxSettings.CURVE_ALL
+    val curveTarget = if (fx.curved && !appCurved) fx.curvatureTarget else LyricsFxSettings.CURVE_ALL
     // The sung word is tracked for whichever of the two follows it.
     val trackWord = followWord || curveTarget == LyricsFxSettings.CURVE_WORD
     val sungWord = remember { SungWordAnchor() }
@@ -594,8 +599,8 @@ internal fun SyncedLyricsView(
                 // backdrop draws from it bend with the letters, and the glass
                 // bevels the bent ones.
                 .lyricCurvature(
-                    fx.curvatureDeg,
-                    fx.effectiveCurvatureSideDeg,
+                    curveTop,
+                    curveSide,
                     curveFocus,
                     wide = curveTarget == LyricsFxSettings.CURVE_WORD,
                 ),
@@ -1270,6 +1275,8 @@ internal fun UnsyncedLyricsView(lines: List<LyricLine>) {
     val fx = LocalLyricsFx.current
     val style = MaterialTheme.typography.bodyLarge.withLyricFont(rememberLyricFontFamily(fx))
     val sidePadding = 28.dp
+    // Flat while the CRT effect bows the whole app (appTubeCurved).
+    val appCurved = tf.monochrome.android.ui.glyph.appTubeCurved()
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val lineWidth = (maxWidth - sidePadding * 2).coerceAtLeast(0.dp)
         LazyColumn(
@@ -1282,7 +1289,10 @@ internal fun UnsyncedLyricsView(lines: List<LyricLine>) {
                 // No line is sung here: the curve is on only over all the lyrics.
                 .then(
                     if (fx.curvatureTarget == LyricsFxSettings.CURVE_ALL) {
-                        Modifier.lyricCurvature(fx.curvatureDeg, fx.effectiveCurvatureSideDeg)
+                        Modifier.lyricCurvature(
+                            if (appCurved) 0f else fx.curvatureDeg,
+                            if (appCurved) 0f else fx.effectiveCurvatureSideDeg,
+                        )
                     } else {
                         Modifier
                     },

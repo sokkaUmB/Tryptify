@@ -194,7 +194,7 @@ class LyricsFxStudioViewModel @Inject constructor(
     /** The player's own beat analyzer, so the preview of the playing song pulses with it. */
     val spectrumAnalyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap,
     private val achievements: tf.monochrome.android.data.achievements.AchievementStore,
-) : ViewModel() {
+) : ViewModel(), CrtEffectPrefs {
     /** The currently-playing lyrics + position, so the preview can show them live. */
     val currentLyrics: StateFlow<tf.monochrome.android.domain.model.Lyrics?> = nowPlayingLyrics.lyrics
     val currentPositionMs: StateFlow<Long> = nowPlayingLyrics.positionMs
@@ -258,6 +258,27 @@ class LyricsFxStudioViewModel @Inject constructor(
 
     fun setAmbientHideCover(hide: Boolean) {
         viewModelScope.launch { preferences.setAmbientVisualizerHideCover(hide) }
+    }
+
+    // Settings › Appearance › CRT effect, which the Lyrics tab ends with: the
+    // same preferences, so the two places never disagree.
+    override val appTvShader: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvShader> = preferences.appTvShader
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.glyph.engine.GlyphTvShader.OFF)
+    override val appTvTuning: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvTuning> = preferences.appTvTuning
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.glyph.engine.GlyphTvTuning())
+    override val appTvOnLyrics: StateFlow<Boolean> = preferences.appTvOnLyrics
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    override fun setAppTvShader(shader: tf.monochrome.android.glyph.engine.GlyphTvShader) {
+        viewModelScope.launch { preferences.setAppTvShader(shader) }
+    }
+
+    override fun setAppTvTuning(tuning: tf.monochrome.android.glyph.engine.GlyphTvTuning) {
+        viewModelScope.launch { preferences.setAppTvTuning(tuning) }
+    }
+
+    override fun setAppTvOnLyrics(lyrics: Boolean) {
+        viewModelScope.launch { preferences.setAppTvOnLyrics(lyrics) }
     }
 
     /** Fonts the user has imported (Settings › Appearance copies them here). */
@@ -1032,6 +1053,16 @@ fun LyricsFxStudioScreen(
                 FxNudge(label = stringResource(R.string.fx_curvature_sides), step = 0.1f, unit = "°") { delta ->
                     viewModel.update { s -> s.copy(curvatureSideDeg = tenth(s.effectiveCurvatureSideDeg + delta)) }
                 }
+                // Said under the angles rather than greying them: they are kept,
+                // and come back when the CRT stops bowing every screen.
+                if (tf.monochrome.android.ui.glyph.appTubeCurved()) {
+                    Text(
+                        stringResource(R.string.fx_curvature_crt_app),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
                 // What the curve bends: every lyric as one tube, or a dome
                 // over the sung line or the sung word alone.
                 Text(
@@ -1202,6 +1233,12 @@ fun LyricsFxStudioScreen(
                         description = stringResource(R.string.fx_how_hard_edges_are_smoothed_higher_softens_more),
                     ) { viewModel.update { s -> s.copy(fxaaStrength = it) } }
                 }
+            }
+
+            // Last: the CRT effect (Settings › Appearance's own controls),
+            // so the lyrics can be set up for it without leaving the Studio.
+            item {
+                CrtEffectSetting(viewModel, header = { StudioSection(it) }, indent = 0.dp)
             }
 
             item {
@@ -2313,7 +2350,9 @@ private fun StudioPreview(
                     }
                 }
                 // The curve over the sample: all of it, the block as the sung
-                // line, or the beat's word.
+                // line, or the beat's word. None while the CRT effect bows the
+                // whole app, as in the player (appTubeCurved).
+                val appCurved = tf.monochrome.android.ui.glyph.appTubeCurved()
                 val curveTarget = fx.curvatureTarget
                 val curveFocus: (() -> androidx.compose.ui.geometry.Rect?)? = when (curveTarget) {
                     LyricsFxSettings.CURVE_LINE -> { { blockBand } }
@@ -2335,8 +2374,8 @@ private fun StudioPreview(
                             .captureLetters(letters)
                             // Bent inside the copy, as in the player.
                             .lyricCurvature(
-                                fx.curvatureDeg,
-                                fx.effectiveCurvatureSideDeg,
+                                if (appCurved) 0f else fx.curvatureDeg,
+                                if (appCurved) 0f else fx.effectiveCurvatureSideDeg,
                                 curveFocus,
                                 wide = curveTarget == LyricsFxSettings.CURVE_WORD,
                             )

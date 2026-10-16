@@ -2394,6 +2394,7 @@
     <string name="fx_curvature_desc">像老式 CRT 屏幕一样，玻璃朝上下边缘弯曲的程度。中央保持原样，边缘向外弯，四角变圆。约 16° 是经典显像管；按钮每次调整 0.1 度。需要 Android 13 或更高版本。</string>
     <string name="fx_curvature_sides">弧度：左右</string>
     <string name="fx_curvature_sides_desc">朝左右边缘弯曲的程度。约 14° 是经典显像管。</string>
+    <string name="fx_curvature_crt_app">CRT 效果正在弯曲整个应用，所以歌词不会再弯曲一次。要使用这些设置，请把它的弯曲调平，或设为只绘制在歌词上。</string>
     <string name="fx_curve_target">弯曲范围</string>
     <string name="fx_curve_all">全部歌词</string>
     <string name="fx_curve_line">正在唱的行</string>

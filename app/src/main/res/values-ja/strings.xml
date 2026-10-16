@@ -2394,6 +2394,7 @@
     <string name="fx_curvature_desc">昔のブラウン管のように、上下の端に向かってガラスがどれだけ反るか。中央はそのままで、端が外へ反り、角が丸くなります。約 16° が定番のブラウン管です。ボタンで 0.1 度ずつ調整できます。Android 13 以降。</string>
     <string name="fx_curvature_sides">湾曲：左右</string>
     <string name="fx_curvature_sides_desc">左右の端に向かってどれだけ反るか。約 14° が定番のブラウン管です。</string>
+    <string name="fx_curvature_crt_app">CRT エフェクトがアプリ全体を湾曲させているため、歌詞はもう一度曲げません。これを使うには、その湾曲をなくすか、歌詞だけに描くように設定してください。</string>
     <string name="fx_curve_target">曲げる対象</string>
     <string name="fx_curve_all">すべての歌詞</string>
     <string name="fx_curve_line">歌っている行</string>

@@ -329,6 +329,7 @@ class MainActivity : ComponentActivity() {
                         CompositionLocalProvider(
                             tf.monochrome.android.ui.glyph.LocalAppTvShader provides appTv,
                             tf.monochrome.android.ui.glyph.LocalLyricsTv provides lyricsTv,
+                            tf.monochrome.android.ui.glyph.LocalAppTube provides (if (appTv) appTvNow else null),
                         ) {
                             // First-run gate. null = flag not read yet (splash is
                             // still covering); false = wizard; true = main app.

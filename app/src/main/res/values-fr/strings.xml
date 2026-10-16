@@ -2526,6 +2526,7 @@
     <string name="fx_curvature_desc">De combien le verre se bombe vers les bords haut et bas, comme un vieil écran cathodique. Le centre reste tel quel, les bords s\'arrondissent vers l\'extérieur et les coins s\'arrondissent. Environ 16° donne le tube classique ; les boutons le règlent au dixième de degré. Android 13 et plus.</string>
     <string name="fx_curvature_sides">Courbure : côtés</string>
     <string name="fx_curvature_sides_desc">De combien il se bombe vers les bords gauche et droit. Environ 14° donne le tube classique.</string>
+    <string name="fx_curvature_crt_app">L\'effet CRT bombe toute l\'appli, donc les paroles ne sont pas bombées une deuxième fois. Aplatis sa courbe, ou fais-le dessiner sur les paroles seulement, pour utiliser ceux-ci.</string>
     <string name="fx_curve_target">Courber</string>
     <string name="fx_curve_all">Toutes les paroles</string>
     <string name="fx_curve_line">Ligne chantée</string>

@@ -64,7 +64,7 @@ class SettingsViewModel @Inject constructor(
     private val updateChecker: tf.monochrome.android.data.update.UpdateChecker,
     private val crashLogger: tf.monochrome.android.debug.CrashLogger,
     @ApplicationContext private val appContext: Context
-) : ViewModel() {
+) : ViewModel(), CrtEffectPrefs {
 
     /** Whether crashes are written to Downloads; see [tf.monochrome.android.debug.CrashLogger]. */
     val saveCrashReports: StateFlow<Boolean> = crashLogger.saveReports
@@ -145,17 +145,17 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val dynamicColorKeepBackground: StateFlow<Boolean> = preferences.dynamicColorKeepBackground
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-    val appTvShader: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvShader> = preferences.appTvShader
+    override val appTvShader: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvShader> = preferences.appTvShader
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.glyph.engine.GlyphTvShader.OFF)
 
-    val appTvOnLyrics: StateFlow<Boolean> = preferences.appTvOnLyrics
+    override val appTvOnLyrics: StateFlow<Boolean> = preferences.appTvOnLyrics
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    fun setAppTvOnLyrics(lyrics: Boolean) {
+    override fun setAppTvOnLyrics(lyrics: Boolean) {
         viewModelScope.launch { preferences.setAppTvOnLyrics(lyrics) }
     }
 
-    val appTvTuning: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvTuning> = preferences.appTvTuning
+    override val appTvTuning: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvTuning> = preferences.appTvTuning
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.glyph.engine.GlyphTvTuning())
     val colorTransitionMs: StateFlow<Int> = preferences.colorTransitionMs
         .stateIn(
@@ -480,11 +480,11 @@ class SettingsViewModel @Inject constructor(
     fun setDynamicColorKeepBackground(enabled: Boolean) {
         viewModelScope.launch { preferences.setDynamicColorKeepBackground(enabled) }
     }
-    fun setAppTvShader(shader: tf.monochrome.android.glyph.engine.GlyphTvShader) {
+    override fun setAppTvShader(shader: tf.monochrome.android.glyph.engine.GlyphTvShader) {
         viewModelScope.launch { preferences.setAppTvShader(shader) }
     }
 
-    fun setAppTvTuning(tuning: tf.monochrome.android.glyph.engine.GlyphTvTuning) {
+    override fun setAppTvTuning(tuning: tf.monochrome.android.glyph.engine.GlyphTvTuning) {
         viewModelScope.launch { preferences.setAppTvTuning(tuning) }
     }
     fun setColorTransitionMs(millis: Int) {
