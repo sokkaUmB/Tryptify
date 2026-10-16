@@ -23,6 +23,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
@@ -122,6 +123,12 @@ fun GlassPanel(
      * read through its own.
      */
     fallbackMinAlpha: Float = FALLBACK_MIN_ALPHA,
+    /** The player's frost instead of the live lens; see [GlassMaterial]. */
+    frosted: Boolean = false,
+    /** Shapes cut out of the pane, in its own coordinates; see [GlassMaterial]. */
+    punch: (DrawScope.() -> Unit)? = null,
+    /** Whether [punch] cuts through the frost too; see [GlassMaterial]. */
+    punchThrough: Boolean = false,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(
@@ -161,7 +168,14 @@ fun GlassPanel(
             )
         }
 
-        GlassMaterial(hazeState = hazeState, glass = glass, corner = MonoDimens.radiusLg)
+        GlassMaterial(
+            hazeState = hazeState,
+            glass = glass,
+            corner = MonoDimens.radiusLg,
+            punch = punch,
+            frosted = frosted,
+            punchThrough = punchThrough,
+        )
         GlassInkScope(glass) { content() }
     }
 }
@@ -240,15 +254,30 @@ internal fun BoxScope.GlassMaterial(
      * the shader is really coming ([glassPunches]); otherwise draw the glyph.
      */
     punch: (DrawScope.() -> Unit)? = null,
+    /**
+     * The player sheet's frost, the whole of "Backdrop blur" with its tint,
+     * instead of the live lens's light blur and clear glass: for a pane whose
+     * backdrop should read as soft colour, not as the page bent at its rim.
+     */
+    frosted: Boolean = false,
+    /**
+     * Whether [punch] cuts through the frost as well as the slab, so a hole
+     * shows the page behind the pane sharp, as a real hole in frosted glass
+     * would. Otherwise it shows the frost, as the tab bar's glyphs do.
+     */
+    punchThrough: Boolean = false,
 ) {
     if (!shaderGlassFor(glass)) return
     val allowHaze = LocalPerformanceProfile.current.allowHazeBlur
+    val shaded = rememberLiquidGlassAvailable()
+    val cut = punch?.takeIf { shaded }
+    val through = if (punchThrough && cut != null) Modifier.erasing(cut) else Modifier
     val tint = glassTint(glass.tintColor)
     // What the pane lies over: the page, unless the screen says otherwise
     // (the galaxy is space under every theme). The frost washes toward it.
     val frostBg = LocalGlassGround.current ?: MaterialTheme.colorScheme.background
     val isDark = frostBg.luminance() <= 0.5f
-    val liveLens = LIVE_LENS_GLASS && liveLensCompiles && hazeState != null && allowHaze &&
+    val liveLens = !frosted && LIVE_LENS_GLASS && liveLensCompiles && hazeState != null && allowHaze &&
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
     // Only with a real backdrop. Frosting an unfed state draws the
     // frost's own base colour as a flat pane, which is the slab this
@@ -259,6 +288,7 @@ internal fun BoxScope.GlassMaterial(
         Box(
             Modifier
                 .matchParentSize()
+                .then(through)
                 .liveGlassLens(
                     hazeState = hazeState,
                     corner = corner,
@@ -274,6 +304,7 @@ internal fun BoxScope.GlassMaterial(
         Box(
             Modifier
                 .matchParentSize()
+                .then(through)
                 .hazeEffect(
                     state = hazeState,
                     style = HazeStyle(
@@ -306,8 +337,6 @@ internal fun BoxScope.GlassMaterial(
         // Asking whether the shader will run replaces the guess, so the good
         // case gets the mini player's fill and the bad case still cannot
         // paint a slab.
-        val shaded = rememberLiquidGlassAvailable()
-        val cut = punch?.takeIf { shaded }
         Canvas(
             modifier = Modifier
                 .matchParentSize()
@@ -347,6 +376,23 @@ internal fun BoxScope.GlassMaterial(
         }
     }
 }
+
+/**
+ * Erases what [cut] draws from this layer and nothing under it: one offscreen
+ * layer, cleared with an anti-aliased DstOut, as the slab's own punch is.
+ */
+private fun Modifier.erasing(cut: DrawScope.() -> Unit): Modifier =
+    graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            val erase = Paint().apply {
+                blendMode = BlendMode.DstOut
+                isAntiAlias = true
+            }
+            drawContext.canvas.saveLayer(Rect(0f, 0f, size.width, size.height), erase)
+            cut()
+            drawContext.canvas.restore()
+        }
 
 /**
  * The backdrop a page's pills frost: a haze source the page draws *beside*

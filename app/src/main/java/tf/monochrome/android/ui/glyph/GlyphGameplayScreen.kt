@@ -185,6 +185,10 @@ fun GlyphGameplayScreen(
                     heldLanes = gameplay.heldLanes,
                     explosionProvider = explosionProvider,
                     reducedMotion = gameplay.modifiers.reducedMotion,
+                    // The album art is the room; the chart's own picture when
+                    // the song has none.
+                    artUri = state.selectedSong?.let { it.artworkUri ?: it.backgroundUri },
+                    beatProvider = { timing.secondsToBeat(positionProvider()) },
                 )
 
                 GlyphPlayfield(

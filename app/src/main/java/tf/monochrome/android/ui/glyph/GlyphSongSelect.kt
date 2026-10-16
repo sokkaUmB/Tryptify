@@ -26,12 +26,30 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -59,7 +77,8 @@ import tf.monochrome.android.glyph.chart.bpmRange
 import tf.monochrome.android.glyph.data.GlyphWheel
 import tf.monochrome.android.ui.components.CoverImage
 import tf.monochrome.android.ui.theme.MonoDimens
-import tf.monochrome.android.ui.components.GlassMaterial
+import tf.monochrome.android.ui.components.LocalGlassGround
+import tf.monochrome.android.ui.components.glassPunches
 import tf.monochrome.android.ui.components.GlassPanel
 
 /**
@@ -122,31 +141,39 @@ internal fun GlyphSongInfoCard(
         null -> ""
     }
 
-    // The app's glass, the pills' material (GlassPanel): the wheel's rows pass
-    // under it and read through, blurred and bent at the rim. One pane holds
-    // the graph too.
+    // The app's glass with the player sheet's frost: the wheel's rows and the
+    // song's picture pass under it as soft colour, not as text bent at the rim.
+    // One pane holds the graph too. The meter's stars are holes cut through
+    // it, glass and frost, so the picture behind shows through them sharp.
+    val carved = glassPunches(glass)
+    val holes = remember { StarHoles() }
+    val punch: DrawScope.() -> Unit = remember(holes) { { holes.cutInto(this) } }
     GlassPanel(
         hazeState = haze,
         glass = glass,
         modifier = modifier,
         avoidNavigationBar = false,
+        frosted = true,
+        punch = if (carved) punch else null,
+        punchThrough = true,
     ) {
-        Column(modifier = Modifier.padding(MonoDimens.spacingMd)) {
+        Column(
+            modifier = Modifier
+                .onGloballyPositioned { holes.place(card = it) }
+                .padding(MonoDimens.spacingMd),
+        ) {
             Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingMd)) {
                 if (!compact) {
-                    // The radar in a lens of its own: a second slab of the same
-                    // glass on the pane, so its rim and glint catch the light apart
-                    // from the card's. A rounded square rather than a disc, which
-                    // would cut off the axis names in its corners.
-                    Box(Modifier.size(140.dp)) {
-                        GlassMaterial(hazeState = null, glass = glass, corner = RADAR_LENS_CORNER)
-                        GlyphGrooveRadar(
-                            values = stats.radar,
-                            colour = colour,
-                            reducedMotion = reducedMotion,
-                            modifier = Modifier.matchParentSize(),
-                        )
-                    }
+                    // The radar sunk into the card in a well of its own, drawn
+                    // as one with it: no second pane over the card. A rounded
+                    // square rather than a disc, which would cut off the axis
+                    // names in its corners.
+                    GlyphGrooveRadar(
+                        values = stats.radar,
+                        colour = colour,
+                        reducedMotion = reducedMotion,
+                        modifier = Modifier.size(140.dp).glassWell(RADAR_WELL_CORNER),
+                    )
                 }
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -169,11 +196,13 @@ internal fun GlyphSongInfoCard(
                         timing = simfile?.timing,
                         previewPosition = if (loaded) previewPosition else NO_POSITION,
                     )
-                    GlyphFeet(
+                    GlyphStars(
                         difficulty = chart?.difficulty,
                         meter = chart?.meter ?: 0,
                         colour = colour,
                         reducedMotion = reducedMotion,
+                        carved = carved,
+                        holes = holes,
                     )
                     // This phone's best on the chosen chart, as StepMania's wheel
                     // shows the grade beside it; only when there is one.
@@ -181,6 +210,7 @@ internal fun GlyphSongInfoCard(
                 }
             }
             if (!compact) {
+                // In a shallow well of its own, as the radar is.
                 GlyphDensityGraph(
                     stats = stats,
                     colour = colour,
@@ -188,6 +218,8 @@ internal fun GlyphSongInfoCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = MonoDimens.spacingSm)
+                        .glassWell(GRAPH_WELL_CORNER)
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
                         .height(44.dp),
                 )
             }
@@ -197,8 +229,45 @@ internal fun GlyphSongInfoCard(
 
 private val NO_POSITION: () -> Float? = { null }
 
-/** The radar's lens: as round as the glass's rim band goes (24 dp), the axis names inside it. */
-private val RADAR_LENS_CORNER = 24.dp
+/** The radar's well: rounded, the axis names inside it. */
+private val RADAR_WELL_CORNER = 22.dp
+private val GRAPH_WELL_CORNER = 14.dp
+
+/** Whether the card's glass lies over a dark page: its wells and holes are lit to suit. */
+@Composable
+private fun overDark(): Boolean =
+    (LocalGlassGround.current ?: MaterialTheme.colorScheme.background).luminance() <= 0.5f
+
+/**
+ * A well sunk into the card: darker than the glass round it, the shadow of
+ * its far wall inside its top, and its near lip catching the light.
+ */
+@Composable
+private fun Modifier.glassWell(corner: Dp): Modifier {
+    val dark = overDark()
+    return drawBehind {
+        val r = corner.toPx()
+        val well = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(r))) }
+        drawPath(well, Color.Black.copy(alpha = if (dark) 0.4f else 0.07f))
+        clipPath(well) {
+            val wall = 9.dp.toPx()
+            drawRect(
+                Brush.verticalGradient(
+                    0f to Color.Black.copy(alpha = if (dark) 0.5f else 0.14f),
+                    1f to Color.Transparent,
+                    endY = wall,
+                ),
+                size = Size(size.width, wall),
+            )
+            val lip = 1.dp.toPx()
+            drawRect(
+                Color.White.copy(alpha = if (dark) 0.16f else 0.55f),
+                topLeft = Offset(0f, size.height - lip),
+                size = Size(size.width, lip),
+            )
+        }
+    }
+}
 
 private fun sectionOf(item: GlyphWheel.Item): String = when (item) {
     is GlyphWheel.Item.Song -> item.section
@@ -261,8 +330,19 @@ internal fun GlyphGrooveRadar(
             }
             close()
         }
-        drawPath(shape, colour.copy(alpha = 0.32f))
-        drawPath(shape, colour, style = Stroke(2.dp.toPx()))
+        drawPath(
+            shape,
+            Brush.radialGradient(
+                0f to lerp(colour, Color.White, 0.6f).copy(alpha = 0.55f),
+                1f to colour.copy(alpha = 0.22f),
+                center = centre,
+                radius = radius,
+            ),
+        )
+        // Its edge glows: two soft strokes under the line itself.
+        drawPath(shape, colour.copy(alpha = 0.16f), style = Stroke(8.dp.toPx(), join = StrokeJoin.Round))
+        drawPath(shape, colour.copy(alpha = 0.3f), style = Stroke(4.5.dp.toPx(), join = StrokeJoin.Round))
+        drawPath(shape, colour, style = Stroke(2.2.dp.toPx(), join = StrokeJoin.Round))
 
         GlyphChartStats.AXES.forEachIndexed { axis, label ->
             val layout = measurer.measure(label, labelStyle)
@@ -370,11 +450,26 @@ private fun BeatLight(timing: GlyphTiming?, previewPosition: () -> Float?, colou
     )
 }
 
-/** The meter as DDR's feet: one lit per level, to [FEET]; past that, the number says it. */
+/**
+ * The meter as stars, one lit per level to [STARS]; past that, the number
+ * says it. Each star is a hole through the card: [carved] when the glass
+ * cuts them out ([StarHoles]), so the picture behind shows through the
+ * unlit ones; drawn as holes where it cannot. A lit one is light coming up
+ * through its hole, white at its heart, and blooming onto the glass round
+ * it. They light one after another as the meter changes.
+ */
 @Composable
-private fun GlyphFeet(difficulty: StepManiaDifficulty?, meter: Int, colour: Color, reducedMotion: Boolean) {
+private fun GlyphStars(
+    difficulty: StepManiaDifficulty?,
+    meter: Int,
+    colour: Color,
+    reducedMotion: Boolean,
+    carved: Boolean,
+    holes: StarHoles,
+) {
     val scheme = MaterialTheme.colorScheme
-    val lit by animated(meter.toFloat(), reducedMotion, "feet")
+    val dark = overDark()
+    val lit by animated(meter.toFloat(), reducedMotion, "stars")
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -389,24 +484,116 @@ private fun GlyphFeet(difficulty: StepManiaDifficulty?, meter: Int, colour: Colo
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 // Text, so the accent is moved until it reads on the glass;
-                // the feet below are a fill and keep it as it is.
+                // the stars below are light and keep it as it is.
                 color = menuAccent(colour),
             )
         }
-        Row(Modifier.padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            for (i in 0 until FEET) {
-                // A foot fills as the meter passes it, so a change of meter sweeps.
-                val fill = (lit - i).coerceIn(0f, 1f)
-                Box(
-                    Modifier
-                        .size(width = 9.dp, height = 12.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(scheme.onSurface.copy(alpha = 0.12f)),
-                ) {
-                    Box(Modifier.fillMaxWidth().fillMaxHeight(fill).align(Alignment.BottomCenter).background(colour))
+        Canvas(
+            Modifier
+                .padding(top = 4.dp)
+                .fillMaxWidth()
+                .height(STAR_ROW)
+                .onGloballyPositioned { holes.place(row = it) },
+        ) {
+            val spots = starSpots(size, STAR_GAP.toPx())
+            if (!carved) {
+                // No glass to cut: the hole drawn, its near lip lit.
+                val lip = 1.dp.toPx()
+                for (spot in spots) {
+                    val star = starPath(spot.centre, spot.diameter)
+                    translate(0f, lip) { drawPath(star, Color.White.copy(alpha = if (dark) 0.2f else 0.6f)) }
+                    drawPath(star, Color.Black.copy(alpha = if (dark) 0.55f else 0.18f))
                 }
             }
+            // The blooms first, so none lies over a neighbour's light.
+            spots.forEachIndexed { i, spot ->
+                val light = (lit - i).coerceIn(0f, 1f)
+                if (light <= 0f) return@forEachIndexed
+                drawCircle(
+                    Brush.radialGradient(
+                        0f to colour.copy(alpha = 0.55f * light),
+                        1f to colour.copy(alpha = 0f),
+                        center = spot.centre,
+                        radius = spot.diameter * STAR_BLOOM,
+                    ),
+                    radius = spot.diameter * STAR_BLOOM,
+                    center = spot.centre,
+                )
+            }
+            spots.forEachIndexed { i, spot ->
+                val light = (lit - i).coerceIn(0f, 1f)
+                if (light <= 0f) return@forEachIndexed
+                drawPath(
+                    starPath(spot.centre, spot.diameter),
+                    Brush.radialGradient(
+                        0f to lerp(colour, Color.White, 0.88f),
+                        0.45f to lerp(colour, Color.White, 0.45f),
+                        1f to colour,
+                        center = spot.centre,
+                        radius = spot.diameter / 2f,
+                    ),
+                    alpha = light,
+                )
+            }
         }
+    }
+}
+
+/**
+ * Where the meter's stars are on the card, so the glass can cut them out:
+ * the row's place and size in the card, kept as state the slab reads when it
+ * draws, so it cuts again only when the row really moves on the card.
+ */
+private class StarHoles {
+    private var card: LayoutCoordinates? = null
+    private var row: LayoutCoordinates? = null
+    private var spot by mutableStateOf<Rect?>(null)
+
+    fun place(card: LayoutCoordinates? = null, row: LayoutCoordinates? = null) {
+        if (card != null) this.card = card
+        if (row != null) this.row = row
+        val c = this.card?.takeIf { it.isAttached } ?: return
+        val r = this.row?.takeIf { it.isAttached } ?: return
+        val now = Rect(c.localPositionOf(r, Offset.Zero), r.size.toSize())
+        if (now != spot) spot = now
+    }
+
+    /** The holes, in the card's own coordinates, which are the glass's. */
+    fun cutInto(scope: DrawScope) = with(scope) {
+        val at = spot ?: return@with
+        translate(at.left, at.top) {
+            for (star in starSpots(at.size, STAR_GAP.toPx())) drawPath(starPath(star.centre, star.diameter), Color.Black)
+        }
+    }
+}
+
+/** One star of the meter: its centre and its width. */
+internal data class StarSpot(val centre: Offset, val diameter: Float)
+
+/** [STARS] stars spread evenly across a row of [size], [gap] apart at least, as wide as the row is high at most. */
+internal fun starSpots(size: Size, gap: Float): List<StarSpot> {
+    if (size.width <= 0f || size.height <= 0f) return emptyList()
+    val pitch = size.width / STARS
+    val diameter = minOf(size.height, pitch - gap).coerceAtLeast(0f)
+    return List(STARS) { i -> StarSpot(Offset(pitch * (i + 0.5f), size.height / 2f), diameter) }
+}
+
+/** A five-pointed star [diameter] across, point up, its outline centred on [centre]. */
+internal fun starPath(centre: Offset, diameter: Float): Path {
+    val outer = diameter / 2f
+    val inner = outer * STAR_INNER
+    // A star's points reach lower than its top by less: lowered by half the
+    // difference, its outline is centred and not its points' circle.
+    val drop = outer * (1f - cos(Math.toRadians(36.0)).toFloat()) / 2f
+    return Path().apply {
+        for (k in 0 until 10) {
+            val r = if (k % 2 == 0) outer else inner
+            val angle = Math.toRadians(-90.0 + k * 36.0)
+            val x = centre.x + (cos(angle) * r).toFloat()
+            val y = centre.y + drop + (sin(angle) * r).toFloat()
+            if (k == 0) moveTo(x, y) else lineTo(x, y)
+        }
+        close()
     }
 }
 
@@ -466,6 +653,12 @@ internal fun difficultyColour(difficulty: StepManiaDifficulty): Color = when (di
 
 private const val MORPH_MILLIS = 520
 private const val MAX_GAUGE_BPM = 300f
-private const val FEET = 12
+/** The meter's stars, and how they sit in their row. */
+internal const val STARS = 12
+private val STAR_ROW = 16.dp
+private val STAR_GAP = 2.dp
+private const val STAR_INNER = 0.46f
+/** How far a lit star's light spreads onto the glass, as a share of its width. */
+private const val STAR_BLOOM = 1.05f
 /** Notes a second at the top of the density graph. */
 private const val DENSITY_SCALE = 12f

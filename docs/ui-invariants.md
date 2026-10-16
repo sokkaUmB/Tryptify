@@ -1155,7 +1155,7 @@ column, with nothing to jump between.
   take its place.
 
 **The card over the wheel reads the chart; it never grades it.**
-`GlyphSongInfoCard`: DDR's Groove Radar, the BPM meter, the meter in feet and a
+`GlyphSongInfoCard`: DDR's Groove Radar, the BPM meter, the meter in stars and a
 density graph, from `GlyphChartStats`. The radar is StepMania's own
 `CalculateRadarValues` over the song's length — rolls are not freeze, every
 off-grid row is chaos, voltage is a rolling eight beats — and `GlyphWheelTest`
@@ -1175,9 +1175,22 @@ runs the full height, its rows travel up beneath the card and read through its
 glass, and its centre is the middle of what the stack leaves. Laid above the
 wheel as a plain card it had nothing behind it to be glass over. Opening the
 search puts the bar at the top and slides the stack below it; the wheel is
-never padded, only inset, so nothing clips at a line. The radar sits in a lens
-of its own, a second slab of the same glass (`GlassMaterial`, 24 dp corners so
-the axis names stay inside it). The card takes the height the screen can spare:
+never padded, only inset, so nothing clips at a line. The card is frosted as
+the player's sheet is (`GlassPanel(frosted = true)`: the whole of "Backdrop
+blur" and its tint, not the live lens's fifth and clear glass), so the rows and
+the song's picture under it are soft colour rather than text bent at its rim.
+The radar is drawn in a well sunk into the card (`glassWell`: darker than the
+glass, its far wall's shadow inside its top, its near lip lit), as one with
+it; it used to sit on a second slab of glass over the card, a pane on a pane.
+The density graph has a shallower well of its own. The meter is twelve stars
+cut through the card (`StarHoles`, the slab's `punch` with `punchThrough`):
+the cut goes through the frost as well as the slab, so an unlit star is a real
+hole with the page behind it sharp, the shader bevelling its edge. A lit star
+is light coming up through its hole, white at its heart and blooming onto the
+glass round it, and they light one after another as the meter changes. The
+holes are placed from the star row's position on the card, read when the slab
+draws; where the shader cannot run (`glassPunches` false) the stars are drawn
+as holes instead. The card takes the height the screen can spare:
 whole when it is 720 dp or taller, without the radar and graph from 600 dp, and
 gone below that (a phone on its side), where the wheel and the panel's Play
 need the room. Whole at any height, it pushed Play off a landscape screen.
@@ -1194,12 +1207,22 @@ and offers a correction only from the recent runs' agreed lateness
 "Label: value", and everything lands at once under reduced motion.
 
 **The play has a stage behind it, and only the play.** `GlyphDanceStage`, under
-the playfield inside the TV shader: two speakers over a dance pad in a dark blue
-room, under a veil. Its pad's arrow panels light as the player steps, softly
-while a lane is held and brighter for a moment on a hit (`stageLight`); reduced
-motion keeps the held glow and drops the flash. The room is drawn into its own
-layer and replayed: the playfield redraws every frame above it, and without the
-layer it was redrawn with it. Nothing else on the stage moves.
+the playfield inside the TV shader: an arcade pad, a metal slab tilted 55°
+away, between two speaker cabinets turned toward it, under a spotlight and a
+veil. The pad is seen through a camera above it (`StageGeometry.project`): its
+face is drawn flat and laid onto the slab with a four-corner perspective matrix,
+so the near edge is wider than the far one and the lip under it shows its
+thickness (`GlyphDanceStageTest`). Its panels are raised and bolted, the four
+arrows sunk in black wells. The room is the song's album art (its chart
+background when it has none), decoded small, blurred and darkened so it reads
+as a room and never competes with the arrows; plain dark blue until it loads
+and for a song with no picture. The arrow panels light as the player steps,
+softly while a lane is held and brighter for a moment on a hit (`stageLight`),
+the light thrown onto the pad round them. The woofers pump on the chart's beat
+(`wooferPump`). Reduced motion keeps the held glow and drops the flash and the
+pump. The rig and the pad are drawn into their own layer and replayed: the
+playfield redraws every frame above it, and without the layer it was redrawn
+with it. Nothing else on the stage moves.
 
 **A held hold is cut at the receptor, with its head on it.** Both engines pin a
 held body's top to the receptor for the whole hold, pressed early or late
