@@ -3,6 +3,7 @@ package tf.monochrome.android.ui.library
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -53,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
@@ -82,6 +84,9 @@ import tf.monochrome.android.ui.components.SearchAction
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.player.preview.SongPreview
+import tf.monochrome.android.ui.components.rememberHoldToPreview
+import tf.monochrome.android.ui.components.songPreviewHold
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -284,7 +289,12 @@ fun FolderBrowserScreen(
                             if (nowPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                             else Color.Transparent
                         )
-                        .clickable { onPlayTrack(track, visibleTracks) }
+                        // Holding plays the song's preview until the finger lifts.
+                        .combinedClickable(
+                            onClick = { onPlayTrack(track, visibleTracks) },
+                            onLongClick = rememberHoldToPreview(track),
+                        )
+                        .songPreviewHold(SongPreview.keyOf(track), RectangleShape)
                         .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

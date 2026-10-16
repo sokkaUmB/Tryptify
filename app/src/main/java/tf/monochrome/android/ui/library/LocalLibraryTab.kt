@@ -115,6 +115,9 @@ import tf.monochrome.android.ui.detail.LocalFacet
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.player.preview.SongPreview
+import tf.monochrome.android.ui.components.rememberHoldToPreview
+import tf.monochrome.android.ui.components.songPreviewHold
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -774,12 +777,15 @@ private fun SongRow(
     // legacyId, not id: the queue holds legacy Tracks, so that is what
     // `currentTrack.id` — and therefore LocalNowPlayingTrackId — is.
     val nowPlaying = track.legacyId == LocalNowPlayingTrackId.current
+    // Holding plays the song's preview until the finger lifts.
+    val holdToPreview = rememberHoldToPreview(track)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
-            .bounceClick(onClick = onClick)
-            .liquidGlass(shape = MonoDimens.shapeMd),
+            .bounceCombinedClick(onClick = onClick, onLongClick = holdToPreview)
+            .liquidGlass(shape = MonoDimens.shapeMd)
+            .songPreviewHold(SongPreview.keyOf(track), MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         color = if (nowPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                 else Color.Transparent,

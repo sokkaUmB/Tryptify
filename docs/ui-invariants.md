@@ -143,7 +143,7 @@ this, and the speed panel goes through it. The cost is owning the scrim, the
 slide and Back by hand, and that is the cheaper half of the trade.
 
 **The song menu is a `GlassOverlay`, not a `ModalBottomSheet`.** `TrackContextMenu`
-(a long-press or a row's ⋮, from every list) draws in the nav host's overlay slot
+(a row's ⋮ from every list; a long-press where a row has no preview) draws in the nav host's overlay slot
 at `Alignment.BottomCenter`, where the sheet was, so it blurs the list it was opened
 from. Its Track info turns the same pane into the song's tags and Back returns to
 the actions. Put back in a `ModalBottomSheet` it is a solid slab, for the reason
@@ -625,6 +625,33 @@ row, that test is where it surfaces.
 album segment is appended outside `ClickableArtists`, so capping only the inner
 row still let "artist • album" wrap. With a fixed row height a second line is
 clipped rather than shown, so the cap is what keeps the text intact.
+
+**Holding a song row plays it for 25 s, and lifting the finger stops it.**
+`SongPreview` (one app-wide player, separate from the main one) plays from the
+song's remembered drop, else a third in, and the row fills left to right behind
+its text, from the accent through amber to red as the time runs out
+(`Modifier.songPreviewHold`, `previewFillColour`). Rows take it through
+`LocalSongPreview`, given at the nav host the way `LocalPlayInTryptMania` is, so
+no screen wires it by hand.
+
+- **The lift is watched, never consumed.** The watcher reads every event at
+  `PointerEventPass.Initial` and leaves it for the row's tap and the list's
+  scroll. Consuming the up would leave the row pressed and a scroll that started
+  on a row dead. A held row that scrolls out of the list ends its preview, as
+  no lift will ever reach it.
+- **The main player is paused by audio focus, not by a call.** The preview asks
+  for `AUDIOFOCUS_GAIN_TRANSIENT`; Media3 pauses the main player for it and
+  resumes it when the preview gives the focus back. With "Play alongside other
+  apps" the main player ignores focus and keeps playing under the preview.
+- **The start is a `setMediaItem` position, not a clip.** A source that cannot
+  seek (Apple's fMP4 over HTTP) plays from the top with a clip, and the
+  front-filling Qobuz and Deezer caches start at 0:00 on purpose
+  (`SongPreview.startMs`).
+- **Hold no longer starts multi-select.** "Select" is in the ⋮ song menu of
+  every list that has a selection. Left out on purpose: the queue (hold there
+  drags), Trypt Mania's wheel (it previews by itself) and Discover's cards.
+
+`SongPreviewTest` holds the start point, the fade and the fill's colours.
 
 ### Themes
 

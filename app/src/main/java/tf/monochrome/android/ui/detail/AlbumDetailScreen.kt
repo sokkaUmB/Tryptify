@@ -107,7 +107,8 @@ fun AlbumDetailScreen(
             onDownloadTrack = { playerViewModel.downloadTrack(track) },
             onShareFile = { playerViewModel.shareTrack(track) },
             onGoToAlbum = null, // Already here
-            onGoToArtist = navController.trackArtistAction(track, playerViewModel.unifiedFor(track))
+            onGoToArtist = navController.trackArtistAction(track, playerViewModel.unifiedFor(track)),
+            onSelect = { selection.toggle(track.id) }
         )
     }
 

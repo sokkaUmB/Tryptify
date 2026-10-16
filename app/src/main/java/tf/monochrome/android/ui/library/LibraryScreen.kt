@@ -241,7 +241,8 @@ fun LibraryScreen(
             else ({ playerViewModel.downloadTrack(track) }),
             onShareFile = { playerViewModel.shareTrack(track) },
             onGoToAlbum = navController.trackAlbumAction(track, playerViewModel.unifiedFor(track)),
-            onGoToArtist = navController.trackArtistAction(track, playerViewModel.unifiedFor(track))
+            onGoToArtist = navController.trackArtistAction(track, playerViewModel.unifiedFor(track)),
+            onSelect = { selection.toggle(track.id) }
         )
     }
 

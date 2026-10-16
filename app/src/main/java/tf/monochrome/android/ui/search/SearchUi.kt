@@ -99,6 +99,9 @@ import tf.monochrome.android.ui.navigation.navigateSafe
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.player.preview.SongPreview
+import tf.monochrome.android.ui.components.rememberHoldToPreview
+import tf.monochrome.android.ui.components.songPreviewHold
 
 // SearchQueryField is gone. It was a one-line forward to GlassSearchBar that
 // existed to keep Home and the search screen agreeing on a placeholder, and both
@@ -208,6 +211,8 @@ fun SearchResultsContent(
 ) {
     val downloadedTrackIds by playerViewModel.downloadedTrackIds.collectAsStateWithLifecycle()
     var showContextMenuForTrack by remember { mutableStateOf<Track?>(null) }
+    // The menu's song by its search id, which selection goes by.
+    var menuSelectId by remember { mutableStateOf<String?>(null) }
     var showAddToPlaylistForTrack by remember { mutableStateOf<Track?>(null) }
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
     var showAddToPlaylistForSelection by remember { mutableStateOf(false) }
@@ -229,7 +234,8 @@ fun SearchResultsContent(
             else ({ playerViewModel.downloadTrack(track) }),
             onShareFile = { playerViewModel.shareTrack(track) },
             onGoToAlbum = navController.trackAlbumAction(track, playerViewModel.unifiedFor(track)),
-            onGoToArtist = navController.trackArtistAction(track, playerViewModel.unifiedFor(track))
+            onGoToArtist = navController.trackArtistAction(track, playerViewModel.unifiedFor(track)),
+            onSelect = menuSelectId?.let { id -> { selection.toggle(id) } },
         )
     }
 
@@ -467,7 +473,10 @@ fun SearchResultsContent(
                             onMoreClick = if (track.sourceType == SourceType.API ||
                                 track.sourceType == SourceType.QOBUZ ||
                                 track.sourceType == SourceType.DEEZER) {
-                                { showContextMenuForTrack = track.toLegacyTrack() }
+                                {
+                                    menuSelectId = track.id
+                                    showContextMenuForTrack = track.toLegacyTrack()
+                                }
                             } else null,
                             isDownloaded = track.toLegacyTrack().id in downloadedTrackIds,
                             selectionMode = selection.active,
@@ -633,12 +642,15 @@ private fun UnifiedSearchTrackItem(
     val legacyTrack = track.toLegacyTrack()
     // Same treatment as TrackItem: hide per-row affordances while selecting.
     val effectiveOnMoreClick = onMoreClick.takeUnless { selectionMode }
+    // Holding plays the song's preview until the finger lifts; Select is in its menu.
+    val holdToPreview = rememberHoldToPreview(track)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
-            .bounceCombinedClick(onClick = onClick, onLongClick = onLongClick ?: onMoreClick)
-            .liquidGlass(shape = MonoDimens.shapeMd),
+            .bounceCombinedClick(onClick = onClick, onLongClick = holdToPreview ?: onLongClick ?: onMoreClick)
+            .liquidGlass(shape = MonoDimens.shapeMd)
+            .songPreviewHold(SongPreview.keyOf(track), MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent
     ) {

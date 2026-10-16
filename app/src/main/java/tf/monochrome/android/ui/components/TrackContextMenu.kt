@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -51,8 +52,8 @@ import tf.monochrome.android.R
 import tf.monochrome.android.ui.theme.reduceMotion
 
 /**
- * A song's menu (a long-press or its ⋮): what to do with it, and its Track
- * info.
+ * A song's menu (its ⋮): what to do with it, and its Track info. Holding a
+ * song plays its preview, so Select is here.
  *
  * Glass, so not a `ModalBottomSheet`: that opens its own window, and glass
  * cannot blur a page in another window (docs/ui-invariants.md, Glass). It is
@@ -82,6 +83,12 @@ fun TrackContextMenu(
     onGoToAlbum: (() -> Unit)? = null,
     onGoToArtist: (() -> Unit)? = null,
     filePath: String? = null,
+    /**
+     * Starts multi-select on this song, where the list has it. Holding a song
+     * plays its preview now (SongPreview), so the menu is where selecting
+     * begins; once it has, taps add and remove songs as before.
+     */
+    onSelect: (() -> Unit)? = null,
 ) {
     // Outside the overlay's content, which is composed in the overlay host:
     // state there would not survive the caller's recompositions.
@@ -171,6 +178,13 @@ fun TrackContextMenu(
                         label = stringResource(R.string.action_add_to_queue),
                         onClick = { onAddToQueue(); onDismiss() }
                     )
+                    if (onSelect != null) {
+                        ContextMenuItem(
+                            icon = Icons.Default.CheckCircle,
+                            label = stringResource(R.string.action_select),
+                            onClick = { onSelect(); onDismiss() }
+                        )
+                    }
                     if (playInTryptMania != null) {
                         ContextMenuItem(
                             icon = TryptManiaArrow,

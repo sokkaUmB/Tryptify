@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,6 +67,9 @@ import tf.monochrome.android.ui.player.PlayerViewModel
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.player.preview.SongPreview
+import tf.monochrome.android.ui.components.rememberHoldToPreview
+import tf.monochrome.android.ui.components.songPreviewHold
 
 @Composable
 fun DownloadsScreen(
@@ -125,11 +129,14 @@ fun DownloadsScreen(
     BackHandler(enabled = selection.active) { selection.clear() }
 
     var menuTrack by remember { mutableStateOf<UnifiedTrack?>(null) }
+    // The menu's song by its download id, which selection goes by.
+    var menuSelectId by remember { mutableStateOf<Long?>(null) }
     UnifiedTrackContextMenuHost(
         track = menuTrack,
         onDismissRequest = { menuTrack = null },
         navController = navController,
         playerViewModel = playerViewModel,
+        onSelect = menuSelectId?.let { id -> { selection.toggle(id) } },
     )
     var showAddToPlaylistForSelection by remember { mutableStateOf(false) }
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
@@ -325,7 +332,10 @@ fun DownloadsScreen(
                     }
                 },
                 onLongClick = { selection.toggle(track.id) },
-                onMoreClick = { menuTrack = track.toUnifiedTrack() },
+                onMoreClick = {
+                    menuSelectId = track.id
+                    menuTrack = track.toUnifiedTrack()
+                },
                 selectionMode = selection.active,
                 selected = track.id in selection.selectedIds,
             )
@@ -387,10 +397,14 @@ private fun DownloadedTrackRow(
     selectionMode: Boolean,
     selected: Boolean,
 ) {
+    // Holding plays the song's preview until the finger lifts; Select is in its menu.
+    val unified = remember(track) { track.toUnifiedTrack() }
+    val holdToPreview = rememberHoldToPreview(unified)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(onClick = onClick, onLongClick = holdToPreview ?: onLongClick)
+            .songPreviewHold(SongPreview.keyOf(unified), RectangleShape)
             .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

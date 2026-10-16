@@ -576,6 +576,14 @@ fun MonochromeNavHost(initialRoute: String? = null) {
         // so coming back to Library would reset to the Overview sub-tab and
         // scroll to the top.
         val tabStateHolder = rememberSaveableStateHolder()
+        // Hold a song to hear it: one preview player for every list's rows.
+        val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
+        val songPreview = remember(appContext) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                appContext,
+                tf.monochrome.android.player.preview.SongPreviewEntryPoint::class.java,
+            ).songPreview()
+        }
         val playInTryptMania: (tf.monochrome.android.glyph.data.TryptManiaRequest) -> Unit =
             remember(navController) {
                 { request ->
@@ -605,6 +613,7 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             // Every song menu's "Play in Trypt Mania": the request handed over,
             // and the mode opened to take it.
             tf.monochrome.android.ui.components.LocalPlayInTryptMania provides playInTryptMania,
+            tf.monochrome.android.ui.components.LocalSongPreview provides songPreview,
         ) {
         Box(modifier = Modifier.fillMaxSize().hazeSource(hazeState).nestedScroll(collapseOnScroll)) {
             // Pager for main tabs — fills entire screen

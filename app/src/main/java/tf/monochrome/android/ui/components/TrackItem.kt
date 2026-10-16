@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import tf.monochrome.android.data.downloads.DownloadStatus
 import tf.monochrome.android.data.downloads.TrackDownloadState
 import tf.monochrome.android.domain.model.Track
+import tf.monochrome.android.player.preview.SongPreview
 import tf.monochrome.android.domain.usecase.uiArtistRefs
 import tf.monochrome.android.ui.theme.ExplicitBadge
 import tf.monochrome.android.ui.navigation.LocalNowPlayingTrackId
@@ -70,6 +71,10 @@ fun TrackItem(
     // LocalNowPlayingTrackId. A track change recomposes the visible rows and
     // nothing else.
     val nowPlaying = track.id == LocalNowPlayingTrackId.current
+    // Holding a song plays its preview until the finger lifts (SongPreview);
+    // multi-select starts from the song menu's Select instead. The caller's
+    // long-press stays only where no preview is provided.
+    val holdToPreview = rememberHoldToPreview(track)
 
     Surface(
         modifier = modifier
@@ -77,9 +82,10 @@ fun TrackItem(
             .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
             .bounceCombinedClick(
                 onClick = onClick,
-                onLongClick = onLongClick
+                onLongClick = holdToPreview ?: onLongClick
             )
-            .liquidGlass(shape = MonoDimens.shapeMd),
+            .liquidGlass(shape = MonoDimens.shapeMd)
+            .songPreviewHold(SongPreview.keyOf(track), MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         // Selection wins over now-playing: while multi-selecting, whether a row
         // is ticked is the only thing the colour is being asked to say.
