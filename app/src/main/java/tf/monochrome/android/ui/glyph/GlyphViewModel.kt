@@ -1780,10 +1780,16 @@ class GlyphViewModel @Inject constructor(
             .apply()
     }
 
-    /** The TV's sliders; a pixel size never set is left to its look's default. */
+    /**
+     * The TV's sliders, one line (GlyphTvTuning.encode); a pixel size never
+     * set is left to its look's default. Before the line there was a key a
+     * slider, read once here and dropped at the next save.
+     */
     private fun loadTvTuning(): GlyphTvTuning {
+        prefs.getString(PREF_GFX_TV_TUNING, null)?.let { return GlyphTvTuning.decode(it) }
         val defaults = GlyphTvTuning()
         fun unit(key: String, default: Float) = prefs.getFloat(key, default).coerceIn(0f, 1f)
+        val legacyCurve = unit(PREF_GFX_TV_CURVATURE, 0f)
         return GlyphTvTuning(
             pixelSizes = GlyphTvShader.entries.mapNotNull { shader ->
                 prefs.getInt(PREF_GFX_TV_PIXEL + shader.id, 0).takeIf { it > 0 }?.let { shader to it }
@@ -1796,23 +1802,15 @@ class GlyphViewModel @Inject constructor(
             glow = unit(PREF_GFX_TV_GLOW, defaults.glow),
             sharpness = unit(PREF_GFX_TV_SHARPNESS, defaults.sharpness),
             chromatic = unit(PREF_GFX_TV_CHROMATIC, defaults.chromatic),
-            curvature = unit(PREF_GFX_TV_CURVATURE, defaults.curvature),
-        )
+            curveTopDeg = GlyphTvTuning.degreesOf(GlyphTvTuning.LEGACY_WARP_Y * legacyCurve),
+            curveSideDeg = GlyphTvTuning.degreesOf(GlyphTvTuning.LEGACY_WARP_X * legacyCurve),
+        ).clamped()
     }
 
     private fun saveTvTuning(edit: android.content.SharedPreferences.Editor, tv: GlyphTvTuning) {
-        for (shader in GlyphTvShader.entries) {
-            val size = tv.pixelSizes[shader]
-            if (size == null) edit.remove(PREF_GFX_TV_PIXEL + shader.id) else edit.putInt(PREF_GFX_TV_PIXEL + shader.id, size)
-        }
-        edit.putFloat(PREF_GFX_TV_STRENGTH, tv.strength)
-            .putFloat(PREF_GFX_TV_BRIGHTNESS, tv.brightness)
-            .putFloat(PREF_GFX_TV_SCANLINES, tv.scanlines)
-            .putFloat(PREF_GFX_TV_MASK, tv.mask)
-            .putFloat(PREF_GFX_TV_GLOW, tv.glow)
-            .putFloat(PREF_GFX_TV_SHARPNESS, tv.sharpness)
-            .putFloat(PREF_GFX_TV_CHROMATIC, tv.chromatic)
-            .putFloat(PREF_GFX_TV_CURVATURE, tv.curvature)
+        edit.putString(PREF_GFX_TV_TUNING, tv.clamped().encode())
+        for (shader in GlyphTvShader.entries) edit.remove(PREF_GFX_TV_PIXEL + shader.id)
+        for (key in LEGACY_TV_KEYS) edit.remove(key)
     }
 
     /**
@@ -2508,6 +2506,13 @@ class GlyphViewModel @Inject constructor(
         const val PREF_GFX_TV_SHARPNESS = "gfx_tv_sharpness"
         const val PREF_GFX_TV_CHROMATIC = "gfx_tv_chromatic"
         const val PREF_GFX_TV_CURVATURE = "gfx_tv_curvature"
+        const val PREF_GFX_TV_TUNING = "gfx_tv_tuning"
+
+        /** The keys a slider the TV's sliders were kept under before [PREF_GFX_TV_TUNING]. */
+        private val LEGACY_TV_KEYS = listOf(
+            PREF_GFX_TV_STRENGTH, PREF_GFX_TV_BRIGHTNESS, PREF_GFX_TV_SCANLINES, PREF_GFX_TV_MASK,
+            PREF_GFX_TV_GLOW, PREF_GFX_TV_SHARPNESS, PREF_GFX_TV_CHROMATIC, PREF_GFX_TV_CURVATURE,
+        )
         const val PREF_GFX_TV_SHADER = "gfx_tv_shader"
 
         const val MAX_MINI = 0.5f

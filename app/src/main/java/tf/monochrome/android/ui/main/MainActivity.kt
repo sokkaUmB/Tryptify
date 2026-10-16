@@ -79,6 +79,7 @@ class MainActivity : ComponentActivity() {
      * effect is off. [appTubeBounds] is where its layer sits in the window.
      */
     private var appTube: (() -> tf.monochrome.android.glyph.engine.GlyphTvTuning)? = null
+    private var appTubeLook = tf.monochrome.android.glyph.engine.GlyphTvShader.OFF
     private val appTubeBounds = android.graphics.RectF()
 
     // Registered-for-result launcher for POST_NOTIFICATIONS. Fires a one-shot
@@ -301,7 +302,10 @@ class MainActivity : ComponentActivity() {
                     // every screen is in; a screen with its own (Trypt Mania's
                     // playfield) leaves its own off under it.
                     val appTv = tf.monochrome.android.ui.glyph.appTvShaderRuns(appTvShader)
-                    SideEffect { appTube = if (appTv) appTvNow else null }
+                    SideEffect {
+                        appTube = if (appTv) appTvNow else null
+                        appTubeLook = appTvShader
+                    }
                     Surface(
                         modifier = Modifier
                             .fillMaxSize()
@@ -387,7 +391,7 @@ class MainActivity : ComponentActivity() {
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         val tuning = appTube?.invoke()
         val bounds = appTubeBounds
-        if (tuning == null || !tuning.curved || bounds.isEmpty || !tf.monochrome.android.ui.glyph.tubeDrawable) {
+        if (tuning == null || !tuning.curved || bounds.isEmpty || !tf.monochrome.android.ui.glyph.tubeDrawable(appTubeLook)) {
             return super.dispatchTouchEvent(ev)
         }
         val bent = tf.monochrome.android.ui.glyph.bentThroughTube(

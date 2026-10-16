@@ -801,7 +801,8 @@ private fun CrtSliders(viewModel: SettingsViewModel, shader: tf.monochrome.andro
     val density = androidx.compose.ui.platform.LocalDensity.current.density
     val pixel = tv.pixelSize(shader, density, window.height)
     val range = tf.monochrome.android.glyph.engine.GlyphTvTuning.pixelRange(shader)
-    val wave = shader == tf.monochrome.android.glyph.engine.GlyphTvShader.WAVE
+    val wave = shader == tf.monochrome.android.glyph.engine.GlyphTvShader.WAVE ||
+        shader == tf.monochrome.android.glyph.engine.GlyphTvShader.ROYALE
     fun percent(value: Float) = (value * 100f).roundToInt()
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         CrtSlider(
@@ -872,24 +873,135 @@ private fun CrtSliders(viewModel: SettingsViewModel, shader: tf.monochrome.andro
             onChange = { drag(tv.copy(chromatic = it)) },
             onDone = commit,
         )
+        if (shader == tf.monochrome.android.glyph.engine.GlyphTvShader.ROYALE) {
+            RoyaleSliders(tv, density, drag, commit)
+        }
         CrtSlider(
-            label = stringResource(R.string.settings_crt_curvature, percent(tv.curvature)),
-            subtitle = stringResource(R.string.settings_crt_curvature_desc),
-            value = tv.curvature,
-            onChange = { drag(tv.copy(curvature = it)) },
+            label = stringResource(R.string.settings_crt_curve_top, tv.curveTopDeg),
+            subtitle = stringResource(R.string.settings_crt_curve_top_desc),
+            value = tv.curveTopDeg,
+            range = 0f..tf.monochrome.android.glyph.engine.GlyphTvTuning.MAX_CURVE_DEG,
+            onChange = { drag(tv.copy(curveTopDeg = it)) },
+            onDone = commit,
+        )
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_curve_side, tv.curveSideDeg),
+            subtitle = stringResource(R.string.settings_crt_curve_side_desc),
+            value = tv.curveSideDeg,
+            range = 0f..tf.monochrome.android.glyph.engine.GlyphTvTuning.MAX_CURVE_DEG,
+            onChange = { drag(tv.copy(curveSideDeg = it)) },
             onDone = commit,
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(
             onClick = {
                 live.tuning = null
-                viewModel.setAppTvTuning(tf.monochrome.android.glyph.engine.GlyphTvTuning(pixelSizes = tv.pixelSizes - shader))
+                viewModel.setAppTvTuning(tv.reset(shader))
             },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.settings_crt_reset, shader.label))
         }
     }
+}
+
+/**
+ * CRT-Royale's own: its mask (a pick, saved at once), the mask's size and
+ * strength, the beams, and the light in the glass.
+ */
+@Composable
+private fun RoyaleSliders(
+    tv: tf.monochrome.android.glyph.engine.GlyphTvTuning,
+    density: Float,
+    drag: (tf.monochrome.android.glyph.engine.GlyphTvTuning) -> Unit,
+    commit: () -> Unit,
+) {
+    val masks = listOf(
+        tf.monochrome.android.glyph.engine.GlyphTvTuning.ROYALE_GRILLE to R.string.settings_crt_mask_grille,
+        tf.monochrome.android.glyph.engine.GlyphTvTuning.ROYALE_SLOT to R.string.settings_crt_mask_slot,
+        tf.monochrome.android.glyph.engine.GlyphTvTuning.ROYALE_SHADOW to R.string.settings_crt_mask_shadow,
+    )
+    var picking by remember { mutableStateOf(false) }
+    fun percent(value: Float) = (value * 100f).roundToInt()
+    Box {
+        SettingItem(
+            title = stringResource(R.string.settings_crt_mask_type),
+            subtitle = stringResource(masks.firstOrNull { it.first == tv.royaleMask }?.second ?: masks[1].second),
+            onClick = { picking = true },
+        )
+        DropdownMenu(expanded = picking, onDismissRequest = { picking = false }) {
+            masks.forEach { (mask, name) ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(name)) },
+                    onClick = {
+                        drag(tv.copy(royaleMask = mask))
+                        commit()
+                        picking = false
+                    },
+                )
+            }
+        }
+    }
+    val triad = tv.royaleTriadPx(density)
+    val triads = tf.monochrome.android.glyph.engine.GlyphTvTuning.ROYALE_TRIADS
+    CrtSlider(
+        label = stringResource(R.string.settings_crt_mask_size, triad),
+        subtitle = stringResource(R.string.settings_crt_mask_size_desc),
+        value = triad.toFloat(),
+        range = triads.first.toFloat()..triads.last.toFloat(),
+        steps = triads.last - triads.first - 1,
+        onChange = { drag(tv.copy(royaleTriad = it.roundToInt())) },
+        onDone = commit,
+    )
+    CrtSlider(
+        label = stringResource(R.string.settings_crt_mask_strength, percent(tv.royaleMaskStrength)),
+        subtitle = stringResource(R.string.settings_crt_mask_strength_desc),
+        value = tv.royaleMaskStrength,
+        onChange = { drag(tv.copy(royaleMaskStrength = it)) },
+        onDone = commit,
+    )
+    CrtSlider(
+        label = stringResource(R.string.settings_crt_beam_width, percent(tv.royaleBeamWidth)),
+        subtitle = stringResource(R.string.settings_crt_beam_width_desc),
+        value = tv.royaleBeamWidth,
+        onChange = { drag(tv.copy(royaleBeamWidth = it)) },
+        onDone = commit,
+    )
+    CrtSlider(
+        label = stringResource(R.string.settings_crt_beam_shape, percent(tv.royaleBeamShape)),
+        subtitle = stringResource(R.string.settings_crt_beam_shape_desc),
+        value = tv.royaleBeamShape,
+        onChange = { drag(tv.copy(royaleBeamShape = it)) },
+        onDone = commit,
+    )
+    CrtSlider(
+        label = stringResource(R.string.settings_crt_halation, percent(tv.royaleHalation)),
+        subtitle = stringResource(R.string.settings_crt_halation_desc),
+        value = tv.royaleHalation,
+        onChange = { drag(tv.copy(royaleHalation = it)) },
+        onDone = commit,
+    )
+    CrtSlider(
+        label = stringResource(R.string.settings_crt_diffusion, percent(tv.royaleDiffusion)),
+        subtitle = stringResource(R.string.settings_crt_diffusion_desc),
+        value = tv.royaleDiffusion,
+        onChange = { drag(tv.copy(royaleDiffusion = it)) },
+        onDone = commit,
+    )
+    CrtSlider(
+        label = stringResource(R.string.settings_crt_bloom, percent(tv.royaleBloom)),
+        subtitle = stringResource(R.string.settings_crt_bloom_desc),
+        value = tv.royaleBloom,
+        onChange = { drag(tv.copy(royaleBloom = it)) },
+        onDone = commit,
+    )
+    CrtSlider(
+        label = stringResource(R.string.settings_crt_edge, percent(tv.royaleBorder)),
+        subtitle = stringResource(R.string.settings_crt_edge_desc),
+        value = tv.royaleBorder,
+        onChange = { drag(tv.copy(royaleBorder = it)) },
+        onDone = commit,
+    )
 }
 
 /** One of [CrtSliders]: its label, a line on what it does, and the slider, moving the app as it is dragged. */

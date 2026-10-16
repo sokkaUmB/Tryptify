@@ -4,6 +4,8 @@ package tf.monochrome.android.glyph.engine
 
 import tf.monochrome.android.glyph.asset.GlyphLane
 import tf.monochrome.android.glyph.chart.GlyphChart
+import kotlin.math.acos
+import kotlin.math.cos
 import kotlin.math.roundToInt
 
 /**
@@ -178,7 +180,14 @@ enum class GlyphTvShader(val id: String, val label: String, val note: String, va
     DIAGONAL("diagonal", "Diagonal", "A red, green and blue mask that steps one pixel each row.", 2),
     TRIANGULAR("triangular", "Triangular", "Two-pixel red, green and blue columns, shifted every second row pair.", 3),
     WAVE("wave", "Wave", "The picture in lines, each one brighter at its middle.", 4),
-    CRT("crt", "CRT", "Soft scanlines, a shadow mask and a little bloom: a CRT monitor. The heaviest of the six.", 5),
+    CRT("crt", "CRT", "Soft scanlines, a shadow mask and a little bloom: a CRT monitor.", 5),
+    ROYALE(
+        "royale",
+        "CRT-Royale",
+        "A consumer TV up close: beams that widen as they brighten, an aperture grille, slot or shadow mask, " +
+            "and light that glows through the glass. The heaviest of the seven.",
+        6,
+    ),
     ;
 
     companion object {
@@ -194,13 +203,15 @@ enum class GlyphTvShader(val id: String, val label: String, val note: String, va
  * that beat (moiré) is what a line grid of 640 x 480 drew on a 1272-pixel
  * screen. [pixelSizes] is kept per look, since each has its own default: the
  * CRT at the phone's own resolution, the masks at a desktop monitor's pixel
- * (where a one-pixel line is still visible), Wave at the original's 480 lines.
+ * (where a one-pixel line is still visible), Wave and CRT-Royale at the
+ * original's 480 lines.
  *
  * [strength] and [brightness] apply to every look, and so do [chromatic] and
- * [curvature], which bend the finished picture as the glass of a tube would;
- * the rest to the CRT only. The four CRT values run 0 to 1, and [crtScan] and
- * the rest turn them into the shader's own numbers; their defaults are the
- * original's. The tube's two start at 0, a flat picture in line.
+ * the two curves ([curveTopDeg], [curveSideDeg]), which bend the finished
+ * picture as the glass of a tube would. The CRT's four run 0 to 1, and
+ * [crtScan] and the rest turn them into the shader's own numbers; the
+ * `royale` ones are CRT-Royale's, the same way. Every default is the
+ * original's; the tube's start flat and in line.
  */
 data class GlyphTvTuning(
     val pixelSizes: Map<GlyphTvShader, Int> = emptyMap(),
@@ -214,8 +225,31 @@ data class GlyphTvTuning(
     val sharpness: Float = DEFAULT_SHARPNESS,
     /** Red and blue drawn apart sideways, as on a tube whose three beams are out of line: 0 is in line. */
     val chromatic: Float = 0f,
-    /** The picture bowed over a curved tube, its corners rounded off into the dark: 0 is flat. */
-    val curvature: Float = 0f,
+    /**
+     * How far the glass bows toward the top and bottom edges, in degrees,
+     * 0 to [MAX_CURVE_DEG]: those edges bow outward, and the corners go dark.
+     */
+    val curveTopDeg: Float = 0f,
+    /** The same toward the left and right edges. */
+    val curveSideDeg: Float = 0f,
+    /** CRT-Royale's phosphor mask: [ROYALE_GRILLE], [ROYALE_SLOT] (its default) or [ROYALE_SHADOW]. */
+    val royaleMask: Int = ROYALE_SLOT,
+    /** CRT-Royale's mask triad, in phone pixels; 0 is this screen's default ([royaleTriadPx]). */
+    val royaleTriad: Int = 0,
+    /** How much of the mask shows, 0 to 1: CRT-Royale draws all of it. */
+    val royaleMaskStrength: Float = 1f,
+    /** How wide a bright line's beam spreads, 0 to 1 (`beam_max_sigma`, 0.3 by default). */
+    val royaleBeamWidth: Float = DEFAULT_ROYALE_BEAM_WIDTH,
+    /** How flat-topped and hard-edged a bright beam is, 0 to 1 (`beam_max_shape`, 4 by default). */
+    val royaleBeamShape: Float = DEFAULT_ROYALE_BEAM_SHAPE,
+    /** Light scattered inside the tube onto the beams, 0 to 1 (`halation_weight`, 0 by default). */
+    val royaleHalation: Float = 0f,
+    /** Light scattered by the glass over the picture, 0 to 1 (`diffusion_weight`, 0.075 by default). */
+    val royaleDiffusion: Float = DEFAULT_ROYALE_DIFFUSION,
+    /** How much a bright area glows past what its mask shows, 0 to 1 (`bloom_excess`, 0 by default). */
+    val royaleBloom: Float = 0f,
+    /** The dark rim around the picture, 0 to 1 (`border_size`, 0.015 of the screen by default). */
+    val royaleBorder: Float = DEFAULT_ROYALE_BORDER,
 ) {
     /** Phone pixels to a TV pixel for [shader], on a screen of [density] and [windowHeightPx]. */
     fun pixelSize(shader: GlyphTvShader, density: Float, windowHeightPx: Int): Int =
@@ -237,18 +271,35 @@ data class GlyphTvTuning(
     /** The bloom added over the picture: 0.15 by default. */
     val crtBloom: Float get() = GLOW_MOST * glow
 
+    /** CRT-Royale's mask triad on a screen of [density]: about 2.5 dp unless set. */
+    fun royaleTriadPx(density: Float): Int =
+        (if (royaleTriad > 0) royaleTriad else (density * ROYALE_TRIAD_DP).roundToInt()).coerceIn(ROYALE_TRIADS)
+
+    /** CRT-Royale's `beam_max_sigma`: a bright beam's spread, in lines. */
+    val royaleMaxSigma: Float get() = ROYALE_SIGMA_LEAST + (ROYALE_SIGMA_MOST - ROYALE_SIGMA_LEAST) * royaleBeamWidth
+
+    /** CRT-Royale's `beam_max_shape`: 2 is a Gaussian, more is flatter on top and harder at the edge. */
+    val royaleMaxShape: Float get() = ROYALE_SHAPE_LEAST + (ROYALE_SHAPE_MOST - ROYALE_SHAPE_LEAST) * royaleBeamShape
+
+    val royaleHalationWeight: Float get() = ROYALE_HALATION_MOST * royaleHalation
+    val royaleDiffusionWeight: Float get() = ROYALE_DIFFUSION_MOST * royaleDiffusion
+
+    /** CRT-Royale's `border_size`, as a share of the screen's short side. */
+    val royaleBorderSize: Float get() = ROYALE_BORDER_MOST * royaleBorder
+
     /** How far red and blue each stand from green, in phone pixels on a screen of [density]. */
     fun chromaticPx(density: Float): Float = CHROMATIC_MOST_DP * density * chromatic
 
     /**
-     * The tube's bow across and down: the CRT shader's `warp`, which at a
-     * quarter of the slider is the original's 1/32 and 1/24.
+     * The tube's bow along each axis: the CRT shader's `warp`, `1/cos θ − 1`
+     * of each angle. [warpX] bows the sides out, [warpY] the top and bottom;
+     * about 14.1° and 16.3° are the original's 1/32 and 1/24.
      */
-    val warpX: Float get() = WARP_MOST_X * curvature
-    val warpY: Float get() = WARP_MOST_Y * curvature
+    val warpX: Float get() = warpOf(curveSideDeg)
+    val warpY: Float get() = warpOf(curveTopDeg)
 
     /** Whether the picture is bowed at all, so taps on it have to follow the bow. */
-    val curved: Boolean get() = curvature >= TUBE_MIN
+    val curved: Boolean get() = curveTopDeg >= CURVE_MIN_DEG || curveSideDeg >= CURVE_MIN_DEG
 
     /** Whether the tube's pass runs: the picture bowed, or its colours apart. */
     val hasTube: Boolean get() = curved || chromatic >= TUBE_MIN
@@ -283,8 +334,24 @@ data class GlyphTvTuning(
         glow = glow.unit(DEFAULT_GLOW),
         sharpness = sharpness.unit(DEFAULT_SHARPNESS),
         chromatic = chromatic.unit(0f),
-        curvature = curvature.unit(0f),
+        curveTopDeg = curveTopDeg.angle(),
+        curveSideDeg = curveSideDeg.angle(),
+        royaleMask = royaleMask.coerceIn(ROYALE_GRILLE, ROYALE_SHADOW),
+        royaleTriad = if (royaleTriad <= 0) 0 else royaleTriad.coerceIn(ROYALE_TRIADS),
+        royaleMaskStrength = royaleMaskStrength.unit(1f),
+        royaleBeamWidth = royaleBeamWidth.unit(DEFAULT_ROYALE_BEAM_WIDTH),
+        royaleBeamShape = royaleBeamShape.unit(DEFAULT_ROYALE_BEAM_SHAPE),
+        royaleHalation = royaleHalation.unit(0f),
+        royaleDiffusion = royaleDiffusion.unit(DEFAULT_ROYALE_DIFFUSION),
+        royaleBloom = royaleBloom.unit(0f),
+        royaleBorder = royaleBorder.unit(DEFAULT_ROYALE_BORDER),
     )
+
+    /**
+     * Back to [shader]'s defaults: every slider that look shows, and its own
+     * pixel size; the other looks' sizes are kept.
+     */
+    fun reset(shader: GlyphTvShader): GlyphTvTuning = GlyphTvTuning(pixelSizes = pixelSizes - shader)
 
     /**
      * One line for a settings store: `name=value` pairs, `;` between them,
@@ -298,7 +365,17 @@ data class GlyphTvTuning(
         add("glow=$glow")
         add("sharpness=$sharpness")
         add("chromatic=$chromatic")
-        add("curvature=$curvature")
+        add("curveTop=$curveTopDeg")
+        add("curveSide=$curveSideDeg")
+        add("royaleMask=$royaleMask")
+        add("royaleTriad=$royaleTriad")
+        add("royaleMaskStrength=$royaleMaskStrength")
+        add("royaleBeamWidth=$royaleBeamWidth")
+        add("royaleBeamShape=$royaleBeamShape")
+        add("royaleHalation=$royaleHalation")
+        add("royaleDiffusion=$royaleDiffusion")
+        add("royaleBloom=$royaleBloom")
+        add("royaleBorder=$royaleBorder")
         pixelSizes.forEach { (shader, size) -> add("px.${shader.id}=$size") }
     }.joinToString(";")
 
@@ -319,19 +396,64 @@ data class GlyphTvTuning(
         /** Red and blue's furthest from green, in dp: past it the letters read double. */
         const val CHROMATIC_MOST_DP = 3f
 
-        /** The tube's bow at the slider's end: four times the original CRT's. */
-        const val WARP_MOST_X = 0.125f
-        const val WARP_MOST_Y = 1f / 6f
+        /** Each curve's far end: past it the corners take most of the screen. */
+        const val MAX_CURVE_DEG = 40f
 
-        /** Below this the tube's two are off, with no pass at all. */
+        /** Below this a curve is flat, with no pass for it. */
+        private const val CURVE_MIN_DEG = 0.05f
+
+        /** Below this the chromatic shift is off. */
         private const val TUBE_MIN = 0.001f
 
+        const val ROYALE_GRILLE = 0
+        const val ROYALE_SLOT = 1
+        const val ROYALE_SHADOW = 2
+
+        /** CRT-Royale's mask triads, in phone pixels, and their default in dp. */
+        val ROYALE_TRIADS = 3..24
+        private const val ROYALE_TRIAD_DP = 2.5f
+
+        // Each Royale slider's range in the shader's own numbers, its default
+        // the original's: beam_max_sigma 0.3, beam_max_shape 4, diffusion
+        // 0.075, border 0.015.
+        private const val ROYALE_SIGMA_LEAST = 0.1f
+        private const val ROYALE_SIGMA_MOST = 0.6f
+        const val DEFAULT_ROYALE_BEAM_WIDTH = 0.4f
+        private const val ROYALE_SHAPE_LEAST = 2f
+        private const val ROYALE_SHAPE_MOST = 10f
+        const val DEFAULT_ROYALE_BEAM_SHAPE = 0.25f
+        private const val ROYALE_HALATION_MOST = 0.5f
+        private const val ROYALE_DIFFUSION_MOST = 0.5f
+        const val DEFAULT_ROYALE_DIFFUSION = 0.15f
+        private const val ROYALE_BORDER_MOST = 0.06f
+        const val DEFAULT_ROYALE_BORDER = 0.25f
+
+        /** A monitor's pixel, in dp: about a hundredth of an inch. */
+        private const val MONITOR_PIXEL_DP = 1.6f
+
+        /** The original's line count, for Wave's and CRT-Royale's defaults. */
+        private const val ORIGINAL_LINES = 480
+
         private fun Float.unit(fallback: Float): Float = (if (isFinite()) this else fallback).coerceIn(0f, 1f)
+
+        private fun Float.angle(): Float = (if (isFinite()) this else 0f).coerceIn(0f, MAX_CURVE_DEG)
+
+        /** `1/cos θ − 1`: how much further out than the tube's corner the picture's corner lies. */
+        fun warpOf(degrees: Float): Float {
+            if (degrees < CURVE_MIN_DEG) return 0f
+            return (1.0 / cos(Math.toRadians(degrees.coerceAtMost(MAX_CURVE_DEG).toDouble())) - 1.0).toFloat()
+        }
+
+        /** The angle whose bow is [warp]: [warpOf] backwards, for a curve saved as a share of a slider. */
+        fun degreesOf(warp: Float): Float =
+            if (warp <= 0f || !warp.isFinite()) 0f else Math.toDegrees(acos(1.0 / (1.0 + warp))).toFloat()
 
         /**
          * [encode]'s line read back, each value held to its range; a name it
          * does not know, or a value it cannot read, keeps that default. Null
-         * or blank is every default.
+         * or blank is every default. A line from the build with one Curvature
+         * slider (0 to 1, warps of 1/8 and 1/6 at its end) becomes the two
+         * angles that draw the same tube.
          */
         fun decode(line: String?): GlyphTvTuning {
             if (line.isNullOrBlank()) return GlyphTvTuning()
@@ -341,7 +463,9 @@ data class GlyphTvTuning(
                 if (name.isEmpty() || value.isEmpty()) null else name to value
             }.toMap()
             fun float(name: String, default: Float) = pairs[name]?.toFloatOrNull()?.takeIf { it.isFinite() } ?: default
+            fun int(name: String, default: Int) = pairs[name]?.toIntOrNull() ?: default
             val defaults = GlyphTvTuning()
+            val legacy = pairs["curvature"]?.toFloatOrNull()?.takeIf { it.isFinite() }?.coerceIn(0f, 1f)
             return GlyphTvTuning(
                 pixelSizes = GlyphTvShader.entries.mapNotNull { shader ->
                     pairs["px.${shader.id}"]?.toIntOrNull()?.takeIf { it > 0 }?.let { shader to it }
@@ -353,24 +477,36 @@ data class GlyphTvTuning(
                 glow = float("glow", defaults.glow),
                 sharpness = float("sharpness", defaults.sharpness),
                 chromatic = float("chromatic", defaults.chromatic),
-                curvature = float("curvature", defaults.curvature),
+                curveTopDeg = float("curveTop", legacy?.let { degreesOf(LEGACY_WARP_Y * it) } ?: 0f),
+                curveSideDeg = float("curveSide", legacy?.let { degreesOf(LEGACY_WARP_X * it) } ?: 0f),
+                royaleMask = int("royaleMask", defaults.royaleMask),
+                royaleTriad = int("royaleTriad", defaults.royaleTriad),
+                royaleMaskStrength = float("royaleMaskStrength", defaults.royaleMaskStrength),
+                royaleBeamWidth = float("royaleBeamWidth", defaults.royaleBeamWidth),
+                royaleBeamShape = float("royaleBeamShape", defaults.royaleBeamShape),
+                royaleHalation = float("royaleHalation", defaults.royaleHalation),
+                royaleDiffusion = float("royaleDiffusion", defaults.royaleDiffusion),
+                royaleBloom = float("royaleBloom", defaults.royaleBloom),
+                royaleBorder = float("royaleBorder", defaults.royaleBorder),
             ).clamped()
         }
 
-        /** A monitor's pixel, in dp: about a hundredth of an inch. */
-        private const val MONITOR_PIXEL_DP = 1.6f
+        /** The one Curvature slider's bows at its end, for [decode]. */
+        const val LEGACY_WARP_X = 0.125f
+        const val LEGACY_WARP_Y = 1f / 6f
 
-        /** The original's line count, for Wave's default. */
-        private const val WAVE_LINES = 480
-
-        fun pixelRange(shader: GlyphTvShader): IntRange =
+        fun pixelRange(shader: GlyphTvShader): IntRange = when (shader) {
             // Wave's line is its bright middle and two dim edges: three pixels at least.
-            if (shader == GlyphTvShader.WAVE) 3..12 else 1..8
+            GlyphTvShader.WAVE -> 3..12
+            // A Royale line needs room for its beam to be seen to widen.
+            GlyphTvShader.ROYALE -> 2..16
+            else -> 1..8
+        }
 
         fun defaultPixelSize(shader: GlyphTvShader, density: Float, windowHeightPx: Int): Int = when (shader) {
             GlyphTvShader.CRT -> 1
-            GlyphTvShader.WAVE ->
-                if (windowHeightPx > 0) (windowHeightPx.toFloat() / WAVE_LINES).roundToInt() else 6
+            GlyphTvShader.WAVE, GlyphTvShader.ROYALE ->
+                if (windowHeightPx > 0) (windowHeightPx.toFloat() / ORIGINAL_LINES).roundToInt() else 6
             else -> (density * MONITOR_PIXEL_DP).roundToInt()
         }.coerceIn(pixelRange(shader))
     }

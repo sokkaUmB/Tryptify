@@ -1292,13 +1292,31 @@ copy (`appTvTuning`, one line in the settings store, synced), and the app is
 their preview: a drag moves the whole app live (`AppTvLive`, read in the
 root layer's draw) and the store is written once, on release.
 
-**Chromatic shift and Curvature are the tube's glass, over any look.** A second
-pass chained after the pattern (`TUBE_SHADER`), so the scanlines and the mask
-bow with the picture, as on a tube; it runs only while either is above 0, and
-both start at 0. Curvature is the CRT shader's warp, a quarter of the slider
-being its classic 1/32 and 1/24: the middle keeps its size, the edges bow
-outward, the corners go dark. Chromatic shift reads red and blue up to 3 dp
-either side of green. Under the app-wide effect a bowed picture would put every
+**Chromatic shift and the two curves are the tube's glass, over any look.** A
+second pass chained after the pattern (`TUBE_SHADER`), so the scanlines and the
+mask bow with the picture, as on a tube; it runs only while one is above 0, and
+all start at 0. Each curve is an angle, 0 to 40°: "Curve, top & bottom" bows
+those edges and "Curve, sides" the left and right, each `1/cos θ − 1` of the CRT
+shader's warp (about 16° and 14° are its classic 1/24 and 1/32), so a flat-sided
+or a round tube can be had. The middle keeps its size, the edges bow outward,
+the corners go dark. A line saved with the one Curvature slider of before is
+read as the two angles that draw the same tube. Chromatic shift reads red and
+blue up to 3 dp either side of green.
+
+**CRT-Royale is its passes folded into one** (`ROYALE_SHADER`, its own program,
+from crt-royale, GPL-2.0-or-later). The beams are its sampled generalized
+Gaussians, three lines a pixel, widening and flattening as they brighten; the
+mask is drawn (aperture grille, slot mask, its default, or shadow mask) instead
+of read from its textures, and amplified by its mean so the light is kept; its
+"fake bloom" lets bright parts glow through the mask; halation and diffusion are
+a 13-tap blur; its border darkens the rim. Every slider's default is the
+original's value (`GlyphTvTuningTest`). Along a line it reads the phone's own
+pixels, not TV pixels: a CRT's line has none, and the app's letters stay sharp.
+Its lines start at the original's 480 down the screen, its triads at 2.5 dp.
+Its arithmetic was checked against a numpy copy on a player screenshot, and each
+program is compiled as GLSL before a build; neither replaces seeing it on a
+phone. It is the one look named after its shader: it is known by that name and
+was asked for by it. Under the app-wide effect a bowed picture would put every
 button somewhere other than where it shows, so `MainActivity.dispatchTouchEvent`
 sends each touch (and its history) through the same warp
 (`GlyphTvTuning.tubeSource`, `bentThroughTube`): a tap lands on what is seen
@@ -1322,7 +1340,7 @@ under the finger.
   mask levels, BloomAmount and FilterCRTAmount, and their defaults are the
   original's values exactly (`GlyphTvTuningTest`).
 * The settings name each look by what it does, never by where its arithmetic
-  came from.
+  came from, CRT-Royale apart (below).
 
 **The mode opens on its menu.** `GlyphScreen.MENU`: Play and the map editor
 both lead to the song list, Settings to its own page, and Back from the song

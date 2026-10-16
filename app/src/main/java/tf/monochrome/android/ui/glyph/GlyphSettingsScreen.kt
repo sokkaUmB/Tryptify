@@ -791,7 +791,7 @@ private fun TvShaderControls(
     val window = LocalWindowInfo.current.containerSize
     val pixel = tv.pixelSize(shader, LocalDensity.current.density, window.height)
     val range = GlyphTvTuning.pixelRange(shader)
-    val wave = shader == GlyphTvShader.WAVE
+    val wave = shader == GlyphTvShader.WAVE || shader == GlyphTvShader.ROYALE
     GlyphSlider(
         label = if (wave) "Line height" else "Pixel size",
         value = pixel.toFloat(),
@@ -824,6 +824,9 @@ private fun TvShaderControls(
         note = "Gives back the light the pattern takes",
         onChange = { setTv(tv.copy(brightness = it)) },
     )
+    if (shader == GlyphTvShader.ROYALE) {
+        RoyaleControls(tv, setTv)
+    }
     if (shader == GlyphTvShader.CRT) {
         GlyphSlider(
             label = "Scanlines",
@@ -862,20 +865,113 @@ private fun TvShaderControls(
         onChange = { setTv(tv.copy(chromatic = it)) },
     )
     GlyphSlider(
-        label = "Curvature",
-        value = tv.curvature,
-        reading = percent(tv.curvature),
-        note = "The picture bowed over a curved tube, its corners in the dark. 25% is the classic CRT's curve.",
-        onChange = { setTv(tv.copy(curvature = it)) },
+        label = "Curve: top & bottom",
+        value = tv.curveTopDeg,
+        reading = degrees(tv.curveTopDeg),
+        range = 0f..GlyphTvTuning.MAX_CURVE_DEG,
+        note = "How far the glass bows toward the top and bottom edges. About 16° is the classic tube.",
+        onChange = { setTv(tv.copy(curveTopDeg = it)) },
+    )
+    GlyphSlider(
+        label = "Curve: sides",
+        value = tv.curveSideDeg,
+        reading = degrees(tv.curveSideDeg),
+        range = 0f..GlyphTvTuning.MAX_CURVE_DEG,
+        note = "How far it bows toward the left and right edges. About 14° is the classic tube.",
+        onChange = { setTv(tv.copy(curveSideDeg = it)) },
     )
     GlyphButton(
         text = "Reset ${shader.label}",
-        onClick = { setTv(GlyphTvTuning(pixelSizes = tv.pixelSizes - shader)) },
+        onClick = { setTv(tv.reset(shader)) },
         modifier = Modifier.fillMaxWidth(),
     )
 }
 
 private fun percent(value: Float): String = "${(value * 100f).roundToInt()}%"
+
+private fun degrees(value: Float): String = "%.1f°".format(value)
+
+/** CRT-Royale's own sliders: its mask, the beams, and the light in the glass. */
+@Composable
+private fun RoyaleControls(tv: GlyphTvTuning, setTv: (GlyphTvTuning) -> Unit) {
+    val density = LocalDensity.current.density
+    Column {
+        GlyphControlHeader("Mask", null)
+        GlyphChipRow(
+            options = ROYALE_MASKS,
+            selected = ROYALE_MASKS.firstOrNull { it.first == tv.royaleMask } ?: ROYALE_MASKS[1],
+            label = { it.second },
+            onSelect = { setTv(tv.copy(royaleMask = it.first)) },
+        )
+    }
+    val triad = tv.royaleTriadPx(density)
+    val triads = GlyphTvTuning.ROYALE_TRIADS
+    GlyphSlider(
+        label = "Mask size",
+        value = triad.toFloat(),
+        reading = "$triad px",
+        range = triads.first.toFloat()..triads.last.toFloat(),
+        steps = triads.last - triads.first - 1,
+        note = "One red, green and blue group of the mask",
+        onChange = { setTv(tv.copy(royaleTriad = it.roundToInt())) },
+    )
+    GlyphSlider(
+        label = "Mask strength",
+        value = tv.royaleMaskStrength,
+        reading = percent(tv.royaleMaskStrength),
+        note = "How much of the mask shows; the light it takes is given back",
+        onChange = { setTv(tv.copy(royaleMaskStrength = it)) },
+    )
+    GlyphSlider(
+        label = "Beam width",
+        value = tv.royaleBeamWidth,
+        reading = percent(tv.royaleBeamWidth),
+        note = "How far a bright line spreads into the gap between lines",
+        onChange = { setTv(tv.copy(royaleBeamWidth = it)) },
+    )
+    GlyphSlider(
+        label = "Beam shape",
+        value = tv.royaleBeamShape,
+        reading = percent(tv.royaleBeamShape),
+        note = "Soft and round, or flat on top with hard edges, as a line brightens",
+        onChange = { setTv(tv.copy(royaleBeamShape = it)) },
+    )
+    GlyphSlider(
+        label = "Halation",
+        value = tv.royaleHalation,
+        reading = percent(tv.royaleHalation),
+        note = "Light scattered inside the tube, spilling onto the lines",
+        onChange = { setTv(tv.copy(royaleHalation = it)) },
+    )
+    GlyphSlider(
+        label = "Diffusion",
+        value = tv.royaleDiffusion,
+        reading = percent(tv.royaleDiffusion),
+        note = "A soft haze from the glass over the whole picture",
+        onChange = { setTv(tv.copy(royaleDiffusion = it)) },
+    )
+    GlyphSlider(
+        label = "Bloom",
+        value = tv.royaleBloom,
+        reading = percent(tv.royaleBloom),
+        note = "How much bright parts glow past the mask",
+        onChange = { setTv(tv.copy(royaleBloom = it)) },
+    )
+    GlyphSlider(
+        label = "Edge shade",
+        value = tv.royaleBorder,
+        reading = percent(tv.royaleBorder),
+        note = "The dark rim around the picture",
+        onChange = { setTv(tv.copy(royaleBorder = it)) },
+    )
+}
+
+/** CRT-Royale's three masks, by what they look like. */
+private val ROYALE_MASKS = listOf(
+    GlyphTvTuning.ROYALE_GRILLE to "Aperture grille",
+    GlyphTvTuning.ROYALE_SLOT to "Slot mask",
+    GlyphTvTuning.ROYALE_SHADOW to "Shadow mask",
+)
 
 @Composable
 private fun MoreTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {

@@ -2,7 +2,9 @@
 //
 // The shader programs below are ported from PCSX2's presentation shaders
 // (PCSX2 Dev Team, GPL-3.0-or-later; the CRT program is Timothy Lottes'
-// public-domain CRT shader as PCSX2 configures it).
+// public-domain CRT shader as PCSX2 configures it), and from crt-royale
+// (Copyright (C) 2014 TroggleMonkey, GPL-2.0-or-later; its border uses an
+// algorithm from cgwg's crt-geom, GPL), folded from its passes into one.
 
 package tf.monochrome.android.ui.glyph
 
@@ -100,7 +102,8 @@ fun Modifier.tvShader(shader: GlyphTvShader, tv: () -> GlyphTvTuning): Modifier 
         this
     } else {
         this.composed {
-            val runtime = remember { compileTvShader() }
+            val royale = shader == GlyphTvShader.ROYALE
+            val runtime = remember(royale) { if (royale) compileRoyaleShader() else compileTvShader() }
             val tube = remember { compileTubeShader() }
             val size = remember { mutableStateOf(IntSize.Zero) }
             val windowHeight = LocalWindowInfo.current.containerSize.height
@@ -134,14 +137,26 @@ private fun Modifier.tvLayer(
             val height = now.height.toFloat()
             runtime.setFloatUniform("uSize", width, height)
             runtime.setFloatUniform("uPixel", tuning.pixelSize(shader, density, windowHeight).toFloat())
-            runtime.setFloatUniform("uMode", shader.mode.toFloat())
             runtime.setFloatUniform("uStrength", tuning.strength.coerceIn(0f, 1f))
             runtime.setFloatUniform("uBright", tuning.brightness.coerceIn(GlyphTvTuning.MIN_BRIGHTNESS, GlyphTvTuning.MAX_BRIGHTNESS))
-            runtime.setFloatUniform("uScan", tuning.crtScan)
-            runtime.setFloatUniform("uSharp", tuning.crtSharpness)
-            runtime.setFloatUniform("uMaskDark", tuning.crtMaskDark)
-            runtime.setFloatUniform("uMaskLight", tuning.crtMaskLight)
-            runtime.setFloatUniform("uBloom", tuning.crtBloom)
+            if (shader == GlyphTvShader.ROYALE) {
+                runtime.setFloatUniform("uMaskType", tuning.royaleMask.toFloat())
+                runtime.setFloatUniform("uTriad", tuning.royaleTriadPx(density).toFloat())
+                runtime.setFloatUniform("uMaskStrength", tuning.royaleMaskStrength)
+                runtime.setFloatUniform("uMaxSigma", tuning.royaleMaxSigma)
+                runtime.setFloatUniform("uMaxShape", tuning.royaleMaxShape)
+                runtime.setFloatUniform("uHalation", tuning.royaleHalationWeight)
+                runtime.setFloatUniform("uDiffusion", tuning.royaleDiffusionWeight)
+                runtime.setFloatUniform("uBloom", tuning.royaleBloom)
+                runtime.setFloatUniform("uBorder", tuning.royaleBorderSize)
+            } else {
+                runtime.setFloatUniform("uMode", shader.mode.toFloat())
+                runtime.setFloatUniform("uScan", tuning.crtScan)
+                runtime.setFloatUniform("uSharp", tuning.crtSharpness)
+                runtime.setFloatUniform("uMaskDark", tuning.crtMaskDark)
+                runtime.setFloatUniform("uMaskLight", tuning.crtMaskLight)
+                runtime.setFloatUniform("uBloom", tuning.crtBloom)
+            }
             val pattern = RenderEffect.createRuntimeShaderEffect(runtime, "content")
             if (tube == null || !tuning.hasTube) {
                 pattern.asComposeRenderEffect()
@@ -159,11 +174,16 @@ private fun Modifier.tvLayer(
     }
 
 /**
- * Whether this phone draws the tube at all: both programs compile on its GPU.
- * Asked once, apart from any layer's own copies. Taps are bent only where the
- * picture is, never over a flat one.
+ * Whether this phone draws the tube over [shader]: the look's program and the
+ * tube's both compile on its GPU. Asked once each, apart from any layer's own
+ * copies. Taps are bent only where the picture is, never over a flat one.
  */
-val tubeDrawable: Boolean by lazy { compileTvShader() != null && compileTubeShader() != null }
+fun tubeDrawable(shader: GlyphTvShader): Boolean =
+    tubeCompiles && if (shader == GlyphTvShader.ROYALE) royaleCompiles else tvCompiles
+
+private val tvCompiles: Boolean by lazy { compileTvShader() != null }
+private val royaleCompiles: Boolean by lazy { compileRoyaleShader() != null }
+private val tubeCompiles: Boolean by lazy { compileTubeShader() != null }
 
 /** The bowed tube's rim, softened over this much. */
 private const val TUBE_EDGE_DP = 1f
@@ -172,6 +192,13 @@ private fun compileTvShader(): RuntimeShader? {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return null
     return runCatching { RuntimeShader(TV_SHADER) }
         .onFailure { Log.w("GlyphTvShader", "TV shader did not compile; drawing the screen plain", it) }
+        .getOrNull()
+}
+
+private fun compileRoyaleShader(): RuntimeShader? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return null
+    return runCatching { RuntimeShader(ROYALE_SHADER) }
+        .onFailure { Log.w("GlyphTvShader", "CRT-Royale did not compile; drawing the screen plain", it) }
         .getOrNull()
 }
 
@@ -447,5 +474,205 @@ half4 main(float2 p) {
         here.b = float4(content.eval(clamp(q + apart, lo, hi))).b;
     }
     return half4(here.rgb * fade, mix(1.0, here.a, fade));
+}
+"""
+
+/**
+ * CRT-Royale, its passes folded into one. Each output pixel:
+ *
+ * - The beams: the source read along the three nearest scanlines (`uPixel`
+ *   apart; the one past the nearer neighbour too, as the original's three),
+ *   each softened sideways by its `beam_horiz_sigma`, in the CRT's gamma 2.5.
+ *   Each line lights the pixel by its sampled generalized Gaussian
+ *   (`scanline_generalized_gaussian_sampled_contrib`, three samples a
+ *   pixel): wider (`beam_max_sigma`, uMaxSigma) and flatter-topped
+ *   (`beam_max_shape`, uMaxShape) as its colour brightens, and normalised, so
+ *   a line gives its whole colour's light between the gaps.
+ * - Halation: a wide blur of the source (the original's halation blur, here
+ *   13 taps over two rings) mixed into the beams as grey (uHalation).
+ * - The phosphor mask, drawn rather than read from the original's
+ *   textures: an aperture grille's stripes, a slot mask's staggered slots or
+ *   a shadow mask's delta dots, `uTriad` pixels a triad, lit 1 and dark 0.06,
+ *   amplified by its mean so the light is kept.
+ * - The original's "fake bloom" blend: where the mask could not show all of
+ *   an area's light (`bloom_underestimate_levels` 0.8), the pixel moves
+ *   toward the unmasked light, so bright parts glow through the mask and
+ *   dark ones show it; uBloom is `bloom_excess`.
+ * - Diffusion: the halation blur over the whole (uDiffusion), the border's
+ *   dark rim (`border_size` uBorder of the short side, darkness 2, compress
+ *   2.5), and back out in the screen's gamma 2.2.
+ *
+ * The sideways reads are at the phone's own pixels: a CRT's line has no
+ * pixels along it, and the app's letters stay sharp. Interlacing, the
+ * original's own geometry and its anti-aliasing are left out: the tube pass
+ * after this one bows and shifts it.
+ */
+private const val ROYALE_SHADER = """
+uniform shader content;
+uniform float2 uSize;
+uniform float uPixel;
+uniform float uStrength;
+uniform float uBright;
+uniform float uMaskType;
+uniform float uTriad;
+uniform float uMaskStrength;
+uniform float uMaxSigma;
+uniform float uMaxShape;
+uniform float uHalation;
+uniform float uDiffusion;
+uniform float uBloom;
+uniform float uBorder;
+
+const float CRT_GAMMA = 2.5;
+const float LCD_GAMMA = 2.2;
+const float MIN_SIGMA = 0.02;
+const float SPOT_POWER = 0.33333333;
+const float MIN_SHAPE = 2.0;
+const float SHAPE_POWER = 0.25;
+const float HORIZ_SIGMA = 0.35;
+const float UNDERESTIMATE = 0.8;
+const float BORDER_DARKNESS = 2.0;
+const float BORDER_COMPRESS = 2.5;
+const float MASK_FLOOR = 0.06;
+const float LIT_HALF = 0.36;
+const float LIT_SOFT = 0.10;
+const float SLOT_GAP = 0.18;
+const float SLOT_SOFT = 0.06;
+const float DOT_RADIUS = 0.42;
+const float DOT_SOFT = 0.10;
+const float GRILLE_MEAN = 0.2859;
+const float SLOT_MEAN = 0.2452;
+const float SHADOW_MEAN = 0.2622;
+
+float3 lin(float2 at) {
+    float2 q = clamp(at, float2(0.5, 0.5), uSize - float2(0.5, 0.5));
+    float3 c = clamp(float3(content.eval(q).rgb), 0.0, 1.0);
+    return pow(c, float3(CRT_GAMMA));
+}
+
+// One scanline's colour under x, softened sideways by the beam's spread.
+float3 lineColour(float x, float row) {
+    float y = (row + 0.5) * uPixel;
+    float h = HORIZ_SIGMA * uPixel;
+    return (lin(float2(x - h, y)) + 2.0 * lin(float2(x, y)) + lin(float2(x + h, y))) * 0.25;
+}
+
+// The gamma function for s in (0, 1]: Gamma(s + 1) / s, Nemes' approximation.
+float gammaOf(float s) {
+    float x = s + 1.0;
+    float lg = 0.5 * (log(6.28318531) - log(x)) + x * (log(x + 1.0 / (12.0 * x - 0.1 / x)) - 1.0);
+    return exp(lg) / s;
+}
+
+// A line's light at d lines from it, for its colour.
+float3 beamOf(float d, float3 colour, float ph) {
+    float3 sigma = MIN_SIGMA + (uMaxSigma - MIN_SIGMA) * pow(colour, float3(SPOT_POWER));
+    float3 alpha = 1.41421356 * sigma;
+    float3 beta = MIN_SHAPE + max(uMaxShape - MIN_SHAPE, 0.0) * pow(colour, float3(SHAPE_POWER));
+    float3 inv = 1.0 / beta;
+    float3 scale = colour * beta * 0.5 / alpha / float3(gammaOf(inv.r), gammaOf(inv.g), gammaOf(inv.b));
+    float o = ph / 3.0;
+    float3 w = exp(-pow(float3(abs(d)) / alpha, beta))
+        + exp(-pow(float3(abs(d + o)) / alpha, beta))
+        + exp(-pow(float3(abs(d - o)) / alpha, beta));
+    return scale / 3.0 * w;
+}
+
+float3 grilleLit(float x) {
+    float u = fract(x / uTriad) * 3.0;
+    return float3(
+        1.0 - smoothstep(LIT_HALF - LIT_SOFT, LIT_HALF + LIT_SOFT, abs(u - 0.5)),
+        1.0 - smoothstep(LIT_HALF - LIT_SOFT, LIT_HALF + LIT_SOFT, abs(u - 1.5)),
+        1.0 - smoothstep(LIT_HALF - LIT_SOFT, LIT_HALF + LIT_SOFT, abs(u - 2.5)));
+}
+
+float3 slotLit(float2 p) {
+    float column = floor(p.x / uTriad);
+    float v = fract(p.y / uTriad + 0.5 * mod(column, 2.0));
+    float g = SLOT_GAP * 0.5;
+    float rows = smoothstep(g - SLOT_SOFT, g + SLOT_SOFT, v) * (1.0 - smoothstep(1.0 - g - SLOT_SOFT, 1.0 - g + SLOT_SOFT, v));
+    return grilleLit(p.x) * rows;
+}
+
+float3 shadowLit(float2 p) {
+    float d = uTriad * 0.5;
+    float h = d * 0.8660254;
+    float best = 1000000.0;
+    float colour = 0.0;
+    float r0 = floor(p.y / h);
+    for (int dr = 0; dr < 2; dr++) {
+        float r = r0 + float(dr);
+        float off = 0.5 * mod(r, 2.0);
+        float i0 = floor(p.x / d - off + 0.5);
+        for (int di = -1; di < 2; di++) {
+            float i = i0 + float(di);
+            float gap = length(float2(p.x - (i + off) * d, p.y - r * h)) / d;
+            if (gap < best) {
+                best = gap;
+                colour = mod(i + 2.0 * mod(r, 2.0), 3.0);
+            }
+        }
+    }
+    float spot = 1.0 - smoothstep(DOT_RADIUS - DOT_SOFT, DOT_RADIUS + DOT_SOFT, best);
+    return float3(
+        colour < 0.5 ? spot : 0.0,
+        (colour > 0.5 && colour < 1.5) ? spot : 0.0,
+        colour > 1.5 ? spot : 0.0);
+}
+
+half4 main(float2 p) {
+    float4 here = float4(content.eval(p));
+    float ph = 1.0 / uPixel;
+    float g = p.y / uPixel - 0.5;
+    float l2 = floor(g);
+    float dist = g - l2;
+    bool below = dist >= 0.5;
+    float3 c2 = lineColour(p.x, l2);
+    float3 c3 = lineColour(p.x, l2 + 1.0);
+    float3 cOut = lineColour(p.x, below ? l2 + 2.0 : l2 - 1.0);
+    float dOut = below ? 2.0 - dist : dist + 1.0;
+    float3 beam = beamOf(dist, c2, ph) + beamOf(1.0 - dist, c3, ph) + beamOf(dOut, cOut, ph);
+
+    float r = 3.0 * uPixel;
+    float3 halo = lin(p);
+    for (int k = 0; k < 6; k++) {
+        float a = 1.04719755 * float(k);
+        halo += 0.75 * lin(p + r * float2(cos(a), sin(a)));
+        halo += 0.35 * lin(p + 2.0 * r * float2(cos(a + 0.52359878), sin(a + 0.52359878)));
+    }
+    halo = halo / 7.6;
+    float3 electron = mix(beam, float3(dot(halo, float3(0.33333333))), uHalation);
+
+    float3 lit = float3(0.0);
+    float maskMean = SLOT_MEAN;
+    if (uMaskType < 0.5) {
+        lit = grilleLit(p.x);
+        maskMean = GRILLE_MEAN;
+    } else if (uMaskType < 1.5) {
+        lit = slotLit(p);
+        maskMean = SLOT_MEAN;
+    } else {
+        lit = shadowLit(p);
+        maskMean = SHADOW_MEAN;
+    }
+    float3 phosphor = mix(float3(1.0), MASK_FLOOR + (1.0 - MASK_FLOOR) * lit, uMaskStrength);
+    float amplify = 1.0 / max(mix(1.0, maskMean, uMaskStrength), 0.05);
+    float3 emission = electron * phosphor * amplify;
+
+    float3 approx = mix(mix(c2, c3, dist), electron, 0.1) * 1.05;
+    float3 under = approx * UNDERESTIMATE;
+    float3 areaMax = under * amplify;
+    float3 blend = clamp((areaMax - 1.0) / max(areaMax - under, float3(0.00001)), 0.0, 1.0);
+    blend = mix(blend, float3(1.0), uBloom);
+    float3 colour = mix(mix(emission, approx, blend), halo, uDiffusion);
+
+    if (uBorder > 0.0) {
+        float2 edge = min(p, uSize - p) / min(uSize.x, uSize.y);
+        float2 inside = max(float2(uBorder) - edge, float2(0.0));
+        float escape = max(1.0 - length(inside) / uBorder, 0.0);
+        colour = colour * min(pow(escape, BORDER_DARKNESS) * BORDER_COMPRESS, 1.0);
+    }
+    float3 tv = pow(clamp(colour * uBright, 0.0, 1.0), float3(1.0 / LCD_GAMMA));
+    return half4(mix(here.rgb, tv, uStrength), here.a);
 }
 """
