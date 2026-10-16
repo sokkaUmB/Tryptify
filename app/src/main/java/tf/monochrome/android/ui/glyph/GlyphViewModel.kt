@@ -1472,11 +1472,16 @@ class GlyphViewModel @Inject constructor(
     private fun pressLane(lane: GlyphLane, atUptimeMillis: Long) {
         val running = engine ?: return
         if (!_ui.value.gameplay.isPlaying || _ui.value.gameplay.isPaused) return
+        // A run stopped by a fail is over: a step under FAILED would still be
+        // judged at the stopped music, and the results read the engine's count.
+        if (_ui.value.gameplay.failStops) return
         running.press(lane, transport.positionAt(touchNanos(atUptimeMillis)) - audioOffsetSeconds)
     }
 
     private fun releaseLane(lane: GlyphLane, atUptimeMillis: Long) {
         val running = engine ?: return
+        // Nor is a hold let go then: it would be judged dropped after the end.
+        if (_ui.value.gameplay.failStops) return
         running.release(lane, transport.positionAt(touchNanos(atUptimeMillis)) - audioOffsetSeconds)
     }
 

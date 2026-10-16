@@ -342,11 +342,20 @@ val LocalPlayerGlass = compositionLocalOf { tf.monochrome.android.domain.model.P
  * that can change, so this never alters the shape of a caller's composition.
  */
 @Composable
-fun rememberLiquidGlassAvailable(): Boolean {
+fun rememberLiquidGlassAvailable(): Boolean = rememberLiquidGlassAvailable(LocalPlayerGlass.current)
+
+/**
+ * The same, for a pane drawn with [glass] rather than the screen's
+ * [LocalPlayerGlass]. A pane asks of its own settings: the screen's can be
+ * another material, or the default where no screen provides one, and asked
+ * of those a pane with its glass on could be told the shader will not run
+ * and draw its slab as a faint smudge.
+ */
+@Composable
+fun rememberLiquidGlassAvailable(glass: tf.monochrome.android.domain.model.PlayerGlassSettings): Boolean {
     val compiles = remember { liquidGlassCompiles }
     val flat = LocalLowPerformance.current.disableLiquidGlass
-    val enabled = LocalPlayerGlass.current.enabled
-    return compiles && !flat && enabled
+    return compiles && !flat && glass.enabled
 }
 
 /**

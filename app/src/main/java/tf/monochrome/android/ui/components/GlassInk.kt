@@ -106,7 +106,7 @@ internal fun GlassInkScope(glass: PlayerGlassSettings, content: @Composable () -
     val accent = LocalGlassAccent.current ?: scheme.primary
     val ground = LocalGlassGround.current ?: scheme.background
     val tint = glassTint(glass.tintColor)
-    val shaded = shaderGlassFor(glass) && rememberLiquidGlassAvailable()
+    val shaded = shaderGlassFor(glass) && rememberLiquidGlassAvailable(glass)
     val frost = playerFrostTint(glass, ground.luminance() <= 0.5f)
     val face = glassFace(ground, frost, tint, glass.bodyOpacity, shaded, scheme.surfaceContainerHigh)
     val ink = remember(face, scheme.primary) { glassInk(face, scheme.primary) }

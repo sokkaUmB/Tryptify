@@ -269,7 +269,8 @@ internal fun BoxScope.GlassMaterial(
 ) {
     if (!shaderGlassFor(glass)) return
     val allowHaze = LocalPerformanceProfile.current.allowHazeBlur
-    val shaded = rememberLiquidGlassAvailable()
+    // Asked of this pane's own glass, not the screen's.
+    val shaded = rememberLiquidGlassAvailable(glass)
     val cut = punch?.takeIf { shaded }
     val through = if (punchThrough && cut != null) Modifier.erasing(cut) else Modifier
     val tint = glassTint(glass.tintColor)
@@ -448,4 +449,4 @@ fun GlassPill(
  */
 @Composable
 internal fun glassPunches(glass: PlayerGlassSettings = LocalMiniPlayerGlass.current): Boolean =
-    shaderGlassFor(glass) && rememberLiquidGlassAvailable()
+    shaderGlassFor(glass) && rememberLiquidGlassAvailable(glass)

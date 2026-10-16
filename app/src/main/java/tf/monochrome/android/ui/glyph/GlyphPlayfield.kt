@@ -198,7 +198,7 @@ fun GlyphPlayfield(
             // frame without recomposing anything.
             @Suppress("UNUSED_EXPRESSION") frameTick.value
 
-            drawLaneChrome(laneWidthPx.toFloat(), receptorYPx, noteSizePx.toFloat(), drawLine = !look.dark)
+            if (!look.dark) drawReceptorLine(receptorYPx)
 
             val running = engine ?: return@Canvas
             if (!warmed) return@Canvas
@@ -681,26 +681,12 @@ private fun DrawScope.drawHoldBody(
     }
 }
 
-/** Lane separators and the receptor line. Deliberately quiet. */
-private fun DrawScope.drawLaneChrome(
-    laneWidthPx: Float,
-    receptorYPx: Float,
-    noteSizePx: Float,
-    drawLine: Boolean = true,
-) {
-    for (lane in GlyphLane.entries) {
-        val left = lane.ordinal * laneWidthPx
-        // Alternating lane grounds give the eye a boundary without a line for
-        // every lane, which at four lanes reads as a cage.
-        if (lane.ordinal % 2 == 1) {
-            drawRect(
-                color = GlyphTheme.InkPanel.copy(alpha = 0.5f),
-                topLeft = Offset(left, 0f),
-                size = Size(laneWidthPx, size.height),
-            )
-        }
-    }
-    if (!drawLine) return
+/**
+ * The line the receptors sit on, and nothing else: no lane grounds. The
+ * notes are the lanes, over whatever is behind them, as StepMania draws it.
+ * Grounds shaded on alternate lanes sliced the stage behind into strips.
+ */
+private fun DrawScope.drawReceptorLine(receptorYPx: Float) {
     drawLine(
         color = GlyphTheme.Hairline,
         start = Offset(0f, receptorYPx),

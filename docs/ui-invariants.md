@@ -39,7 +39,12 @@ and no edge — which is what made search bars look nothing like the mini player
 The reason it was ever faint: on a device where the shader silently no-ops
 (glass off, low-performance override, below API 33, or a driver that will not
 compile it), a solid fill is left on screen as an opaque rounded rectangle. Ask
-`rememberLiquidGlassAvailable()` rather than hedging with a low alpha.
+`rememberLiquidGlassAvailable()` rather than hedging with a low alpha. A pane
+asks it of its own glass, `rememberLiquidGlassAvailable(glass)`: the plain call
+reads `LocalPlayerGlass`, the screen's, which is another material or, where no
+screen provides one, the default, so a pane with its glass on could be told the
+shader would not run and draw its slab faint (`GlassMaterial`, `GlassInkScope`,
+`glassPunches`).
 
 **A rounded-rect slab passes its corner as `lensCorner`.** And the slab itself is drawn rounded at that corner, never a square `drawRect`: the player's audio sheet drew one, the shader lit its square edges, the sheet's clip cut the corners off, and its rim stopped short of every corner (`GlassSlabCornerTest` reads every `.playerGlass(` for both). The alpha
 heightfield alone gives a solid fill a bevel 2–4px wide: the fill steps from 0
@@ -1224,6 +1229,12 @@ pump. The rig and the pad are drawn into their own layer and replayed: the
 playfield redraws every frame above it, and without the layer it was redrawn
 with it. Nothing else on the stage moves.
 
+**The lanes have no grounds.** The playfield draws its notes, its receptors and
+the receptor line over whatever is behind it, and no lane of its own: the
+grounds it shaded on every other lane cut the stage behind into strips. The
+game, Training Ground and the previews alike; the map editor's grid keeps its
+own, being a grid to place notes on.
+
 **A held hold is cut at the receptor, with its head on it.** Both engines pin a
 held body's top to the receptor for the whole hold, pressed early or late
 (`fillVisible`; `GlyphEngineWindowTest` and the native test hold the same
@@ -1244,7 +1255,8 @@ whole game picture shakes, hardest first (`SHAKE_MILLIS`); on Immediate the
 music stops, the field sinks under a red veil, FAILED lands on it (held still,
 outside the shake, so it can be read) and the results follow
 (`FAIL_HOLD_MILLIS`). Pause does nothing then: Resume would only restart the
-music under FAILED. Imm. Continue shakes and plays on. Leaving or restarting
+music under FAILED. Nor do the lanes: a step under FAILED was still judged at
+the stopped music, and the results count the engine's judgements. Imm. Continue shakes and plays on. Leaving or restarting
 cancels the hold. Reduced motion keeps all of it still: the intro, roll, pop,
 fall and shake are skipped, and FAILED shows at once.
 
