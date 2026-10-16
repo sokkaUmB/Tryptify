@@ -17,10 +17,12 @@ import tf.monochrome.android.audio.sampler.stems.Stem
  * stay on the drums' timeline; one that was never returned at all stays
  * silent throughout, and [StemFeatureExtractor] leaves it out.
  */
-class StemLayerEnvelopes(val sampleRate: Int) {
-
+class StemLayerEnvelopes(
+    val sampleRate: Int,
+    /** One per layer; given, when the envelopes were made elsewhere ([TransientEnvelopeBuilder.restored]). */
     val builders: Map<StemLayer, TransientEnvelopeBuilder> =
-        StemLayer.entries.associateWith { TransientEnvelopeBuilder(sampleRate) }
+        StemLayer.entries.associateWith { TransientEnvelopeBuilder(sampleRate) },
+) {
 
     private var scratch = FloatArray(0)
 

@@ -300,6 +300,23 @@ class TransientEnvelopeBuilder(val sampleRate: Int) {
         crossings = 0
     }
 
+    companion object {
+        /**
+         * A builder holding envelopes made elsewhere — by a TryptMania Parser
+         * server, from the same arithmetic — as if it had taken [frames]
+         * frames itself: [raw] and [crossingRates] give these back.
+         */
+        fun restored(sampleRate: Int, raw: FloatArray, rates: FloatArray, frames: Long): TransientEnvelopeBuilder {
+            require(raw.size == rates.size) { "raw and rates differ in length" }
+            return TransientEnvelopeBuilder(sampleRate).apply {
+                values = raw.copyOf(maxOf(raw.size, 1))
+                this.rates = rates.copyOf(maxOf(rates.size, 1))
+                count = raw.size
+                this.frames = frames
+            }
+        }
+    }
+
     private fun rateOf(crossings: Int, samples: Int): Float =
         crossings.toFloat() * sampleRate / samples.coerceAtLeast(1)
 

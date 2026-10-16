@@ -252,6 +252,8 @@ What a OnePlus 15 (SM8850) has said so far, in order: the NPU would not open wit
 
 Extended UDMA did not move the 1002, so the model itself was rebuilt for the NPU: `tools/stem_npu_export` makes `htdemucs_6s_npu_fp16weights.onnx` (`KnownModels` id `htdemucs-6s-npu`), the same weights in a 1.95 s window with the STFT as MatMuls, every shape folded to a constant (no Shape, Range, ScatterND, ConstantOfShape or strided Slice) and GELU as opset-20 `Gelu`, because QNN refuses `Erf`. Its README has the steps; they rebuild the published bytes exactly. A model that still fails on the NPU is cut down with `--segment-samples`, which makes a new model with its own entry.
 
+A separation server goes before all of it. A [TryptMania Parser](https://github.com/tryptz/TryptMania-Parser) server under Settings › Connections is detected as `ApiService.STEMS` (its `/api/stems/info` answers `{success: true}`), and chart generation sends it the song file and gets back the envelopes, not stems (`RemoteStemAnalysis`); any failure separates on the phone as before. The server's envelopes are a port of `TransientEnvelopeBuilder`, held to it by `stemsapi/envelope_parity.json`, which both repositories test against (`EnvelopeParityTest` here): change the builder and the server's port with it, regenerate the fixture there, and copy it here. `STEMS` is not a catalog: every `when` over `ApiService` gives it no search, no quality and a plain pill.
+
 ### Compose performance
 
 Use stable parameters, keyed lazy items, remembered derived values, and immutable collections where they materially reduce recomposition. Validate with tooling rather than mechanically adding annotations.

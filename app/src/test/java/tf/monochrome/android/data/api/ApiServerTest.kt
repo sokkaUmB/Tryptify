@@ -50,7 +50,11 @@ class ApiServerTest {
     fun `the same address in two old fields becomes one server`() {
         val servers = ApiServers.fromLegacy("https://hifi.example.com", "https://hifi.example.com", null)
         assertEquals(1, servers.size)
-        assertEquals(ApiService.entries.toSet(), servers.single().services)
+        // Every catalog the old fields could name; stem separation came after them.
+        assertEquals(
+            setOf(ApiService.TIDAL, ApiService.QOBUZ, ApiService.APPLE, ApiService.DEEZER),
+            servers.single().services,
+        )
     }
 
     @Test

@@ -15,6 +15,14 @@ enum class ApiService(val label: String, val probePath: String) {
     QOBUZ("Qobuz", "/api/get-music?q=test&offset=0"),
     APPLE("Apple Music", "/api/apple/get-music?q=test&offset=0"),
     DEEZER("Deezer", "/api/deezer/get-music?q=test&offset=0"),
+
+    /**
+     * Stem separation for Trypt Mania's charts: a TryptMania Parser server
+     * (github.com/tryptz/TryptMania-Parser), which separates a song on a GPU
+     * and answers with the chart generator's envelopes. Not a catalog: it is
+     * never searched, only asked to separate.
+     */
+    STEMS("Stem separation", "/api/stems/info"),
 }
 
 /**

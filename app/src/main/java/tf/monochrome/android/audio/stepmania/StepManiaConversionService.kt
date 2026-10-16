@@ -49,6 +49,7 @@ data class StepManiaConversionResult(
 class StepManiaConversionService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val stemBackends: StemBackendRegistry,
+    private val remoteStems: RemoteStemAnalysis,
 ) {
     private val generator = StepManiaMapGenerator()
     private val analyzer = StemRhythmAnalyzer()
@@ -60,19 +61,60 @@ class StepManiaConversionService @Inject constructor(
         quality: StemQuality = StemQuality.BALANCED,
         onProgress: (StepManiaConversionProgress) -> Unit = {},
     ): Result<StepManiaConversionResult> = try {
-        // Said while it happens: the NPU compiles the model the first time
-        // after an update, which takes minutes, and "Decoding audio" at 0%
-        // for that long read as a job that had stuck.
-        val separation = Separation(
-            stemBackends.ready(onTrying = { kind -> onProgress(StepManiaConversionProgress(0f, preparing(kind))) })
-                ?: throw IllegalStateException("No stem separation backend is available"),
-        )
-        onProgress(StepManiaConversionProgress(0f, "Decoding audio"))
+        // A separation server under Settings › Connections goes first: a GPU
+        // separates a song in seconds. Anything wrong with it — unreachable,
+        // asleep past the timeout, an error — and the phone does it, as before.
+        val remote = remoteStems.server()?.let { server -> separateOnServer(server, source, onProgress) }
+        if (remote != null) {
+            finish(remote.drums, remote.layers, request, destination, remote.label, onProgress)
+        } else {
+            // Said while it happens: the NPU compiles the model the first time
+            // after an update, which takes minutes, and "Decoding audio" at 0%
+            // for that long read as a job that had stuck.
+            val separation = Separation(
+                stemBackends.ready(onTrying = { kind -> onProgress(StepManiaConversionProgress(0f, preparing(kind))) })
+                    ?: throw IllegalStateException("No stem separation backend is available"),
+            )
+            onProgress(StepManiaConversionProgress(0f, "Decoding audio"))
 
-        val (envelope, layers) = withContext(Dispatchers.Default) {
-            separateStreaming(source, quality, separation, onProgress)
+            val (envelope, layers) = withContext(Dispatchers.Default) {
+                separateStreaming(source, quality, separation, onProgress)
+            }
+
+            finish(envelope, layers, request, destination, separation.displayName, onProgress)
         }
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (failure: Throwable) {
+        Result.failure(failure)
+    }
 
+    /** The song separated on [server], or null to separate it on the phone. */
+    private suspend fun separateOnServer(
+        server: String,
+        source: Uri,
+        onProgress: (StepManiaConversionProgress) -> Unit,
+    ): RemoteEnvelopes? {
+        onProgress(StepManiaConversionProgress(0.02f, "Separating on ${RemoteStemAnalysis.hostOf(server)}"))
+        return try {
+            remoteStems.analyze(server, source).also { Log.i(TAG, "Separated on ${it.label}") }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Throwable) {
+            Log.w(TAG, "The separation server failed; separating on the phone", failure)
+            null
+        }
+    }
+
+    /** Charts from the envelopes, written to [destination]: the same whichever separated the song. */
+    private suspend fun finish(
+        envelope: TransientEnvelopeBuilder,
+        layers: StemLayerEnvelopes,
+        request: StepManiaRequest,
+        destination: Uri,
+        separatedBy: String,
+        onProgress: (StepManiaConversionProgress) -> Unit,
+    ): Result<StepManiaConversionResult> {
         onProgress(StepManiaConversionProgress(0.88f, "Generating charts"))
         val generated = withContext(Dispatchers.Default) {
             generator.generate(analyzer.analyze(envelope, layers), request)
@@ -84,11 +126,7 @@ class StepManiaConversionService @Inject constructor(
             output.bufferedWriter(Charsets.UTF_8).use { it.write(generated.ssc) }
         }
         onProgress(StepManiaConversionProgress(1f, "Complete"))
-        Result.success(StepManiaConversionResult(generated, separation.displayName))
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (failure: Throwable) {
-        Result.failure(failure)
+        return Result.success(StepManiaConversionResult(generated, separatedBy))
     }
 
     /**
