@@ -48,6 +48,14 @@ class GlyphPreviewPlayer(
     /** The stretch being previewed, start and length in song seconds; null before any. */
     val clip: Pair<Float, Float>? get() = if (player == null) null else clipStartSeconds to clipLengthSeconds
 
+    /**
+     * Builds the player now, ahead of the first preview, so that one starts
+     * as soon as the next: the song list calls it on opening.
+     */
+    fun warm() {
+        if (player == null) player = build()
+    }
+
     /** Play [uri] from [startSeconds] for [lengthSeconds], looping, until [stop]. */
     fun play(uri: Uri, startSeconds: Float, lengthSeconds: Float) {
         envelope?.cancel()
@@ -123,7 +131,11 @@ class GlyphPreviewPlayer(
 
         private const val MIN_LENGTH_SECONDS = 3f
         private const val MAX_LENGTH_SECONDS = 30f
-        private const val FADE_IN_MILLIS = 500f
+        /**
+         * A breath, not a swell: half a second from silence made the first
+         * moment of every preview read as late. Long enough not to click.
+         */
+        private const val FADE_IN_MILLIS = 120f
         private const val FADE_OUT_MILLIS = 1_500f
         private const val STOP_FADE_MILLIS = 250L
         private const val ENVELOPE_TICK_MILLIS = 25L

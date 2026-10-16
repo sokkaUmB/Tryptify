@@ -14,6 +14,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import tf.monochrome.android.audio.sampler.PcmDecoder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -264,8 +266,12 @@ class GlyphViewModel @Inject constructor(
 
     fun onEvent(event: GlyphEvent) {
         when (event) {
-            is GlyphEvent.OpenSongs ->
+            is GlyphEvent.OpenSongs -> {
+                // Ready before the first song is chosen, so its preview is not
+                // the one that waits for the player to be built.
+                if (event.mode == GlyphSongListMode.PLAY && _ui.value.previews) preview.warm()
                 _ui.value = _ui.value.copy(screen = GlyphScreen.HOME, songListMode = event.mode)
+            }
             GlyphEvent.BackToMenu -> {
                 wheelFocusJob?.cancel()
                 stopPreview()
@@ -505,8 +511,9 @@ class GlyphViewModel @Inject constructor(
      * Where the drop is, quickest first: the chart's own #SAMPLESTART; the
      * drop found on an earlier visit, remembered; or found now from the
      * loudness bars the page decodes for the selection anyway, and remembered
-     * for next time. A song with none of these waits for its bars rather than
-     * starting somewhere arbitrary.
+     * for next time. Those bars take reading the whole song, so a song with
+     * none of these waits [DROP_WAIT_MILLIS] for them and then starts a third
+     * of the way in; its drop, found after, is the next visit's start.
      */
     private fun previewSong(song: GlyphSong) {
         previewJob?.cancel()
@@ -520,8 +527,22 @@ class GlyphViewModel @Inject constructor(
             val length = simfile?.sampleLengthSeconds ?: GlyphPreviewPlayer.DEFAULT_LENGTH_SECONDS
             val start = simfile?.sampleStartSeconds
                 ?: prefs.getFloat(PREF_DROP_PREFIX + song.trackId, -1f).takeIf { it >= 0f }
-                ?: dropFromWaveform(song)?.also { prefs.edit().putFloat(PREF_DROP_PREFIX + song.trackId, it).apply() }
-                ?: return@launch
+                ?: run {
+                    // The drop is found from the song's loudness, which takes
+                    // reading the whole song. Waited for in full, a song's first
+                    // preview came seconds late; now it waits a moment, then
+                    // starts a third of the way in and remembers the drop for
+                    // the next visit.
+                    val drop = async { dropFromWaveform(song) }
+                    withTimeoutOrNull(DROP_WAIT_MILLIS) { drop.await() }
+                        ?.also { prefs.edit().putFloat(PREF_DROP_PREFIX + song.trackId, it).apply() }
+                        ?: run {
+                            launch {
+                                drop.await()?.let { prefs.edit().putFloat(PREF_DROP_PREFIX + song.trackId, it).apply() }
+                            }
+                            provisionalStart(song, length)
+                        }
+                }
             if (_ui.value.selectedSong?.trackId != song.trackId || _ui.value.screen != GlyphScreen.HOME) return@launch
             // The start can wait seconds on the waveform; the app may have
             // gone to the background in the meantime.
@@ -531,6 +552,13 @@ class GlyphViewModel @Inject constructor(
     }
 
     /** The drop from the selection's loudness bars, once they have decoded. */
+    /** Where a preview starts before its drop is known: a third of the way in, the clip inside the song. */
+    private fun provisionalStart(song: GlyphSong, length: Float): Float {
+        val duration = song.durationSeconds.toFloat()
+        if (duration <= length) return 0f
+        return (duration / 3f).coerceAtMost(duration - length)
+    }
+
     private suspend fun dropFromWaveform(song: GlyphSong): Float? {
         val bars = kotlinx.coroutines.withTimeoutOrNull(WAVEFORM_WAIT_MILLIS) {
             _ui.first { state ->
@@ -2355,8 +2383,15 @@ class GlyphViewModel @Inject constructor(
     }
 
     private companion object {
-        /** StepMania's `SampleMusicDelay`: how long the wheel rests before a song is chosen. */
-        const val SAMPLE_MUSIC_DELAY_MS = 250L
+        /**
+         * How long the wheel rests before a song is chosen: StepMania's
+         * `SampleMusicDelay` was 250 ms, which with the fade read as a preview
+         * slow to start. 150 still lets a turn pass songs without starting them.
+         */
+        const val SAMPLE_MUSIC_DELAY_MS = 150L
+
+        /** How long a song's first preview waits for its drop before starting without it. */
+        const val DROP_WAIT_MILLIS = 700L
 
         const val TAG = "GlyphViewModel"
 

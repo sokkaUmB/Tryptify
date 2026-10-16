@@ -1064,11 +1064,16 @@ column, with nothing to jump between.
   closed, a pack import landing beside a lone library — was left behind a
   closed folder, with its panel and preview gone.
 * The centred song is chosen after the wheel rests on it for
-  `SAMPLE_MUSIC_DELAY_MS` (StepMania's `SampleMusicDelay`), not as it passes; a
+  `SAMPLE_MUSIC_DELAY_MS` (150 ms; StepMania's `SampleMusicDelay` is 250, which
+  with a half-second fade read as a preview slow to start), not as it passes; a
   folder stops the preview on the same delay, and resting again on the chosen
   song starts its preview again. The delayed choice is cancelled when the
   screen or the app is left: run out behind the app, it started a looping
   preview there.
+* A preview fades in over 120 ms, and the player is built when the song list
+  opens, not on the first song. A song's first preview waits 700 ms for its
+  drop (`DropFinder` reads the whole song's loudness), then starts a third of
+  the way in; the drop found after is the next visit's start.
 * The centre is reported by the item, not by its place: a new list with a
   different song at the same place is a new centre. Reported by place, the
   panel kept offering Play for the song that used to be there.
@@ -1121,11 +1126,18 @@ song's `#DISPLAYBPM` when it has one (`???` for `*`), as the list and the BPM
 sort use: the timing's range showed a gimmick's one beat at 1500 as the song's
 tempo. Play keeps the real timing.
 
-The card sits above the search bar, not in the page under it, and takes the
-height the screen can spare: whole when it is 720 dp or taller, without the radar
-and graph from 600 dp, and gone below that (a phone on its side), where the
-wheel and the panel's Play need the room. Whole at any height, it pushed Play
-off a landscape screen.
+The card is a `GlassPanel` floating over the top of the wheel, with the chart
+progress and any error under it in one stack below the search bar: the wheel
+runs the full height, its rows travel up beneath the card and read through its
+glass, and its centre is the middle of what the stack leaves. Laid above the
+wheel as a plain card it had nothing behind it to be glass over. Opening the
+search puts the bar at the top and slides the stack below it; the wheel is
+never padded, only inset, so nothing clips at a line. The radar sits in a lens
+of its own, a second slab of the same glass (`GlassMaterial`, 24 dp corners so
+the axis names stay inside it). The card takes the height the screen can spare:
+whole when it is 720 dp or taller, without the radar and graph from 600 dp, and
+gone below that (a phone on its side), where the wheel and the panel's Play
+need the room. Whole at any height, it pushed Play off a landscape screen.
 
 **The results lead with a ring, then DDR's evaluation, then timing.**
 `GlyphEvaluationPanel`: the run's judgements as one ring, each arc its share

@@ -149,7 +149,9 @@ fun GlyphHomeScreen(
     // a different level.
     val panelHaze = rememberHazeState()
 
-    var generationInset by remember { mutableStateOf(0.dp) }
+    // The glass floating over the top of the wheel: the card, the chart progress
+    // and any error, under the search bar.
+    var floatingInset by remember { mutableStateOf(0.dp) }
     // The panel's height, kept across trips to the options and back, so the
     // wheel does not rise when the first panel after a return arrives.
     var selectionInsetDp by rememberSaveable { mutableFloatStateOf(0f) }
@@ -319,24 +321,6 @@ fun GlyphHomeScreen(
                 ),
             )
 
-            // The card is fixed above the search bar, not under it: the bar floats
-            // over the wheel, whose items pass beneath it, and opening it moves
-            // nothing. Padding a column of card and wheel by the bar pushed both
-            // down and clipped the wheel at a line under the card.
-            if (showWheel && cardRoom != CardRoom.NONE) {
-                GlyphSongInfoCard(
-                    item = focusedItem,
-                    state = state,
-                    reducedMotion = reducedMotion,
-                    previewPosition = previewPosition,
-                    compact = cardRoom == CardRoom.COMPACT,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = MonoDimens.listItemPaddingH)
-                        .padding(bottom = MonoDimens.spacingSm),
-                )
-            }
-
             SearchOverlay(
                 open = searchOpen,
                 query = state.songQuery,
@@ -351,7 +335,7 @@ fun GlyphHomeScreen(
                             .fillMaxSize()
                             .hazeSource(panelHaze),
                     ) {
-                        val messageTop = searchInset + generationInset
+                        val messageTop = searchInset + floatingInset
                         when {
                             state.isLoadingSongs -> CentredMessage("Reading the library…", messageTop)
 
@@ -397,7 +381,7 @@ fun GlyphHomeScreen(
                                         onEvent(GlyphEvent.SelectSong(item.song.trackId))
                                     }
                                 },
-                                topInset = { searchInset + generationInset },
+                                topInset = { searchInset + floatingInset },
                                 bottomInset = { wheelBottom },
                                 foldersLocked = foldersLocked,
                                 sound = state.wheelSound,
@@ -415,9 +399,27 @@ fun GlyphHomeScreen(
                             // at the top, and stacked they would overlap.
                             .padding(top = searchInset)
                             .onSizeChanged {
-                                generationInset = with(density) { it.height.toDp() }
+                                floatingInset = with(density) { it.height.toDp() }
                             },
                     ) {
+                        // The card is glass over the wheel, as the search bar is:
+                        // the rows travel up beneath it and read through it, and
+                        // the wheel's centre is the middle of what it leaves.
+                        // Laid above the wheel instead, it was a flat card with
+                        // nothing behind it to be glass over.
+                        if (showWheel && cardRoom != CardRoom.NONE) {
+                            GlyphSongInfoCard(
+                                item = focusedItem,
+                                state = state,
+                                reducedMotion = reducedMotion,
+                                haze = panelHaze,
+                                glass = glass,
+                                previewPosition = previewPosition,
+                                compact = cardRoom == CardRoom.COMPACT,
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
+                        }
+
                         val generation = state.generation
                         if (generation != null) {
                             GenerationPanel(

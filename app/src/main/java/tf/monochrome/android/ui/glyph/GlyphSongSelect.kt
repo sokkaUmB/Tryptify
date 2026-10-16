@@ -46,10 +46,12 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.chrisbanes.haze.HazeState
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.sin
 import tf.monochrome.android.audio.stepmania.StepManiaDifficulty
+import tf.monochrome.android.domain.model.PlayerGlassSettings
 import tf.monochrome.android.glyph.chart.GlyphChartStats
 import tf.monochrome.android.glyph.chart.GlyphDisplayBpm
 import tf.monochrome.android.glyph.chart.GlyphTiming
@@ -57,7 +59,8 @@ import tf.monochrome.android.glyph.chart.bpmRange
 import tf.monochrome.android.glyph.data.GlyphWheel
 import tf.monochrome.android.ui.components.CoverImage
 import tf.monochrome.android.ui.theme.MonoDimens
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.GlassMaterial
+import tf.monochrome.android.ui.components.GlassPanel
 
 /**
  * What the music wheel's centre item is, above the wheel: its art and
@@ -76,6 +79,9 @@ internal fun GlyphSongInfoCard(
     item: GlyphWheel.Item?,
     state: GlyphUiState,
     reducedMotion: Boolean,
+    /** The wheel's haze source: the card floats over the wheel and frosts it. */
+    haze: HazeState?,
+    glass: PlayerGlassSettings,
     modifier: Modifier = Modifier,
     previewPosition: () -> Float? = { null },
     compact: Boolean = false,
@@ -116,68 +122,83 @@ internal fun GlyphSongInfoCard(
         null -> ""
     }
 
-    // One root, so the caller's modifier and the glass hold the graph too.
-    Column(
-        modifier = modifier
-            .liquidGlass(shape = MonoDimens.shapeLg)
-            .padding(MonoDimens.spacingMd),
+    // The app's glass, the pills' material (GlassPanel): the wheel's rows pass
+    // under it and read through, blurred and bent at the rim. One pane holds
+    // the graph too.
+    GlassPanel(
+        hazeState = haze,
+        glass = glass,
+        modifier = modifier,
+        avoidNavigationBar = false,
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingMd)) {
-            if (!compact) {
-                GlyphGrooveRadar(
-                    values = stats.radar,
-                    colour = colour,
-                    reducedMotion = reducedMotion,
-                    modifier = Modifier.size(140.dp),
-                )
-            }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val art = song?.artworkUri ?: (item as? GlyphWheel.Item.Folder)?.section?.songs?.firstNotNullOfOrNull { it.artworkUri }
-                    Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(sectionColour(item?.let { sectionOf(it) } ?: ""))) {
-                        if (art != null) CoverImage(url = art, contentDescription = null, size = 44.dp, cornerRadius = 10.dp)
-                    }
-                    Spacer(Modifier.width(MonoDimens.spacingSm))
-                    Column(Modifier.weight(1f)) {
-                        Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(modifier = Modifier.padding(MonoDimens.spacingMd)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingMd)) {
+                if (!compact) {
+                    // The radar in a lens of its own: a second slab of the same
+                    // glass on the pane, so its rim and glint catch the light apart
+                    // from the card's. A rounded square rather than a disc, which
+                    // would cut off the axis names in its corners.
+                    Box(Modifier.size(140.dp)) {
+                        GlassMaterial(hazeState = null, glass = glass, corner = RADAR_LENS_CORNER)
+                        GlyphGrooveRadar(
+                            values = stats.radar,
+                            colour = colour,
+                            reducedMotion = reducedMotion,
+                            modifier = Modifier.matchParentSize(),
+                        )
                     }
                 }
-                GlyphBpmMeter(
-                    bpm = bpm,
-                    low = range?.start?.takeIf { it < (range.endInclusive - 0.5f) },
-                    hidden = hidden,
-                    colour = colour,
-                    reducedMotion = reducedMotion,
-                    timing = simfile?.timing,
-                    previewPosition = if (loaded) previewPosition else NO_POSITION,
-                )
-                GlyphFeet(
-                    difficulty = chart?.difficulty,
-                    meter = chart?.meter ?: 0,
-                    colour = colour,
-                    reducedMotion = reducedMotion,
-                )
-                // This phone's best on the chosen chart, as StepMania's wheel
-                // shows the grade beside it; only when there is one.
-                chart?.difficulty?.let { state.bestGrades[it] }?.let { best -> PersonalBest(best) }
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val art = song?.artworkUri ?: (item as? GlyphWheel.Item.Folder)?.section?.songs?.firstNotNullOfOrNull { it.artworkUri }
+                        Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(sectionColour(item?.let { sectionOf(it) } ?: ""))) {
+                            if (art != null) CoverImage(url = art, contentDescription = null, size = 44.dp, cornerRadius = 10.dp)
+                        }
+                        Spacer(Modifier.width(MonoDimens.spacingSm))
+                        Column(Modifier.weight(1f)) {
+                            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                    GlyphBpmMeter(
+                        bpm = bpm,
+                        low = range?.start?.takeIf { it < (range.endInclusive - 0.5f) },
+                        hidden = hidden,
+                        colour = colour,
+                        reducedMotion = reducedMotion,
+                        timing = simfile?.timing,
+                        previewPosition = if (loaded) previewPosition else NO_POSITION,
+                    )
+                    GlyphFeet(
+                        difficulty = chart?.difficulty,
+                        meter = chart?.meter ?: 0,
+                        colour = colour,
+                        reducedMotion = reducedMotion,
+                    )
+                    // This phone's best on the chosen chart, as StepMania's wheel
+                    // shows the grade beside it; only when there is one.
+                    chart?.difficulty?.let { state.bestGrades[it] }?.let { best -> PersonalBest(best) }
+                }
             }
-        }
-        if (!compact) {
-            GlyphDensityGraph(
-                stats = stats,
-                colour = colour,
-                reducedMotion = reducedMotion,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = MonoDimens.spacingSm)
-                    .height(44.dp),
-            )
+            if (!compact) {
+                GlyphDensityGraph(
+                    stats = stats,
+                    colour = colour,
+                    reducedMotion = reducedMotion,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = MonoDimens.spacingSm)
+                        .height(44.dp),
+                )
+            }
         }
     }
 }
 
 private val NO_POSITION: () -> Float? = { null }
+
+/** The radar's lens: as round as the glass's rim band goes (24 dp), the axis names inside it. */
+private val RADAR_LENS_CORNER = 24.dp
 
 private fun sectionOf(item: GlyphWheel.Item): String = when (item) {
     is GlyphWheel.Item.Song -> item.section
