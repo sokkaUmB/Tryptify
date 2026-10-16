@@ -588,7 +588,8 @@ class PlaybackService : MediaSessionService() {
         // Listen to EQ + tone changes and apply them. Tone shelves are folded into
         // the in-app AutoEQ processor whenever the system-wide effect isn't the one
         // handling this app's audio, so tone works independent of the system-wide
-        // toggle (and without double-processing when it IS on).
+        // toggle (and without double-processing when it IS on). The preamp in
+        // front of them sets the tone's level too (AutoPreamp).
         // Gapless playback. The setting was wired to the Settings screen but
         // never read here, so the toggle did nothing at all; this is what makes
         // it live. Flipping it off drops any pre-queued item immediately rather
@@ -684,7 +685,7 @@ class PlaybackService : MediaSessionService() {
         }
 
         serviceScope.launch {
-            // Seven sources exceeds combine's typed overloads (max 5), so this
+            // Eight sources exceeds combine's typed overloads (max 5), so this
             // uses the vararg form and casts each slot back out by position.
             kotlinx.coroutines.flow.combine(
                 preferences.eqEnabled,
@@ -694,6 +695,7 @@ class PlaybackService : MediaSessionService() {
                 preferences.eqPreamp,
                 preferences.systemToneControls,
                 preferences.systemWideAutoEqEnabled,
+                preferences.eqAutoPreamp,
             ) { v ->
                 EqApply(
                     enabled = v[0] as Boolean,
@@ -703,6 +705,7 @@ class PlaybackService : MediaSessionService() {
                     preamp = v[4] as Double,
                     tone = v[5] as tf.monochrome.android.domain.model.ToneControls,
                     systemWide = v[6] as Boolean,
+                    autoPreamp = v[7] as Boolean,
                 )
             }
                 // DataStore re-emits its whole Preferences on EVERY write to
@@ -2137,6 +2140,7 @@ class PlaybackService : MediaSessionService() {
         val preamp: Double,
         val tone: tf.monochrome.android.domain.model.ToneControls,
         val systemWide: Boolean,
+        val autoPreamp: Boolean,
     )
 
     /**
@@ -2193,6 +2197,7 @@ class PlaybackService : MediaSessionService() {
                         preamp = preferences.eqPreamp.first(),
                         tone = preferences.systemToneControls.first(),
                         systemWide = preferences.systemWideAutoEqEnabled.first(),
+                        autoPreamp = preferences.eqAutoPreamp.first(),
                     ),
                 )
             } catch (e: Exception) {
@@ -2208,6 +2213,12 @@ class PlaybackService : MediaSessionService() {
      * bypassed here to avoid a double correction. When it's OFF, the AutoEQ (when
      * enabled) and the bass/treble tone shelves are applied in-app — so tone works
      * whether or not system-wide is on, and neither is ever applied twice.
+     *
+     * The preamp sits in front of both, so it sets the tone's level as well as
+     * the correction's: it applies while either one changes the sound, the
+     * correction switch off included ([AutoPreamp.applied]). Automatic preamp is
+     * worked out here from what is playing, so a tone knob turned from the
+     * player's Audio panel moves it without the EQ screen open.
      */
     private fun applyEqSettings(cfg: EqApply) {
         try {
@@ -2231,10 +2242,17 @@ class PlaybackService : MediaSessionService() {
             val toneBands = cfg.tone.toBands()
             val bandsL = autoL + toneBands
             val bandsR = autoR + toneBands
-            val preamp = if (cfg.enabled) cfg.preamp else 0.0
-            val active = bandsL.any { it.enabled } || bandsR.any { it.enabled }
-            autoEqProcessor.applyBands(bandsL, bandsR, preamp.toFloat(), active)
-            lastAutoEq = AppliedEq(bandsL, bandsR, preamp.toFloat(), active)
+            val preamp = tf.monochrome.android.audio.eq.AutoPreamp.applied(
+                correctionOn = cfg.enabled,
+                automatic = cfg.autoPreamp,
+                manualDb = cfg.preamp.toFloat(),
+                correctionL = autoL,
+                correctionR = autoR,
+                tone = cfg.tone,
+            )
+            val active = bandsL.any { it.enabled } || bandsR.any { it.enabled } || preamp != 0f
+            autoEqProcessor.applyBands(bandsL, bandsR, preamp, active)
+            lastAutoEq = AppliedEq(bandsL, bandsR, preamp, active)
         } catch (e: Exception) {
             // Gracefully handle EQ application errors
         }

@@ -99,7 +99,8 @@ class SystemAudioEqController @Inject constructor(
                 preferences.eqBandsJson,
                 preferences.eqPreamp,
                 preferences.systemToneControls,
-            ) { enabled, bandsJson, preamp, tone -> Cfg(enabled, bandsJson, preamp, tone) }
+                preferences.eqAutoPreamp,
+            ) { enabled, bandsJson, preamp, tone, auto -> Cfg(enabled, bandsJson, preamp, tone, auto) }
                 // DataStore re-emits its whole Preferences on EVERY write to ANY
                 // key, so without this dedup, changing an unrelated setting would
                 // re-run applyGlobal and re-attach the session-0 effect — an
@@ -111,7 +112,7 @@ class SystemAudioEqController @Inject constructor(
                 // re-tuned dozens of times a second.
                 .debounce(70L)
                 .collectLatest { cfg ->
-                    if (cfg.enabled) applyGlobal(cfg.bandsJson, cfg.preamp, cfg.tone) else release()
+                    if (cfg.enabled) applyGlobal(cfg.bandsJson, cfg.preamp, cfg.tone, cfg.autoPreamp) else release()
                     // Live notification mirrors the master toggle so the user can
                     // see at a glance that system-wide EQ is engaged.
                     updateNotification(cfg.enabled)
@@ -124,11 +125,23 @@ class SystemAudioEqController @Inject constructor(
         val bandsJson: String?,
         val preamp: Double,
         val tone: ToneControls,
+        val autoPreamp: Boolean,
     )
 
-    private fun applyGlobal(bandsJson: String?, preamp: Double, tone: ToneControls) {
+    private fun applyGlobal(bandsJson: String?, manualPreamp: Double, tone: ToneControls, autoPreamp: Boolean) {
         // AutoEQ correction bands + the bass/treble tone shelves, layered after it.
-        val bands = decodeBands(bandsJson) + tone.toBands()
+        val correction = decodeBands(bandsJson)
+        val bands = correction + tone.toBands()
+        // In front of both, so it sets the tone's level too; automatic, it is
+        // worked out from what is applied, a knob turned anywhere included.
+        val preamp = AutoPreamp.applied(
+            correctionOn = true,
+            automatic = autoPreamp,
+            manualDb = manualPreamp.toFloat(),
+            correctionL = correction,
+            correctionR = correction,
+            tone = tone,
+        ).toDouble()
         // Bit-perfect passthrough when there is genuinely nothing to apply: if no
         // band actually changes the signal and the preamp is 0, DON'T attach the
         // effect at all, so the audio is left completely untouched (no filter bank,
