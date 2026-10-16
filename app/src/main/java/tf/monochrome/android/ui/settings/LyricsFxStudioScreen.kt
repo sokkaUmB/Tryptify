@@ -489,6 +489,8 @@ fun LyricsFxStudioScreen(
     // rememberSaveable so it doesn't snap back to Lyrics after background
     // process death.
     var selectedTab by rememberSaveable { mutableStateOf(0) }
+    // Which tab is up, for a native crash's report.
+    SideEffect { tf.monochrome.android.debug.CrashBreadcrumbs.note("studiotab", selectedTab.toString()) }
 
     // Preset save / import / share dialog state.
     var showSaveDialog by rememberSaveable { mutableStateOf(false) }
@@ -2134,7 +2136,11 @@ private fun StudioPreview(
 ) {
     val anchors = remember { LyricGlyphAnchors() }
     val accent = MaterialTheme.colorScheme.primary
-    // What the preview draws, for a native crash's report.
+    // What the preview draws, for a native crash's report, and nothing once
+    // it is gone, so the note never outlives the preview it describes.
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { tf.monochrome.android.debug.CrashBreadcrumbs.note("lyricsfx", "-") }
+    }
     SideEffect {
         tf.monochrome.android.debug.CrashBreadcrumbs.note(
             "lyricsfx",

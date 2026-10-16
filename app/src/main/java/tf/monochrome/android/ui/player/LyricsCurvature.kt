@@ -43,6 +43,15 @@ import kotlin.math.cos
  * off screen) leaves everything flat.
  *
  * Android 13 and later; flat below, and under [MIN_CURVATURE_DEG].
+ *
+ * The layer is there whatever the angles: flat, it draws with no effect.
+ * It sits inside the letters' copy ([captureLetters]), and a layer put into
+ * that chain while the lyrics are on screen (the slider leaving 0) made
+ * Compose hand it the glass layer that holds the copy, unre-recorded: the
+ * copy and that layer each drew the other, and the render thread walked the
+ * loop until its stack ran out (a native crash, seen on device four times).
+ * Its parts depend only on the Android version and the shader, which do not
+ * change while the app runs.
  */
 internal fun Modifier.lyricCurvature(
     topDeg: Float,
@@ -50,7 +59,7 @@ internal fun Modifier.lyricCurvature(
     focusInRoot: (() -> Rect?)? = null,
     wide: Boolean = false,
 ): Modifier =
-    if (maxOf(topDeg, sideDeg) < MIN_CURVATURE_DEG || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         this
     } else {
         this.composed {
@@ -60,7 +69,7 @@ internal fun Modifier.lyricCurvature(
                 Modifier
             } else {
                 Modifier
-                    .then(if (focusInRoot != null) Modifier.onGloballyPositioned { origin.value = it.positionInRoot() } else Modifier)
+                    .onGloballyPositioned { origin.value = it.positionInRoot() }
                     .curved(shader, topDeg, sideDeg, focusInRoot, origin, wide)
             }
         }
@@ -76,7 +85,10 @@ private fun Modifier.curved(
     wide: Boolean,
 ): Modifier =
     graphicsLayer {
-        if (size.width <= 0f || size.height <= 0f) return@graphicsLayer
+        if (size.width <= 0f || size.height <= 0f || maxOf(topDeg, sideDeg) < MIN_CURVATURE_DEG) {
+            renderEffect = null
+            return@graphicsLayer
+        }
         val dome = if (focusInRoot == null) {
             Rect(0f, 0f, size.width, size.height)
         } else {

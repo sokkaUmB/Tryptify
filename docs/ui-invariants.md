@@ -1311,6 +1311,19 @@ the lyrics it is handed down as `LocalLyricsTv` and put on the synced and the
 unsynced lyric surfaces (`lyricsTv`), with the same look and sliders; a bowed
 tube's corners are clear there rather than black, and taps are not bent.
 
+**Nothing appears or disappears inside the letters' copy while the lyrics are
+up.** `captureLetters` records the lyric surface into a layer that both the
+glass layer outward of it and the backdrop draw. When the curvature slider left
+0, the curve's graphicsLayer was inserted right inside the copy, and Compose
+handed it the glass layer (which already held the copy) without re-recording
+it: the copy and that layer each drew the other, and the render thread walked
+the loop until its stack ran out (four native crashes, nothing in the trace
+but `prepareTreeImpl`). So `lyricCurvature`'s layer is always there on Android
+13+ (flat, it sets no effect), and `captureLetters` ends with a pass-through
+layout node (`CopyBoundary`), so any layer toggled further in gets a fresh
+one. The Studio notes its tab and, while it is up, the preview's settings in
+the crash breadcrumbs.
+
 **A glass lens never reads a source it sits inside.** `liveGlassLens` draws
 every Haze source's recorded content into its backdrop; a pane inside one of
 those sources (the Stats screens put their panels inside the page they frost)

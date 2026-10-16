@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.layer.CompositingStrategy as LayerCompositin
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.Density
@@ -113,7 +114,7 @@ internal const val LYRIC_COPY_EMISSION = 0.75f
  */
 @Composable
 internal fun Modifier.captureLetters(capture: LyricLetterCapture?, edgeFade: Boolean = false): Modifier {
-    if (capture == null) return this
+    if (capture == null) return this.then(CopyBoundary)
     val layer = rememberGraphicsLayer()
     DisposableEffect(capture, layer) {
         capture.layer = layer
@@ -141,6 +142,21 @@ internal fun Modifier.captureLetters(capture: LyricLetterCapture?, edgeFade: Boo
             }
             drawLayer(layer)
         }
+        .then(CopyBoundary)
+}
+
+/**
+ * A layout node that only passes its child through, right inside the
+ * letters' copy, so the copy's draw always belongs to this node and the
+ * layer that holds it stays the one outward of it. Without it, a layer
+ * added inward later (the curve, the beat's scale) took over the copy's draw
+ * and was handed the old layer that already drew the copy: a loop on the
+ * render thread. Anything added inward now gets a fresh layer of its own.
+ * There whether or not the copy is taken, so taking it changes nothing here.
+ */
+private val CopyBoundary: Modifier = Modifier.layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, placeable.height) { placeable.place(0, 0) }
 }
 
 /**
