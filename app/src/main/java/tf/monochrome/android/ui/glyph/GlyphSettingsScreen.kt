@@ -3,20 +3,6 @@
 package tf.monochrome.android.ui.glyph
 
 import android.os.SystemClock
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.layout.Box
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
-import tf.monochrome.android.glyph.data.GlyphSyncTrack
-import tf.monochrome.android.glyph.data.GlyphTapSync
-import tf.monochrome.android.ui.components.liquidGlass
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,9 +12,13 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -54,41 +44,63 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import tf.monochrome.android.R
 import tf.monochrome.android.audio.sampler.stems.KnownModels
 import tf.monochrome.android.audio.sampler.stems.StemModelManager
+import tf.monochrome.android.glyph.asset.GlyphAssetRepository
 import tf.monochrome.android.glyph.asset.GlyphLane
+import tf.monochrome.android.glyph.asset.GlyphPalette
+import tf.monochrome.android.glyph.chart.GlyphDemoChart
 import tf.monochrome.android.glyph.data.GlyphCalibration
+import tf.monochrome.android.glyph.data.GlyphSyncTrack
+import tf.monochrome.android.glyph.data.GlyphTapSync
 import tf.monochrome.android.glyph.engine.GlyphGraphics
+import tf.monochrome.android.glyph.engine.GlyphScrollMode
+import tf.monochrome.android.glyph.engine.GlyphTurn
 import tf.monochrome.android.glyph.engine.GlyphTvShader
-import tf.monochrome.android.performance.LocalPerformanceProfile
+import tf.monochrome.android.glyph.engine.GlyphTvTuning
 import tf.monochrome.android.glyph.input.GlyphKeyBindings
+import tf.monochrome.android.performance.LocalPerformanceProfile
 import tf.monochrome.android.ui.components.GlassPill
+import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
 import tf.monochrome.android.ui.theme.MonoDimens
+import kotlin.math.roundToInt
 
 /**
  * Trypt Mania's settings, the ones that are the same for every song: the
@@ -106,6 +118,9 @@ fun GlyphSettingsScreen(
     state: GlyphUiState,
     onEvent: (GlyphEvent) -> Unit,
     modifier: Modifier = Modifier,
+    /** For the TV shader's preview; without them the Graphics tab shows none. */
+    assets: GlyphAssetRepository? = null,
+    palette: GlyphPalette? = null,
 ) {
     var tab by rememberSaveable { mutableStateOf(SettingsTab.CONTROLS) }
     // Which key slot is waiting for a key: "lane:slot".
@@ -224,7 +239,7 @@ fun GlyphSettingsScreen(
                     },
                 )
                 SettingsTab.SYNC -> SyncTab(state, onEvent)
-                SettingsTab.GRAPHICS -> GraphicsTab(state, onEvent)
+                SettingsTab.GRAPHICS -> GraphicsTab(state, onEvent, assets, palette)
                 SettingsTab.MORE -> MoreTab(state, onEvent)
             }
             Spacer(Modifier.height(LocalBottomChromeInset.current + MonoDimens.spacingLg))
@@ -593,7 +608,12 @@ private fun TapPad(caption: String, count: String, onTap: (Long) -> Unit) {
 }
 
 @Composable
-private fun GraphicsTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
+private fun GraphicsTab(
+    state: GlyphUiState,
+    onEvent: (GlyphEvent) -> Unit,
+    assets: GlyphAssetRepository?,
+    palette: GlyphPalette?,
+) {
     val graphics = state.gameplay.modifiers.graphics
     val set: (GlyphGraphics) -> Unit = { onEvent(GlyphEvent.SetGraphics(it)) }
     Text(
@@ -664,7 +684,130 @@ private fun GraphicsTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
             modifier = Modifier.padding(top = MonoDimens.spacingSm),
         )
     }
+    if (graphics.tvShader != GlyphTvShader.OFF) {
+        TvShaderControls(state, set, assets, palette)
+    }
 }
+
+/**
+ * The TV shader's sliders, over a preview of the demo chart drawn through
+ * them, so a change is seen as it is made rather than at the next song.
+ */
+@Composable
+private fun TvShaderControls(
+    state: GlyphUiState,
+    set: (GlyphGraphics) -> Unit,
+    assets: GlyphAssetRepository?,
+    palette: GlyphPalette?,
+) {
+    val modifiers = state.gameplay.modifiers
+    val graphics = modifiers.graphics
+    val shader = graphics.tvShader
+    val tv = graphics.tv
+    val setTv: (GlyphTvTuning) -> Unit = { set(graphics.copy(tv = it)) }
+    if (assets != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(TV_PREVIEW_HEIGHT)
+                .clip(MonoDimens.shapeLg)
+                .glyphTvShader(graphics)
+                .background(GlyphTheme.Ink)
+                .clearAndSetSemantics { contentDescription = "Preview of the TV shader" },
+        ) {
+            GlyphPreviewField(
+                chart = GlyphDemoChart.chart,
+                timing = GlyphDemoChart.timing,
+                turn = GlyphTurn.OFF,
+                scrollMode = GlyphScrollMode.XMod(TV_PREVIEW_SPEED),
+                skin = modifiers.skin,
+                look = GlyphFieldLook.of(modifiers),
+                assets = assets,
+                palette = palette,
+                loop = GlyphDemoChart.loopStartSeconds to GlyphDemoChart.loopSeconds,
+                receptorInset = TV_PREVIEW_RECEPTOR_INSET,
+                noteScale = TV_PREVIEW_NOTE_SCALE,
+                reducedMotion = modifiers.reducedMotion,
+                fadeLoop = false,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+
+    val window = LocalWindowInfo.current.containerSize
+    val pixel = tv.pixelSize(shader, LocalDensity.current.density, window.height)
+    val range = GlyphTvTuning.pixelRange(shader)
+    val wave = shader == GlyphTvShader.WAVE
+    GlyphSlider(
+        label = if (wave) "Line height" else "Pixel size",
+        value = pixel.toFloat(),
+        reading = "$pixel px",
+        range = range.first.toFloat()..range.last.toFloat(),
+        steps = range.last - range.first - 1,
+        note = when {
+            window.height <= 0 -> null
+            wave -> "${window.height / pixel} lines down the screen"
+            shader == GlyphTvShader.CRT && pixel < CRT_LINES_FROM ->
+                "${window.width / pixel} × ${window.height / pixel}" +
+                    (if (pixel == 1) ", the phone's own pixels" else "") +
+                    ". Scanlines show from $CRT_LINES_FROM px."
+            else -> "${window.width / pixel} × ${window.height / pixel} TV pixels"
+        },
+        onChange = { setTv(tv.withPixelSize(shader, it.roundToInt())) },
+    )
+    GlyphSlider(
+        label = "Strength",
+        value = tv.strength,
+        reading = percent(tv.strength),
+        note = "How much of the effect over the plain picture",
+        onChange = { setTv(tv.copy(strength = it)) },
+    )
+    GlyphSlider(
+        label = "Brightness",
+        value = tv.brightness,
+        reading = percent(tv.brightness),
+        range = GlyphTvTuning.MIN_BRIGHTNESS..GlyphTvTuning.MAX_BRIGHTNESS,
+        note = "Gives back the light the pattern takes",
+        onChange = { setTv(tv.copy(brightness = it)) },
+    )
+    if (shader == GlyphTvShader.CRT) {
+        GlyphSlider(
+            label = "Scanlines",
+            value = tv.scanlines,
+            reading = percent(tv.scanlines),
+            note = "How dark the gaps between lines are",
+            onChange = { setTv(tv.copy(scanlines = it)) },
+        )
+        GlyphSlider(
+            label = "Mask",
+            value = tv.mask,
+            reading = percent(tv.mask),
+            note = "The red, green and blue stripes of the tube",
+            onChange = { setTv(tv.copy(mask = it)) },
+        )
+        GlyphSlider(
+            label = "Glow",
+            value = tv.glow,
+            reading = percent(tv.glow),
+            note = "Light bleeding out of bright parts",
+            onChange = { setTv(tv.copy(glow = it)) },
+        )
+        GlyphSlider(
+            label = "Sharpness",
+            value = tv.sharpness,
+            reading = percent(tv.sharpness),
+            note = "How hard each pixel's edges are",
+            onChange = { setTv(tv.copy(sharpness = it)) },
+        )
+    }
+    GlyphButton(
+        text = "Reset ${shader.label}",
+        onClick = { setTv(GlyphTvTuning(pixelSizes = tv.pixelSizes - shader)) },
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+private fun percent(value: Float): String = "${(value * 100f).roundToInt()}%"
 
 @Composable
 private fun MoreTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
@@ -826,3 +969,9 @@ private fun NameDialog(current: String, onDone: (String) -> Unit, onDismiss: () 
 private const val KEYCODE_ESCAPE = 111
 private const val OFFSET_STEP_MS = 5
 private val TAP_PAD_HEIGHT = 168.dp
+private val TV_PREVIEW_HEIGHT = 220.dp
+private val TV_PREVIEW_RECEPTOR_INSET = 18.dp
+private const val TV_PREVIEW_NOTE_SCALE = 0.6f
+private const val TV_PREVIEW_SPEED = 2.25f
+/** Below this a CRT's line is too few phone pixels to have a dark gap. */
+private const val CRT_LINES_FROM = 3

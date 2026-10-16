@@ -4,6 +4,7 @@ package tf.monochrome.android.glyph.engine
 
 import tf.monochrome.android.glyph.asset.GlyphLane
 import tf.monochrome.android.glyph.chart.GlyphChart
+import kotlin.math.roundToInt
 
 /**
  * StepMania's "Turn" options: one lane permutation for the whole chart.
@@ -151,6 +152,8 @@ data class GlyphGraphics(
     val comboBurst: Boolean = true,
     /** The playfield seen through an old TV; [GlyphTvShader.OFF] by default. */
     val tvShader: GlyphTvShader = GlyphTvShader.OFF,
+    /** The TV's sliders: its pixel size and how strongly each part shows. */
+    val tv: GlyphTvTuning = GlyphTvTuning(),
 ) {
     companion object {
         val RAY_QUALITIES = listOf(1, 2, 3)
@@ -174,11 +177,89 @@ enum class GlyphTvShader(val id: String, val label: String, val note: String, va
     SCANLINES("scanlines", "Scanlines", "Every other line at half brightness.", 1),
     DIAGONAL("diagonal", "Diagonal", "A red, green and blue mask that steps one pixel each row.", 2),
     TRIANGULAR("triangular", "Triangular", "Two-pixel red, green and blue columns, shifted every second row pair.", 3),
-    WAVE("wave", "Wave", "The picture in 480 lines, each one brighter at its middle.", 4),
+    WAVE("wave", "Wave", "The picture in lines, each one brighter at its middle.", 4),
     CRT("crt", "CRT", "Soft scanlines, a shadow mask and a little bloom: a CRT monitor. The heaviest of the six.", 5),
     ;
 
     companion object {
         fun fromId(id: String?): GlyphTvShader = entries.firstOrNull { it.id == id } ?: OFF
+    }
+}
+
+/**
+ * The TV shader's sliders.
+ *
+ * A TV pixel is a whole number of the phone's own pixels, never a fraction:
+ * a grid that does not land on the screen's pixels beats against them, and
+ * that beat (moiré) is what a line grid of 640 x 480 drew on a 1272-pixel
+ * screen. [pixelSizes] is kept per look, since each has its own default: the
+ * CRT at the phone's own resolution, the masks at a desktop monitor's pixel
+ * (where a one-pixel line is still visible), Wave at the original's 480 lines.
+ *
+ * [strength] and [brightness] apply to every look; the rest to the CRT only.
+ * The four CRT values run 0 to 1, and [crtScan] and the rest turn them into
+ * the shader's own numbers; their defaults are the original's.
+ */
+data class GlyphTvTuning(
+    val pixelSizes: Map<GlyphTvShader, Int> = emptyMap(),
+    /** How much of the effect: 0 is the plain picture. */
+    val strength: Float = 1f,
+    /** A multiplier on the result, 0.5 to 2, for looks that darken the picture. */
+    val brightness: Float = 1f,
+    val scanlines: Float = DEFAULT_SCANLINES,
+    val mask: Float = DEFAULT_MASK,
+    val glow: Float = DEFAULT_GLOW,
+    val sharpness: Float = DEFAULT_SHARPNESS,
+) {
+    /** Phone pixels to a TV pixel for [shader], on a screen of [density] and [windowHeightPx]. */
+    fun pixelSize(shader: GlyphTvShader, density: Float, windowHeightPx: Int): Int =
+        (pixelSizes[shader] ?: defaultPixelSize(shader, density, windowHeightPx)).coerceIn(pixelRange(shader))
+
+    fun withPixelSize(shader: GlyphTvShader, size: Int): GlyphTvTuning =
+        copy(pixelSizes = pixelSizes + (shader to size.coerceIn(pixelRange(shader))))
+
+    /** How hard the gaps between scanlines are: the shader's `hardScan`, -8 by default. */
+    val crtScan: Float get() = -(SCAN_SOFTEST + (SCAN_HARDEST - SCAN_SOFTEST) * scanlines)
+
+    /** How sharp a pixel's edges are: the shader's `hardPix`, -3 by default. */
+    val crtSharpness: Float get() = -(SHARP_SOFTEST + (SHARP_HARDEST - SHARP_SOFTEST) * sharpness)
+
+    /** The shadow mask's dark and light channel levels: 0.5 and 1.5 by default. */
+    val crtMaskDark: Float get() = 1f - mask
+    val crtMaskLight: Float get() = 1f + mask
+
+    /** The bloom added over the picture: 0.15 by default. */
+    val crtBloom: Float get() = GLOW_MOST * glow
+
+    companion object {
+        const val DEFAULT_SCANLINES = 6f / 14f
+        const val DEFAULT_MASK = 0.5f
+        const val DEFAULT_GLOW = 0.3f
+        const val DEFAULT_SHARPNESS = 0.4f
+        const val MIN_BRIGHTNESS = 0.5f
+        const val MAX_BRIGHTNESS = 2f
+
+        private const val SCAN_SOFTEST = 2f
+        private const val SCAN_HARDEST = 16f
+        private const val SHARP_SOFTEST = 1f
+        private const val SHARP_HARDEST = 6f
+        private const val GLOW_MOST = 0.5f
+
+        /** A monitor's pixel, in dp: about a hundredth of an inch. */
+        private const val MONITOR_PIXEL_DP = 1.6f
+
+        /** The original's line count, for Wave's default. */
+        private const val WAVE_LINES = 480
+
+        fun pixelRange(shader: GlyphTvShader): IntRange =
+            // Wave's line is its bright middle and two dim edges: three pixels at least.
+            if (shader == GlyphTvShader.WAVE) 3..12 else 1..8
+
+        fun defaultPixelSize(shader: GlyphTvShader, density: Float, windowHeightPx: Int): Int = when (shader) {
+            GlyphTvShader.CRT -> 1
+            GlyphTvShader.WAVE ->
+                if (windowHeightPx > 0) (windowHeightPx.toFloat() / WAVE_LINES).roundToInt() else 6
+            else -> (density * MONITOR_PIXEL_DP).roundToInt()
+        }.coerceIn(pixelRange(shader))
     }
 }

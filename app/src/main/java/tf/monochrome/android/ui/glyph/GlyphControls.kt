@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +43,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -276,6 +279,70 @@ fun GlyphSwitchRow(
         )
     }
 }
+
+/**
+ * A setting on a scale: its name and reading over a slider. The thumb and
+ * the filled track are the theme's ink, as a switch's "on" is; the reading is
+ * what a screen reader says for the value, so it hears "3 px", not "37%".
+ */
+@Composable
+fun GlyphSlider(
+    label: String,
+    value: Float,
+    reading: String,
+    onChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    range: ClosedFloatingPointRange<Float> = 0f..1f,
+    steps: Int = 0,
+    note: String? = null,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = scheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = reading,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = scheme.onSurface,
+            )
+        }
+        if (note != null) {
+            Text(
+                text = note,
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant,
+            )
+        }
+        Slider(
+            value = value.coerceIn(range),
+            onValueChange = onChange,
+            valueRange = range,
+            steps = steps,
+            colors = SliderDefaults.colors(
+                thumbColor = scheme.onSurface,
+                activeTrackColor = scheme.onSurface,
+                inactiveTrackColor = scheme.onSurface.copy(alpha = SLIDER_TRACK_ALPHA),
+                activeTickColor = scheme.surface.copy(alpha = SLIDER_TICK_ALPHA),
+                inactiveTickColor = scheme.onSurface.copy(alpha = SLIDER_TICK_ALPHA),
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    contentDescription = label
+                    stateDescription = reading
+                },
+        )
+    }
+}
+
+private const val SLIDER_TRACK_ALPHA = 0.18f
+private const val SLIDER_TICK_ALPHA = 0.5f
 
 private const val THUMB_MILLIS = 180
 private val THUMB_INSET = 3.dp

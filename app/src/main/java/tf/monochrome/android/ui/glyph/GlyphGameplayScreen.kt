@@ -115,7 +115,7 @@ fun GlyphGameplayScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .glyphTvShader(gameplay.modifiers.graphics.tvShader),
+                .glyphTvShader(gameplay.modifiers.graphics),
         ) {
             GlyphPlayfield(
                 engine = engine,

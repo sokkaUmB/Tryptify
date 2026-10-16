@@ -69,6 +69,7 @@ import tf.monochrome.android.glyph.engine.GlyphAudioTransport
 import tf.monochrome.android.glyph.engine.GlyphFailType
 import tf.monochrome.android.glyph.engine.GlyphGraphics
 import tf.monochrome.android.glyph.engine.GlyphTvShader
+import tf.monochrome.android.glyph.engine.GlyphTvTuning
 import tf.monochrome.android.glyph.engine.GlyphPreviewPlayer
 import tf.monochrome.android.glyph.engine.GlyphGameplayEngine
 import tf.monochrome.android.glyph.engine.GlyphJudgement
@@ -1605,6 +1606,7 @@ class GlyphViewModel @Inject constructor(
                 beatFlash = prefs.getBoolean(PREF_GFX_BEAT_FLASH, true),
                 comboBurst = prefs.getBoolean(PREF_GFX_COMBO_BURST, true),
                 tvShader = GlyphTvShader.fromId(prefs.getString(PREF_GFX_TV_SHADER, null)),
+                tv = loadTvTuning(),
             ),
         )
         _ui.value = _ui.value.copy(
@@ -1652,7 +1654,39 @@ class GlyphViewModel @Inject constructor(
             .putBoolean(PREF_GFX_BEAT_FLASH, modifiers.graphics.beatFlash)
             .putBoolean(PREF_GFX_COMBO_BURST, modifiers.graphics.comboBurst)
             .putString(PREF_GFX_TV_SHADER, modifiers.graphics.tvShader.id)
+            .also { saveTvTuning(it, modifiers.graphics.tv) }
             .apply()
+    }
+
+    /** The TV's sliders; a pixel size never set is left to its look's default. */
+    private fun loadTvTuning(): GlyphTvTuning {
+        val defaults = GlyphTvTuning()
+        fun unit(key: String, default: Float) = prefs.getFloat(key, default).coerceIn(0f, 1f)
+        return GlyphTvTuning(
+            pixelSizes = GlyphTvShader.entries.mapNotNull { shader ->
+                prefs.getInt(PREF_GFX_TV_PIXEL + shader.id, 0).takeIf { it > 0 }?.let { shader to it }
+            }.toMap(),
+            strength = unit(PREF_GFX_TV_STRENGTH, defaults.strength),
+            brightness = prefs.getFloat(PREF_GFX_TV_BRIGHTNESS, defaults.brightness)
+                .coerceIn(GlyphTvTuning.MIN_BRIGHTNESS, GlyphTvTuning.MAX_BRIGHTNESS),
+            scanlines = unit(PREF_GFX_TV_SCANLINES, defaults.scanlines),
+            mask = unit(PREF_GFX_TV_MASK, defaults.mask),
+            glow = unit(PREF_GFX_TV_GLOW, defaults.glow),
+            sharpness = unit(PREF_GFX_TV_SHARPNESS, defaults.sharpness),
+        )
+    }
+
+    private fun saveTvTuning(edit: android.content.SharedPreferences.Editor, tv: GlyphTvTuning) {
+        for (shader in GlyphTvShader.entries) {
+            val size = tv.pixelSizes[shader]
+            if (size == null) edit.remove(PREF_GFX_TV_PIXEL + shader.id) else edit.putInt(PREF_GFX_TV_PIXEL + shader.id, size)
+        }
+        edit.putFloat(PREF_GFX_TV_STRENGTH, tv.strength)
+            .putFloat(PREF_GFX_TV_BRIGHTNESS, tv.brightness)
+            .putFloat(PREF_GFX_TV_SCANLINES, tv.scanlines)
+            .putFloat(PREF_GFX_TV_MASK, tv.mask)
+            .putFloat(PREF_GFX_TV_GLOW, tv.glow)
+            .putFloat(PREF_GFX_TV_SHARPNESS, tv.sharpness)
     }
 
     /**
@@ -2329,6 +2363,14 @@ class GlyphViewModel @Inject constructor(
         const val PREF_GFX_EXPLOSIONS = "gfx_explosions"
         const val PREF_GFX_BEAT_FLASH = "gfx_beat_flash"
         const val PREF_GFX_COMBO_BURST = "gfx_combo_burst"
+        /** Followed by the look's id: one pixel size per look. */
+        const val PREF_GFX_TV_PIXEL = "gfx_tv_pixel_"
+        const val PREF_GFX_TV_STRENGTH = "gfx_tv_strength"
+        const val PREF_GFX_TV_BRIGHTNESS = "gfx_tv_brightness"
+        const val PREF_GFX_TV_SCANLINES = "gfx_tv_scanlines"
+        const val PREF_GFX_TV_MASK = "gfx_tv_mask"
+        const val PREF_GFX_TV_GLOW = "gfx_tv_glow"
+        const val PREF_GFX_TV_SHARPNESS = "gfx_tv_sharpness"
         const val PREF_GFX_TV_SHADER = "gfx_tv_shader"
 
         const val MAX_MINI = 0.5f

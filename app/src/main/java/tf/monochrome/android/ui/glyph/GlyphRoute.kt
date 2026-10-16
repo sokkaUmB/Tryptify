@@ -188,6 +188,8 @@ fun GlyphRoute(
                 state = state,
                 onEvent = viewModel::onEvent,
                 modifier = Modifier.fillMaxSize(),
+                assets = assets,
+                palette = palette,
             )
 
             GlyphScreen.PACKS -> GlyphPacksScreen(

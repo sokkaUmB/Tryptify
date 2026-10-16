@@ -1140,20 +1140,30 @@ and offers a correction only from the recent runs' agreed lateness
 
 **The TV shader is over the game, never over a menu.** `glyphTvShader`, off by
 default, goes on the gameplay picture (the playfield, the judgements and the
-HUD), Training Ground's playfield and the options' preview, and nowhere else.
-The pause menu is drawn over it, outside it, in the app's own glass. Android 13
-and later; off where the app turns its blur off (a low-end phone, or liquid glass
-removed), since it is a full-screen pass every frame, and the setting says so;
-a shader the driver will not compile leaves the screen plain.
+HUD), Training Ground's playfield, the options' preview and the Graphics tab's
+preview of the demo chart, and nowhere else. The pause menu is drawn over it,
+outside it, in the app's own glass. Android 13 and later; off where the app
+turns its blur off (a low-end phone, or liquid glass removed), since it is a
+full-screen pass every frame, and the setting says so; a shader the driver will
+not compile leaves the screen plain.
 
-* The masks are counted in monitor-sized pixels (1.6 dp): in a phone's own
-  pixels a one-pixel scanline is too fine to see. The CRT reads the picture at
-  every phone pixel, as the original reads every output pixel. Read on the
-  coarse grid, it broke the HUD's text and lost one-pixel lines.
-* The line grid is the original's 640 x 480 over the window; a smaller layer
-  gets its share, so the preview's lines are the game's and do not shimmer. Wave
-  averages the rows a line covers rather than reading one, or thin lines blink
-  as they scroll.
+* Every pattern is counted in TV pixels of a whole number of phone pixels
+  (`GlyphTvTuning.pixelSize`), never a fraction. The old line grid was 640 x 480
+  stretched over the window, 5.775 rows a line on a 2772-row screen: lines of
+  five and six rows, beating over nine lines as moiré. A grid on whole pixels
+  repeats every line, and a smaller layer draws the same pixel as the game.
+* The CRT starts at the phone's own pixels, and its Pixel size slider lowers
+  the density from there. At one and two pixels its scanlines have no gap to
+  draw, and the slider's note says they show from three. The masks start at a
+  monitor's pixel (1.6 dp), where a one-pixel line is still visible; Wave at
+  the original's 480 lines, rounded to whole rows. Each look keeps its own size.
+* A TV pixel the layer's edge cuts is read inside the layer, never as black:
+  the screen has no dark rim, whatever the size.
+* The sliders are the shader's own constants, not effects laid over it.
+  Strength mixes the plain picture back in; Brightness gives back what the
+  pattern takes. Scanlines, Mask, Glow and Sharpness are the CRT's ScanBrightness,
+  mask levels, BloomAmount and FilterCRTAmount, and their defaults are the
+  original's values exactly (`GlyphTvTuningTest`).
 * The settings name each look by what it does, never by where its arithmetic
   came from.
 

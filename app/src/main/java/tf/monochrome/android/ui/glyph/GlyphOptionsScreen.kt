@@ -158,7 +158,7 @@ fun GlyphOptionsScreen(
                 .fillMaxWidth()
                 .height(PREVIEW_HEIGHT)
                 .clipToBounds()
-                .glyphTvShader(modifiers.graphics.tvShader)
+                .glyphTvShader(modifiers.graphics)
                 .background(GlyphTheme.Ink)
                 .clearAndSetSemantics { contentDescription = "Preview of the chart with these options" },
         ) {
