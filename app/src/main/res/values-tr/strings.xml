@@ -2396,6 +2396,9 @@
     <string name="settings_crt_effect">CRT efekti</string>
     <string name="settings_crt_effect_subtitle">Her ekran eski bir televizyondaki gibi. Android 13 ve sonrası.</string>
     <string name="settings_crt_look">Görünüm</string>
+    <string name="settings_crt_target">Uygulanacak yer</string>
+    <string name="settings_crt_target_app">Tüm uygulama</string>
+    <string name="settings_crt_target_lyrics">Yalnızca şarkı sözleri</string>
     <string name="settings_crt_unavailable">Bu telefonda kapalı: Android 13 ve cam efektlerinin açık olması gerekir.</string>
     <string name="settings_crt_pixel_size">Piksel boyutu: %1$d px</string>
     <string name="settings_crt_line_height">Satır yüksekliği: %1$d px</string>

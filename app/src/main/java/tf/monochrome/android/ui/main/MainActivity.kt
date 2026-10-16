@@ -185,6 +185,7 @@ class MainActivity : ComponentActivity() {
             // Settings › Appearance › CRT effect: every screen through an old TV.
             val appTvShader by preferences.appTvShader
                 .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.glyph.engine.GlyphTvShader.OFF)
+            val appTvOnLyrics by preferences.appTvOnLyrics.collectAsStateWithLifecycle(initialValue = false)
             val appTvStored = preferences.appTvTuning
                 .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.glyph.engine.GlyphTvTuning())
             // A slider being dragged wins until the store has its value.
@@ -301,10 +302,19 @@ class MainActivity : ComponentActivity() {
                     // The CRT effect over the whole app, drawn on the one layer
                     // every screen is in; a screen with its own (Trypt Mania's
                     // playfield) leaves its own off under it.
-                    val appTv = tf.monochrome.android.ui.glyph.appTvShaderRuns(appTvShader)
+                    val tvRuns = tf.monochrome.android.ui.glyph.appTvShaderRuns(appTvShader)
+                    // Over every screen, or handed to the lyric view alone.
+                    val appTv = tvRuns && !appTvOnLyrics
+                    val lyricsTv = remember(tvRuns, appTvOnLyrics, appTvShader, appTvNow) {
+                        if (tvRuns && appTvOnLyrics) tf.monochrome.android.ui.glyph.LyricsTv(appTvShader, appTvNow) else null
+                    }
                     SideEffect {
                         appTube = if (appTv) appTvNow else null
                         appTubeLook = appTvShader
+                        tf.monochrome.android.debug.CrashBreadcrumbs.note(
+                            "crt",
+                            if (!tvRuns) "off" else "${appTvShader.id} over ${if (appTvOnLyrics) "lyrics" else "app"}",
+                        )
                     }
                     Surface(
                         modifier = Modifier
@@ -313,10 +323,13 @@ class MainActivity : ComponentActivity() {
                                 val at = it.positionInWindow()
                                 appTubeBounds.set(at.x, at.y, at.x + it.size.width, at.y + it.size.height)
                             }
-                            .then(if (appTv) Modifier.tvShader(appTvShader, appTvNow) else Modifier),
+                            .then(if (appTv) Modifier.tvShader(appTvShader, tv = appTvNow) else Modifier),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        CompositionLocalProvider(tf.monochrome.android.ui.glyph.LocalAppTvShader provides appTv) {
+                        CompositionLocalProvider(
+                            tf.monochrome.android.ui.glyph.LocalAppTvShader provides appTv,
+                            tf.monochrome.android.ui.glyph.LocalLyricsTv provides lyricsTv,
+                        ) {
                             // First-run gate. null = flag not read yet (splash is
                             // still covering); false = wizard; true = main app.
                             // Collected (not read once) so Settings flipping the

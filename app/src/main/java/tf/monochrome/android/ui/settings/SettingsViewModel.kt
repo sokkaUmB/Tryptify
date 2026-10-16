@@ -148,6 +148,13 @@ class SettingsViewModel @Inject constructor(
     val appTvShader: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvShader> = preferences.appTvShader
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.glyph.engine.GlyphTvShader.OFF)
 
+    val appTvOnLyrics: StateFlow<Boolean> = preferences.appTvOnLyrics
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setAppTvOnLyrics(lyrics: Boolean) {
+        viewModelScope.launch { preferences.setAppTvOnLyrics(lyrics) }
+    }
+
     val appTvTuning: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvTuning> = preferences.appTvTuning
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.glyph.engine.GlyphTvTuning())
     val colorTransitionMs: StateFlow<Int> = preferences.colorTransitionMs

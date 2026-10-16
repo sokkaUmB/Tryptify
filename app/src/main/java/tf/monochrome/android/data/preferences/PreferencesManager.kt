@@ -152,6 +152,8 @@ class PreferencesManager @Inject constructor(
         // Its sliders, as GlyphTvTuning.encode writes them: Trypt Mania's
         // own, plus Chromatic shift and Curvature, kept apart from the game's.
         private val APP_TV_TUNING = stringPreferencesKey("app_tv_tuning")
+        // What it draws over: "app" (every screen) or "lyrics" (the lyrics only).
+        private val APP_TV_TARGET = stringPreferencesKey("app_tv_target")
         // How long the album colours take to cross over, in ms. Older builds
         // also stored -1 here for "match Blend Between Tracks"; ColorBlend
         // .millisFor turns that back into a real length.
@@ -514,7 +516,7 @@ class PreferencesManager @Inject constructor(
         val SETTINGS_SYNC_KEYS: Set<Preferences.Key<*>> = setOf(
             WIFI_QUALITY, CELLULAR_QUALITY,
             THEME, THEME_PAPER, DYNAMIC_COLORS,
-            DYNAMIC_COLORS_MENUS, DYNAMIC_COLORS_KEEP_BACKGROUND, APP_TV_SHADER, APP_TV_TUNING, COLOR_TRANSITION_MS,
+            DYNAMIC_COLORS_MENUS, DYNAMIC_COLORS_KEEP_BACKGROUND, APP_TV_SHADER, APP_TV_TUNING, APP_TV_TARGET, COLOR_TRANSITION_MS,
             CUSTOM_THEME_ENABLED, CUSTOM_ACCENT, CUSTOM_BACKGROUND,
             FONT_SCALE, FONT_SCALE_FOLLOW_SYSTEM,
             GAPLESS_PLAYBACK, GAPLESS_NO_RESAMPLE, SHOW_EXPLICIT_BADGES,
@@ -701,6 +703,13 @@ class PreferencesManager @Inject constructor(
 
     suspend fun setAppTvTuning(tuning: tf.monochrome.android.glyph.engine.GlyphTvTuning) {
         dataStore.edit { it[APP_TV_TUNING] = tuning.clamped().encode() }
+    }
+
+    /** Whether the CRT effect draws over the lyrics only rather than the whole app; the app by default. */
+    val appTvOnLyrics: Flow<Boolean> = dataStore.data.map { it[APP_TV_TARGET] == "lyrics" }
+
+    suspend fun setAppTvOnLyrics(lyrics: Boolean) {
+        dataStore.edit { it[APP_TV_TARGET] = if (lyrics) "lyrics" else "app" }
     }
 
     /**

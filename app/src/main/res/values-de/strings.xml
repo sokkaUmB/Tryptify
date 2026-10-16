@@ -2396,6 +2396,9 @@
     <string name="settings_crt_effect">CRT-Effekt</string>
     <string name="settings_crt_effect_subtitle">Jeder Bildschirm wie auf einem alten Fernseher. Ab Android 13.</string>
     <string name="settings_crt_look">Stil</string>
+    <string name="settings_crt_target">Darüber zeichnen</string>
+    <string name="settings_crt_target_app">Die ganze App</string>
+    <string name="settings_crt_target_lyrics">Nur die Liedtexte</string>
     <string name="settings_crt_unavailable">Auf diesem Telefon aus: Es braucht Android 13 und eingeschaltete Glaseffekte.</string>
     <string name="settings_crt_pixel_size">Pixelgröße: %1$d px</string>
     <string name="settings_crt_line_height">Zeilenhöhe: %1$d px</string>

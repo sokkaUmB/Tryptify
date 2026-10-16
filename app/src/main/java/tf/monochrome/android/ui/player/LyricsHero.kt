@@ -1,5 +1,7 @@
 package tf.monochrome.android.ui.player
 
+import tf.monochrome.android.ui.glyph.lyricsTv
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -557,6 +559,8 @@ internal fun SyncedLyricsView(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
+                // Settings › Appearance › CRT effect, set to the lyrics.
+                .then(Modifier.lyricsTv())
                 // God rays wrap everything below, so they gather the finished
                 // glass letters, and sit OUTSIDE the side inset, so the shafts
                 // run to the screen edge instead of stopping in a hard line at
@@ -1271,6 +1275,7 @@ internal fun UnsyncedLyricsView(lines: List<LyricLine>) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .then(Modifier.lyricsTv())
                 .padding(horizontal = sidePadding)
                 .fxaa()
                 .liquidGlass()

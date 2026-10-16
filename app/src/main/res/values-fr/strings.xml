@@ -2462,6 +2462,9 @@
     <string name="settings_crt_effect">Effet CRT</string>
     <string name="settings_crt_effect_subtitle">Chaque écran comme sur un vieux téléviseur. Android 13 et plus.</string>
     <string name="settings_crt_look">Style</string>
+    <string name="settings_crt_target">Appliquer à</string>
+    <string name="settings_crt_target_app">Toute l\'app</string>
+    <string name="settings_crt_target_lyrics">Les paroles seulement</string>
     <string name="settings_crt_unavailable">Désactivé sur ce téléphone : il faut Android 13 et les effets de verre activés.</string>
     <string name="settings_crt_pixel_size">Taille des pixels : %1$d px</string>
     <string name="settings_crt_line_height">Hauteur de ligne : %1$d px</string>

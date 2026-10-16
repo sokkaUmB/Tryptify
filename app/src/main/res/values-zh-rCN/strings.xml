@@ -2330,6 +2330,9 @@
     <string name="settings_crt_effect">CRT 效果</string>
     <string name="settings_crt_effect_subtitle">所有界面呈现老式电视效果。需要 Android 13 或更高版本。</string>
     <string name="settings_crt_look">样式</string>
+    <string name="settings_crt_target">应用于</string>
+    <string name="settings_crt_target_app">整个应用</string>
+    <string name="settings_crt_target_lyrics">仅歌词</string>
     <string name="settings_crt_unavailable">此手机上不可用：需要 Android 13 并开启玻璃效果。</string>
     <string name="settings_crt_pixel_size">像素大小：%1$d px</string>
     <string name="settings_crt_line_height">行高：%1$d px</string>

@@ -1305,6 +1305,12 @@ the corners go dark. A line saved with the one Curvature slider of before is
 read as the two angles that draw the same tube. Chromatic shift reads red and
 blue up to 3 dp either side of green.
 
+**The CRT effect draws over the whole app or the lyrics only** (Settings ›
+Appearance › CRT effect › Draw over, `app_tv_target`, the app by default). Over
+the lyrics it is handed down as `LocalLyricsTv` and put on the synced and the
+unsynced lyric surfaces (`lyricsTv`), with the same look and sliders; a bowed
+tube's corners are clear there rather than black, and taps are not bent.
+
 **A glass lens never reads a source it sits inside.** `liveGlassLens` draws
 every Haze source's recorded content into its backdrop; a pane inside one of
 those sources (the Stats screens put their panels inside the page they frost)
@@ -1312,7 +1318,11 @@ would record itself into itself, and the render thread walked that loop until
 its stack ran out: a native crash with nothing in the trace but
 `prepareTreeImpl`, seen on device. It skips a source while Haze's
 `contentDrawing` says that source is recording, as Haze's own blur does
-(`HazeContentDrawing`, kept through R8 by name).
+(`HazeContentDrawing`, kept through R8 by name). A pane's own layer
+re-records apart from its source's, when the flag is down, so a source caught
+once is left out for good. A native crash's report names the screen and the
+CRT setting the app was on (`CrashBreadcrumbs`): a render-thread tombstone
+names neither.
 
 **CRT-Royale is its passes folded into one** (`ROYALE_SHADER`, its own program,
 from crt-royale, GPL-2.0-or-later). The beams are its sampled generalized

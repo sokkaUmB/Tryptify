@@ -2462,6 +2462,9 @@
     <string name="settings_crt_effect">Efecto CRT</string>
     <string name="settings_crt_effect_subtitle">Todas las pantallas como en un televisor antiguo. Android 13 o posterior.</string>
     <string name="settings_crt_look">Estilo</string>
+    <string name="settings_crt_target">Aplicar a</string>
+    <string name="settings_crt_target_app">Toda la app</string>
+    <string name="settings_crt_target_lyrics">Solo la letra</string>
     <string name="settings_crt_unavailable">Desactivado en este teléfono: necesita Android 13 y los efectos de cristal activados.</string>
     <string name="settings_crt_pixel_size">Tamaño de píxel: %1$d px</string>
     <string name="settings_crt_line_height">Altura de línea: %1$d px</string>

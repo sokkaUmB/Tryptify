@@ -2330,6 +2330,9 @@
     <string name="settings_crt_effect">CRT エフェクト</string>
     <string name="settings_crt_effect_subtitle">すべての画面を古いテレビのように表示します。Android 13 以降。</string>
     <string name="settings_crt_look">スタイル</string>
+    <string name="settings_crt_target">適用先</string>
+    <string name="settings_crt_target_app">アプリ全体</string>
+    <string name="settings_crt_target_lyrics">歌詞のみ</string>
     <string name="settings_crt_unavailable">この端末では無効です。Android 13 以降とガラス効果の有効化が必要です。</string>
     <string name="settings_crt_pixel_size">ピクセルサイズ: %1$d px</string>
     <string name="settings_crt_line_height">ラインの高さ: %1$d px</string>

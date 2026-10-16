@@ -236,6 +236,12 @@ internal val chromeHiddenRoutes = setOf(
 @Composable
 fun MonochromeNavHost(initialRoute: String? = null) {
     val navController = rememberNavController()
+    // The screen, for a native crash's report (CrashBreadcrumbs).
+    androidx.compose.runtime.LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collect {
+            tf.monochrome.android.debug.CrashBreadcrumbs.note("screen", it.destination.route)
+        }
+    }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 

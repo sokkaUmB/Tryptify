@@ -129,6 +129,11 @@ internal fun Modifier.liveGlassLens(
     // `HazeStyle.backgroundColor`; the lens lays [ground] down first.
     val pageColor = ground.copy(alpha = 1f)
     val effect = remember { LensEffectCache() }
+    // The sources this pane has been seen inside. Its own layer re-records
+    // apart from its source's (when it alone is invalidated), and Haze's
+    // "recording now" flag is only up during the source's own recording, so
+    // a source caught once is left out for good.
+    val inside = remember { java.util.Collections.newSetFromMap(java.util.WeakHashMap<HazeArea, Boolean>()) }
     return this
         .onGloballyPositioned { anchor.screen = it.positionOnScreen() }
         .clip(shape)
@@ -200,7 +205,10 @@ internal fun Modifier.liveGlassLens(
                         // walked that loop until its stack ran out (a native
                         // crash, seen on device). Haze's own blur skips them
                         // the same way.
-                        .filterNot { HazeContentDrawing.isDrawing(it) }
+                        .filterNot { area ->
+                            if (HazeContentDrawing.isDrawing(area)) inside.add(area)
+                            area in inside
+                        }
                         .sortedBy { it.zIndex }
                         .forEach { area ->
                             val layer = area.contentLayer ?: return@forEach

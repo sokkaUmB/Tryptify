@@ -772,7 +772,33 @@ private fun CrtEffectSetting(viewModel: SettingsViewModel) {
                     }
             }
         }
+        CrtTarget(viewModel)
         CrtSliders(viewModel, shader)
+    }
+}
+
+/** What the CRT effect draws over: every screen, or the lyrics alone. */
+@Composable
+private fun CrtTarget(viewModel: SettingsViewModel) {
+    val onLyrics by viewModel.appTvOnLyrics.collectAsStateWithLifecycle()
+    var open by remember { mutableStateOf(false) }
+    Box {
+        SettingItem(
+            title = stringResource(R.string.settings_crt_target),
+            subtitle = stringResource(if (onLyrics) R.string.settings_crt_target_lyrics else R.string.settings_crt_target_app),
+            onClick = { open = true },
+        )
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            listOf(false to R.string.settings_crt_target_app, true to R.string.settings_crt_target_lyrics).forEach { (lyrics, name) ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(name)) },
+                    onClick = {
+                        viewModel.setAppTvOnLyrics(lyrics)
+                        open = false
+                    },
+                )
+            }
+        }
     }
 }
 

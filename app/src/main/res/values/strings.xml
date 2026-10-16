@@ -2401,6 +2401,9 @@
     <string name="settings_crt_effect">CRT effect</string>
     <string name="settings_crt_effect_subtitle">Every screen through an old TV. Android 13 and later.</string>
     <string name="settings_crt_look">Look</string>
+    <string name="settings_crt_target">Draw over</string>
+    <string name="settings_crt_target_app">The whole app</string>
+    <string name="settings_crt_target_lyrics">The lyrics only</string>
     <string name="settings_crt_unavailable">Off on this phone: it needs Android 13 and the glass effects on.</string>
     <string name="settings_crt_pixel_size">Pixel size: %1$d px</string>
     <string name="settings_crt_line_height">Line height: %1$d px</string>

@@ -16,6 +16,7 @@ import android.view.MotionEvent
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -90,6 +91,24 @@ fun appTvShaderRuns(shader: GlyphTvShader): Boolean =
 fun Modifier.tvShader(shader: GlyphTvShader, tv: GlyphTvTuning = GlyphTvTuning()): Modifier = tvShader(shader) { tv }
 
 /**
+ * Settings › Appearance › CRT effect drawn over the lyrics only: its look and
+ * its sliders. Null when it is off, or drawn over the whole app.
+ */
+class LyricsTv(val shader: GlyphTvShader, val tuning: () -> GlyphTvTuning)
+
+val LocalLyricsTv = compositionLocalOf<LyricsTv?> { null }
+
+/**
+ * The lyric surface through the CRT effect, when it is set to the lyrics
+ * ([LocalLyricsTv]). A bowed tube's corners are clear here, not black: the
+ * player shows through around the lyrics.
+ */
+fun Modifier.lyricsTv(): Modifier = composed {
+    val tv = LocalLyricsTv.current
+    if (tv == null) Modifier else Modifier.tvShader(tv.shader, clearRim = true, tv = tv.tuning)
+}
+
+/**
  * [tvShader] with its settings read as the layer draws, so a slider being
  * dragged ([AppTvLive]) moves the picture without recomposing what is in it.
  *
@@ -97,7 +116,7 @@ fun Modifier.tvShader(shader: GlyphTvShader, tv: GlyphTvTuning = GlyphTvTuning()
  * picture, the glass in front of the pattern: the scanlines and the mask bow
  * with the tube, as they do on one. It runs only while either is above 0.
  */
-fun Modifier.tvShader(shader: GlyphTvShader, tv: () -> GlyphTvTuning): Modifier {
+fun Modifier.tvShader(shader: GlyphTvShader, clearRim: Boolean = false, tv: () -> GlyphTvTuning): Modifier {
     return if (shader == GlyphTvShader.OFF || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         this
     } else {
@@ -110,7 +129,7 @@ fun Modifier.tvShader(shader: GlyphTvShader, tv: () -> GlyphTvTuning): Modifier 
             if (runtime == null || !LocalPerformanceProfile.current.allowHazeBlur) {
                 Modifier
             } else {
-                Modifier.onSizeChanged { size.value = it }.tvLayer(runtime, tube, shader, tv, windowHeight, size)
+                Modifier.onSizeChanged { size.value = it }.tvLayer(runtime, tube, shader, tv, windowHeight, size, clearRim)
             }
         }
     }
@@ -124,6 +143,7 @@ private fun Modifier.tvLayer(
     tv: () -> GlyphTvTuning,
     windowHeight: Int,
     size: MutableState<IntSize>,
+    clearRim: Boolean,
 ): Modifier =
     graphicsLayer {
         // Read through state, so a rotation re-runs this with the new size,
@@ -167,6 +187,7 @@ private fun Modifier.tvLayer(
                 // A flat picture keeps its edge pixels; a bowed one softens
                 // its rim over a dp, rather than stepping into the dark.
                 tube.setFloatUniform("uEdge", if (tuning.curved) TUBE_EDGE_DP * density else 0f)
+                tube.setFloatUniform("uRim", if (clearRim) 0f else 1f)
                 RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(tube, "content"), pattern)
                     .asComposeRenderEffect()
             }
@@ -456,6 +477,7 @@ uniform float2 uSize;
 uniform float2 uWarp;
 uniform float uChroma;
 uniform float uEdge;
+uniform float uRim;
 
 half4 main(float2 p) {
     float2 c = p / uSize * 2.0 - 1.0;
@@ -466,7 +488,7 @@ half4 main(float2 p) {
         float2 room = min(q, uSize - q);
         fade = clamp(min(room.x, room.y) / uEdge, 0.0, 1.0);
         if (fade <= 0.0) {
-            return half4(0.0, 0.0, 0.0, 1.0);
+            return half4(0.0, 0.0, 0.0, uRim);
         }
     }
     float2 lo = float2(0.5, 0.5);
@@ -477,7 +499,7 @@ half4 main(float2 p) {
         here.r = float4(content.eval(clamp(q - apart, lo, hi))).r;
         here.b = float4(content.eval(clamp(q + apart, lo, hi))).b;
     }
-    return half4(here.rgb * fade, mix(1.0, here.a, fade));
+    return half4(here.rgb * fade, mix(uRim, here.a, fade));
 }
 """
 
