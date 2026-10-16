@@ -5,12 +5,14 @@ package tf.monochrome.android.audio.sampler.stems
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import tf.monochrome.android.audio.sampler.SampleEdits
 import java.nio.FloatBuffer
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
@@ -118,6 +120,7 @@ open class OnnxStemBackend @Inject constructor(
 
         onProgress(StemProgress(0.02f, "Loading model"))
         val ortSession = loadSession(model)
+        val started = SystemClock.elapsedRealtime()
         val env = OrtEnvironment.getEnvironment()
 
         val order = model.outputOrder
@@ -135,7 +138,7 @@ open class OnnxStemBackend @Inject constructor(
             .filter { (_, stem) -> stem in wanted }
             .associate { (_, stem) -> stem to (FloatArray(segment) to FloatArray(segment)) }
 
-        ChunkedSeparation.run(
+        val separated = ChunkedSeparation.run(
             input = input,
             segmentFrames = segment,
             stems = wanted,
@@ -175,6 +178,19 @@ open class OnnxStemBackend @Inject constructor(
                 }
             }
         }
+        val seconds = (SystemClock.elapsedRealtime() - started) / 1000f
+        val audio = input.frames.toFloat() / input.sampleRate
+        // One line a piece, so a debug log says what the hardware is doing:
+        // which part of the chip ran it, and how much faster than the music.
+        Log.i(
+            TAG,
+            String.format(
+                Locale.US,
+                "%s separated %.1f s of audio in %.1f s (%.1fx)",
+                kind.label, audio, seconds, audio / seconds.coerceAtLeast(0.001f),
+            ),
+        )
+        separated
     }
 
     override fun release() {

@@ -3,12 +3,12 @@
 package tf.monochrome.android.audio.sampler.stems
 
 import ai.onnxruntime.OrtEnvironment
-import ai.onnxruntime.OrtLoggingLevel
 import ai.onnxruntime.OrtModelCompilationOptions
 import ai.onnxruntime.OrtModelCompilationOptions.OrtCompileApiFlags
 import ai.onnxruntime.OrtSession
 import android.content.Context
 import android.os.Build
+import android.os.SystemClock
 import android.system.Os
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -122,13 +122,15 @@ abstract class QnnStemBackend(
         provider["htp_performance_mode"] = "sustained_high_performance"
         // The installed model is float; the NPU runs it at half precision.
         provider["enable_htp_fp16_precision"] = "1"
-        // A slower compile for a faster graph, paid once thanks to the cache.
-        provider["htp_graph_finalization_optimization_mode"] = "3"
+        // The compile's optimisation is left at QNN's own default. Its
+        // slowest setting ("3") made the first song after every update wait
+        // minutes on "Decoding audio" before a note was separated.
 
         val cached = cacheFile(model)
         if (cached.isFile) {
             try {
                 return env.createSession(cached.absolutePath, baseOptions().apply { addQnn(provider) })
+                    .also { Log.i(TAG, "NPU graph loaded from its cache (${socModel()})") }
             } catch (stale: Throwable) {
                 Log.w(TAG, "Compiled NPU graph would not load; rebuilding it", stale)
                 cached.delete()
@@ -136,7 +138,13 @@ abstract class QnnStemBackend(
         }
         cacheDir(context).listFiles()?.forEach { it.delete() }
         cacheDir(context).mkdirs()
+        val started = SystemClock.elapsedRealtime()
         compileForNpu(env, provider, file, cached)
+        Log.i(
+            TAG,
+            "NPU graph compiled in ${(SystemClock.elapsedRealtime() - started) / 1000} s " +
+                "(${socModel()}, ${cached.length() / (1024 * 1024)} MB)",
+        )
         return env.createSession(cached.absolutePath, baseOptions().apply { addQnn(provider) })
     }
 
@@ -153,10 +161,12 @@ abstract class QnnStemBackend(
     private fun compileForNpu(env: OrtEnvironment, provider: Map<String, String>, file: File, out: File) {
         try {
             baseOptions().use { options ->
+                // At the default level: QNN's warnings and errors, which say
+                // why a part of the graph stayed on the CPU. Its INFO level
+                // wrote some six thousand lines in a second, past what a
+                // OnePlus lets one app log, and the phone dropped the rest —
+                // the compile's own outcome with it.
                 options.addQnn(provider)
-                // QNN logs at the session's level. One compile per model and
-                // build, so its reasons are worth having in a debug log.
-                options.setSessionLogLevel(OrtLoggingLevel.ORT_LOGGING_LEVEL_INFO)
                 OrtModelCompilationOptions.createFromSessionOptions(env, options).use { compile ->
                     compile.setInputModelPath(file.absolutePath)
                     compile.setOutputModelPath(out.absolutePath)
@@ -203,9 +213,9 @@ abstract class QnnStemBackend(
          * cache and tries again an accelerator that failed the old way, even
          * in a build with the same version code. "c2": the manifest declares
          * the DSP and OpenCL libraries, the chip is named, and the NPU graph
-         * is compiled checked.
+         * is compiled checked. "c3": compiled at QNN's default optimisation.
          */
-        internal const val SETUP_REVISION = "c2"
+        internal const val SETUP_REVISION = "c3"
 
         /** The NPU's compiled graphs. Hundreds of megabytes; [clear] when the model goes. */
         fun cacheDir(context: Context): File = File(context.filesDir, "stem_npu_cache")

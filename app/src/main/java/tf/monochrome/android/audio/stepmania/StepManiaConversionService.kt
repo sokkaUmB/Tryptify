@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tf.monochrome.android.audio.sampler.PcmDecoder
 import tf.monochrome.android.audio.sampler.SampleEdits
+import tf.monochrome.android.audio.sampler.stems.BackendKind
 import tf.monochrome.android.audio.sampler.stems.SeparationOptions
 import tf.monochrome.android.audio.sampler.stems.Stem
 import tf.monochrome.android.audio.sampler.stems.StemBackendRegistry
@@ -59,10 +60,14 @@ class StepManiaConversionService @Inject constructor(
         quality: StemQuality = StemQuality.BALANCED,
         onProgress: (StepManiaConversionProgress) -> Unit = {},
     ): Result<StepManiaConversionResult> = try {
-        onProgress(StepManiaConversionProgress(0f, "Decoding audio"))
+        // Said while it happens: the NPU compiles the model the first time
+        // after an update, which takes minutes, and "Decoding audio" at 0%
+        // for that long read as a job that had stuck.
         val separation = Separation(
-            stemBackends.ready() ?: throw IllegalStateException("No stem separation backend is available"),
+            stemBackends.ready(onTrying = { kind -> onProgress(StepManiaConversionProgress(0f, preparing(kind))) })
+                ?: throw IllegalStateException("No stem separation backend is available"),
         )
+        onProgress(StepManiaConversionProgress(0f, "Decoding audio"))
 
         val (envelope, layers) = withContext(Dispatchers.Default) {
             separateStreaming(source, quality, separation, onProgress)
@@ -214,6 +219,11 @@ class StepManiaConversionService @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun preparing(kind: BackendKind): String = when (kind) {
+        BackendKind.QNN -> "Preparing the ${kind.label}. The first song after an update takes a few minutes."
+        else -> "Preparing the ${kind.label}"
     }
 
     private companion object {

@@ -246,6 +246,8 @@ Review every exported service/activity/receiver and all OAuth/playback deep link
 
 The manifest's `<uses-native-library>` entries for `libcdsprpc.so` and `libOpenCL.so` are what let QNN reach the NPU and the GPU at all; since Android 12 a vendor library not declared there cannot be loaded. Without the first, a OnePlus 15 failed `QNN_DEVICE_ERROR_INVALID_CONFIG` ten milliseconds in. Two more things hold it up. ONNX Runtime does not fail a session whose accelerator would not start: it runs the whole model on the CPU and logs one line. So the NPU graph goes through the compile API with `ERROR_IF_NO_NODES_COMPILED` (`QnnStemBackend.compileForNpu`), never a plain session. And the chip is named to QNN (`SnapdragonNpu`, `soc_model`/`htp_arch`) rather than left for its driver to detect.
 
+Read an NPU run from its own lines: `QnnStemBackend` says "NPU graph compiled in N s" or "loaded from its cache", and `OnnxStemBackend` says which unit separated each piece and how many times faster than the music. Keep ONNX Runtime at its default log level. At INFO it validates every node aloud, some six thousand lines in a second, and a OnePlus drops an app's logs past its quota (`LOGS OVER PROC QUOTA`), the outcome included. In a debug log, `avc: denied` on `/dev/fastrpc-cdsp` is expected: an app reaches the DSP through the HAL, and `Created user PD on domain 3` is the line that says it did.
+
 ### Compose performance
 
 Use stable parameters, keyed lazy items, remembered derived values, and immutable collections where they materially reduce recomposition. Validate with tooling rather than mechanically adding annotations.

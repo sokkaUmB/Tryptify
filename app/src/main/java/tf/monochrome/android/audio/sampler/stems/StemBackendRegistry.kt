@@ -46,12 +46,17 @@ class StemBackendRegistry @Inject constructor(
      * One that fails is released and the next one tried, down to the DSP,
      * which cannot fail to load.
      */
-    suspend fun ready(after: BackendKind? = null): StemSeparationBackend? {
+    suspend fun ready(
+        after: BackendKind? = null,
+        /** Told each backend before it loads: an accelerator's first load can take minutes. */
+        onTrying: (BackendKind) -> Unit = {},
+    ): StemSeparationBackend? {
         fun rank(kind: BackendKind) = order.indexOf(kind).let { if (it < 0) order.size else it }
         val floor = after?.let(::rank) ?: -1
         for (backend in all()) {
             if (rank(backend.kind) <= floor) continue
             if (!backend.status().available) continue
+            onTrying(backend.kind)
             if (backend.initialize().isSuccess) return backend
             backend.release()
         }
