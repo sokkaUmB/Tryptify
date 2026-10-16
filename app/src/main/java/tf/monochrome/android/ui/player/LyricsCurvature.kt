@@ -24,8 +24,8 @@ import kotlin.math.cos
 /**
  * The lyrics on a curved tube, as a CRT draws them (Lyrics FX › Curvature,
  * [tf.monochrome.android.domain.model.LyricsFxSettings.curvatureDeg]): the
- * glass bowed [degrees] away from the viewer between its middle and its
- * edge, with the flat lyrics seen through it. The middle stays as it is;
+ * glass bowed [topDeg] away from the viewer toward its top and bottom edges
+ * and [sideDeg] toward its sides, with the flat lyrics seen through it. The middle stays as it is;
  * further out each line bows outward and its ends draw in, more toward the
  * corners, which round off into nothing ([crtSource]). Not a fish-eye: it
  * swells nothing, the sides' middles stay at the sides, and a line through
@@ -45,11 +45,12 @@ import kotlin.math.cos
  * Android 13 and later; flat below, and under [MIN_CURVATURE_DEG].
  */
 internal fun Modifier.lyricCurvature(
-    degrees: Float,
+    topDeg: Float,
+    sideDeg: Float,
     focusInRoot: (() -> Rect?)? = null,
     wide: Boolean = false,
 ): Modifier =
-    if (degrees < MIN_CURVATURE_DEG || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+    if (maxOf(topDeg, sideDeg) < MIN_CURVATURE_DEG || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
         this
     } else {
         this.composed {
@@ -60,7 +61,7 @@ internal fun Modifier.lyricCurvature(
             } else {
                 Modifier
                     .then(if (focusInRoot != null) Modifier.onGloballyPositioned { origin.value = it.positionInRoot() } else Modifier)
-                    .curved(shader, degrees, focusInRoot, origin, wide)
+                    .curved(shader, topDeg, sideDeg, focusInRoot, origin, wide)
             }
         }
     }
@@ -68,7 +69,8 @@ internal fun Modifier.lyricCurvature(
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 private fun Modifier.curved(
     shader: RuntimeShader,
-    degrees: Float,
+    topDeg: Float,
+    sideDeg: Float,
     focusInRoot: (() -> Rect?)?,
     origin: State<Offset>,
     wide: Boolean,
@@ -89,7 +91,7 @@ private fun Modifier.curved(
         shader.setFloatUniform("uCenter", dome.center.x, dome.center.y)
         shader.setFloatUniform("uRadii", dome.width / 2f, dome.height / 2f)
         shader.setFloatUniform("uLocal", if (focusInRoot == null) 0f else 1f)
-        shader.setFloatUniform("uWarp", crtWarp(degrees))
+        shader.setFloatUniform("uWarp", crtWarp(sideDeg), crtWarp(topDeg))
         renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
     }
 
@@ -133,13 +135,13 @@ internal fun crtWarp(degrees: Float): Float {
  * Where on the flat lyrics the point [x], [y] of the tube shows, both as
  * shares of the way out from its middle (−1 to 1 across it): each pulled
  * outward by the other's square, `x · (1 + y² · warp)`, so a point's way out
- * grows toward the corners and never along the middle lines. Null past the
- * tube's edge, its rounded corners. The shader's sum, here to be checked.
+ * grows toward the corners and never along the middle lines. [sideDeg] bows
+ * the sides, [topDeg] the top and bottom. Null past the tube's edge, its
+ * rounded corners. The shader's sum, here to be checked.
  */
-internal fun crtSource(x: Float, y: Float, degrees: Float): Pair<Float, Float>? {
-    val warp = crtWarp(degrees)
-    val sx = x * (1f + y * y * warp)
-    val sy = y * (1f + x * x * warp)
+internal fun crtSource(x: Float, y: Float, topDeg: Float, sideDeg: Float = topDeg): Pair<Float, Float>? {
+    val sx = x * (1f + y * y * crtWarp(sideDeg))
+    val sy = y * (1f + x * x * crtWarp(topDeg))
     if (abs(sx) > 1f || abs(sy) > 1f) return null
     return sx to sy
 }
@@ -171,7 +173,7 @@ uniform float2 uSize;
 uniform float2 uCenter;
 uniform float2 uRadii;
 uniform float uLocal;
-uniform float uWarp;
+uniform float2 uWarp;
 
 half4 main(float2 p) {
     float2 d = (p - uCenter) / uRadii;
@@ -179,7 +181,7 @@ half4 main(float2 p) {
     if (local && (abs(d.x) >= 1.0 || abs(d.y) >= 1.0)) {
         return content.eval(p);
     }
-    float2 s = d * float2(1.0 + d.y * d.y * uWarp, 1.0 + d.x * d.x * uWarp);
+    float2 s = d * float2(1.0 + d.y * d.y * uWarp.x, 1.0 + d.x * d.x * uWarp.y);
     if (abs(s.x) > 1.0 || abs(s.y) > 1.0) {
         if (local) {
             return content.eval(p);

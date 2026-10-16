@@ -99,6 +99,28 @@ class LyricsFxSettingsTest {
     }
 
     @Test
+    fun `the top and bottom and the sides bow apart, and an old curve keeps its sides`() {
+        // A curve saved with one angle draws its sides at that angle.
+        val old = LyricsFxSettings(curvatureDeg = 20f)
+        assertEquals(-1f, old.curvatureSideDeg, 0f)
+        assertEquals(20f, old.effectiveCurvatureSideDeg, 0f)
+        assertTrue(old.curved)
+        // Set apart: flat sides under a curved top and bottom, and the other way.
+        val topOnly = LyricsFxSettings(curvatureDeg = 20f, curvatureSideDeg = 0f)
+        assertEquals(0f, topOnly.effectiveCurvatureSideDeg, 0f)
+        assertTrue(topOnly.curved)
+        assertTrue(LyricsFxSettings(curvatureDeg = 0f, curvatureSideDeg = 15f).curved)
+        assertFalse(LyricsFxSettings.DEFAULT.curved)
+        // The sides' angle bows x by y's square, the top's y by x's.
+        val p = crtSource(0.6f, 0.6f, topDeg = 0f, sideDeg = 30f)!!
+        assertEquals(0.6f * (1f + 0.36f * crtWarp(30f)), p.first, 1e-5f)
+        assertEquals(0.6f, p.second, 1e-6f)
+        // Held to its range; -1 stays "unset".
+        assertEquals(75f, LyricsFxSettings(curvatureSideDeg = 300f).clamped().curvatureSideDeg, 0f)
+        assertEquals(-1f, LyricsFxSettings(curvatureSideDeg = Float.NaN).clamped().curvatureSideDeg, 0f)
+    }
+
+    @Test
     fun `the curve covers all the lyrics unless asked for the sung line or word`() {
         assertEquals(LyricsFxSettings.CURVE_ALL, LyricsFxSettings.DEFAULT.curvatureTarget)
         assertEquals(LyricsFxSettings.CURVE_WORD, LyricsFxSettings(curvatureTarget = 9).clamped().curvatureTarget)

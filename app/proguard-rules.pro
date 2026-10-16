@@ -38,3 +38,8 @@
 # WAV's ID3 tags, would come back empty in release builds only.
 -keep class org.jaudiotagger.tag.id3.framebody.** { <init>(...); }
 
+# LiveGlassLens reads Haze's internal "source is recording" flag by name, so a
+# lens inside its own source skips it instead of looping (HazeContentDrawing).
+-keepclassmembers class dev.chrisbanes.haze.HazeArea {
+    boolean getContentDrawing$haze_release();
+}

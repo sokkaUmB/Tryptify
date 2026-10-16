@@ -1002,18 +1002,32 @@ fun LyricsFxStudioScreen(
                     stringResource(R.string.fx_shadow_depth), "${(fx.shadowDepth * 100).toInt()}%", fx.shadowDepth, 0f..1f,
                     description = stringResource(R.string.fx_lyric_shadow_desc),
                 ) { viewModel.update { s -> s.copy(shadowDepth = it) } }
+                // Two angles, as the CRT effect's: the top and bottom edges'
+                // bow, and the sides'. Moving one pins the other where it is
+                // drawn, so a curve saved with one angle keeps its sides.
+                fun degreesReading(deg: Float) = "%.1f°".format(deg) + if (deg < 0.05f) " (off)" else ""
+                fun tenth(deg: Float) = (deg * 10f).roundToInt().div(10f).coerceIn(0f, 75f)
                 FxSlider(
                     stringResource(R.string.fx_curvature),
-                    "%.1f°".format(fx.curvatureDeg) + if (fx.curvatureDeg < 0.05f) " (off)" else "",
+                    degreesReading(fx.curvatureDeg),
                     fx.curvatureDeg, 0f..75f,
                     description = stringResource(R.string.fx_curvature_desc),
-                ) { viewModel.update { s -> s.copy(curvatureDeg = it) } }
+                ) { viewModel.update { s -> s.copy(curvatureDeg = it, curvatureSideDeg = s.effectiveCurvatureSideDeg) } }
                 // The angle to a tenth of a degree, which a finger on the
                 // slider cannot place.
                 FxNudge(label = stringResource(R.string.fx_curvature), step = 0.1f, unit = "°") { delta ->
                     viewModel.update { s ->
-                        s.copy(curvatureDeg = ((s.curvatureDeg + delta) * 10f).roundToInt().div(10f).coerceIn(0f, 75f))
+                        s.copy(curvatureDeg = tenth(s.curvatureDeg + delta), curvatureSideDeg = s.effectiveCurvatureSideDeg)
                     }
+                }
+                FxSlider(
+                    stringResource(R.string.fx_curvature_sides),
+                    degreesReading(fx.effectiveCurvatureSideDeg),
+                    fx.effectiveCurvatureSideDeg, 0f..75f,
+                    description = stringResource(R.string.fx_curvature_sides_desc),
+                ) { viewModel.update { s -> s.copy(curvatureSideDeg = it) } }
+                FxNudge(label = stringResource(R.string.fx_curvature_sides), step = 0.1f, unit = "°") { delta ->
+                    viewModel.update { s -> s.copy(curvatureSideDeg = tenth(s.effectiveCurvatureSideDeg + delta)) }
                 }
                 // What the curve bends: every lyric as one tube, or a dome
                 // over the sung line or the sung word alone.
@@ -2304,7 +2318,12 @@ private fun StudioPreview(
                             // Before the pump, so the copy pumps with the letters.
                             .captureLetters(letters)
                             // Bent inside the copy, as in the player.
-                            .lyricCurvature(fx.curvatureDeg, curveFocus, wide = curveTarget == LyricsFxSettings.CURVE_WORD)
+                            .lyricCurvature(
+                                fx.curvatureDeg,
+                                fx.effectiveCurvatureSideDeg,
+                                curveFocus,
+                                wide = curveTarget == LyricsFxSettings.CURVE_WORD,
+                            )
                             .bassBeat(pulse, fx, anchors),
                     ) {
                         // The ripple runs on across rows, as in the player.

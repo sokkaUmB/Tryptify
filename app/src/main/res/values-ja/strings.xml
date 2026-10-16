@@ -2374,8 +2374,10 @@
     <string name="settings_crt_bloom_desc">明るい部分がマスクを越えてどれだけ光るか</string>
     <string name="settings_crt_edge">縁の影: %1$d%%</string>
     <string name="settings_crt_edge_desc">画面を囲む暗い縁</string>
-    <string name="fx_curvature">湾曲</string>
-    <string name="fx_curvature_desc">昔のブラウン管のように歌詞を曲げます。中央から端へガラスがどれだけ反るかの角度です。中央はそのままで、行は外へ反り、丸い角に向かって内側へ寄ります。約 14° が定番のブラウン管です。ボタンで 0.1 度ずつ調整できます。Android 13 以降。</string>
+    <string name="fx_curvature">湾曲：上下</string>
+    <string name="fx_curvature_desc">昔のブラウン管のように、上下の端に向かってガラスがどれだけ反るか。中央はそのままで、端が外へ反り、角が丸くなります。約 16° が定番のブラウン管です。ボタンで 0.1 度ずつ調整できます。Android 13 以降。</string>
+    <string name="fx_curvature_sides">湾曲：左右</string>
+    <string name="fx_curvature_sides_desc">左右の端に向かってどれだけ反るか。約 14° が定番のブラウン管です。</string>
     <string name="fx_curve_target">曲げる対象</string>
     <string name="fx_curve_all">すべての歌詞</string>
     <string name="fx_curve_line">歌っている行</string>

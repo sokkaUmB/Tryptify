@@ -2440,8 +2440,10 @@
     <string name="settings_crt_bloom_desc">Wie stark helle Stellen über die Maske hinaus leuchten</string>
     <string name="settings_crt_edge">Randschatten: %1$d %%</string>
     <string name="settings_crt_edge_desc">Der dunkle Rand um das Bild</string>
-    <string name="fx_curvature">Wölbung</string>
-    <string name="fx_curvature_desc">Biegt die Liedtexte wie ein alter Röhrenbildschirm: wie stark sich das Glas von der Mitte zu den Rändern wölbt. Die Mitte bleibt, wie sie ist, Zeilen biegen sich nach außen und ziehen sich zu den runden Ecken hin ein. Etwa 14° ist die klassische Röhre; die Tasten verstellen um ein Zehntelgrad. Ab Android 13.</string>
+    <string name="fx_curvature">Wölbung: oben &amp; unten</string>
+    <string name="fx_curvature_desc">Wie stark sich das Glas zum oberen und unteren Rand wölbt, wie bei einem alten Röhrenbildschirm. Die Mitte bleibt, wie sie ist, die Ränder biegen sich nach außen, die Ecken runden sich. Etwa 16° ist die klassische Röhre; die Tasten verstellen um ein Zehntelgrad. Ab Android 13.</string>
+    <string name="fx_curvature_sides">Wölbung: seitlich</string>
+    <string name="fx_curvature_sides_desc">Wie stark es sich zum linken und rechten Rand wölbt. Etwa 14° ist die klassische Röhre.</string>
     <string name="fx_curve_target">Wölbung auf</string>
     <string name="fx_curve_all">Alle Zeilen</string>
     <string name="fx_curve_line">Gesungene Zeile</string>

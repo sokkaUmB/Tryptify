@@ -2440,8 +2440,10 @@
     <string name="settings_crt_bloom_desc">Parlak yerlerin maskenin ötesine ne kadar parladığı</string>
     <string name="settings_crt_edge">Kenar gölgesi: %%%1$d</string>
     <string name="settings_crt_edge_desc">Görüntünün çevresindeki karanlık kenar</string>
-    <string name="fx_curvature">Kavis</string>
-    <string name="fx_curvature_desc">Şarkı sözlerini eski bir CRT ekran gibi büker: camın ortadan kenarlara ne kadar kavislendiği. Orta olduğu gibi kalır, satırlar dışa kıvrılır ve yuvarlak köşelere doğru içe çekilir. Yaklaşık 14° klasik tüptür; düğmeler onda bir derece oynatır. Android 13 ve sonrası.</string>
+    <string name="fx_curvature">Eğrilik: üst ve alt</string>
+    <string name="fx_curvature_desc">Camın üst ve alt kenarlara doğru ne kadar kavislendiği, eski bir CRT ekran gibi. Orta olduğu gibi kalır, kenarlar dışa kıvrılır ve köşeler yuvarlanır. Yaklaşık 16° klasik tüptür; düğmeler onda bir derece oynatır. Android 13 ve sonrası.</string>
+    <string name="fx_curvature_sides">Eğrilik: yanlar</string>
+    <string name="fx_curvature_sides_desc">Sol ve sağ kenarlara doğru ne kadar kavislendiği. Yaklaşık 14° klasik tüptür.</string>
     <string name="fx_curve_target">Kavis yeri</string>
     <string name="fx_curve_all">Tüm sözler</string>
     <string name="fx_curve_line">Söylenen satır</string>

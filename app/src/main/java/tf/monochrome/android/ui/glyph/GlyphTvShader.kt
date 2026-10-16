@@ -431,7 +431,11 @@ half4 main(float2 fragCoord) {
         // CRT, on a grid of TV pixels uPixel phone pixels square. The mask's
         // stripes are about a TV pixel wide, and whole phone pixels.
         float2 g = fragCoord / uPixel;
-        float3 colour = tri(g) + bloom(g) * uBloom;
+        // The bloom is thirty-one of the forty-two reads: none at 0 Glow.
+        float3 colour = tri(g);
+        if (uBloom > 0.0) {
+            colour += bloom(g) * uBloom;
+        }
         colour *= shadowMask(fragCoord / max(1.0, floor(uPixel / 2.0)));
         tv = toSrgb(clamp(colour * uBright, 0.0, 1.0));
     }
@@ -484,12 +488,14 @@ half4 main(float2 p) {
  *   apart; the one past the nearer neighbour too, as the original's three),
  *   each softened sideways by its `beam_horiz_sigma`, in the CRT's gamma 2.5.
  *   Each line lights the pixel by its sampled generalized Gaussian
- *   (`scanline_generalized_gaussian_sampled_contrib`, three samples a
- *   pixel): wider (`beam_max_sigma`, uMaxSigma) and flatter-topped
+ *   (`scanline_generalized_gaussian_sampled_contrib`, three samples a pixel
+ *   on lines under 3 px, one on taller ones, where the others are under a
+ *   third of a pixel away): wider (`beam_max_sigma`, uMaxSigma) and flatter-topped
  *   (`beam_max_shape`, uMaxShape) as its colour brightens, and normalised, so
  *   a line gives its whole colour's light between the gaps.
  * - Halation: a wide blur of the source (the original's halation blur, here
- *   13 taps over two rings) mixed into the beams as grey (uHalation).
+ *   a ring of six reads 4.5 lines out, read only while halation or diffusion
+ *   is on) mixed into the beams as grey (uHalation).
  * - The phosphor mask, drawn rather than read from the original's
  *   textures: an aperture grille's stripes, a slot mask's staggered slots or
  *   a shadow mask's delta dots, `uTriad` pixels a triad, lit 1 and dark 0.06,
@@ -528,7 +534,6 @@ const float LCD_GAMMA = 2.2;
 const float MIN_SIGMA = 0.02;
 const float SPOT_POWER = 0.33333333;
 const float MIN_SHAPE = 2.0;
-const float SHAPE_POWER = 0.25;
 const float HORIZ_SIGMA = 0.35;
 const float UNDERESTIMATE = 0.8;
 const float BORDER_DARKNESS = 2.0;
@@ -544,38 +549,43 @@ const float GRILLE_MEAN = 0.2859;
 const float SLOT_MEAN = 0.2452;
 const float SHADOW_MEAN = 0.2622;
 
+// The CRT's gamma, 2.5, as c * c * sqrt(c): a pow a read is the costliest
+// line here, and this one runs fourteen times a pixel.
 float3 lin(float2 at) {
     float2 q = clamp(at, float2(0.5, 0.5), uSize - float2(0.5, 0.5));
     float3 c = clamp(float3(content.eval(q).rgb), 0.0, 1.0);
-    return pow(c, float3(CRT_GAMMA));
+    return c * c * sqrt(c);
 }
 
-// One scanline's colour under x, softened sideways by the beam's spread.
+// One scanline's colour under x, softened sideways by the beam's spread: two
+// reads half its sigma either side, which a three-read 1:2:1 averaged too.
 float3 lineColour(float x, float row) {
     float y = (row + 0.5) * uPixel;
-    float h = HORIZ_SIGMA * uPixel;
-    return (lin(float2(x - h, y)) + 2.0 * lin(float2(x, y)) + lin(float2(x + h, y))) * 0.25;
+    float h = 0.5 * HORIZ_SIGMA * uPixel;
+    return (lin(float2(x - h, y)) + lin(float2(x + h, y))) * 0.5;
 }
 
-// The gamma function for s in (0, 1]: Gamma(s + 1) / s, Nemes' approximation.
-float gammaOf(float s) {
-    float x = s + 1.0;
-    float lg = 0.5 * (log(6.28318531) - log(x)) + x * (log(x + 1.0 / (12.0 * x - 0.1 / x)) - 1.0);
-    return exp(lg) / s;
+// The gamma function for s in (0, 1]: Gamma(1 + s) / s, Gamma(1 + s) by
+// Abramowitz and Stegun's 6.1.35 (within 5e-5), no log or exp.
+float3 gammaOf(float3 s) {
+    float3 g = 1.0 + s * (-0.5748646 + s * (0.9512363 + s * (-0.6998588 + s * (0.4245549 + s * -0.1010678))));
+    return g / s;
 }
 
-// A line's light at d lines from it, for its colour.
+// A line's light at d lines from it, for its colour. Three samples a pixel,
+// as the original, only where a line is under three pixels tall: taller, the
+// two beside the middle one are under a third of a pixel off it.
 float3 beamOf(float d, float3 colour, float ph) {
     float3 sigma = MIN_SIGMA + (uMaxSigma - MIN_SIGMA) * pow(colour, float3(SPOT_POWER));
     float3 alpha = 1.41421356 * sigma;
-    float3 beta = MIN_SHAPE + max(uMaxShape - MIN_SHAPE, 0.0) * pow(colour, float3(SHAPE_POWER));
-    float3 inv = 1.0 / beta;
-    float3 scale = colour * beta * 0.5 / alpha / float3(gammaOf(inv.r), gammaOf(inv.g), gammaOf(inv.b));
-    float o = ph / 3.0;
-    float3 w = exp(-pow(float3(abs(d)) / alpha, beta))
-        + exp(-pow(float3(abs(d + o)) / alpha, beta))
-        + exp(-pow(float3(abs(d - o)) / alpha, beta));
-    return scale / 3.0 * w;
+    float3 beta = MIN_SHAPE + max(uMaxShape - MIN_SHAPE, 0.0) * sqrt(sqrt(colour));
+    float3 scale = colour * beta * 0.5 / alpha / gammaOf(1.0 / beta);
+    float3 w = exp(-pow(float3(abs(d)) / alpha, beta));
+    if (uPixel < 3.0) {
+        float o = ph / 3.0;
+        w = (w + exp(-pow(float3(abs(d + o)) / alpha, beta)) + exp(-pow(float3(abs(d - o)) / alpha, beta))) / 3.0;
+    }
+    return scale * w;
 }
 
 float3 grilleLit(float x) {
@@ -633,14 +643,16 @@ half4 main(float2 p) {
     float dOut = below ? 2.0 - dist : dist + 1.0;
     float3 beam = beamOf(dist, c2, ph) + beamOf(1.0 - dist, c3, ph) + beamOf(dOut, cOut, ph);
 
-    float r = 3.0 * uPixel;
-    float3 halo = lin(p);
-    for (int k = 0; k < 6; k++) {
-        float a = 1.04719755 * float(k);
-        halo += 0.75 * lin(p + r * float2(cos(a), sin(a)));
-        halo += 0.35 * lin(p + 2.0 * r * float2(cos(a + 0.52359878), sin(a + 0.52359878)));
+    // The glass's blur: one ring of six around the pixel, 4.5 lines out,
+    // read only when halation or diffusion asks for it.
+    float3 halo = mix(c2, c3, dist);
+    if (uHalation > 0.0 || uDiffusion > 0.0) {
+        float r = 4.5 * uPixel;
+        float3 ring = lin(p + r * float2(1.0, 0.0)) + lin(p + r * float2(-1.0, 0.0))
+            + lin(p + r * float2(0.5, 0.8660254)) + lin(p + r * float2(-0.5, 0.8660254))
+            + lin(p + r * float2(0.5, -0.8660254)) + lin(p + r * float2(-0.5, -0.8660254));
+        halo = (halo + ring) / 7.0;
     }
-    halo = halo / 7.6;
     float3 electron = mix(beam, float3(dot(halo, float3(0.33333333))), uHalation);
 
     float3 lit = float3(0.0);

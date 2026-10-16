@@ -416,7 +416,7 @@ internal fun SyncedLyricsView(
     // and hop from word to word without recomposing anything.
     val followWord = fx.godRays && fx.godRaysFollowWord
     // The curve over the sung line or the sung word alone (Lyrics FX › Curve).
-    val curveTarget = if (fx.curvatureDeg >= MIN_CURVATURE_DEG) fx.curvatureTarget else LyricsFxSettings.CURVE_ALL
+    val curveTarget = if (fx.curved) fx.curvatureTarget else LyricsFxSettings.CURVE_ALL
     // The sung word is tracked for whichever of the two follows it.
     val trackWord = followWord || curveTarget == LyricsFxSettings.CURVE_WORD
     val sungWord = remember { SungWordAnchor() }
@@ -589,7 +589,12 @@ internal fun SyncedLyricsView(
                 // Bent inside the copy, so the shadow and the shafts the
                 // backdrop draws from it bend with the letters, and the glass
                 // bevels the bent ones.
-                .lyricCurvature(fx.curvatureDeg, curveFocus, wide = curveTarget == LyricsFxSettings.CURVE_WORD),
+                .lyricCurvature(
+                    fx.curvatureDeg,
+                    fx.effectiveCurvatureSideDeg,
+                    curveFocus,
+                    wide = curveTarget == LyricsFxSettings.CURVE_WORD,
+                ),
             contentPadding = PaddingValues(top = halfViewport, bottom = tailPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -1270,7 +1275,13 @@ internal fun UnsyncedLyricsView(lines: List<LyricLine>) {
                 .fxaa()
                 .liquidGlass()
                 // No line is sung here: the curve is on only over all the lyrics.
-                .lyricCurvature(if (fx.curvatureTarget == LyricsFxSettings.CURVE_ALL) fx.curvatureDeg else 0f),
+                .then(
+                    if (fx.curvatureTarget == LyricsFxSettings.CURVE_ALL) {
+                        Modifier.lyricCurvature(fx.curvatureDeg, fx.effectiveCurvatureSideDeg)
+                    } else {
+                        Modifier
+                    },
+                ),
             contentPadding = PaddingValues(vertical = 60.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {

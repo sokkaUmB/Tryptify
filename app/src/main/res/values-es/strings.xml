@@ -2506,8 +2506,10 @@
     <string name="settings_crt_bloom_desc">Cuánto brillan las zonas claras más allá de la máscara</string>
     <string name="settings_crt_edge">Sombra del borde: %1$d %%</string>
     <string name="settings_crt_edge_desc">El borde oscuro alrededor de la imagen</string>
-    <string name="fx_curvature">Curvatura</string>
-    <string name="fx_curvature_desc">Curva la letra como una vieja pantalla CRT: cuánto se arquea el cristal del centro a los bordes. El centro queda igual, las líneas se arquean hacia fuera y se recogen hacia las esquinas redondeadas. Unos 14° es el tubo clásico; los botones lo mueven una décima de grado. Android 13 o posterior.</string>
+    <string name="fx_curvature">Curva: arriba y abajo</string>
+    <string name="fx_curvature_desc">Cuánto se curva el cristal hacia los bordes de arriba y abajo, como una vieja pantalla CRT. El centro queda igual, los bordes se arquean y las esquinas se redondean. Unos 16° es el tubo clásico; los botones lo mueven una décima de grado. Android 13 o posterior.</string>
+    <string name="fx_curvature_sides">Curva: lados</string>
+    <string name="fx_curvature_sides_desc">Cuánto se curva hacia los bordes izquierdo y derecho. Unos 14° es el tubo clásico.</string>
     <string name="fx_curve_target">Curvar</string>
     <string name="fx_curve_all">Toda la letra</string>
     <string name="fx_curve_line">Línea cantada</string>

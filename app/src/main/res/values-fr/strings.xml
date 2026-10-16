@@ -2506,8 +2506,10 @@
     <string name="settings_crt_bloom_desc">À quel point les zones claires brillent au-delà du masque</string>
     <string name="settings_crt_edge">Ombre du bord : %1$d %%</string>
     <string name="settings_crt_edge_desc">Le bord sombre autour de l\'image</string>
-    <string name="fx_curvature">Courbure</string>
-    <string name="fx_curvature_desc">Courbe les paroles comme un vieil écran cathodique : de combien le verre se bombe du centre vers les bords. Le centre reste tel quel, les lignes s’arrondissent vers l’extérieur et se resserrent vers les coins arrondis. Environ 14° donne le tube classique ; les boutons le règlent au dixième de degré. Android 13 et plus.</string>
+    <string name="fx_curvature">Courbure : haut et bas</string>
+    <string name="fx_curvature_desc">De combien le verre se bombe vers les bords haut et bas, comme un vieil écran cathodique. Le centre reste tel quel, les bords s\'arrondissent vers l\'extérieur et les coins s\'arrondissent. Environ 16° donne le tube classique ; les boutons le règlent au dixième de degré. Android 13 et plus.</string>
+    <string name="fx_curvature_sides">Courbure : côtés</string>
+    <string name="fx_curvature_sides_desc">De combien il se bombe vers les bords gauche et droit. Environ 14° donne le tube classique.</string>
     <string name="fx_curve_target">Courber</string>
     <string name="fx_curve_all">Toutes les paroles</string>
     <string name="fx_curve_line">Ligne chantée</string>

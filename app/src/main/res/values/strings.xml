@@ -2445,8 +2445,10 @@
     <string name="settings_crt_bloom_desc">How much bright parts glow past the mask</string>
     <string name="settings_crt_edge">Edge shade: %1$d%%</string>
     <string name="settings_crt_edge_desc">The dark rim around the picture</string>
-    <string name="fx_curvature">Curvature</string>
-    <string name="fx_curvature_desc">Bends the lyrics like an old CRT screen: how far the glass bows from the middle to the edges. The middle stays as it is, lines bow outward and draw in toward the rounded corners. About 14° is the classic tube; the buttons move it a tenth of a degree. Android 13 and later.</string>
+    <string name="fx_curvature">Curve: top &amp; bottom</string>
+    <string name="fx_curvature_desc">How far the glass bows toward the top and bottom edges, like an old CRT screen. The middle stays as it is, the edges bow outward and the corners round off. About 16° is the classic tube; the buttons move it a tenth of a degree. Android 13 and later.</string>
+    <string name="fx_curvature_sides">Curve: sides</string>
+    <string name="fx_curvature_sides_desc">How far it bows toward the left and right edges. About 14° is the classic tube.</string>
     <string name="fx_curve_target">Curve</string>
     <string name="fx_curve_all">All lyrics</string>
     <string name="fx_curve_line">Sung line</string>

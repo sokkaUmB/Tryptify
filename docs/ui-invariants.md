@@ -295,7 +295,9 @@ shader does not run twice; only the tube's curvature, `lyricCurvature`, sits
 inside it, so the copy is bent with the letters and the shadow and the shafts
 follow the bent lines; it is a CRT tube's bow, `crtSource`, never a
 fish-eye: the middle keeps its size and lines bow outward toward rounded
-corners; set to the sung line or word, its tube covers that box alone, read in
+corners, the top and bottom (`curvatureDeg`) and the sides
+(`curvatureSideDeg`, unset on a curve saved with one angle, which keeps its
+shape) bowed apart, as the CRT effect's two curves; set to the sung line or word, its tube covers that box alone, read in
 the draw phase, flat outside it and in its own rounded-off corners) and the backdrop draws that copy as its input and
 hands back only the shadow and the shafts (`uRaysOnly`); the real letters draw
 over them. Where a pixel's march misses the sung line it hands back nothing,
@@ -1302,6 +1304,15 @@ or a round tube can be had. The middle keeps its size, the edges bow outward,
 the corners go dark. A line saved with the one Curvature slider of before is
 read as the two angles that draw the same tube. Chromatic shift reads red and
 blue up to 3 dp either side of green.
+
+**A glass lens never reads a source it sits inside.** `liveGlassLens` draws
+every Haze source's recorded content into its backdrop; a pane inside one of
+those sources (the Stats screens put their panels inside the page they frost)
+would record itself into itself, and the render thread walked that loop until
+its stack ran out: a native crash with nothing in the trace but
+`prepareTreeImpl`, seen on device. It skips a source while Haze's
+`contentDrawing` says that source is recording, as Haze's own blur does
+(`HazeContentDrawing`, kept through R8 by name).
 
 **CRT-Royale is its passes folded into one** (`ROYALE_SHADER`, its own program,
 from crt-royale, GPL-2.0-or-later). The beams are its sampled generalized
