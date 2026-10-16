@@ -188,4 +188,73 @@ class GlyphTvTuningTest {
         assertEquals(1f, reset.strength)
         assertEquals(mapOf(GlyphTvShader.CRT to 4), reset.pixelSizes)
     }
+
+    @Test
+    fun aFlatSquareTubeLeavesEveryPointWhereItIs() {
+        val view = defaults.tubeView(1272f, 2772f)
+        assertEquals(1f, view.fitX, 1e-6f)
+        assertEquals(1f, view.fitY, 1e-6f)
+        assertEquals(0f, view.shiftX, 1e-6f)
+        val p = view.plane(0.3f, -0.6f)!!
+        assertEquals(0.3f, p.first, 1e-5f)
+        assertEquals(-0.6f, p.second, 1e-5f)
+        assertFalse(defaults.reshaped)
+        assertFalse(defaults.hasTube)
+    }
+
+    @Test
+    fun aTiltedTubeIsCentredAndFillsTheScreen() {
+        val tilted = defaults.copy(tiltSideDeg = 20f)
+        assertTrue(tilted.reshaped)
+        val view = tilted.tubeView(1272f, 2772f)
+        // Every corner of the turned picture lands on the screen's edge or
+        // inside it, and the widest reaches it: fitted, and centred.
+        var maxX = 0f
+        var maxY = 0f
+        for (u in floatArrayOf(-1f, 1f)) for (v in floatArrayOf(-1f, 1f)) {
+            // Forward: the screen point whose line of sight meets (u, v).
+            var lo = -3f
+            var hi = 3f
+            repeat(60) {
+                val mid = (lo + hi) / 2f
+                val back = view.plane(mid, 0f)!!.first
+                if (back < u) lo = mid else hi = mid
+            }
+            maxX = maxOf(maxX, kotlin.math.abs((lo + hi) / 2f))
+            maxY = maxOf(maxY, 1f)
+        }
+        assertEquals(1f, maxX, 2e-3f)
+        // The nearer side stands taller: the far edge's picture spans less.
+        val nearTop = view.plane(-0.95f, -0.99f)
+        val farTop = view.plane(0.95f, -0.99f)
+        assertTrue(nearTop != null && farTop != null)
+        assertTrue(kotlin.math.abs(nearTop!!.second) != kotlin.math.abs(farTop!!.second))
+    }
+
+    @Test
+    fun aFramedTubeDrawsThePictureSmaller() {
+        val framed = defaults.copy(bezel = 1f)
+        val view = framed.tubeView(1000f, 2000f)
+        assertEquals(1f + GlyphTvTuning.BEZEL_MOST, view.fitX, 1e-5f)
+        // A tap in the frame is held to the picture's edge.
+        val out = FloatArray(2)
+        framed.tubeSource(2f, 1000f, 1000f, 2000f, out)
+        assertEquals(0f, out[0], 0f)
+        // The middle still taps the middle.
+        framed.tubeSource(500f, 1000f, 1000f, 2000f, out)
+        assertEquals(500f, out[0], 1e-3f)
+        assertEquals(1000f, out[1], 1e-3f)
+    }
+
+    @Test
+    fun theOldTvLookIsInRangeAndSurvivesTheStore() {
+        val old = GlyphTvTuning.oldTv(2772, keep = defaults.withPixelSize(GlyphTvShader.CRT, 3))
+        assertEquals(old, old.clamped())
+        assertEquals(old, GlyphTvTuning.decode(old.encode()))
+        assertEquals(12, old.pixelSize(GlyphTvShader.ROYALE, 3.5f, 2772))
+        assertEquals(3, old.pixelSize(GlyphTvShader.CRT, 3.5f, 2772))
+        assertTrue(old.tilted && old.curved && old.hasTube)
+        // Tilts are held to their range, either way.
+        assertEquals(-GlyphTvTuning.MAX_TILT_DEG, defaults.copy(tiltSideDeg = -99f).clamped().tiltSideDeg)
+    }
 }

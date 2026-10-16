@@ -880,6 +880,61 @@ private fun TvShaderControls(
         note = "How far it bows toward the left and right edges. About 14° is the classic tube.",
         onChange = { setTv(tv.copy(curveSideDeg = it)) },
     )
+    GlyphSlider(
+        label = "Tilt: sideways",
+        value = tv.tiltSideDeg,
+        reading = degrees(tv.tiltSideDeg),
+        range = -GlyphTvTuning.MAX_TILT_DEG..GlyphTvTuning.MAX_TILT_DEG,
+        note = "The TV seen from one side: that side comes nearer and stands taller",
+        onChange = { setTv(tv.copy(tiltSideDeg = it)) },
+    )
+    GlyphSlider(
+        label = "Tilt: up & down",
+        value = tv.tiltTopDeg,
+        reading = degrees(tv.tiltTopDeg),
+        range = -GlyphTvTuning.MAX_TILT_DEG..GlyphTvTuning.MAX_TILT_DEG,
+        note = "The same from above or below",
+        onChange = { setTv(tv.copy(tiltTopDeg = it)) },
+    )
+    GlyphSlider(
+        label = "Bezel",
+        value = tv.bezel,
+        reading = percent(tv.bezel),
+        note = "A dark frame around the picture",
+        onChange = { setTv(tv.copy(bezel = it)) },
+    )
+    GlyphSlider(
+        label = "Rounded corners",
+        value = tv.corners,
+        reading = percent(tv.corners),
+        onChange = { setTv(tv.copy(corners = it)) },
+    )
+    GlyphSlider(
+        label = "Vignette",
+        value = tv.vignette,
+        reading = percent(tv.vignette),
+        note = "The picture darker toward its edges",
+        onChange = { setTv(tv.copy(vignette = it)) },
+    )
+    GlyphSlider(
+        label = "Glass glare",
+        value = tv.glare,
+        reading = percent(tv.glare),
+        note = "A sheen across the glass and a streak of light on the frame",
+        onChange = { setTv(tv.copy(glare = it)) },
+    )
+    GlyphButton(
+        text = "Old TV look",
+        onClick = {
+            set(
+                graphics.copy(
+                    tvShader = GlyphTvShader.ROYALE,
+                    tv = GlyphTvTuning.oldTv(window.height, keep = tv),
+                ),
+            )
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
     GlyphButton(
         text = "Reset ${shader.label}",
         onClick = { setTv(tv.reset(shader)) },

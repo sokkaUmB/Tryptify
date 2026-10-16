@@ -4,6 +4,7 @@ package tf.monochrome.android.glyph.engine
 
 import tf.monochrome.android.glyph.asset.GlyphLane
 import tf.monochrome.android.glyph.chart.GlyphChart
+import kotlin.math.abs
 import kotlin.math.acos
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -232,6 +233,22 @@ data class GlyphTvTuning(
     val curveTopDeg: Float = 0f,
     /** The same toward the left and right edges. */
     val curveSideDeg: Float = 0f,
+    /**
+     * The tube seen from one side, in degrees, -[MAX_TILT_DEG] to
+     * [MAX_TILT_DEG]: turned about its upright middle, so one side comes
+     * nearer and stands taller, as a TV filmed from beside it.
+     */
+    val tiltSideDeg: Float = 0f,
+    /** The same from above or below: turned about its level middle. */
+    val tiltTopDeg: Float = 0f,
+    /** The dark frame around the picture, 0 to 1: the picture drawn smaller inside it. */
+    val bezel: Float = 0f,
+    /** How round the picture's corners are, 0 to 1. */
+    val corners: Float = 0f,
+    /** The picture darkening toward its edges, 0 to 1. */
+    val vignette: Float = 0f,
+    /** Light on the glass, 0 to 1: a soft sheen across it and a streak on the frame. */
+    val glare: Float = 0f,
     /** CRT-Royale's phosphor mask: [ROYALE_GRILLE], [ROYALE_SLOT] (its default) or [ROYALE_SHADOW]. */
     val royaleMask: Int = ROYALE_SLOT,
     /** CRT-Royale's mask triad, in phone pixels; 0 is this screen's default ([royaleTriadPx]). */
@@ -298,17 +315,76 @@ data class GlyphTvTuning(
     val warpX: Float get() = warpOf(curveSideDeg)
     val warpY: Float get() = warpOf(curveTopDeg)
 
-    /** Whether the picture is bowed at all, so taps on it have to follow the bow. */
+    /** Whether the picture is bowed at all. */
     val curved: Boolean get() = curveTopDeg >= CURVE_MIN_DEG || curveSideDeg >= CURVE_MIN_DEG
 
-    /** Whether the tube's pass runs: the picture bowed, or its colours apart. */
-    val hasTube: Boolean get() = curved || chromatic >= TUBE_MIN
+    /** Whether it is seen from an angle. */
+    val tilted: Boolean get() = abs(tiltSideDeg) >= CURVE_MIN_DEG || abs(tiltTopDeg) >= CURVE_MIN_DEG
+
+    /**
+     * Whether anything moves the picture off the screen's own pixels (a bow,
+     * a tilt, a frame), so taps on it have to follow ([tubeSource]).
+     */
+    val reshaped: Boolean get() = curved || tilted || bezel >= TUBE_MIN
+
+    /** Whether the picture has an edge of its own to soften: reshaped, or its corners rounded. */
+    val framed: Boolean get() = reshaped || corners >= TUBE_MIN
+
+    /** Whether the tube's pass runs at all. */
+    val hasTube: Boolean get() = framed || chromatic >= TUBE_MIN || vignette >= TUBE_MIN || glare >= TUBE_MIN
+
+    /**
+     * The tube's view of a [width] by [height] picture: turned by the two
+     * tilts and seen from [VIEW_DISTANCE] half-sides away, then drawn small
+     * enough that all of it fits, and smaller again by the [bezel]. What
+     * the tube shader is handed, and what [tubeSource] works backwards with.
+     */
+    fun tubeView(width: Float, height: Float): TubeView {
+        val short = minOf(width, height).coerceAtLeast(1f)
+        val ax = width / short
+        val ay = height / short
+        val a = Math.toRadians(tiltSideDeg.coerceIn(-MAX_TILT_DEG, MAX_TILT_DEG).toDouble())
+        val b = Math.toRadians(tiltTopDeg.coerceIn(-MAX_TILT_DEG, MAX_TILT_DEG).toDouble())
+        val ca = cos(a).toFloat()
+        val sa = kotlin.math.sin(a).toFloat()
+        val cb = cos(b).toFloat()
+        val sb = kotlin.math.sin(b).toFloat()
+        // Ry(a) · Rx(b), by its columns.
+        val col0 = floatArrayOf(ca, 0f, -sa)
+        val col1 = floatArrayOf(sa * sb, cb, ca * sb)
+        val normal = floatArrayOf(sa * cb, -sb, ca * cb)
+        val d = VIEW_DISTANCE
+        // The turned picture's corners on the screen: it is drawn to fill
+        // them, centred, so the nearer side is not pushed off the screen.
+        var minX = Float.MAX_VALUE
+        var maxX = -Float.MAX_VALUE
+        var minY = Float.MAX_VALUE
+        var maxY = -Float.MAX_VALUE
+        for (u in floatArrayOf(-ax, ax)) for (v in floatArrayOf(-ay, ay)) {
+            val wx = col0[0] * u + col1[0] * v
+            val wy = col0[1] * u + col1[1] * v
+            val wz = col0[2] * u + col1[2] * v
+            val k = d / (wz + d)
+            minX = minOf(minX, wx * k / ax)
+            maxX = maxOf(maxX, wx * k / ax)
+            minY = minOf(minY, wy * k / ay)
+            maxY = maxOf(maxY, wy * k / ay)
+        }
+        val frame = 1f + BEZEL_MOST * bezel
+        return TubeView(
+            ax, ay,
+            (maxX - minX) / 2f * frame, (maxY - minY) / 2f * frame,
+            (maxX + minX) / 2f, (maxY + minY) / 2f,
+            col0, col1, normal, d, warpX, warpY,
+        )
+    }
 
     /**
      * Where on the flat picture the point [x], [y] of a [width] by [height]
-     * bowed tube shows it: the tube shader's own sum, so a tap can be sent to
-     * what is seen under it. Past the tube's edge (its dark corners) the
-     * point is held to the picture's edge. [out] gets the two, x then y.
+     * tube shows it: the tube shader's own sum (fitted, turned back through
+     * the tilts, then bowed), so a tap can be sent to what is seen under it.
+     * Off the picture (its frame, its dark corners) the point is held to the
+     * picture's edge. [out] gets the two, x then y.
      */
     fun tubeSource(x: Float, y: Float, width: Float, height: Float, out: FloatArray) {
         if (width <= 0f || height <= 0f) {
@@ -316,10 +392,12 @@ data class GlyphTvTuning(
             out[1] = y
             return
         }
-        val cx = x / width * 2f - 1f
-        val cy = y / height * 2f - 1f
-        val sx = cx * (1f + cy * cy * warpX)
-        val sy = cy * (1f + cx * cx * warpY)
+        val view = tubeView(width, height)
+        val plane = view.plane((x / width * 2f - 1f), (y / height * 2f - 1f))
+        val px = plane?.first ?: 2f * kotlin.math.sign(x / width - 0.5f)
+        val py = plane?.second ?: 2f * kotlin.math.sign(y / height - 0.5f)
+        val sx = px * (1f + py * py * warpX)
+        val sy = py * (1f + px * px * warpY)
         out[0] = ((sx * 0.5f + 0.5f) * width).coerceIn(0f, width)
         out[1] = ((sy * 0.5f + 0.5f) * height).coerceIn(0f, height)
     }
@@ -336,6 +414,12 @@ data class GlyphTvTuning(
         chromatic = chromatic.unit(0f),
         curveTopDeg = curveTopDeg.angle(),
         curveSideDeg = curveSideDeg.angle(),
+        tiltSideDeg = tiltSideDeg.tilt(),
+        tiltTopDeg = tiltTopDeg.tilt(),
+        bezel = bezel.unit(0f),
+        corners = corners.unit(0f),
+        vignette = vignette.unit(0f),
+        glare = glare.unit(0f),
         royaleMask = royaleMask.coerceIn(ROYALE_GRILLE, ROYALE_SHADOW),
         royaleTriad = if (royaleTriad <= 0) 0 else royaleTriad.coerceIn(ROYALE_TRIADS),
         royaleMaskStrength = royaleMaskStrength.unit(1f),
@@ -367,6 +451,12 @@ data class GlyphTvTuning(
         add("chromatic=$chromatic")
         add("curveTop=$curveTopDeg")
         add("curveSide=$curveSideDeg")
+        add("tiltSide=$tiltSideDeg")
+        add("tiltTop=$tiltTopDeg")
+        add("bezel=$bezel")
+        add("corners=$corners")
+        add("vignette=$vignette")
+        add("glare=$glare")
         add("royaleMask=$royaleMask")
         add("royaleTriad=$royaleTriad")
         add("royaleMaskStrength=$royaleMaskStrength")
@@ -398,6 +488,18 @@ data class GlyphTvTuning(
 
         /** Each curve's far end: past it the corners take most of the screen. */
         const val MAX_CURVE_DEG = 40f
+
+        /** Each tilt's far end: a TV seen well from one side. */
+        const val MAX_TILT_DEG = 30f
+
+        /** How far away the tube is seen from, in half its short side. */
+        const val VIEW_DISTANCE = 3.5f
+
+        /** The frame's widest: the picture drawn at 1 / 1.3 of the screen. */
+        const val BEZEL_MOST = 0.3f
+
+        /** The roundest corner, as a share of the short side. */
+        const val CORNER_MOST = 0.12f
 
         /** Below this a curve is flat, with no pass for it. */
         private const val CURVE_MIN_DEG = 0.05f
@@ -437,6 +539,8 @@ data class GlyphTvTuning(
         private fun Float.unit(fallback: Float): Float = (if (isFinite()) this else fallback).coerceIn(0f, 1f)
 
         private fun Float.angle(): Float = (if (isFinite()) this else 0f).coerceIn(0f, MAX_CURVE_DEG)
+
+        private fun Float.tilt(): Float = (if (isFinite()) this else 0f).coerceIn(-MAX_TILT_DEG, MAX_TILT_DEG)
 
         /** `1/cos θ − 1`: how much further out than the tube's corner the picture's corner lies. */
         fun warpOf(degrees: Float): Float {
@@ -479,6 +583,12 @@ data class GlyphTvTuning(
                 chromatic = float("chromatic", defaults.chromatic),
                 curveTopDeg = float("curveTop", legacy?.let { degreesOf(LEGACY_WARP_Y * it) } ?: 0f),
                 curveSideDeg = float("curveSide", legacy?.let { degreesOf(LEGACY_WARP_X * it) } ?: 0f),
+                tiltSideDeg = float("tiltSide", 0f),
+                tiltTopDeg = float("tiltTop", 0f),
+                bezel = float("bezel", 0f),
+                corners = float("corners", 0f),
+                vignette = float("vignette", 0f),
+                glare = float("glare", 0f),
                 royaleMask = int("royaleMask", defaults.royaleMask),
                 royaleTriad = int("royaleTriad", defaults.royaleTriad),
                 royaleMaskStrength = float("royaleMaskStrength", defaults.royaleMaskStrength),
@@ -490,6 +600,38 @@ data class GlyphTvTuning(
                 royaleBorder = float("royaleBorder", defaults.royaleBorder),
             ).clamped()
         }
+
+        /**
+         * An old TV filmed from beside it, as in the TRYPT CORE videos:
+         * CRT-Royale's beams at about 240 lines down a screen of
+         * [windowHeightPx], a faint mask, glow through the glass, colours
+         * apart, the tube bowed and seen from a little to its left inside a
+         * thin dark frame, rounded corners, darker edges and a glare. Pixel
+         * sizes for the other looks are kept from [keep].
+         */
+        fun oldTv(windowHeightPx: Int, keep: GlyphTvTuning = GlyphTvTuning()): GlyphTvTuning = GlyphTvTuning(
+            pixelSizes = keep.pixelSizes,
+            brightness = 1.45f,
+            chromatic = 0.35f,
+            curveTopDeg = 12f,
+            curveSideDeg = 10f,
+            tiltSideDeg = 7f,
+            bezel = 0.12f,
+            corners = 0.35f,
+            vignette = 0.35f,
+            glare = 0.5f,
+            royaleMaskStrength = 0.25f,
+            royaleBeamWidth = 0.5f,
+            royaleHalation = 0.25f,
+            royaleDiffusion = 0.3f,
+            royaleBloom = 0.35f,
+            royaleBorder = 0f,
+        ).let {
+            if (windowHeightPx > 0) it.withPixelSize(GlyphTvShader.ROYALE, (windowHeightPx / OLD_TV_LINES.toFloat()).roundToInt()) else it
+        }
+
+        /** The Old TV look's lines down the screen. */
+        private const val OLD_TV_LINES = 240
 
         /** The one Curvature slider's bows at its end, for [decode]. */
         const val LEGACY_WARP_X = 0.125f
@@ -509,5 +651,47 @@ data class GlyphTvTuning(
                 if (windowHeightPx > 0) (windowHeightPx.toFloat() / ORIGINAL_LINES).roundToInt() else 6
             else -> (density * MONITOR_PIXEL_DP).roundToInt()
         }.coerceIn(pixelRange(shader))
+    }
+}
+
+/**
+ * What [GlyphTvTuning.tubeView] works out for one picture size: its aspect
+ * (each side over the short one), how much larger than the screen the
+ * sampled area is so the turned picture fits ([fitX], [fitY]) and where its
+ * middle lands ([shiftX], [shiftY]), so it is centred, the turned
+ * plane's two axes and its normal (columns of the turn), how far away it is
+ * seen from, and the bows.
+ */
+class TubeView(
+    val aspectX: Float,
+    val aspectY: Float,
+    val fitX: Float,
+    val fitY: Float,
+    val shiftX: Float,
+    val shiftY: Float,
+    val col0: FloatArray,
+    val col1: FloatArray,
+    val normal: FloatArray,
+    val distance: Float,
+    val warpX: Float,
+    val warpY: Float,
+) {
+    /**
+     * The point on the turned picture, before its bow, under the screen
+     * point [cx], [cy] (each -1 to 1 across the screen); null where the line
+     * of sight misses it. The tube shader's sum.
+     */
+    fun plane(cx: Float, cy: Float): Pair<Float, Float>? {
+        val sx = (cx * fitX + shiftX) * aspectX
+        val sy = (cy * fitY + shiftY) * aspectY
+        val denom = normal[0] * sx + normal[1] * sy + normal[2] * distance
+        if (denom <= 1e-4f) return null
+        val t = distance * normal[2] / denom
+        val px = t * sx
+        val py = t * sy
+        val pz = -distance + t * distance
+        val u = (col0[0] * px + col0[1] * py + col0[2] * pz) / aspectX
+        val v = (col1[0] * px + col1[1] * py + col1[2] * pz) / aspectY
+        return u to v
     }
 }

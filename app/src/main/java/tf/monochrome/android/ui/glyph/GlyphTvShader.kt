@@ -181,12 +181,24 @@ private fun Modifier.tvLayer(
             if (tube == null || !tuning.hasTube) {
                 pattern.asComposeRenderEffect()
             } else {
+                val view = tuning.tubeView(width, height)
                 tube.setFloatUniform("uSize", width, height)
-                tube.setFloatUniform("uWarp", tuning.warpX, tuning.warpY)
+                tube.setFloatUniform("uWarp", view.warpX, view.warpY)
+                tube.setFloatUniform("uAspect", view.aspectX, view.aspectY)
+                tube.setFloatUniform("uFit", view.fitX, view.fitY)
+                tube.setFloatUniform("uShift", view.shiftX, view.shiftY)
+                tube.setFloatUniform("uCol0", view.col0[0], view.col0[1], view.col0[2])
+                tube.setFloatUniform("uCol1", view.col1[0], view.col1[1], view.col1[2])
+                tube.setFloatUniform("uNormal", view.normal[0], view.normal[1], view.normal[2])
+                tube.setFloatUniform("uDist", view.distance)
                 tube.setFloatUniform("uChroma", tuning.chromaticPx(density))
-                // A flat picture keeps its edge pixels; a bowed one softens
-                // its rim over a dp, rather than stepping into the dark.
-                tube.setFloatUniform("uEdge", if (tuning.curved) TUBE_EDGE_DP * density else 0f)
+                // A flat, square picture keeps its edge pixels; a reshaped
+                // one softens its rim over a dp, rather than stepping into
+                // the frame.
+                tube.setFloatUniform("uEdge", if (tuning.framed) TUBE_EDGE_DP * density else 0f)
+                tube.setFloatUniform("uCorner", GlyphTvTuning.CORNER_MOST * tuning.corners * minOf(width, height))
+                tube.setFloatUniform("uVignette", tuning.vignette)
+                tube.setFloatUniform("uGlare", tuning.glare)
                 tube.setFloatUniform("uRim", if (clearRim) 0f else 1f)
                 RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(tube, "content"), pattern)
                     .asComposeRenderEffect()
@@ -465,30 +477,63 @@ half4 main(float2 fragCoord) {
 """
 
 /**
- * The glass over the pattern: [GlyphTvTuning.tubeSource] for every pixel,
- * the CRT shader's own warp, so the picture bows outward and its corners go
- * dark past the tube; then red read from one side and blue from the other,
- * `uChroma` pixels apart from green. A read is held inside the picture, so a
- * flat one in line is exactly the picture. `uEdge` softens the bowed rim.
+ * The glass over the pattern, an old TV's: for every pixel, the screen point
+ * is fitted (uFit, uShift: the turned picture all on screen and centred,
+ * smaller again by the frame), followed back along the line of sight onto the tube turned by the
+ * two tilts (uCol0, uCol1, uNormal, seen from uDist), then bowed by the CRT
+ * shader's warp ([GlyphTvTuning.tubeSource] is the same sum). Red is read
+ * from one side and blue from the other, `uChroma` pixels from green. Off the
+ * picture, past its rounded corners (uCorner), is the frame: a dark grey-green
+ * over the whole app (uRim 1), clear over the lyrics (uRim 0); `uEdge` softens
+ * the picture's rim. The picture darkens toward its edges (uVignette), and the
+ * glass catches a sheen and the frame a streak (uGlare).
  */
 private const val TUBE_SHADER = """
 uniform shader content;
 uniform float2 uSize;
 uniform float2 uWarp;
+uniform float2 uAspect;
+uniform float2 uFit;
+uniform float2 uShift;
+uniform float3 uCol0;
+uniform float3 uCol1;
+uniform float3 uNormal;
+uniform float uDist;
 uniform float uChroma;
 uniform float uEdge;
+uniform float uCorner;
+uniform float uVignette;
+uniform float uGlare;
 uniform float uRim;
 
+const float3 FRAME = float3(0.075, 0.085, 0.078);
+
 half4 main(float2 p) {
-    float2 c = p / uSize * 2.0 - 1.0;
-    c = c * float2(1.0 + c.y * c.y * uWarp.x, 1.0 + c.x * c.x * uWarp.y);
-    float2 q = (c * 0.5 + 0.5) * uSize;
+    float2 uv = p / uSize;
+    float2 s = ((uv * 2.0 - 1.0) * uFit + uShift) * uAspect;
+    float3 dir = float3(s, uDist);
+    float denom = dot(uNormal, dir);
+    float3 frame = FRAME * uRim;
+    // The frame's streak: a thin upright line of light near the left edge.
+    float streak = uGlare * uRim * (1.0 - smoothstep(0.0, 0.004, abs(uv.x - 0.012)))
+        * smoothstep(0.08, 0.2, uv.y) * (1.0 - smoothstep(0.8, 0.92, uv.y));
+    float3 frameLit = frame + float3(streak * 0.55);
+    if (denom <= 0.0001) {
+        return half4(frameLit, uRim);
+    }
+    float t = uDist * uNormal.z / denom;
+    float3 hit = float3(0.0, 0.0, -uDist) + t * dir;
+    float2 c = float2(dot(uCol0, hit), dot(uCol1, hit)) / uAspect;
+    float2 bowed = c * float2(1.0 + c.y * c.y * uWarp.x, 1.0 + c.x * c.x * uWarp.y);
+    float2 q = (bowed * 0.5 + 0.5) * uSize;
     float fade = 1.0;
     if (uEdge > 0.0) {
-        float2 room = min(q, uSize - q);
-        fade = clamp(min(room.x, room.y) / uEdge, 0.0, 1.0);
+        float2 middle = uSize * 0.5;
+        float2 rel = abs(q - middle) - (middle - float2(uCorner));
+        float outside = length(max(rel, float2(0.0))) + min(max(rel.x, rel.y), 0.0) - uCorner;
+        fade = clamp(-outside / uEdge, 0.0, 1.0);
         if (fade <= 0.0) {
-            return half4(0.0, 0.0, 0.0, uRim);
+            return half4(frameLit, uRim);
         }
     }
     float2 lo = float2(0.5, 0.5);
@@ -499,7 +544,18 @@ half4 main(float2 p) {
         here.r = float4(content.eval(clamp(q - apart, lo, hi))).r;
         here.b = float4(content.eval(clamp(q + apart, lo, hi))).b;
     }
-    return half4(here.rgb * fade, mix(uRim, here.a, fade));
+    float3 picture = here.rgb;
+    if (uVignette > 0.0) {
+        float2 w = clamp(c * 0.5 + 0.5, 0.0, 1.0);
+        float v = 16.0 * w.x * w.y * (1.0 - w.x) * (1.0 - w.y);
+        picture = picture * pow(max(v, 0.0001), 0.45 * uVignette);
+    }
+    if (uGlare > 0.0) {
+        // A broad sheen falling from the upper left across the glass.
+        float sheen = (1.0 - smoothstep(0.0, 1.1, length(uv - float2(0.18, 0.12)))) * 0.10 * uGlare;
+        picture = picture + float3(sheen) * here.a;
+    }
+    return half4(picture * fade + frameLit * (1.0 - fade), mix(uRim, here.a, fade));
 }
 """
 

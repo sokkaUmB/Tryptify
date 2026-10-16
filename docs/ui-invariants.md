@@ -1324,6 +1324,17 @@ once is left out for good. A native crash's report names the screen and the
 CRT setting the app was on (`CrashBreadcrumbs`): a render-thread tombstone
 names neither.
 
+**The tube can be seen from an angle, in a frame: an old TV filmed from beside
+it.** Tilt, sideways and Tilt, up & down (±30°) turn the picture and look at it
+from 3.5 half-sides away, so the nearer side stands taller; the turned picture
+is fitted and centred on the screen (`GlyphTvTuning.tubeView`), and Bezel draws
+it smaller inside a dark grey-green frame (clear over the lyrics). Rounded
+corners, Vignette and Glass glare (a sheen and a streak on the frame) finish
+it. All start at 0, so a flat, square, unframed picture is unchanged, and taps
+under the app-wide effect go through the same view (`tubeSource`, which the
+tube shader's sum mirrors). Old TV look sets CRT-Royale and these, after the
+TRYPT CORE videos (`GlyphTvTuning.oldTv`).
+
 **CRT-Royale is its passes folded into one** (`ROYALE_SHADER`, its own program,
 from crt-royale, GPL-2.0-or-later). The beams are its sampled generalized
 Gaussians, three lines a pixel, widening and flattening as they brighten; the

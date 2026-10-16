@@ -404,7 +404,7 @@ class MainActivity : ComponentActivity() {
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         val tuning = appTube?.invoke()
         val bounds = appTubeBounds
-        if (tuning == null || !tuning.curved || bounds.isEmpty || !tf.monochrome.android.ui.glyph.tubeDrawable(appTubeLook)) {
+        if (tuning == null || !tuning.reshaped || bounds.isEmpty || !tf.monochrome.android.ui.glyph.tubeDrawable(appTubeLook)) {
             return super.dispatchTouchEvent(ev)
         }
         val bent = tf.monochrome.android.ui.glyph.bentThroughTube(

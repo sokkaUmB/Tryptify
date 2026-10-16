@@ -918,7 +918,65 @@ private fun CrtSliders(viewModel: SettingsViewModel, shader: tf.monochrome.andro
             onChange = { drag(tv.copy(curveSideDeg = it)) },
             onDone = commit,
         )
+        val tilts = -tf.monochrome.android.glyph.engine.GlyphTvTuning.MAX_TILT_DEG..
+            tf.monochrome.android.glyph.engine.GlyphTvTuning.MAX_TILT_DEG
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_tilt_side, tv.tiltSideDeg),
+            subtitle = stringResource(R.string.settings_crt_tilt_side_desc),
+            value = tv.tiltSideDeg,
+            range = tilts,
+            onChange = { drag(tv.copy(tiltSideDeg = it)) },
+            onDone = commit,
+        )
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_tilt_top, tv.tiltTopDeg),
+            subtitle = stringResource(R.string.settings_crt_tilt_top_desc),
+            value = tv.tiltTopDeg,
+            range = tilts,
+            onChange = { drag(tv.copy(tiltTopDeg = it)) },
+            onDone = commit,
+        )
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_bezel, percent(tv.bezel)),
+            subtitle = stringResource(R.string.settings_crt_bezel_desc),
+            value = tv.bezel,
+            onChange = { drag(tv.copy(bezel = it)) },
+            onDone = commit,
+        )
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_corners, percent(tv.corners)),
+            subtitle = null,
+            value = tv.corners,
+            onChange = { drag(tv.copy(corners = it)) },
+            onDone = commit,
+        )
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_vignette, percent(tv.vignette)),
+            subtitle = stringResource(R.string.settings_crt_vignette_desc),
+            value = tv.vignette,
+            onChange = { drag(tv.copy(vignette = it)) },
+            onDone = commit,
+        )
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_glare, percent(tv.glare)),
+            subtitle = stringResource(R.string.settings_crt_glare_desc),
+            value = tv.glare,
+            onChange = { drag(tv.copy(glare = it)) },
+            onDone = commit,
+        )
         Spacer(modifier = Modifier.height(8.dp))
+        // One tap to an old TV filmed from beside it: CRT-Royale, bowed,
+        // tilted and framed.
+        androidx.compose.material3.Button(
+            onClick = {
+                live.tuning = null
+                viewModel.setAppTvShader(tf.monochrome.android.glyph.engine.GlyphTvShader.ROYALE)
+                viewModel.setAppTvTuning(tf.monochrome.android.glyph.engine.GlyphTvTuning.oldTv(window.height, keep = tv))
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.settings_crt_old_tv))
+        }
         OutlinedButton(
             onClick = {
                 live.tuning = null
