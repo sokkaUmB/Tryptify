@@ -89,6 +89,18 @@ android {
             "\"${localProperties.getProperty("lastfm.apiKey") ?: "153452aaeaa3e666645274b3a9e5bb0a"}\"",
         )
 
+        // The Trypt Mania chart server every install starts with (Slow, a
+        // CPU server on Railway), its secret path and all. From
+        // local.properties (`tryptmania.cpuServer`) or the
+        // TRYPTMANIA_CPU_SERVER environment variable, never the repository:
+        // a build without either ships no server, and charting waits for one
+        // under Settings › Connections. Anyone with the APK can read it.
+        buildConfigField(
+            "String",
+            "BUILT_IN_CPU_SERVER",
+            "\"${(localProperties.getProperty("tryptmania.cpuServer") ?: System.getenv("TRYPTMANIA_CPU_SERVER") ?: "").trim()}\"",
+        )
+
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++17"

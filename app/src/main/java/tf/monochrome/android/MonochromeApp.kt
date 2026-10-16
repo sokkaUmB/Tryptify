@@ -187,6 +187,11 @@ class MonochromeApp : Application(), Configuration.Provider, SingletonImageLoade
         appScope.launch {
             tf.monochrome.android.audio.dsp.DspNativeLoader.ensureLoaded()
         }
+        // The chart server this build ships with, under Settings › Connections
+        // the first time (BuiltInServer), so Trypt Mania can chart at once.
+        appScope.launch {
+            runCatching { preferencesProvider.get().seedBuiltInServer(BuildConfig.BUILT_IN_CPU_SERVER) }
+        }
         // libusb gets the same off-thread warm-up so the dlopen + libusb_init
         // don't land on the audio thread the first time the user toggles
         // exclusive USB output.
