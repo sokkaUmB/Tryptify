@@ -250,6 +250,8 @@ Read an NPU run from its own lines: `QnnStemBackend` says "NPU graph compiled in
 
 What a OnePlus 15 (SM8850) has said so far, in order: the NPU would not open without `libcdsprpc.so` declared; declared, it opened, compiled the separator for 2.5 minutes and failed to finalize with QNN error 1002 (`QNN_COMMON_ERROR_MEM_ALLOC`) after mapping some 530 MB, so V79 and later now ask for extended UDMA. QNN's GPU backend fails this model at session creation: a Conv it asked ONNX Runtime to rewrite to NHWC it then rejected, which leaves a node no provider can run. That is recorded like any failure, and the CPU runs it, at 1.1 to 1.5 times faster than the music.
 
+Extended UDMA did not move the 1002, so the model itself was rebuilt for the NPU: `tools/stem_npu_export` makes `htdemucs_6s_npu_fp16weights.onnx` (`KnownModels` id `htdemucs-6s-npu`), the same weights in a 1.95 s window with the STFT as MatMuls, every shape folded to a constant (no Shape, Range, ScatterND, ConstantOfShape or strided Slice) and GELU as opset-20 `Gelu`, because QNN refuses `Erf`. Its README has the steps; they rebuild the published bytes exactly. A model that still fails on the NPU is cut down with `--segment-samples`, which makes a new model with its own entry.
+
 ### Compose performance
 
 Use stable parameters, keyed lazy items, remembered derived values, and immutable collections where they materially reduce recomposition. Validate with tooling rather than mechanically adding annotations.

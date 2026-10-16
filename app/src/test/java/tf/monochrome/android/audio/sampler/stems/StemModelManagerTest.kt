@@ -519,6 +519,18 @@ class StemModelManagerTest {
         assertNull(KnownModels.recognise("0".repeat(64), 12345L))
     }
 
+    @Test
+    fun `the NPU build is recognised and driven with its own window`() {
+        val npu = KnownModels.recognise("1cbc5b778e95bb02a80673884231c02bcc45c5dc9b205ebb927841f7943581a3", 127_706_444L)!!
+        assertTrue(npu.exact)
+        assertEquals("htdemucs-6s-npu", npu.model.id)
+        // A quarter of the published window, and Demucs' own six-stem order.
+        assertEquals(KnownModels.byId("htdemucs-6s")!!.segmentFrames / 4, npu.model.segmentFrames)
+        assertEquals(KnownModels.byId("htdemucs-6s")!!.outputOrder, npu.model.outputOrder)
+        assertEquals("mix", npu.model.inputTensor)
+        assertEquals("stems", npu.model.outputTensor)
+    }
+
     /** Every entry has to be usable, or it should not be in the list. */
     @Test
     fun `every known model is complete and distinct`() {

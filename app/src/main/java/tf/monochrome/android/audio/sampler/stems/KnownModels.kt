@@ -85,6 +85,31 @@ object KnownModels {
      * good model".
      */
     val ALL: List<KnownModel> = listOf(
+        /**
+         * The 6-stem model rebuilt for the Snapdragon NPU by
+         * `tools/stem_npu_export`: the same weights in a window a quarter as
+         * long, the STFT as MatMuls, every shape a constant and GELU as one
+         * operation. The published export failed to finalize on the NPU of a
+         * OnePlus 15 (out of memory, QNN error 1002) and leaned on operations
+         * QNN refuses. Reproducible: the scripts rebuild these exact bytes.
+         */
+        KnownModel(
+            id = "htdemucs-6s-npu",
+            name = "HTDemucs 6-stem (NPU)",
+            fileName = "htdemucs_6s_npu_fp16weights.onnx",
+            sizeBytes = 127_706_444L,
+            sha256 = "1cbc5b778e95bb02a80673884231c02bcc45c5dc9b205ebb927841f7943581a3",
+            outputOrder = DEMUCS_6,
+            segmentFrames = 85_995,
+            modelSampleRate = 44_100,
+            inputTensor = "mix",
+            outputTensor = "stems",
+            sourceUrl = "https://github.com/tryptz/Tryptify/tree/tryptz/tryptmania/tools/stem_npu_export",
+            license = ModelLicense.MIT,
+            sourceModel = "htdemucs_6s",
+            note = "Built for the Snapdragon NPU: 1.95 s windows instead of 7.8 s. " +
+                "Separates within a dB of the published model; the drum timing charts are read from is the same.",
+        ),
         KnownModel(
             id = "htdemucs-6s",
             name = "HTDemucs 6-stem",
