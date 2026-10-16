@@ -253,6 +253,12 @@ data class GlyphModifiers(
     val metronome: Boolean = false,
     val timingWindowScale: Float = 1f,
     val hitboxScale: Float = 1f,
+    /**
+     * How much of the width the lanes take when the phone is held sideways
+     * ([GlyphFieldBounds]); portrait always gives them all of it. Looks and
+     * where the lanes are touched, not how they are judged.
+     */
+    val landscapeFieldWidth: Float = DEFAULT_LANDSCAPE_FIELD,
     val reducedMotion: Boolean = false,
     /** Which effects the playfield draws. Looks only. */
     val graphics: GlyphGraphics = GlyphGraphics(),

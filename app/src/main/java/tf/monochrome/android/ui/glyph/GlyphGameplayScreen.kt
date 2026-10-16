@@ -91,6 +91,8 @@ fun GlyphGameplayScreen(
     // FLAWLESS is never drawn a frame late.
     LaunchedEffect(Unit) { GlyphStepArt.preloadJudgements(context) }
     val gameplay = state.gameplay
+    val landscape = glyphIsLandscape()
+    val fieldFraction = glyphFieldFraction(gameplay.modifiers.landscapeFieldWidth)
     // A chart that failed to load still has to draw something rather than
     // crash; a steady map is the harmless stand-in.
     val timing = state.simfile?.timing ?: remember { GlyphTiming.constant(120f) }
@@ -131,7 +133,12 @@ fun GlyphGameplayScreen(
                 comboBurstProvider = comboBurstProvider,
                 comboProvider = comboProvider,
                 look = GlyphFieldLook.of(gameplay.modifiers),
-                modifier = Modifier.fillMaxSize(),
+                // Held sideways, a centred column of the setting's width, its
+                // receptors nearer the bottom: thumbs come from the sides.
+                receptorInset = if (landscape && !gameplay.modifiers.reverse) LANDSCAPE_RECEPTOR_INSET else null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .glyphFieldColumn(fieldFraction),
             )
 
             // The lane input sits over the playfield rather than under a row of
@@ -141,6 +148,7 @@ fun GlyphGameplayScreen(
                 onPress = { lane, at -> onEvent(GlyphEvent.LanePressed(lane, at)) },
                 onRelease = { lane, at -> onEvent(GlyphEvent.LaneReleased(lane, at)) },
                 hitboxScale = gameplay.modifiers.hitboxScale,
+                fieldFraction = fieldFraction,
                 modifier = Modifier.fillMaxSize(),
             )
 

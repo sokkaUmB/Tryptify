@@ -438,6 +438,8 @@ class GlyphViewModel @Inject constructor(
             is GlyphEvent.SetSkin -> updateModifiers { it.copy(skin = event.skin) }
             is GlyphEvent.SetHitboxScale ->
                 updateModifiers { it.copy(hitboxScale = event.scale.coerceIn(MIN_HITBOX, MAX_HITBOX)) }
+            is GlyphEvent.SetLandscapeFieldWidth ->
+                updateModifiers { it.copy(landscapeFieldWidth = event.fraction.coerceIn(MIN_LANDSCAPE_FIELD, 1f)) }
 
             is GlyphEvent.SetLoop -> setLoop(event.startSeconds, event.endSeconds)
             GlyphEvent.ClearLoop -> {
@@ -1597,6 +1599,8 @@ class GlyphViewModel @Inject constructor(
             failType = GlyphFailType.fromId(prefs.getString(PREF_FAIL, null)),
             metronome = prefs.getBoolean(PREF_METRONOME, false),
             timingWindowScale = prefs.getFloat(PREF_JUDGE, 1f),
+            landscapeFieldWidth = prefs.getFloat(PREF_LANDSCAPE_FIELD, DEFAULT_LANDSCAPE_FIELD)
+                .coerceIn(MIN_LANDSCAPE_FIELD, 1f),
             skin = GlyphSkin.fromId(prefs.getString(PREF_SKIN, null)),
             graphics = GlyphGraphics(
                 hitRays = prefs.getBoolean(PREF_GFX_RAYS, true),
@@ -1646,6 +1650,7 @@ class GlyphViewModel @Inject constructor(
             .putString(PREF_FAIL, modifiers.failType.id)
             .putBoolean(PREF_METRONOME, modifiers.metronome)
             .putFloat(PREF_JUDGE, modifiers.timingWindowScale)
+            .putFloat(PREF_LANDSCAPE_FIELD, modifiers.landscapeFieldWidth)
             .putString(PREF_SKIN, modifiers.skin.id)
             .putBoolean(PREF_GFX_RAYS, modifiers.graphics.hitRays)
             .putInt(PREF_GFX_RAY_QUALITY, modifiers.graphics.rayQuality)
@@ -2338,6 +2343,7 @@ class GlyphViewModel @Inject constructor(
         const val PREF_FAIL = "fail"
         const val PREF_METRONOME = "metronome"
         const val PREF_JUDGE = "judge"
+        const val PREF_LANDSCAPE_FIELD = "landscape_field"
         const val PREF_NAME = "player_name"
         const val PREF_SORT_KEY = "song_sort"
         const val PREF_PREVIEWS = "previews"

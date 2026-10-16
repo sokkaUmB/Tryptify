@@ -18,8 +18,10 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Constraints
 import tf.monochrome.android.glyph.asset.GlyphLane
 import tf.monochrome.android.glyph.input.GlyphKeyBindings
 
@@ -48,42 +50,84 @@ fun GlyphLaneInput(
     onRelease: (GlyphLane, Long) -> Unit,
     modifier: Modifier = Modifier,
     hitboxScale: Float = 1f,
+    /**
+     * The share of the width the field is drawn in ([glyphFieldFraction]):
+     * below 1, the zones follow the centred lanes ([glyphLaneSpans]).
+     */
+    fieldFraction: Float = 1f,
 ) {
     val fraction = hitboxScale.coerceIn(MIN_HITBOX, MAX_HITBOX)
 
-    Row(modifier = modifier) {
-        for (lane in GlyphLane.entries) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                contentAlignment = Alignment.Center,
-            ) {
+    if (fieldFraction >= 1f) {
+        Row(modifier = modifier) {
+            for (lane in GlyphLane.entries) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(fraction)
-                        .fillMaxHeight()
-                        .semantics { contentDescription = "${lane.label} lane" }
-                        .pointerInput(lane) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    val event = awaitPointerEvent()
-                                    for (change in event.changes) {
-                                        if (change.pressed && !change.previousPressed) {
-                                            onPress(lane, change.uptimeMillis)
-                                            change.consume()
-                                        } else if (!change.pressed && change.previousPressed) {
-                                            onRelease(lane, change.uptimeMillis)
-                                            change.consume()
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                )
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LaneZone(
+                        lane = lane,
+                        onPress = onPress,
+                        onRelease = onRelease,
+                        modifier = Modifier
+                            .fillMaxWidth(fraction)
+                            .fillMaxHeight(),
+                    )
+                }
+            }
+        }
+    } else {
+        Layout(
+            modifier = modifier,
+            content = {
+                for (lane in GlyphLane.entries) {
+                    LaneZone(lane = lane, onPress = onPress, onRelease = onRelease)
+                }
+            },
+        ) { measurables, constraints ->
+            val width = constraints.maxWidth
+            val height = constraints.maxHeight
+            val spans = glyphLaneSpans(width, fieldFraction, fraction)
+            val placeables = measurables.mapIndexed { i, measurable ->
+                measurable.measure(Constraints.fixed((spans[i].last + 1 - spans[i].first).coerceAtLeast(0), height))
+            }
+            layout(width, height) {
+                placeables.forEachIndexed { i, placeable -> placeable.place(spans[i].first, 0) }
             }
         }
     }
+}
+
+/** One lane's touch zone: each pointer's down and up, as they happen. */
+@Composable
+private fun LaneZone(
+    lane: GlyphLane,
+    onPress: (GlyphLane, Long) -> Unit,
+    onRelease: (GlyphLane, Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .semantics { contentDescription = "${lane.label} lane" }
+            .pointerInput(lane) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        for (change in event.changes) {
+                            if (change.pressed && !change.previousPressed) {
+                                onPress(lane, change.uptimeMillis)
+                                change.consume()
+                            } else if (!change.pressed && change.previousPressed) {
+                                onRelease(lane, change.uptimeMillis)
+                                change.consume()
+                            }
+                        }
+                    }
+                }
+            },
+    )
 }
 
 /** Below this a lane is too narrow to hit deliberately. */

@@ -1207,6 +1207,19 @@ Back is never bindable. In the map editor the arrows only move the playhead,
 even where they play the lanes in a run. The editor is a work surface: like
 the playfield it runs without the tab bar and the mini player.
 
+**Held sideways, the lanes are a centred column.** Portrait gives the four
+lanes the whole width. Landscape gave them the whole width too, and each arrow
+grew to half the screen's height and ran over the HUD. In landscape the lanes
+take `landscapeFieldWidth` of the width (40% by default, 25% to 100% in
+Settings › Graphics), centred, on whole-pixel lanes (`GlyphFieldBounds`), and
+the receptors sit 64 dp from the bottom instead of 96. Gameplay and Training
+Ground both lay out through `glyphFieldColumn`. The touch zones follow the
+drawn lanes (`glyphLaneSpans`), and the screen either side belongs to the
+outer lanes, so a thumb at the edge still presses Left or Right; the hitbox
+setting makes gutters between lanes, never at the screen's edge. Scroll speed
+already measures the field's height, so a note's time on screen does not
+change with the width. Previews keep their own layout.
+
 **Tap to sync is heard, never seen.** The pad in Settings › Sync does not
 flash, pulse or count with the click track: a player who follows a flash
 measures the screen, and the offset it sets is for the sound. The track plays

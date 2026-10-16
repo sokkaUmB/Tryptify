@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,6 +58,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -621,6 +625,10 @@ private fun GraphicsTab(
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    LandscapeFieldControl(
+        fraction = state.gameplay.modifiers.landscapeFieldWidth,
+        onChange = { onEvent(GlyphEvent.SetLandscapeFieldWidth(it)) },
+    )
     GlyphSwitchRow(
         label = "Hit god rays",
         checked = graphics.hitRays,
@@ -687,6 +695,56 @@ private fun GraphicsTab(
     if (graphics.tvShader != GlyphTvShader.OFF) {
         TvShaderControls(state, set, assets, palette)
     }
+}
+
+/**
+ * How wide the lanes are with the phone held sideways, over a sketch of a
+ * landscape screen with the lanes in it, drawn to this phone's own shape.
+ */
+@Composable
+private fun LandscapeFieldControl(fraction: Float, onChange: (Float) -> Unit) {
+    val window = LocalWindowInfo.current.containerSize
+    val long = maxOf(window.width, window.height).coerceAtLeast(1)
+    val short = minOf(window.width, window.height).coerceAtLeast(1)
+    val ink = MaterialTheme.colorScheme.onSurface
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(long.toFloat() / short)
+            .clearAndSetSemantics { contentDescription = "Sketch of the lanes across a landscape screen" },
+    ) {
+        val corner = CornerRadius(size.height * 0.06f)
+        drawRoundRect(color = ink.copy(alpha = 0.06f), cornerRadius = corner)
+        drawRoundRect(color = ink.copy(alpha = 0.3f), cornerRadius = corner, style = Stroke(width = 2f))
+        // The same arithmetic the game lays its lanes out with.
+        val bounds = GlyphFieldBounds.of(size.width.toInt(), fraction)
+        drawRect(
+            color = ink.copy(alpha = 0.12f),
+            topLeft = Offset(bounds.leftPx.toFloat(), 0f),
+            size = Size(bounds.widthPx.toFloat(), size.height),
+        )
+        val note = bounds.laneWidthPx * 0.82f
+        val receptorY = size.height - size.height * (LANDSCAPE_RECEPTOR_INSET.value / LANDSCAPE_SKETCH_HEIGHT_DP) - note / 2f
+        for (i in 0 until 4) {
+            val centreX = bounds.leftPx + bounds.laneWidthPx * (i + 0.5f)
+            drawRoundRect(
+                color = ink.copy(alpha = 0.55f),
+                topLeft = Offset(centreX - note / 2f, receptorY - note / 2f),
+                size = Size(note, note),
+                cornerRadius = CornerRadius(note * 0.2f),
+                style = Stroke(width = 3f),
+            )
+        }
+    }
+    GlyphSlider(
+        label = "Field width in landscape",
+        value = fraction,
+        reading = "${(fraction * 100f).roundToInt()}%",
+        range = MIN_LANDSCAPE_FIELD..1f,
+        note = "Held sideways, the lanes take this much of the screen, centred, and are tapped where they are. " +
+            "The sides count for Left and Right.",
+        onChange = onChange,
+    )
 }
 
 /**
@@ -969,6 +1027,8 @@ private fun NameDialog(current: String, onDone: (String) -> Unit, onDismiss: () 
 private const val KEYCODE_ESCAPE = 111
 private const val OFFSET_STEP_MS = 5
 private val TAP_PAD_HEIGHT = 168.dp
+/** A phone's landscape height in dp, to place the sketch's receptors as the game would. */
+private const val LANDSCAPE_SKETCH_HEIGHT_DP = 400f
 private val TV_PREVIEW_HEIGHT = 220.dp
 private val TV_PREVIEW_RECEPTOR_INSET = 18.dp
 private const val TV_PREVIEW_NOTE_SCALE = 0.6f

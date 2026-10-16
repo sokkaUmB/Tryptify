@@ -158,6 +158,8 @@ sealed interface GlyphEvent {
     /** Set the value within the current family: a multiplier, or a target BPM. */
     data class SetScrollValue(val value: Float) : GlyphEvent
     data class SetHitboxScale(val scale: Float) : GlyphEvent
+    /** The share of the width the lanes take in landscape. */
+    data class SetLandscapeFieldWidth(val fraction: Float) : GlyphEvent
 
     // ── training ────────────────────────────────────────────────────────
     data class SetLoop(val startSeconds: Float, val endSeconds: Float) : GlyphEvent

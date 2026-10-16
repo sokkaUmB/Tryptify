@@ -99,6 +99,8 @@ fun GlyphTrainingScreen(
     val typography = GlyphTypography(fontFamily)
     val training = state.training
     val gameplay = state.gameplay
+    val landscape = glyphIsLandscape()
+    val fieldFraction = glyphFieldFraction(gameplay.modifiers.landscapeFieldWidth)
     val duration = state.selectedSong?.durationSeconds?.toFloat() ?: 0f
     val keyboard = rememberGlyphKeyboardFocus()
 
@@ -178,12 +180,18 @@ fun GlyphTrainingScreen(
                 comboBurstProvider = comboBurstProvider,
                 comboProvider = comboProvider,
                 look = GlyphFieldLook.of(gameplay.modifiers),
-                modifier = Modifier.fillMaxSize(),
+                // Held sideways, a centred column of the setting's width, its
+                // receptors nearer the bottom: thumbs come from the sides.
+                receptorInset = if (landscape && !gameplay.modifiers.reverse) LANDSCAPE_RECEPTOR_INSET else null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .glyphFieldColumn(fieldFraction),
             )
             GlyphLaneInput(
                 onPress = { lane, at -> onEvent(GlyphEvent.LanePressed(lane, at)) },
                 onRelease = { lane, at -> onEvent(GlyphEvent.LaneReleased(lane, at)) },
                 hitboxScale = gameplay.modifiers.hitboxScale,
+                fieldFraction = fieldFraction,
                 modifier = Modifier.fillMaxSize(),
             )
         }
