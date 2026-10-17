@@ -1489,6 +1489,15 @@
     <string name="eq_filter_bands_caps">FILTERBÄNDER</string>
     <string name="eq_max_hz_caps">MAX. HZ</string>
     <string name="eq_export_eq">EQ exportieren</string>
+    <string name="eq_nothing_export">Für Nothing Ear exportieren</string>
+    <string name="eq_nothing_title">Nothing Ear EQ</string>
+    <string name="eq_nothing_fitting">8 Bänder werden angepasst…</string>
+    <string name="eq_nothing_fit">8 Bänder, höchstens %1$s dB Abweichung von diesem EQ (im Mittel %2$s dB)</string>
+    <string name="eq_nothing_howto">In Nothing X scannen: Equalizer → Erweitert → QR-Symbol. Speichere das Bild, um es von einem anderen Bildschirm zu scannen.</string>
+    <string name="eq_nothing_hack">Einige Bänder können über ±6 dB hinausgehen. Nothing X übernimmt sie, zeigt sie in den Reglern aber bei 0 an; wer einen bewegt, setzt ihn zurück.</string>
+    <string name="eq_nothing_save">Bild speichern</string>
+    <string name="eq_nothing_saved">QR-Code gespeichert</string>
+    <string name="eq_nothing_save_failed">QR-Code konnte nicht gespeichert werden</string>
     <string name="eq_save_as_preset">Als Preset speichern</string>
     <string name="eq_remove_band">Band entfernen</string>
     <string name="eq_next_sample">Nächste Probe</string>

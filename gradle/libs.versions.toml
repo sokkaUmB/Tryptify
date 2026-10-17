@@ -26,6 +26,7 @@ haze = "1.7.1"
 nextlibMedia3ext = "0.8.4"
 profileinstaller = "1.4.1"
 jaudiotagger = "3.0.1"
+zxing = "3.5.3"
 junit = "4.13.2"
 robolectric = "4.14.1"
 
@@ -72,6 +73,7 @@ nextlib-media3ext = { group = "io.github.anilbeesetti.nextlib", name = "nextlib-
 # designation back from a file on rescan. MediaMetadataRetriever is read-only
 # and can't see custom Vorbis comments, hence a real tag library.
 jaudiotagger = { group = "net.jthink", name = "jaudiotagger", version.ref = "jaudiotagger" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 # Hilt
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }

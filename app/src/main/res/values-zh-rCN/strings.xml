@@ -1445,6 +1445,15 @@
     <string name="eq_filter_bands_caps">滤波频段</string>
     <string name="eq_max_hz_caps">最高 Hz</string>
     <string name="eq_export_eq">导出均衡器</string>
+    <string name="eq_nothing_export">导出到 Nothing Ear</string>
+    <string name="eq_nothing_title">Nothing Ear 均衡器</string>
+    <string name="eq_nothing_fitting">正在拟合 8 个频段…</string>
+    <string name="eq_nothing_fit">8 个频段,与此均衡器最大相差 %1$s dB(平均 %2$s dB)</string>
+    <string name="eq_nothing_howto">在 Nothing X 中扫描:均衡器 → 高级 → 二维码图标。保存图片后可在另一块屏幕上扫描。</string>
+    <string name="eq_nothing_hack">部分频段可能超过 ±6 dB。Nothing X 会保留这些值,但滑块会显示为 0,拖动滑块会将其重置。</string>
+    <string name="eq_nothing_save">保存图片</string>
+    <string name="eq_nothing_saved">二维码已保存</string>
+    <string name="eq_nothing_save_failed">无法保存二维码</string>
     <string name="eq_save_as_preset">保存为预设</string>
     <string name="eq_remove_band">移除频段</string>
     <string name="eq_next_sample">下一个样本</string>
