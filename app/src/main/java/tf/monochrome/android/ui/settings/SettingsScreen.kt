@@ -97,7 +97,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Button
 import android.content.Context
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import tf.monochrome.android.domain.model.NowPlayingViewMode
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -459,7 +458,9 @@ fun SettingsScreen(
                                     settingsScope.launch { settingsPager.goToPage(settingsTabIndex("Fonts"), animateTabs) }
                                 },
                             )
-                            "Fonts" -> tf.monochrome.android.ui.settings.fonts.FontBrowserPage()
+                            "Fonts" -> tf.monochrome.android.ui.settings.fonts.FontBrowserPage(
+                                fontSize = { FontSizeSection(viewModel) },
+                            )
                             "Audio" -> AudioTab(viewModel, navController)
                             "Equalizer" -> EqualizerTab(navController, viewModel)
                             "Library" -> LibrarySettingsTab(viewModel)
@@ -738,9 +739,7 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
     // Only to show what "Match blend" currently works out to; the slider does
     // not change it.
     val themePaper by viewModel.themePaper.collectAsStateWithLifecycle()
-    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     val customFontUri by viewModel.customFontUri.collectAsStateWithLifecycle()
-    val followSystemFontScale by viewModel.fontScaleFollowSystem.collectAsStateWithLifecycle()
     val glowBehindArt by viewModel.glowBehindArt.collectAsStateWithLifecycle()
     val artGlowRadius by viewModel.artGlowRadius.collectAsStateWithLifecycle()
     val artGlowBrightness by viewModel.artGlowBrightnessPct.collectAsStateWithLifecycle()
@@ -885,57 +884,7 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
         Spacer(modifier = Modifier.height(16.dp))
         SettingsGroupHeader(stringResource(R.string.settings_typography))
 
-        // Font size: five fixed steps, or hand over to the OS setting.
-        SettingSwitchItem(
-            title = stringResource(R.string.settings_use_system_font_size),
-            subtitle = stringResource(R.string.settings_follow_the_size_set_in_android_settings_display),
-            checked = followSystemFontScale,
-            onCheckedChange = { viewModel.setFontScaleFollowSystem(it) }
-        )
-
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Text(
-                stringResource(R.string.settings_font_size),
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (followSystemFontScale) MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onSurface
-            )
-
-            // A legacy value from the old free-form slider (e.g. 1.37) won't equal
-            // any step, so select the closest one instead of leaving nothing
-            // highlighted. Picking a chip then writes the exact step back.
-            val selectedPreset = remember(fontScale) {
-                FONT_SCALE_PRESETS.minByOrNull { kotlin.math.abs(it.scale - fontScale) }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FONT_SCALE_PRESETS.forEach { preset ->
-                    tf.monochrome.android.ui.mixer.GlassChoiceChip(
-                        label = stringResource(preset.label),
-                        selected = !followSystemFontScale && preset == selectedPreset,
-                        accent = MaterialTheme.colorScheme.primary,
-                        enabled = !followSystemFontScale,
-                        onClick = { viewModel.setFontScale(preset.scale) },
-                    )
-                }
-            }
-
-            Text(
-                stringResource(R.string.settings_preview_the_quick_brown_fox_jumps_over_the_lazy),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 12.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
+        // The font size moved to the Fonts page, beside the fonts it scales.
         // Font Library: one row over to the Fonts chip, whose page previews
         // every font in its own letters before it is chosen. The row carries
         // the active font's name so it still answers "what am I using?", and
@@ -952,8 +901,6 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
 @Composable
 private fun InterfaceControls(viewModel: SettingsViewModel, navController: NavController) {
     val explicit by viewModel.showExplicitBadges.collectAsStateWithLifecycle()
-    val playerDynamicColor by viewModel.playerDynamicColor.collectAsStateWithLifecycle()
-    val playerBlurredBackground by viewModel.playerBlurredBackground.collectAsStateWithLifecycle()
 
     SettingsGroupHeader(stringResource(R.string.settings_display))
     SettingSwitchItem(
@@ -1043,35 +990,6 @@ private fun InterfaceControls(viewModel: SettingsViewModel, navController: NavCo
         onCheckedChange = { viewModel.setServerLyrics(it) }
     )
 
-    Spacer(modifier = Modifier.height(16.dp))
-    SettingsGroupHeader(stringResource(R.string.settings_now_playing))
-    val viewMode by viewModel.nowPlayingViewMode.collectAsStateWithLifecycle()
-    var showModeDropdown by remember { mutableStateOf(false) }
-    SettingItem(
-        title = stringResource(R.string.settings_view_mode), 
-        subtitle = stringResource(R.string.settings_view_mode_summary, viewModeLabel(viewMode)), 
-        onClick = { showModeDropdown = true }
-    )
-    DropdownMenu(expanded = showModeDropdown, onDismissRequest = { showModeDropdown = false }) {
-        NowPlayingViewMode.entries.forEach { mode ->
-            DropdownMenuItem(
-                text = { Text(viewModeLabel(mode)) },
-                onClick = { viewModel.setNowPlayingViewMode(mode); showModeDropdown = false }
-            )
-        }
-    }
-    SettingSwitchItem(
-        title = stringResource(R.string.settings_dynamic_player_color),
-        subtitle = stringResource(R.string.settings_tint_the_player_from_album_art_needs_dynamic),
-        checked = playerDynamicColor,
-        onCheckedChange = { viewModel.setPlayerDynamicColor(it) }
-    )
-    SettingSwitchItem(
-        title = stringResource(R.string.settings_blurred_album_background),
-        subtitle = stringResource(R.string.settings_behind_the_player_and_the_mixer_the_album_art),
-        checked = playerBlurredBackground,
-        onCheckedChange = { viewModel.setPlayerBlurredBackground(it) }
-    )
 
     Spacer(modifier = Modifier.height(16.dp))
 }
@@ -4303,13 +4221,64 @@ private fun PaperSwatch(
     }
 }
 
-/** What the player's view-mode picker calls each mode, in the reader's language. */
+
+/**
+ * The font size: five fixed steps, or the size set in Android. On the Fonts
+ * page, beside the fonts it scales.
+ */
 @Composable
-private fun viewModeLabel(mode: NowPlayingViewMode): String = stringResource(
-    when (mode) {
-        NowPlayingViewMode.COVER_ART -> R.string.settings_view_cover_art
-        NowPlayingViewMode.LYRICS -> R.string.mode_lyrics
-        NowPlayingViewMode.QUEUE -> R.string.queue
-        NowPlayingViewMode.VISUALIZER -> R.string.visualizer
+internal fun FontSizeSection(viewModel: SettingsViewModel) {
+    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
+    val followSystemFontScale by viewModel.fontScaleFollowSystem.collectAsStateWithLifecycle()
+    Column {
+    SettingsGroupHeader(stringResource(R.string.settings_font_size))
+    // Font size: five fixed steps, or hand over to the OS setting.
+    SettingSwitchItem(
+        title = stringResource(R.string.settings_use_system_font_size),
+        subtitle = stringResource(R.string.settings_follow_the_size_set_in_android_settings_display),
+        checked = followSystemFontScale,
+        onCheckedChange = { viewModel.setFontScaleFollowSystem(it) }
+    )
+
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(
+            stringResource(R.string.settings_font_size),
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (followSystemFontScale) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurface
+        )
+
+        // A legacy value from the old free-form slider (e.g. 1.37) won't equal
+        // any step, so select the closest one instead of leaving nothing
+        // highlighted. Picking a chip then writes the exact step back.
+        val selectedPreset = remember(fontScale) {
+            FONT_SCALE_PRESETS.minByOrNull { kotlin.math.abs(it.scale - fontScale) }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FONT_SCALE_PRESETS.forEach { preset ->
+                tf.monochrome.android.ui.mixer.GlassChoiceChip(
+                    label = stringResource(preset.label),
+                    selected = !followSystemFontScale && preset == selectedPreset,
+                    accent = MaterialTheme.colorScheme.primary,
+                    enabled = !followSystemFontScale,
+                    onClick = { viewModel.setFontScale(preset.scale) },
+                )
+            }
+        }
+
+        Text(
+            stringResource(R.string.settings_preview_the_quick_brown_fox_jumps_over_the_lazy),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 12.dp)
+        )
     }
-)
+    }
+}

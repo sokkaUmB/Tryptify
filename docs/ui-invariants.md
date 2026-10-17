@@ -576,6 +576,16 @@ discover uses it: while the deck is up, the bar shows ✕, undo and ♥ punched
 into its glass instead of the track, at the same height, and a swipe along the
 bar skips or keeps.
 
+**Settings has one home per setting.** The font size (the five steps and
+Use system font size) is on the Fonts page, under the preview, beside the
+fonts it scales; Appearance keeps only the Font Library row that leads
+there. There is no Now Playing group: the view mode is what a tap on the
+player's artwork changes, the player's tint is Appearance › Dynamic Colors,
+and the blurred album background is always on. The two removed switches
+read as on whatever was stored, so nobody is left with one off and no way
+back. A copy of a setting in a second place is not a convenience; it is two
+switches that can disagree.
+
 ### Pages and the tab bar
 
 **The app has ONE pager over one flat list of pages** — Home, Discover, World

@@ -2605,7 +2605,9 @@ class PreferencesManager @Inject constructor(
     }
 
     // --- Player appearance ---
-    val playerDynamicColor: Flow<Boolean> = dataStore.data.map { it[PLAYER_DYNAMIC_COLOR] ?: true }
+    // No longer a setting of its own: Appearance › Dynamic Colors decides. A
+    // stored "off" from the old switch is ignored, or it could not be undone.
+    val playerDynamicColor: Flow<Boolean> = dataStore.data.map { true }
     suspend fun setPlayerDynamicColor(enabled: Boolean) {
         dataStore.edit { it[PLAYER_DYNAMIC_COLOR] = enabled }
     }
@@ -2614,7 +2616,9 @@ class PreferencesManager @Inject constructor(
     // (Apple-Music / Spotify style). ON by default — this also feeds the glass
     // shader's uBackdropMix, so the default liquid glass lenses real album
     // tones instead of the flat wash.
-    val playerBlurredBackground: Flow<Boolean> = dataStore.data.map { it[PLAYER_BLURRED_BACKGROUND] ?: true }
+    // No longer a setting: the switch was removed from Settings, so a stored
+    // "off" is ignored rather than left with no way back.
+    val playerBlurredBackground: Flow<Boolean> = dataStore.data.map { true }
     /**
      * Whether the tab bar and the mini player take turns instead of stacking:
      * scrolled up shows the tabs alone, scrolled down the folded bar with the

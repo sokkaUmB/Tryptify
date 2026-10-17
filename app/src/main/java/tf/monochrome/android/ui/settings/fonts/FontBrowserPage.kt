@@ -111,6 +111,8 @@ private enum class FontFilter { ALL, INCLUDED, IMPORTED }
 @Composable
 fun FontBrowserPage(
     viewModel: FontBrowserViewModel = hiltViewModel(),
+    /** The app's font size, drawn under the preview: Settings' own state, so passed in. */
+    fontSize: @Composable () -> Unit = {},
 ) {
     val context = LocalContext.current
     val activeKey by viewModel.activeKey.collectAsStateWithLifecycle()
@@ -202,6 +204,16 @@ fun FontBrowserPage(
                             onWeightChange = { weight = it },
                             onApply = viewModel::apply,
                         )
+                    }
+                }
+                item(key = "size", span = { GridItemSpan(maxLineSpan) }) {
+                    GlassPanel(
+                        hazeState = haze,
+                        glass = LocalMiniPlayerGlass.current,
+                        avoidNavigationBar = false,
+                        blockTouchesBelow = false,
+                    ) {
+                        fontSize()
                     }
                 }
                 item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
