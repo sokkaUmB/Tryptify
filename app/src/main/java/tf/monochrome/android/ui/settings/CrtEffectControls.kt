@@ -76,6 +76,18 @@ internal fun CrtEffectSetting(
             )
         },
     )
+    // The presets whether the effect is on or not: picking one turns it on.
+    val tuning by prefs.appTvTuning.collectAsStateWithLifecycle()
+    tf.monochrome.android.ui.settings.crt.CrtPresetsPanel(
+        shader = shader,
+        tuning = tuning,
+        onApply = { look, tv ->
+            AppTvLive.tuning = null
+            prefs.setAppTvTuning(tv)
+            prefs.setAppTvShader(look)
+        },
+        modifier = Modifier.padding(vertical = 8.dp),
+    )
     if (on) {
         Box {
             SettingItem(
@@ -166,6 +178,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
                 stringResource(R.string.settings_crt_tv_pixels, window.width / pixel, window.height / pixel)
             },
             value = pixel.toFloat(),
+            default = GlyphTvTuning.defaultPixelSize(shader, density, window.height).coerceIn(range).toFloat(),
             range = range.first.toFloat()..range.last.toFloat(),
             steps = range.last - range.first - 1,
             onChange = { drag(tv.withPixelSize(shader, it.roundToInt())) },
@@ -175,6 +188,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_strength, percent(tv.strength)),
             subtitle = stringResource(R.string.settings_crt_strength_desc),
             value = tv.strength,
+            default = TV_DEFAULTS.strength,
             onChange = { drag(tv.copy(strength = it)) },
             onDone = commit,
         )
@@ -182,6 +196,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_brightness, percent(tv.brightness)),
             subtitle = stringResource(R.string.settings_crt_brightness_desc),
             value = tv.brightness,
+            default = TV_DEFAULTS.brightness,
             range = GlyphTvTuning.MIN_BRIGHTNESS..
                 GlyphTvTuning.MAX_BRIGHTNESS,
             onChange = { drag(tv.copy(brightness = it)) },
@@ -192,6 +207,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
                 label = stringResource(R.string.settings_crt_scanlines, percent(tv.scanlines)),
                 subtitle = stringResource(R.string.settings_crt_scanlines_desc),
                 value = tv.scanlines,
+                default = TV_DEFAULTS.scanlines,
                 onChange = { drag(tv.copy(scanlines = it)) },
                 onDone = commit,
             )
@@ -199,6 +215,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
                 label = stringResource(R.string.settings_crt_mask, percent(tv.mask)),
                 subtitle = stringResource(R.string.settings_crt_mask_desc),
                 value = tv.mask,
+                default = TV_DEFAULTS.mask,
                 onChange = { drag(tv.copy(mask = it)) },
                 onDone = commit,
             )
@@ -206,6 +223,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
                 label = stringResource(R.string.settings_crt_glow, percent(tv.glow)),
                 subtitle = stringResource(R.string.settings_crt_glow_desc),
                 value = tv.glow,
+                default = TV_DEFAULTS.glow,
                 onChange = { drag(tv.copy(glow = it)) },
                 onDone = commit,
             )
@@ -213,6 +231,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
                 label = stringResource(R.string.settings_crt_sharpness, percent(tv.sharpness)),
                 subtitle = stringResource(R.string.settings_crt_sharpness_desc),
                 value = tv.sharpness,
+                default = TV_DEFAULTS.sharpness,
                 onChange = { drag(tv.copy(sharpness = it)) },
                 onDone = commit,
             )
@@ -221,6 +240,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_chromatic, percent(tv.chromatic)),
             subtitle = stringResource(R.string.settings_crt_chromatic_desc),
             value = tv.chromatic,
+            default = TV_DEFAULTS.chromatic,
             onChange = { drag(tv.copy(chromatic = it)) },
             onDone = commit,
         )
@@ -231,6 +251,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_curve_top, tv.curveTopDeg),
             subtitle = stringResource(R.string.settings_crt_curve_top_desc),
             value = tv.curveTopDeg,
+            default = TV_DEFAULTS.curveTopDeg,
             range = 0f..GlyphTvTuning.MAX_CURVE_DEG,
             onChange = { drag(tv.copy(curveTopDeg = it)) },
             onDone = commit,
@@ -239,6 +260,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_curve_side, tv.curveSideDeg),
             subtitle = stringResource(R.string.settings_crt_curve_side_desc),
             value = tv.curveSideDeg,
+            default = TV_DEFAULTS.curveSideDeg,
             range = 0f..GlyphTvTuning.MAX_CURVE_DEG,
             onChange = { drag(tv.copy(curveSideDeg = it)) },
             onDone = commit,
@@ -249,6 +271,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_tilt_side, tv.tiltSideDeg),
             subtitle = stringResource(R.string.settings_crt_tilt_side_desc),
             value = tv.tiltSideDeg,
+            default = TV_DEFAULTS.tiltSideDeg,
             range = tilts,
             onChange = { drag(tv.copy(tiltSideDeg = it)) },
             onDone = commit,
@@ -257,6 +280,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_tilt_top, tv.tiltTopDeg),
             subtitle = stringResource(R.string.settings_crt_tilt_top_desc),
             value = tv.tiltTopDeg,
+            default = TV_DEFAULTS.tiltTopDeg,
             range = tilts,
             onChange = { drag(tv.copy(tiltTopDeg = it)) },
             onDone = commit,
@@ -265,6 +289,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_bezel, percent(tv.bezel)),
             subtitle = stringResource(R.string.settings_crt_bezel_desc),
             value = tv.bezel,
+            default = TV_DEFAULTS.bezel,
             onChange = { drag(tv.copy(bezel = it)) },
             onDone = commit,
         )
@@ -272,6 +297,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_corners, percent(tv.corners)),
             subtitle = null,
             value = tv.corners,
+            default = TV_DEFAULTS.corners,
             onChange = { drag(tv.copy(corners = it)) },
             onDone = commit,
         )
@@ -279,6 +305,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_vignette, percent(tv.vignette)),
             subtitle = stringResource(R.string.settings_crt_vignette_desc),
             value = tv.vignette,
+            default = TV_DEFAULTS.vignette,
             onChange = { drag(tv.copy(vignette = it)) },
             onDone = commit,
         )
@@ -286,6 +313,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             label = stringResource(R.string.settings_crt_glare, percent(tv.glare)),
             subtitle = stringResource(R.string.settings_crt_glare_desc),
             value = tv.glare,
+            default = TV_DEFAULTS.glare,
             onChange = { drag(tv.copy(glare = it)) },
             onDone = commit,
         )
@@ -357,6 +385,7 @@ private fun RoyaleSliders(
         label = stringResource(R.string.settings_crt_mask_size, triad),
         subtitle = stringResource(R.string.settings_crt_mask_size_desc),
         value = triad.toFloat(),
+        default = TV_DEFAULTS.royaleTriadPx(density).toFloat(),
         range = triads.first.toFloat()..triads.last.toFloat(),
         steps = triads.last - triads.first - 1,
         onChange = { drag(tv.copy(royaleTriad = it.roundToInt())) },
@@ -366,6 +395,7 @@ private fun RoyaleSliders(
         label = stringResource(R.string.settings_crt_mask_strength, percent(tv.royaleMaskStrength)),
         subtitle = stringResource(R.string.settings_crt_mask_strength_desc),
         value = tv.royaleMaskStrength,
+        default = TV_DEFAULTS.royaleMaskStrength,
         onChange = { drag(tv.copy(royaleMaskStrength = it)) },
         onDone = commit,
     )
@@ -373,6 +403,7 @@ private fun RoyaleSliders(
         label = stringResource(R.string.settings_crt_beam_width, percent(tv.royaleBeamWidth)),
         subtitle = stringResource(R.string.settings_crt_beam_width_desc),
         value = tv.royaleBeamWidth,
+        default = TV_DEFAULTS.royaleBeamWidth,
         onChange = { drag(tv.copy(royaleBeamWidth = it)) },
         onDone = commit,
     )
@@ -380,6 +411,7 @@ private fun RoyaleSliders(
         label = stringResource(R.string.settings_crt_beam_shape, percent(tv.royaleBeamShape)),
         subtitle = stringResource(R.string.settings_crt_beam_shape_desc),
         value = tv.royaleBeamShape,
+        default = TV_DEFAULTS.royaleBeamShape,
         onChange = { drag(tv.copy(royaleBeamShape = it)) },
         onDone = commit,
     )
@@ -387,6 +419,7 @@ private fun RoyaleSliders(
         label = stringResource(R.string.settings_crt_halation, percent(tv.royaleHalation)),
         subtitle = stringResource(R.string.settings_crt_halation_desc),
         value = tv.royaleHalation,
+        default = TV_DEFAULTS.royaleHalation,
         onChange = { drag(tv.copy(royaleHalation = it)) },
         onDone = commit,
     )
@@ -394,6 +427,7 @@ private fun RoyaleSliders(
         label = stringResource(R.string.settings_crt_diffusion, percent(tv.royaleDiffusion)),
         subtitle = stringResource(R.string.settings_crt_diffusion_desc),
         value = tv.royaleDiffusion,
+        default = TV_DEFAULTS.royaleDiffusion,
         onChange = { drag(tv.copy(royaleDiffusion = it)) },
         onDone = commit,
     )
@@ -401,6 +435,7 @@ private fun RoyaleSliders(
         label = stringResource(R.string.settings_crt_bloom, percent(tv.royaleBloom)),
         subtitle = stringResource(R.string.settings_crt_bloom_desc),
         value = tv.royaleBloom,
+        default = TV_DEFAULTS.royaleBloom,
         onChange = { drag(tv.copy(royaleBloom = it)) },
         onDone = commit,
     )
@@ -408,6 +443,7 @@ private fun RoyaleSliders(
         label = stringResource(R.string.settings_crt_edge, percent(tv.royaleBorder)),
         subtitle = stringResource(R.string.settings_crt_edge_desc),
         value = tv.royaleBorder,
+        default = TV_DEFAULTS.royaleBorder,
         onChange = { drag(tv.copy(royaleBorder = it)) },
         onDone = commit,
     )
@@ -423,9 +459,24 @@ private fun CrtSlider(
     onDone: () -> Unit,
     range: ClosedFloatingPointRange<Float> = 0f..1f,
     steps: Int = 0,
+    /** What the reset beside the label puts this slider back to. */
+    default: Float? = null,
 ) {
     Spacer(modifier = Modifier.height(8.dp))
-    Text(label, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+    androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (default != null) {
+            tf.monochrome.android.ui.settings.crt.SliderReset(value, default, label) {
+                onChange(default)
+                onDone()
+            }
+        }
+    }
     if (subtitle != null) {
         Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -438,3 +489,6 @@ private fun CrtSlider(
         modifier = Modifier.fillMaxWidth(),
     )
 }
+
+/** Every CRT slider's default, for its reset. */
+private val TV_DEFAULTS = GlyphTvTuning()

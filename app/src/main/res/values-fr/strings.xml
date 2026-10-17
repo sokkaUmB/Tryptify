@@ -2632,4 +2632,22 @@
     <string name="tm_mp_pick_for_room">Choisir pour le salon</string>
     <string name="tm_mp_room_title">Salon</string>
     <string name="tm_mp_quit_to_room">Retour au salon</string>
+
+    <!-- CRT presets -->
+    <string name="crt_reset_slider">Réinitialiser %1$s</string>
+    <string name="crt_presets">Préréglages</string>
+    <string name="crt_presets_hint">Touchez-en un pour l’utiliser. Enregistrer garde le rendu actuel ; Exporter et Importer le partagent sous forme de fichier.</string>
+    <string name="crt_preset_arcade">Arcade</string>
+    <string name="crt_preset_trinitron">Trinitron</string>
+    <string name="crt_preset_living_room">Salon</string>
+    <string name="crt_preset_vhs">VHS</string>
+    <string name="crt_preset_import">Importer</string>
+    <string name="crt_preset_export">Exporter</string>
+    <string name="crt_preset_delete">Supprimer %1$s</string>
+    <string name="crt_preset_name">Nom du préréglage</string>
+    <string name="crt_preset_save_title">Enregistrer ce rendu</string>
+    <string name="crt_preset_default_name">Mon CRT</string>
+    <string name="crt_preset_exported">%1$s exporté</string>
+    <string name="crt_preset_export_failed">Impossible d’écrire le fichier</string>
+    <string name="crt_preset_import_failed">Import impossible : %1$s</string>
 </resources>

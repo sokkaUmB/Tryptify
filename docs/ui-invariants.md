@@ -1383,6 +1383,25 @@ the corners go dark. A line saved with the one Curvature slider of before is
 read as the two angles that draw the same tube. Chromatic shift reads red and
 blue up to 3 dp either side of green.
 
+**CRT presets are one panel, in every place the CRT is set.**
+`CrtPresetsPanel` sits in Settings › Appearance › CRT effect, the Lyrics FX
+tab and Trypt Mania's Graphics, all reading one store (`CrtPresetStore`), so
+a look saved in one is offered in the others. Four built-ins (Arcade,
+Trinitron, Living room, VHS) come first, then the user's own. A chip is
+picked only when the look on screen is exactly it; a picked one of the
+user's can be deleted. Picking one sets the look and every slider together,
+and turns the effect on. Save names the look on screen; Export writes it to
+a `.crt.json` file (type `tryptify-crt-preset`, the sliders in
+`GlyphTvTuning.encode`'s line); Import keeps the file's look with the
+user's and applies it, every slider held to its range. The built-ins' line
+counts follow the screen's height, since a TV pixel is a whole number of
+the phone's own.
+
+**Every CRT slider has its own reset** (`SliderReset`): beside its label
+or reading, always there so the row never jumps, dimmed and inert while
+the slider is already at its default. It puts back that slider alone; the
+look's Reset button still puts back all of them.
+
 **The CRT effect draws over the whole app or the lyrics only** (Settings ›
 Appearance › CRT effect › Draw over, `app_tv_target`, the app by default). Over
 the lyrics it is handed down as `LocalLyricsTv` and put on the synced and the

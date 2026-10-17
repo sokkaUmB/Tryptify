@@ -2500,4 +2500,22 @@
     <string name="tm_mp_pick_for_room">ルーム用に選ぶ</string>
     <string name="tm_mp_room_title">ルーム</string>
     <string name="tm_mp_quit_to_room">ルームに戻る</string>
+
+    <!-- CRT presets -->
+    <string name="crt_reset_slider">%1$s をリセット</string>
+    <string name="crt_presets">プリセット</string>
+    <string name="crt_presets_hint">タップで適用します。「保存」で今の見た目を残し、「書き出し」と「読み込み」でファイルとして受け渡せます。</string>
+    <string name="crt_preset_arcade">アーケード</string>
+    <string name="crt_preset_trinitron">トリニトロン</string>
+    <string name="crt_preset_living_room">リビング</string>
+    <string name="crt_preset_vhs">VHS</string>
+    <string name="crt_preset_import">読み込み</string>
+    <string name="crt_preset_export">書き出し</string>
+    <string name="crt_preset_delete">%1$s を削除</string>
+    <string name="crt_preset_name">プリセット名</string>
+    <string name="crt_preset_save_title">この見た目を保存</string>
+    <string name="crt_preset_default_name">マイ CRT</string>
+    <string name="crt_preset_exported">%1$s を書き出しました</string>
+    <string name="crt_preset_export_failed">ファイルを書き込めませんでした</string>
+    <string name="crt_preset_import_failed">読み込めませんでした：%1$s</string>
 </resources>

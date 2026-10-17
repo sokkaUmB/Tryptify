@@ -2500,4 +2500,22 @@
     <string name="tm_mp_pick_for_room">为房间选择</string>
     <string name="tm_mp_room_title">房间</string>
     <string name="tm_mp_quit_to_room">返回房间</string>
+
+    <!-- CRT presets -->
+    <string name="crt_reset_slider">重置 %1$s</string>
+    <string name="crt_presets">预设</string>
+    <string name="crt_presets_hint">轻点即可使用。“保存”保留当前效果；“导出”和“导入”以文件形式分享。</string>
+    <string name="crt_preset_arcade">街机</string>
+    <string name="crt_preset_trinitron">特丽珑</string>
+    <string name="crt_preset_living_room">客厅</string>
+    <string name="crt_preset_vhs">VHS</string>
+    <string name="crt_preset_import">导入</string>
+    <string name="crt_preset_export">导出</string>
+    <string name="crt_preset_delete">删除 %1$s</string>
+    <string name="crt_preset_name">预设名称</string>
+    <string name="crt_preset_save_title">保存此效果</string>
+    <string name="crt_preset_default_name">我的 CRT</string>
+    <string name="crt_preset_exported">已导出 %1$s</string>
+    <string name="crt_preset_export_failed">无法写入文件</string>
+    <string name="crt_preset_import_failed">无法导入：%1$s</string>
 </resources>

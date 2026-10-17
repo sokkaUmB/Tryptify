@@ -2566,4 +2566,22 @@
     <string name="tm_mp_pick_for_room">Oda için seç</string>
     <string name="tm_mp_room_title">Oda</string>
     <string name="tm_mp_quit_to_room">Odaya dön</string>
+
+    <!-- CRT presets -->
+    <string name="crt_reset_slider">%1$s sıfırla</string>
+    <string name="crt_presets">Hazır ayarlar</string>
+    <string name="crt_presets_hint">Kullanmak için birine dokun. Kaydet ekrandaki görünümü saklar; Dışa aktar ve İçe aktar onu dosya olarak paylaşır.</string>
+    <string name="crt_preset_arcade">Atari salonu</string>
+    <string name="crt_preset_trinitron">Trinitron</string>
+    <string name="crt_preset_living_room">Oturma odası</string>
+    <string name="crt_preset_vhs">VHS</string>
+    <string name="crt_preset_import">İçe aktar</string>
+    <string name="crt_preset_export">Dışa aktar</string>
+    <string name="crt_preset_delete">%1$s sil</string>
+    <string name="crt_preset_name">Hazır ayar adı</string>
+    <string name="crt_preset_save_title">Bu görünümü kaydet</string>
+    <string name="crt_preset_default_name">CRT’m</string>
+    <string name="crt_preset_exported">%1$s dışa aktarıldı</string>
+    <string name="crt_preset_export_failed">Dosya yazılamadı</string>
+    <string name="crt_preset_import_failed">İçe aktarılamadı: %1$s</string>
 </resources>

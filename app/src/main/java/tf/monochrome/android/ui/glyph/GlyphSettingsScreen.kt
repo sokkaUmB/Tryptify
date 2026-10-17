@@ -688,6 +688,13 @@ private fun GraphicsTab(
             modifier = Modifier.padding(top = MonoDimens.spacingSm),
         )
     }
+    // The same presets as the app-wide CRT effect: picking one sets the look
+    // and every slider, and turns the TV on.
+    tf.monochrome.android.ui.settings.crt.CrtPresetsPanel(
+        shader = graphics.tvShader,
+        tuning = graphics.tv,
+        onApply = { look, tv -> set(graphics.copy(tvShader = look, tv = tv)) },
+    )
     if (graphics.tvShader != GlyphTvShader.OFF) {
         TvShaderControls(state, set, assets, palette)
     }
@@ -795,6 +802,7 @@ private fun TvShaderControls(
     GlyphSlider(
         label = if (wave) "Line height" else "Pixel size",
         value = pixel.toFloat(),
+        default = GlyphTvTuning.defaultPixelSize(shader, LocalDensity.current.density, window.height).coerceIn(range).toFloat(),
         reading = "$pixel px",
         range = range.first.toFloat()..range.last.toFloat(),
         steps = range.last - range.first - 1,
@@ -812,6 +820,7 @@ private fun TvShaderControls(
     GlyphSlider(
         label = "Strength",
         value = tv.strength,
+        default = TV_DEFAULTS.strength,
         reading = percent(tv.strength),
         note = "How much of the effect over the plain picture",
         onChange = { setTv(tv.copy(strength = it)) },
@@ -819,6 +828,7 @@ private fun TvShaderControls(
     GlyphSlider(
         label = "Brightness",
         value = tv.brightness,
+        default = TV_DEFAULTS.brightness,
         reading = percent(tv.brightness),
         range = GlyphTvTuning.MIN_BRIGHTNESS..GlyphTvTuning.MAX_BRIGHTNESS,
         note = "Gives back the light the pattern takes",
@@ -831,6 +841,7 @@ private fun TvShaderControls(
         GlyphSlider(
             label = "Scanlines",
             value = tv.scanlines,
+            default = TV_DEFAULTS.scanlines,
             reading = percent(tv.scanlines),
             note = "How dark the gaps between lines are",
             onChange = { setTv(tv.copy(scanlines = it)) },
@@ -838,6 +849,7 @@ private fun TvShaderControls(
         GlyphSlider(
             label = "Mask",
             value = tv.mask,
+            default = TV_DEFAULTS.mask,
             reading = percent(tv.mask),
             note = "The red, green and blue stripes of the tube",
             onChange = { setTv(tv.copy(mask = it)) },
@@ -845,6 +857,7 @@ private fun TvShaderControls(
         GlyphSlider(
             label = "Glow",
             value = tv.glow,
+            default = TV_DEFAULTS.glow,
             reading = percent(tv.glow),
             note = "Light bleeding out of bright parts",
             onChange = { setTv(tv.copy(glow = it)) },
@@ -852,6 +865,7 @@ private fun TvShaderControls(
         GlyphSlider(
             label = "Sharpness",
             value = tv.sharpness,
+            default = TV_DEFAULTS.sharpness,
             reading = percent(tv.sharpness),
             note = "How hard each pixel's edges are",
             onChange = { setTv(tv.copy(sharpness = it)) },
@@ -860,6 +874,7 @@ private fun TvShaderControls(
     GlyphSlider(
         label = "Chromatic shift",
         value = tv.chromatic,
+        default = TV_DEFAULTS.chromatic,
         reading = percent(tv.chromatic),
         note = "Red and blue drift apart, as on a tube with its beams out of line",
         onChange = { setTv(tv.copy(chromatic = it)) },
@@ -867,6 +882,7 @@ private fun TvShaderControls(
     GlyphSlider(
         label = "Curve: top & bottom",
         value = tv.curveTopDeg,
+        default = TV_DEFAULTS.curveTopDeg,
         reading = degrees(tv.curveTopDeg),
         range = 0f..GlyphTvTuning.MAX_CURVE_DEG,
         note = "How far the glass bows toward the top and bottom edges. About 16° is the classic tube.",
@@ -875,6 +891,7 @@ private fun TvShaderControls(
     GlyphSlider(
         label = "Curve: sides",
         value = tv.curveSideDeg,
+        default = TV_DEFAULTS.curveSideDeg,
         reading = degrees(tv.curveSideDeg),
         range = 0f..GlyphTvTuning.MAX_CURVE_DEG,
         note = "How far it bows toward the left and right edges. About 14° is the classic tube.",
@@ -883,6 +900,7 @@ private fun TvShaderControls(
     GlyphSlider(
         label = "Tilt: sideways",
         value = tv.tiltSideDeg,
+        default = TV_DEFAULTS.tiltSideDeg,
         reading = degrees(tv.tiltSideDeg),
         range = -GlyphTvTuning.MAX_TILT_DEG..GlyphTvTuning.MAX_TILT_DEG,
         note = "The TV seen from one side: that side comes nearer and stands taller",
@@ -891,6 +909,7 @@ private fun TvShaderControls(
     GlyphSlider(
         label = "Tilt: up & down",
         value = tv.tiltTopDeg,
+        default = TV_DEFAULTS.tiltTopDeg,
         reading = degrees(tv.tiltTopDeg),
         range = -GlyphTvTuning.MAX_TILT_DEG..GlyphTvTuning.MAX_TILT_DEG,
         note = "The same from above or below",
@@ -899,6 +918,7 @@ private fun TvShaderControls(
     GlyphSlider(
         label = "Bezel",
         value = tv.bezel,
+        default = TV_DEFAULTS.bezel,
         reading = percent(tv.bezel),
         note = "A dark frame around the picture",
         onChange = { setTv(tv.copy(bezel = it)) },
@@ -906,12 +926,14 @@ private fun TvShaderControls(
     GlyphSlider(
         label = "Rounded corners",
         value = tv.corners,
+        default = TV_DEFAULTS.corners,
         reading = percent(tv.corners),
         onChange = { setTv(tv.copy(corners = it)) },
     )
     GlyphSlider(
         label = "Vignette",
         value = tv.vignette,
+        default = TV_DEFAULTS.vignette,
         reading = percent(tv.vignette),
         note = "The picture darker toward its edges",
         onChange = { setTv(tv.copy(vignette = it)) },
@@ -919,6 +941,7 @@ private fun TvShaderControls(
     GlyphSlider(
         label = "Glass glare",
         value = tv.glare,
+        default = TV_DEFAULTS.glare,
         reading = percent(tv.glare),
         note = "A sheen across the glass and a streak of light on the frame",
         onChange = { setTv(tv.copy(glare = it)) },
@@ -964,6 +987,7 @@ private fun RoyaleControls(tv: GlyphTvTuning, setTv: (GlyphTvTuning) -> Unit) {
     GlyphSlider(
         label = "Mask size",
         value = triad.toFloat(),
+        default = TV_DEFAULTS.royaleTriadPx(density).toFloat(),
         reading = "$triad px",
         range = triads.first.toFloat()..triads.last.toFloat(),
         steps = triads.last - triads.first - 1,
@@ -973,6 +997,7 @@ private fun RoyaleControls(tv: GlyphTvTuning, setTv: (GlyphTvTuning) -> Unit) {
     GlyphSlider(
         label = "Mask strength",
         value = tv.royaleMaskStrength,
+        default = TV_DEFAULTS.royaleMaskStrength,
         reading = percent(tv.royaleMaskStrength),
         note = "How much of the mask shows; the light it takes is given back",
         onChange = { setTv(tv.copy(royaleMaskStrength = it)) },
@@ -980,6 +1005,7 @@ private fun RoyaleControls(tv: GlyphTvTuning, setTv: (GlyphTvTuning) -> Unit) {
     GlyphSlider(
         label = "Beam width",
         value = tv.royaleBeamWidth,
+        default = TV_DEFAULTS.royaleBeamWidth,
         reading = percent(tv.royaleBeamWidth),
         note = "How far a bright line spreads into the gap between lines",
         onChange = { setTv(tv.copy(royaleBeamWidth = it)) },
@@ -987,6 +1013,7 @@ private fun RoyaleControls(tv: GlyphTvTuning, setTv: (GlyphTvTuning) -> Unit) {
     GlyphSlider(
         label = "Beam shape",
         value = tv.royaleBeamShape,
+        default = TV_DEFAULTS.royaleBeamShape,
         reading = percent(tv.royaleBeamShape),
         note = "Soft and round, or flat on top with hard edges, as a line brightens",
         onChange = { setTv(tv.copy(royaleBeamShape = it)) },
@@ -994,6 +1021,7 @@ private fun RoyaleControls(tv: GlyphTvTuning, setTv: (GlyphTvTuning) -> Unit) {
     GlyphSlider(
         label = "Halation",
         value = tv.royaleHalation,
+        default = TV_DEFAULTS.royaleHalation,
         reading = percent(tv.royaleHalation),
         note = "Light scattered inside the tube, spilling onto the lines",
         onChange = { setTv(tv.copy(royaleHalation = it)) },
@@ -1001,6 +1029,7 @@ private fun RoyaleControls(tv: GlyphTvTuning, setTv: (GlyphTvTuning) -> Unit) {
     GlyphSlider(
         label = "Diffusion",
         value = tv.royaleDiffusion,
+        default = TV_DEFAULTS.royaleDiffusion,
         reading = percent(tv.royaleDiffusion),
         note = "A soft haze from the glass over the whole picture",
         onChange = { setTv(tv.copy(royaleDiffusion = it)) },
@@ -1008,6 +1037,7 @@ private fun RoyaleControls(tv: GlyphTvTuning, setTv: (GlyphTvTuning) -> Unit) {
     GlyphSlider(
         label = "Bloom",
         value = tv.royaleBloom,
+        default = TV_DEFAULTS.royaleBloom,
         reading = percent(tv.royaleBloom),
         note = "How much bright parts glow past the mask",
         onChange = { setTv(tv.copy(royaleBloom = it)) },
@@ -1015,6 +1045,7 @@ private fun RoyaleControls(tv: GlyphTvTuning, setTv: (GlyphTvTuning) -> Unit) {
     GlyphSlider(
         label = "Edge shade",
         value = tv.royaleBorder,
+        default = TV_DEFAULTS.royaleBorder,
         reading = percent(tv.royaleBorder),
         note = "The dark rim around the picture",
         onChange = { setTv(tv.copy(royaleBorder = it)) },
@@ -1154,3 +1185,6 @@ private const val TV_PREVIEW_NOTE_SCALE = 0.6f
 private const val TV_PREVIEW_SPEED = 2.25f
 /** Below this a CRT's line is too few phone pixels to have a dark gap. */
 private const val CRT_LINES_FROM = 3
+
+/** Every TV slider's default, for its reset. */
+private val TV_DEFAULTS = GlyphTvTuning()

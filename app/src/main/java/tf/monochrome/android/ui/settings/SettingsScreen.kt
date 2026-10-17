@@ -4226,26 +4226,24 @@ private fun PaperSwatch(
  * The font size: five fixed steps, or the size set in Android. On the Fonts
  * page, beside the fonts it scales.
  */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 internal fun FontSizeSection(viewModel: SettingsViewModel) {
     val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     val followSystemFontScale by viewModel.fontScaleFollowSystem.collectAsStateWithLifecycle()
-    Column {
-    SettingsGroupHeader(stringResource(R.string.settings_font_size))
-    // Font size: five fixed steps, or hand over to the OS setting.
-    SettingSwitchItem(
-        title = stringResource(R.string.settings_use_system_font_size),
-        subtitle = stringResource(R.string.settings_follow_the_size_set_in_android_settings_display),
-        checked = followSystemFontScale,
-        onCheckedChange = { viewModel.setFontScaleFollowSystem(it) }
-    )
-
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(
-            stringResource(R.string.settings_font_size),
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (followSystemFontScale) MaterialTheme.colorScheme.onSurfaceVariant
-                    else MaterialTheme.colorScheme.onSurface
+    // Padded as the preview pane above it is: this sits inside a glass panel,
+    // not on the settings page, so nothing gives it a margin but itself.
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // One heading: the chips below are the size, and need no second label.
+        SettingsGroupHeader(stringResource(R.string.settings_font_size))
+        SettingSwitchItem(
+            title = stringResource(R.string.settings_use_system_font_size),
+            subtitle = stringResource(R.string.settings_follow_the_size_set_in_android_settings_display),
+            checked = followSystemFontScale,
+            onCheckedChange = { viewModel.setFontScaleFollowSystem(it) }
         )
 
         // A legacy value from the old free-form slider (e.g. 1.37) won't equal
@@ -4254,13 +4252,12 @@ internal fun FontSizeSection(viewModel: SettingsViewModel) {
         val selectedPreset = remember(fontScale) {
             FONT_SCALE_PRESETS.minByOrNull { kotlin.math.abs(it.scale - fontScale) }
         }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Wrapped, not scrolled: all five steps in view, none cut at the
+        // panel's edge.
+        androidx.compose.foundation.layout.FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FONT_SCALE_PRESETS.forEach { preset ->
                 tf.monochrome.android.ui.mixer.GlassChoiceChip(
@@ -4277,8 +4274,7 @@ internal fun FontSizeSection(viewModel: SettingsViewModel) {
             stringResource(R.string.settings_preview_the_quick_brown_fox_jumps_over_the_lazy),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 12.dp)
+            modifier = Modifier.padding(top = 4.dp)
         )
-    }
     }
 }

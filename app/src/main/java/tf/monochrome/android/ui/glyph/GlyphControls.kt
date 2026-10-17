@@ -295,6 +295,8 @@ fun GlyphSlider(
     range: ClosedFloatingPointRange<Float> = 0f..1f,
     steps: Int = 0,
     note: String? = null,
+    /** When set, a reset beside the reading puts the slider back to it. */
+    default: Float? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     Column(modifier = modifier.fillMaxWidth()) {
@@ -311,6 +313,9 @@ fun GlyphSlider(
                 fontWeight = FontWeight.Bold,
                 color = scheme.onSurface,
             )
+            if (default != null) {
+                tf.monochrome.android.ui.settings.crt.SliderReset(value, default, label) { onChange(default) }
+            }
         }
         if (note != null) {
             Text(

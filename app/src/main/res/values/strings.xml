@@ -2571,4 +2571,22 @@
     <string name="tm_mp_pick_for_room">Pick for the room</string>
     <string name="tm_mp_room_title">Room</string>
     <string name="tm_mp_quit_to_room">Quit to room</string>
+
+    <!-- CRT presets -->
+    <string name="crt_reset_slider">Reset %1$s</string>
+    <string name="crt_presets">Presets</string>
+    <string name="crt_presets_hint">Tap one to use it. Save keeps the look on screen; Export and Import pass it on as a file.</string>
+    <string name="crt_preset_arcade">Arcade</string>
+    <string name="crt_preset_trinitron">Trinitron</string>
+    <string name="crt_preset_living_room">Living room</string>
+    <string name="crt_preset_vhs">VHS</string>
+    <string name="crt_preset_import">Import</string>
+    <string name="crt_preset_export">Export</string>
+    <string name="crt_preset_delete">Delete %1$s</string>
+    <string name="crt_preset_name">Preset name</string>
+    <string name="crt_preset_save_title">Save this look</string>
+    <string name="crt_preset_default_name">My CRT</string>
+    <string name="crt_preset_exported">Exported %1$s</string>
+    <string name="crt_preset_export_failed">Could not write the file</string>
+    <string name="crt_preset_import_failed">Could not import: %1$s</string>
 </resources>
