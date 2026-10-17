@@ -53,6 +53,21 @@ class BuiltInServerTest {
     }
 
     @Test
+    fun theRoomsServerShipsBesideIt() {
+        val rooms = "https://rooms.example.app/def456"
+        val list = BuiltInServer.ensureAll(listOf(tidal), built, rooms)!!
+        assertEquals(listOf(tidal, BuiltInServer.entry(built), BuiltInServer.entry(rooms, setOf(ApiService.MULTIPLAYER))), list)
+        // A rooms server separates nothing, so it says nothing of a device.
+        assertNull(list.last().stemDevice)
+        assertEquals(setOf(ApiService.MULTIPLAYER), list.last().services)
+        // Both there: nothing to change.
+        assertNull(BuiltInServer.ensureAll(list, built, rooms))
+        assertTrue(BuiltInServer.isBuiltIn(rooms, built, rooms))
+        // A build with only the chart server adds only it.
+        assertEquals(listOf(tidal, BuiltInServer.entry(built)), BuiltInServer.ensureAll(listOf(tidal), built, ""))
+    }
+
+    @Test
     fun aBuildWithoutOneAddsNothing() {
         assertNull(BuiltInServer.ensure(listOf(tidal), ""))
         assertFalse(BuiltInServer.isBuiltIn(tidal.url, ""))

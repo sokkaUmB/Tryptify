@@ -97,6 +97,25 @@ sealed interface GlyphEvent {
     /** Fast (GPU) or Slow (CPU), for every chart from now on. */
     data class SetChartMode(val mode: tf.monochrome.android.audio.stepmania.ChartMode) : GlyphEvent
 
+    // ── multiplayer ─────────────────────────────────────────────────────
+    data object OpenMultiplayer : GlyphEvent
+    data object CloseMultiplayer : GlyphEvent
+    /** Open the socket again after a failure. */
+    data object RoomReconnect : GlyphEvent
+    data object RefreshRooms : GlyphEvent
+    data class CreateRoom(val name: String) : GlyphEvent
+    data class JoinRoom(val code: String) : GlyphEvent
+    data object LeaveRoom : GlyphEvent
+    /** The selected song and difficulty, as the room's chart (the host, from the song list). */
+    data object PickForRoom : GlyphEvent
+    data class SetRoomReady(val ready: Boolean) : GlyphEvent
+    data object StartRoom : GlyphEvent
+    data class KickPlayer(val id: String) : GlyphEvent
+    data class RoomChat(val text: String) : GlyphEvent
+    /** From a room's results back to the room. */
+    data object BackToRoom : GlyphEvent
+    data object DismissRoomError : GlyphEvent
+
     // ── packs ───────────────────────────────────────────────────────────
     data object OpenPacks : GlyphEvent
     data object ClosePacks : GlyphEvent

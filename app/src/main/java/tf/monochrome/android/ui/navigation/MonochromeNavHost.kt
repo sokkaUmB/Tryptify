@@ -860,7 +860,10 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 }
                 composable(Screen.Glyph.route) {
                     tf.monochrome.android.devedit.DevEditScreen("glyph") {
-                        GlyphRoute(onBack = { navController.popBackStack() })
+                        GlyphRoute(
+                            onBack = { navController.popBackStack() },
+                            onSignIn = { navController.navigate(Screen.Profile.route) },
+                        )
                     }
                 }
                 composable(Screen.DebugLog.route) {

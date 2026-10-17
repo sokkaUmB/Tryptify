@@ -61,6 +61,7 @@ private fun ApiService.sourceType(): SourceType? = when (this) {
     ApiService.DEEZER -> SourceType.DEEZER
     ApiService.STEMS -> null
     ApiService.LYRICS -> null
+    ApiService.MULTIPLAYER -> null
 }
 
 /** A detected service: its brand pill, or a plain one with its name. */
@@ -173,7 +174,9 @@ private fun ApiServerCard(
     // The build's own chart server: shown by its host (its path is its
     // secret), marked as built in, and with nothing to remove it.
     val builtIn = tf.monochrome.android.data.api.BuiltInServer.isBuiltIn(
-        server.url, tf.monochrome.android.BuildConfig.BUILT_IN_CPU_SERVER,
+        server.url,
+        tf.monochrome.android.BuildConfig.BUILT_IN_CPU_SERVER,
+        tf.monochrome.android.BuildConfig.BUILT_IN_ROOMS_SERVER,
     )
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)

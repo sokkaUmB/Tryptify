@@ -104,6 +104,19 @@ class SupabaseAuthManager @Inject constructor(
 
     private val auth get() = supabase.auth
 
+    /** The signed-in account's access token, for a server of ours to check with Supabase; null signed out. */
+    fun accessToken(): String? = runCatching { auth.currentSessionOrNull()?.accessToken }.getOrNull()
+
+    /**
+     * The name other players see: the name chosen in the app, else the
+     * provider's, else the email's first part; null when nobody is signed in.
+     */
+    fun playerName(): String? = _userProfile.value?.let { profile ->
+        profile.username?.takeIf { it.isNotBlank() }
+            ?: profile.displayName?.takeIf { it.isNotBlank() }
+            ?: profile.email?.substringBefore('@')?.takeIf { it.isNotBlank() }
+    }
+
     private val _userProfile = MutableStateFlow<UserProfile?>(null)
     val userProfile: StateFlow<UserProfile?> = _userProfile.asStateFlow()
 

@@ -97,6 +97,9 @@ data class GlyphUiState(
     /** Tap to sync, while the click track plays or its reading waits; null otherwise. */
     val tapSync: GlyphTapSyncUi? = null,
     val editor: GlyphEditorUi? = null,
+    val multiplayer: GlyphMultiplayerUi = GlyphMultiplayerUi(),
+    /** The run on now is a room's: its score goes round the room, and its end to the results there. */
+    val inRoomPlay: Boolean = false,
 ) {
     val chart: GlyphChart? get() = selectedDifficulty?.let { simfile?.chart(it) }
 }
@@ -112,10 +115,42 @@ data class GlyphBackdrop(val trackId: String, val imageUri: String?)
  * Where the mode is. [MENU] is the front door; [HOME] is the song list, which
  * Play and the map editor both pick a song from.
  */
-enum class GlyphScreen { MENU, HOME, OPTIONS, LEADERBOARD, SETTINGS, PACKS, EDITOR, GAMEPLAY, TRAINING, RESULTS }
+enum class GlyphScreen { MENU, HOME, OPTIONS, LEADERBOARD, SETTINGS, PACKS, EDITOR, GAMEPLAY, TRAINING, RESULTS, MULTIPLAYER }
 
-/** Whether the song list is choosing a song to play or a chart to edit. */
-enum class GlyphSongListMode { PLAY, EDIT }
+/** Whether the song list is choosing a song to play, a chart to edit, or a chart for the room. */
+enum class GlyphSongListMode { PLAY, EDIT, ROOM }
+
+/**
+ * Multiplayer: the rooms server's session as the rooms screen and the game
+ * see it, with what this phone knows on top (whether it is signed in, and
+ * whether it has the picked chart's song).
+ */
+data class GlyphMultiplayerUi(
+    /** A Supabase account is signed in: the name other players see is its. */
+    val signedIn: Boolean = false,
+    val playerName: String = "",
+    /** A rooms server is under Settings › Connections. */
+    val hasServer: Boolean = false,
+    val session: tf.monochrome.android.glyph.multiplayer.RoomSession = tf.monochrome.android.glyph.multiplayer.RoomSession(),
+    /** Whether this phone has the picked chart's song; null until it has looked. */
+    val haveSong: Boolean? = null,
+    /** Why the song is missing, when it is. */
+    val missing: String? = null,
+    /** Local wall-clock ms the song starts at, from the server's start until it has. */
+    val startAtMs: Long? = null,
+) {
+    /** The room, when in one. */
+    val room: tf.monochrome.android.glyph.multiplayer.RoomView? get() = session.room
+
+    /** Everyone's live score this song, best first, for the HUD. */
+    val opponents: List<tf.monochrome.android.glyph.multiplayer.RoomPlayer>
+        get() {
+            val room = session.room ?: return emptyList()
+            return room.players.filter { !it.spectating }
+                .map { p -> session.frames[p.id]?.let { p.copy(live = it) } ?: p }
+                .sortedByDescending { it.live.score }
+        }
+}
 
 /**
  * The map editor: one chart of one song, as a draft on the beat grid.

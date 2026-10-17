@@ -1560,6 +1560,42 @@ where "Quit to songs" is, so Back walks the same two steps. Quitting on the
 first Back threw a run away to a stray edge swipe. On the home screen Back
 closes the search, then an open folder, before it leaves the mode.
 
+**Multiplayer is a room, and the room is where a song is picked and where
+it ends.** `GlyphMultiplayerScreen` is built as the Packs page: a top bar
+with Back, glass panels down a scrolling column, the tab bar kept. Before a
+room it is the open rooms, a code to join by and a room to make; in one it
+is the code (large, monospaced: it is read out and typed), the chart the
+host picked, every player with whether they have the song and are ready,
+Ready, the host's Start, Leave, and a line of chat.
+
+* Players are accounts. Signed out, the page is one panel saying so with
+  Sign in, which goes to the app's account page (`onSignIn` from the nav
+  host); there is no guest play, and the name other players see is the
+  account's. The server checks the token; a refused hello is shown once
+  and not retried.
+* The host picks from the song list in `GlyphSongListMode.ROOM`: the same
+  wheel, titled for the room, with the difficulty chips and one pill, Pick
+  for the room; no Train, no mods. The chart's text travels with the pick,
+  so every phone plays the host's notes and needs only the song: the same
+  chart by hash, else a song of that title and artist (or title) within two
+  seconds of its length. Each phone tells the room, and the lobby shows who
+  has it; Ready is enabled only with the song. Back from that list returns
+  to the room, not the menu.
+* The server names the moment; READY, GO! counts down to it, however long
+  that is. A room's song waits for nobody: the pause panel opens over the
+  running song, for Quit (to the room, as it says), and offers no Restart.
+  An empty bar is a fail in the ranking, never a stop.
+* The HUD carries one more line while a room plays: rank, name and score of
+  everyone, best first, this phone in the HUD's ink and the rest muted,
+  scrolling past eight.
+* The results page of a room's run has the room's panel (the ranking once
+  everyone has finished, the scores as they stand until then) and one way
+  on, Back to room. A run of a chart this phone does not have is sent to
+  the room and not saved against the local scores.
+* Back in a room leaves it; Back from the rooms screen closes the socket,
+  and with it any room this phone was in, as the server forgets a dropped
+  phone's seat.
+
 ### Discord presence
 
 The animated asset must stay under **~248 KB** or Discord's media proxy shows

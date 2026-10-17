@@ -998,7 +998,7 @@ class PreferencesManager @Inject constructor(
         withBuiltIn(savedApiServers(prefs))
 
     private fun withBuiltIn(servers: List<tf.monochrome.android.data.api.ApiServer>) =
-        tf.monochrome.android.data.api.BuiltInServer.ensure(servers, BuildConfig.BUILT_IN_CPU_SERVER) ?: servers
+        tf.monochrome.android.data.api.BuiltInServer.ensureAll(servers, BuildConfig.BUILT_IN_CPU_SERVER, BuildConfig.BUILT_IN_ROOMS_SERVER) ?: servers
 
     private fun savedApiServers(prefs: Preferences): List<tf.monochrome.android.data.api.ApiServer> =
         prefs[API_SERVERS]
@@ -1011,11 +1011,11 @@ class PreferencesManager @Inject constructor(
                 appleUrl = prefs[APPLE_INSTANCE_URL],
             )
 
-    /** Writes the build's chart server into the saved list, once a launch (BuiltInServer). */
-    suspend fun seedBuiltInServer(builtIn: String) {
+    /** Writes the build's servers into the saved list, once a launch (BuiltInServer). */
+    suspend fun seedBuiltInServer(builtIn: String, roomsServer: String = "") {
         dataStore.edit { prefs ->
             val saved = savedApiServers(prefs)
-            tf.monochrome.android.data.api.BuiltInServer.ensure(saved, builtIn)?.let { prefs[API_SERVERS] = json.encodeToString(it) }
+            tf.monochrome.android.data.api.BuiltInServer.ensureAll(saved, builtIn, roomsServer)?.let { prefs[API_SERVERS] = json.encodeToString(it) }
         }
     }
 

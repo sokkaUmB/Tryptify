@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -178,6 +179,13 @@ fun GlyphMenuScreen(
                     icon = Icons.Default.PlayArrow,
                     large = true,
                     onClick = { onEvent(GlyphEvent.OpenSongs(GlyphSongListMode.PLAY)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                MenuPill(
+                    title = stringResource(R.string.tm_multiplayer),
+                    subtitle = stringResource(R.string.tm_mp_menu_subtitle),
+                    icon = Icons.Default.Groups,
+                    onClick = { onEvent(GlyphEvent.OpenMultiplayer) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {

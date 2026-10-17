@@ -43,6 +43,8 @@ import tf.monochrome.android.ui.theme.reduceMotion
 @Composable
 fun GlyphRoute(
     onBack: () -> Unit,
+    /** The rooms screen's Sign in: the app's account page, which is not this route's to show. */
+    onSignIn: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: GlyphViewModel = hiltViewModel(),
 ) {
@@ -110,13 +112,16 @@ fun GlyphRoute(
                 } else {
                     viewModel.onEvent(GlyphEvent.Quit)
                 }
-            GlyphScreen.RESULTS -> viewModel.onEvent(GlyphEvent.BackToHome)
+            GlyphScreen.RESULTS -> viewModel.onEvent(if (state.inRoomPlay) GlyphEvent.BackToRoom else GlyphEvent.BackToHome)
             GlyphScreen.OPTIONS -> viewModel.onEvent(GlyphEvent.CloseOptions)
             GlyphScreen.LEADERBOARD -> viewModel.onEvent(GlyphEvent.CloseLeaderboard)
             GlyphScreen.HOME -> viewModel.onEvent(GlyphEvent.BackToMenu)
             GlyphScreen.SETTINGS -> viewModel.onEvent(GlyphEvent.CloseSettings)
             GlyphScreen.PACKS -> viewModel.onEvent(GlyphEvent.ClosePacks)
             GlyphScreen.EDITOR -> viewModel.onEvent(GlyphEvent.CloseEditor)
+            // The rooms screen's own handler leaves a room first; this is
+            // what is left once it has, or when there was none.
+            GlyphScreen.MULTIPLAYER -> viewModel.onEvent(GlyphEvent.CloseMultiplayer)
             GlyphScreen.MENU -> Unit
         }
     }
@@ -199,6 +204,13 @@ fun GlyphRoute(
                 modifier = Modifier.fillMaxSize(),
             )
 
+            GlyphScreen.MULTIPLAYER -> GlyphMultiplayerScreen(
+                state = state,
+                onEvent = viewModel::onEvent,
+                onSignIn = onSignIn,
+                modifier = Modifier.fillMaxSize(),
+            )
+
             GlyphScreen.EDITOR -> GlyphEditorScreen(
                 state = state,
                 palette = palette,
@@ -259,6 +271,7 @@ fun GlyphRoute(
                         modifier = Modifier.fillMaxSize(),
                         reducedMotion = reduceMotion,
                         recentLateMs = state.recentLateMs,
+                        room = state.multiplayer.takeIf { state.inRoomPlay },
                     )
                 }
             }

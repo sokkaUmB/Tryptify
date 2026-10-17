@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -43,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -61,6 +63,7 @@ import kotlin.math.PI
 import kotlin.math.sin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import tf.monochrome.android.R
 import tf.monochrome.android.glyph.asset.GlyphAssetRepository
 import tf.monochrome.android.glyph.asset.GlyphLane
 import tf.monochrome.android.glyph.asset.GlyphPalette
@@ -376,6 +379,10 @@ private fun GameplayHud(
             }
         }
 
+        // A room's run: everyone's score as it stands, best first, this
+        // phone's in the HUD's ink and the rest muted.
+        if (state.inRoomPlay) RoomScoresRow(state, fonts)
+
         Spacer(Modifier.height(4.dp))
         GlyphMeter(
             fraction = gameplay.progress,
@@ -663,16 +670,19 @@ private fun PauseOverlay(
                         onClick = { onEvent(GlyphEvent.TogglePause) },
                         modifier = Modifier.weight(1f),
                     )
-                    GlyphButton(
-                        text = "Restart",
-                        icon = Icons.Default.Replay,
-                        onClick = { onEvent(GlyphEvent.Restart) },
-                        modifier = Modifier.weight(1f),
-                    )
+                    // A room's song cannot be started again by one phone.
+                    if (!state.inRoomPlay) {
+                        GlyphButton(
+                            text = "Restart",
+                            icon = Icons.Default.Replay,
+                            onClick = { onEvent(GlyphEvent.Restart) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
                 Spacer(Modifier.height(MonoDimens.spacingSm))
                 GlyphButton(
-                    text = "Quit to songs",
+                    text = if (state.inRoomPlay) stringResource(R.string.tm_mp_quit_to_room) else "Quit to songs",
                     onClick = { onEvent(GlyphEvent.Quit) },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -680,3 +690,30 @@ private fun PauseOverlay(
         }
     }
 }
+
+/** The room's scores under the readouts: rank, name, score; as many as fit, the rest scroll. */
+@Composable
+private fun RoomScoresRow(state: GlyphUiState, fonts: GlyphStepFonts) {
+    val myId = state.multiplayer.session.myId
+    val shown = state.multiplayer.opponents.take(ROOM_SCORES_SHOWN)
+    if (shown.isEmpty()) return
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(GlyphTheme.Grid * 2),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+    ) {
+        shown.forEachIndexed { index, player ->
+            Text(
+                text = "${index + 1} ${player.name} ${player.live.score}",
+                style = fonts.label,
+                color = if (player.id == myId) GlyphTheme.Paper else GlyphTheme.Muted,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/** Enough of a room to read at a glance; a sixteen-phone room scrolls. */
+private const val ROOM_SCORES_SHOWN = 8

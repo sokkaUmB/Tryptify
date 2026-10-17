@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -249,10 +250,10 @@ fun GlyphHomeScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (state.songListMode == GlyphSongListMode.EDIT) {
-                            "Map editor: pick a song"
-                        } else {
-                            stringResource(R.string.trypt_mania)
+                        text = when (state.songListMode) {
+                            GlyphSongListMode.EDIT -> "Map editor: pick a song"
+                            GlyphSongListMode.ROOM -> stringResource(R.string.tm_mp_pick_title)
+                            GlyphSongListMode.PLAY -> stringResource(R.string.trypt_mania)
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -578,6 +579,8 @@ private fun SelectionPanel(
         ) {
             when {
                 state.songListMode == GlyphSongListMode.EDIT -> EditChoice(song = song, state = state, onEvent = onEvent)
+                // Picking for a room: a song without a chart is charted first, as for Play.
+                state.songListMode == GlyphSongListMode.ROOM && song.hasChart -> RoomChoice(song = song, state = state, onEvent = onEvent)
                 // The card says why there is no chart; the pill makes one, or
                 // puts it in the line behind the songs being charted.
                 !song.hasChart -> {
@@ -968,4 +971,29 @@ private fun BatchModeRow(mode: ChartMode, estimate: GlyphModeEstimate, selected:
             )
         }
     }
+}
+
+/**
+ * The selection pills when picking for a room: the difficulty, then Pick,
+ * which sends the chart to the room and goes back to it. No Train and no
+ * mods: the room plays one chart under one set of rules.
+ */
+@Composable
+private fun RoomChoice(song: GlyphSong, state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
+    GlyphChipRow(
+        options = song.difficulties,
+        selected = state.selectedDifficulty,
+        label = { difficulty -> "${difficulty.sscName} ${meterOf(state, difficulty)}" },
+        onSelect = { onEvent(GlyphEvent.SelectDifficulty(it)) },
+        modifier = Modifier.fillMaxWidth(),
+    )
+    GlyphButton(
+        text = stringResource(R.string.tm_mp_pick_for_room),
+        icon = Icons.Default.Groups,
+        primary = true,
+        enabled = state.chart != null,
+        height = ACTION_HEIGHT,
+        onClick = { onEvent(GlyphEvent.PickForRoom) },
+        modifier = Modifier.fillMaxWidth(),
+    )
 }

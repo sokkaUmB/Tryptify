@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,6 +37,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -77,6 +79,8 @@ fun GlyphResultsScreen(
     modifier: Modifier = Modifier,
     reducedMotion: Boolean = false,
     recentLateMs: Int? = null,
+    /** The room this run was played in, when it was one: its ranking goes on the page, and the way on is back to it. */
+    room: GlyphMultiplayerUi? = null,
 ) {
     val attempt = results.attempt
     val scheme = MaterialTheme.colorScheme
@@ -154,22 +158,36 @@ fun GlyphResultsScreen(
                 }
             }
 
+            room?.let { RoomRankingPanel(it) }
+
             // The way on, as the song select's: thumb-sized pills of glass.
-            Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {
+            // A room's run has one: back to the room, where the ranking is
+            // and the host picks the next song.
+            if (room != null) {
                 GlyphButton(
-                    text = "Play again",
-                    icon = Icons.Default.Replay,
-                    height = PILL_HEIGHT,
-                    onClick = { onEvent(GlyphEvent.StartPlay) },
-                    modifier = Modifier.weight(1f),
-                )
-                GlyphButton(
-                    text = "Songs",
+                    text = stringResource(R.string.tm_mp_back_to_room),
                     primary = true,
                     height = PILL_HEIGHT,
-                    onClick = { onEvent(GlyphEvent.BackToHome) },
-                    modifier = Modifier.weight(1f),
+                    onClick = { onEvent(GlyphEvent.BackToRoom) },
+                    modifier = Modifier.fillMaxWidth(),
                 )
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {
+                    GlyphButton(
+                        text = "Play again",
+                        icon = Icons.Default.Replay,
+                        height = PILL_HEIGHT,
+                        onClick = { onEvent(GlyphEvent.StartPlay) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    GlyphButton(
+                        text = "Songs",
+                        primary = true,
+                        height = PILL_HEIGHT,
+                        onClick = { onEvent(GlyphEvent.BackToHome) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
 
             // Trailing space inside the scroll, so the last buttons come clear
@@ -433,6 +451,49 @@ private fun AccuracyGraph(
                 style = MaterialTheme.typography.labelSmall,
                 color = scheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/** The room's ranking once every phone has finished; until then, the scores as they stand. */
+@Composable
+private fun RoomRankingPanel(room: GlyphMultiplayerUi) {
+    val session = room.session
+    val scheme = MaterialTheme.colorScheme
+    GlyphPanel(modifier = Modifier.fillMaxWidth()) {
+        GlyphSectionLabel(stringResource(R.string.tm_mp_room_title))
+        val ranking = session.ranking
+        if (ranking == null) {
+            Text(
+                text = stringResource(R.string.tm_mp_waiting),
+                style = MaterialTheme.typography.bodyMedium,
+                color = scheme.onSurfaceVariant,
+            )
+            room.opponents.forEach { player ->
+                Text(
+                    text = "${player.name}  ·  ${player.live.score}  ·  ${"%.1f".format(player.live.acc * 100)}%",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (player.id == session.myId) scheme.primary else scheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            ranking.forEach { placing ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text(text = "${placing.rank}.", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.width(MonoDimens.spacingSm))
+                    Text(
+                        text = placing.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (placing.id == session.myId) FontWeight.SemiBold else FontWeight.Normal,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "${placing.result.score}  ·  ${placing.result.grade}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (placing.result.failed) scheme.error else scheme.onSurface,
+                    )
+                }
+            }
         }
     }
 }

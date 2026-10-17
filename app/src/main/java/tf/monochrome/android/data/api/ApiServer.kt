@@ -31,6 +31,14 @@ enum class ApiService(val label: String, val probePath: String) {
      * found, it keeps them word for word and only adds the times.
      */
     LYRICS("Synced lyrics", "/api/lyrics/info"),
+
+    /**
+     * Trypt Mania's rooms (TryptMania-Parser's `multiplayer/` service, in
+     * Rust): a host picks a chart, everyone with the song plays it from the
+     * same moment, scores live, results shared. Its socket is `/ws` beside
+     * this probe.
+     */
+    MULTIPLAYER("Multiplayer", "/api/multiplayer/info"),
 }
 
 /**

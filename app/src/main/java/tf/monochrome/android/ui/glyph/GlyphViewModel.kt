@@ -50,6 +50,14 @@ import tf.monochrome.android.glyph.chart.GlyphChart
 import tf.monochrome.android.glyph.chart.GlyphNoteType
 import tf.monochrome.android.glyph.chart.SscChartWriter
 import tf.monochrome.android.glyph.chart.SscParser
+import tf.monochrome.android.glyph.multiplayer.RoomChart
+import tf.monochrome.android.glyph.multiplayer.RoomClient
+import tf.monochrome.android.glyph.multiplayer.RoomFinished
+import tf.monochrome.android.glyph.multiplayer.RoomLive
+import tf.monochrome.android.glyph.multiplayer.RoomMsg
+import tf.monochrome.android.glyph.multiplayer.RoomProtocol
+import tf.monochrome.android.data.auth.SupabaseAuthManager
+import kotlin.math.abs
 import tf.monochrome.android.glyph.chart.GlyphTiming
 import tf.monochrome.android.glyph.data.GlyphAttempt
 import tf.monochrome.android.glyph.data.GlyphAttemptStore
@@ -119,6 +127,8 @@ class GlyphViewModel @Inject constructor(
     private val trackLocator: tf.monochrome.android.player.LocalTrackLocator,
     private val packLibrary: GlyphPackLibrary,
     private val ownPack: OwnPackStore,
+    private val rooms: RoomClient,
+    private val supabaseAuth: SupabaseAuthManager,
     /**
      * Exposed rather than plumbed through navigation: the pack is a singleton
      * whose rasters are scoped to a run, and handing it down the composable
@@ -242,6 +252,11 @@ class GlyphViewModel @Inject constructor(
     private var countInEndsAtSeconds: Float? = null
     private var runStartedAtMs = 0L
 
+    /** The room's chart as this phone can play it, once found here; null until then, or when it cannot. */
+    private var roomPlan: RoomPlan? = null
+    private var roomStartJob: Job? = null
+    private var roomFrameJob: Job? = null
+
     /** Trypt Mania's own preferences: the player options and the high score name. */
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -251,6 +266,7 @@ class GlyphViewModel @Inject constructor(
         watchChartServers()
         watchPlayRequests()
         watchPacks()
+        watchRooms()
         viewModelScope.launch {
             songs.songs()
                 .catch { failure ->
@@ -277,7 +293,9 @@ class GlyphViewModel @Inject constructor(
             GlyphEvent.BackToMenu -> {
                 wheelFocusJob?.cancel()
                 stopPreview()
-                _ui.value = _ui.value.copy(screen = GlyphScreen.MENU)
+                // The song list opened from a room goes back to the room.
+                val back = if (_ui.value.songListMode == GlyphSongListMode.ROOM) GlyphScreen.MULTIPLAYER else GlyphScreen.MENU
+                _ui.value = _ui.value.copy(screen = back)
             }
             GlyphEvent.OpenSettings -> openSettings()
             GlyphEvent.CloseSettings -> {
@@ -385,6 +403,25 @@ class GlyphViewModel @Inject constructor(
                 refreshOwnCount()
             }
             GlyphEvent.ClosePacks -> _ui.value = _ui.value.copy(screen = GlyphScreen.MENU)
+
+            GlyphEvent.OpenMultiplayer -> openMultiplayer()
+            GlyphEvent.CloseMultiplayer -> closeMultiplayer()
+            GlyphEvent.RoomReconnect -> {
+                rooms.disconnect()
+                refreshRoomIdentity()
+                connectRooms()
+            }
+            GlyphEvent.RefreshRooms -> rooms.refreshRooms()
+            is GlyphEvent.CreateRoom -> rooms.createRoom(event.name)
+            is GlyphEvent.JoinRoom -> rooms.joinRoom(event.code)
+            GlyphEvent.LeaveRoom -> rooms.leaveRoom()
+            GlyphEvent.PickForRoom -> pickForRoom()
+            is GlyphEvent.SetRoomReady -> rooms.ready(event.ready)
+            GlyphEvent.StartRoom -> rooms.start()
+            is GlyphEvent.KickPlayer -> rooms.kick(event.id)
+            is GlyphEvent.RoomChat -> rooms.chat(event.text)
+            GlyphEvent.BackToRoom -> backToRoom()
+            GlyphEvent.DismissRoomError -> rooms.clearError()
             is GlyphEvent.ImportPackUrl -> PackImportWorker.enqueueDownload(context, event.url, event.name)
             is GlyphEvent.ImportPackFile -> PackImportWorker.enqueueFile(context, event.uri)
             is GlyphEvent.ImportPackFolder -> PackImportWorker.enqueueFolder(context, event.tree)
@@ -1142,7 +1179,7 @@ class GlyphViewModel @Inject constructor(
 
     // ── running a chart ─────────────────────────────────────────────────
 
-    private fun start(training: Boolean, fromSeconds: Float? = null) {
+    private fun start(training: Boolean, fromSeconds: Float? = null, playAtMs: Long? = null) {
         val song = _ui.value.selectedSong ?: return
         val chart = _ui.value.chart ?: return
         wheelFocusJob?.cancel()
@@ -1150,6 +1187,13 @@ class GlyphViewModel @Inject constructor(
         if (song.filePath.isBlank()) {
             _ui.value = _ui.value.copy(error = "That song's file could not be located.")
             return
+        }
+
+        // A run of this phone's own (Play again, a section to practise) after
+        // a room's is no longer the room's.
+        if (playAtMs == null && _ui.value.inRoomPlay) {
+            stopRoomFrames()
+            _ui.value = _ui.value.copy(inRoomPlay = false, multiplayer = _ui.value.multiplayer.copy(startAtMs = null))
         }
 
         ghostRecorder.clear()
@@ -1183,7 +1227,9 @@ class GlyphViewModel @Inject constructor(
         // A scored run opens on StepMania's READY, GO!, with the music held
         // until it is over, so the two words never sit over the first notes.
         // Training Ground has its own count-in and starts at once.
-        val intro = !training && !_ui.value.gameplay.modifiers.reducedMotion
+        // A room's run always has one: the music is held until the moment
+        // the server named ([playAtMs]), which READY, GO! counts down to.
+        val intro = playAtMs != null || (!training && !_ui.value.gameplay.modifiers.reducedMotion)
         _ui.value = _ui.value.copy(
             screen = if (training) GlyphScreen.TRAINING else GlyphScreen.GAMEPLAY,
             gameplay = _ui.value.gameplay.copy(
@@ -1208,7 +1254,7 @@ class GlyphViewModel @Inject constructor(
         failJob?.cancel()
         if (intro) {
             introJob = viewModelScope.launch {
-                delay(INTRO_MILLIS)
+                delay(playAtMs?.let { (it - System.currentTimeMillis()).coerceAtLeast(0L) } ?: INTRO_MILLIS)
                 transport.play()
                 startTick()
                 _ui.value = _ui.value.copy(gameplay = _ui.value.gameplay.copy(introStartedAtMs = 0L))
@@ -1217,6 +1263,7 @@ class GlyphViewModel @Inject constructor(
             transport.play()
             startTick()
         }
+        if (playAtMs != null) startRoomFrames()
     }
 
     /**
@@ -1227,7 +1274,9 @@ class GlyphViewModel @Inject constructor(
         val running = engine ?: return
         stepScore = StepManiaScoreKeeper(
             possibleJudgements = running.scoreSnapshot.totalJudgements,
-            failType = _ui.value.gameplay.modifiers.failType,
+            // A room's song is played to its end by everyone: an empty bar
+            // is a fail in the ranking, never a stop.
+            failType = if (_ui.value.inRoomPlay) GlyphFailType.END_OF_SONG else _ui.value.gameplay.modifiers.failType,
         )
         liveCombo = 0
     }
@@ -1522,6 +1571,18 @@ class GlyphViewModel @Inject constructor(
         // A failed run has stopped for good: Resume would only start its music
         // again under FAILED.
         if (_ui.value.gameplay.failStops) return
+        // A room's song waits for nobody: the panel opens over the run, for
+        // Quit, and the music and the judging go on under it.
+        if (_ui.value.inRoomPlay) {
+            // Out of the app mid-song is out of the song: the room cannot
+            // wait, and the music must not play on behind the phone.
+            if (!foreground) {
+                quit()
+                return
+            }
+            _ui.value = _ui.value.copy(gameplay = _ui.value.gameplay.copy(isPaused = !_ui.value.gameplay.isPaused))
+            return
+        }
         // Paused during READY/GO: the intro is dropped, and Resume starts the
         // music straight away.
         if (introJob?.isActive == true) {
@@ -1607,6 +1668,12 @@ class GlyphViewModel @Inject constructor(
         introJob?.cancel()
         failJob?.cancel()
         transport.pause()
+        // Out of a room's song before its end: a fail in the ranking, and
+        // back to the room rather than to the songs.
+        if (_ui.value.inRoomPlay) {
+            leaveRoomRun(failed = true)
+            return
+        }
         if (_ui.value.editor?.testing == true) {
             backToEditor(null)
             return
@@ -2358,7 +2425,14 @@ class GlyphViewModel @Inject constructor(
             judgeScale = modifiers.timingWindowScale,
             turn = modifiers.turn.id,
         )
-        attempts.save(attempt)
+        if (_ui.value.inRoomPlay) {
+            // The room ranks everyone once the last phone has said how it went.
+            stopRoomFrames()
+            rooms.finish(roomResult(failed = attempt.failed, attempt = attempt))
+        }
+        // A room's run of another phone's chart is not a run of this phone's:
+        // it goes to the room and is not kept against the local scores.
+        if (!_ui.value.inRoomPlay || roomPlan?.sameChart == true) attempts.save(attempt)
         val machine = attempts.highScores(song.chartId, difficulty)
 
         _ui.value = _ui.value.copy(
@@ -2423,9 +2497,258 @@ class GlyphViewModel @Inject constructor(
         return sections
     }
 
+    // ── multiplayer ─────────────────────────────────────────────────────
+
+    /** The rooms server's session, the sign-in and the servers list, into the state. */
+    private fun watchRooms() {
+        viewModelScope.launch {
+            rooms.session.collect { session ->
+                _ui.value = _ui.value.copy(multiplayer = _ui.value.multiplayer.copy(session = session))
+            }
+        }
+        viewModelScope.launch {
+            rooms.hasServer.collect { has ->
+                _ui.value = _ui.value.copy(multiplayer = _ui.value.multiplayer.copy(hasServer = has))
+            }
+        }
+        viewModelScope.launch {
+            supabaseAuth.userProfile.collect {
+                refreshRoomIdentity()
+                // Back from the account page signed in: the socket opens
+                // without another tap.
+                if (_ui.value.screen == GlyphScreen.MULTIPLAYER) connectRooms()
+            }
+        }
+        viewModelScope.launch { rooms.events.collect { onRoomEvent(it) } }
+    }
+
+    /** Who this phone plays as: the signed-in account's name, or nobody. */
+    private fun refreshRoomIdentity() {
+        val signedIn = supabaseAuth.accessToken() != null
+        _ui.value = _ui.value.copy(
+            multiplayer = _ui.value.multiplayer.copy(
+                signedIn = signedIn,
+                playerName = if (signedIn) supabaseAuth.playerName() ?: effectiveName() else "",
+            ),
+        )
+    }
+
+    private fun openMultiplayer() {
+        wheelFocusJob?.cancel()
+        stopPreview()
+        refreshRoomIdentity()
+        _ui.value = _ui.value.copy(screen = GlyphScreen.MULTIPLAYER)
+        connectRooms()
+    }
+
+    /** Opens the socket as the signed-in account; nothing without one, or without a server. */
+    private fun connectRooms() {
+        val token = supabaseAuth.accessToken() ?: return
+        if (!_ui.value.multiplayer.hasServer) return
+        rooms.connect(_ui.value.multiplayer.playerName.ifBlank { effectiveName() }, token)
+    }
+
+    /** Off the rooms screen: the socket closes, and with it any room this phone was in. */
+    private fun closeMultiplayer() {
+        roomStartJob?.cancel()
+        stopRoomFrames()
+        roomPlan = null
+        rooms.disconnect()
+        _ui.value = _ui.value.copy(
+            screen = GlyphScreen.MENU,
+            inRoomPlay = false,
+            multiplayer = _ui.value.multiplayer.copy(haveSong = null, missing = null, startAtMs = null),
+        )
+    }
+
+    private fun onRoomEvent(msg: RoomMsg) {
+        when (msg) {
+            is RoomMsg.Chart -> checkRoomChart(msg.chart)
+            is RoomMsg.Start -> onRoomStart(msg.at, msg.hash)
+            is RoomMsg.Room -> if (msg.room.chart == null && roomPlan != null) {
+                roomPlan = null
+                _ui.value = _ui.value.copy(multiplayer = _ui.value.multiplayer.copy(haveSong = null, missing = null))
+            }
+            is RoomMsg.Left -> {
+                roomPlan = null
+                roomStartJob?.cancel()
+                if (_ui.value.inRoomPlay) leaveRoomRun(failed = false)
+                _ui.value = _ui.value.copy(multiplayer = _ui.value.multiplayer.copy(haveSong = null, missing = null, startAtMs = null))
+            }
+            else -> Unit
+        }
+    }
+
+    /**
+     * Whether this phone can play the room's chart. The notes come with it
+     * from the host, so what the phone needs is the song: the same chart on
+     * this phone (by hash) is best, else a song of that title and artist, or
+     * that title, of the same length within [SONG_LENGTH_SLACK_SECONDS].
+     * The room is told either way, so the host sees who is in.
+     */
+    private fun checkRoomChart(chart: RoomChart) {
+        roomStartJob?.cancel()
+        _ui.value = _ui.value.copy(multiplayer = _ui.value.multiplayer.copy(haveSong = null, missing = null))
+        viewModelScope.launch {
+            val plan = planRoomChart(chart)
+            roomPlan = plan
+            val missing = when {
+                plan != null -> null
+                chart.notes.isBlank() -> "The host's chart could not be read."
+                else -> "${chart.title} by ${chart.artist} is not on this phone."
+            }
+            _ui.value = _ui.value.copy(multiplayer = _ui.value.multiplayer.copy(haveSong = plan != null, missing = missing))
+            rooms.have(plan != null)
+        }
+    }
+
+    private suspend fun planRoomChart(chart: RoomChart): RoomPlan? {
+        val simfile = runCatching { SscParser.parse(chart.notes) }.getOrNull() ?: return null
+        val difficulty = StepManiaDifficulty.entries.firstOrNull { it.sscName.equals(chart.difficulty, ignoreCase = true) }
+            ?: simfile.charts.firstOrNull()?.difficulty
+            ?: return null
+        if (simfile.chart(difficulty) == null) return null
+        val candidates = _ui.value.songs.filter { it.filePath.isNotBlank() && it.title.equals(chart.title, ignoreCase = true) }
+        // The same chart on this phone: its own song, and its scores count.
+        for (song in candidates.filter { it.hasChart }) {
+            val text = songs.chartText(song.trackId) ?: continue
+            if (RoomProtocol.chartHash(text) == chart.hash) return RoomPlan(song, simfile, difficulty, chart.hash, sameChart = true)
+        }
+        val song = candidates.firstOrNull { it.artist.equals(chart.artist, ignoreCase = true) && it.lengthMatches(chart) }
+            ?: candidates.firstOrNull { it.lengthMatches(chart) }
+            ?: return null
+        return RoomPlan(song, simfile, difficulty, chart.hash, sameChart = false)
+    }
+
+    private fun GlyphSong.lengthMatches(chart: RoomChart): Boolean =
+        chart.duration <= 0.0 || abs(durationSeconds - chart.duration) <= SONG_LENGTH_SLACK_SECONDS
+
+    /**
+     * The server named the moment: everyone's music starts at [atServerMs]
+     * on its clock, which this phone has measured its gap to. The run is set
+     * up READY, GO! ahead of it, and the intro counts down to that moment
+     * instead of running its usual length.
+     */
+    private fun onRoomStart(atServerMs: Long, hash: String) {
+        val plan = roomPlan ?: return
+        if (plan.hash != hash) return
+        val playAt = rooms.localMsFor(atServerMs)
+        roomStartJob?.cancel()
+        _ui.value = _ui.value.copy(multiplayer = _ui.value.multiplayer.copy(startAtMs = playAt))
+        roomStartJob = viewModelScope.launch {
+            delay((playAt - INTRO_MILLIS - System.currentTimeMillis()).coerceAtLeast(0L))
+            _ui.value = _ui.value.copy(
+                selectedSong = plan.song,
+                simfile = plan.simfile,
+                selectedDifficulty = plan.difficulty,
+                inRoomPlay = true,
+                results = null,
+            )
+            start(training = false, playAtMs = playAt)
+        }
+    }
+
+    /** The selected song and difficulty as the room's chart: its text goes to everyone. */
+    private fun pickForRoom() {
+        val song = _ui.value.selectedSong ?: return
+        val difficulty = _ui.value.selectedDifficulty ?: return
+        viewModelScope.launch {
+            val text = songs.chartText(song.trackId)
+            if (text.isNullOrBlank()) {
+                _ui.value = _ui.value.copy(error = "That song has no chart to share.")
+                return@launch
+            }
+            rooms.pick(
+                RoomChart(
+                    hash = RoomProtocol.chartHash(text),
+                    title = song.title,
+                    artist = song.artist,
+                    difficulty = difficulty.sscName,
+                    duration = song.durationSeconds.toDouble(),
+                    bpm = (song.bpm ?: _ui.value.simfile?.timing?.startBpm ?: 0f).toDouble(),
+                    notes = text,
+                ),
+            )
+            wheelFocusJob?.cancel()
+            stopPreview()
+            _ui.value = _ui.value.copy(screen = GlyphScreen.MULTIPLAYER)
+        }
+    }
+
+    /** This phone's score as it stands, round the room a few times a second. */
+    private fun startRoomFrames() {
+        roomFrameJob?.cancel()
+        roomFrameJob = viewModelScope.launch {
+            while (isActive) {
+                rooms.frame(roomLive())
+                delay(ROOM_FRAME_MILLIS)
+            }
+        }
+    }
+
+    private fun stopRoomFrames() {
+        roomFrameJob?.cancel()
+        roomFrameJob = null
+    }
+
+    private fun roomLive(): RoomLive {
+        val snapshot = engine?.scoreSnapshot
+        val keeper = stepScore
+        return RoomLive(
+            score = (snapshot?.score ?: 0).toLong(),
+            combo = liveCombo,
+            acc = (keeper?.percent ?: 0f).toDouble(),
+            hp = (keeper?.life ?: StepManiaScoreKeeper.INITIAL_LIFE).toDouble(),
+            pos = (_ui.value.gameplay.positionSeconds * 1000f).toLong(),
+        )
+    }
+
+    /** How this phone's run went, for the ranking: the finished figures, or the live ones on a quit. */
+    private fun roomResult(failed: Boolean, attempt: GlyphAttempt? = null): RoomFinished {
+        val snapshot = engine?.scoreSnapshot
+        val keeper = stepScore
+        return RoomFinished(
+            score = (attempt?.score ?: snapshot?.score ?: 0).toLong(),
+            acc = (attempt?.percent?.takeIf { it >= 0f } ?: keeper?.percent ?: 0f).toDouble(),
+            maxCombo = attempt?.maxCombo ?: snapshot?.maxCombo ?: 0,
+            grade = if (failed) GlyphStepGrade.FAILED.label else keeper?.grade?.label.orEmpty(),
+            failed = failed,
+            judgements = attempt?.judgementCounts ?: snapshot?.counts?.entries?.associate { it.key.name to it.value }.orEmpty(),
+        )
+    }
+
+    /** Out of a room's run before its end: the room is told when [failed], and shown. */
+    private fun leaveRoomRun(failed: Boolean) {
+        stopRoomFrames()
+        roomStartJob?.cancel()
+        if (failed) rooms.finish(roomResult(failed = true))
+        _ui.value = _ui.value.copy(
+            screen = GlyphScreen.MULTIPLAYER,
+            inRoomPlay = false,
+            results = null,
+            gameplay = _ui.value.gameplay.copy(isPlaying = false, isPaused = false, introStartedAtMs = 0L),
+            multiplayer = _ui.value.multiplayer.copy(startAtMs = null),
+        )
+    }
+
+    /** From a room's results back to the room, where the ranking is. */
+    private fun backToRoom() {
+        stopTick()
+        transport.pause()
+        stopRoomFrames()
+        _ui.value = _ui.value.copy(
+            screen = GlyphScreen.MULTIPLAYER,
+            results = null,
+            inRoomPlay = false,
+            multiplayer = _ui.value.multiplayer.copy(startAtMs = null),
+        )
+    }
+
     override fun onCleared() {
         previewJob?.cancel()
         preview.release()
+        stopRoomFrames()
+        rooms.disconnect()
         stopTick()
         replaceEngine(null)
         metronome.release()
@@ -2557,5 +2880,24 @@ class GlyphViewModel @Inject constructor(
 
         /** About a second a level on a four-minute song: fine enough to land on a drop. */
         const val LOUDNESS_BARS = 240
+
+        /** How often a room hears this phone's score while a song plays. */
+        private const val ROOM_FRAME_MILLIS = 250L
+
+        /** A song of the room's title is taken for the same song within this much of its length. */
+        private const val SONG_LENGTH_SLACK_SECONDS = 2.0
     }
 }
+
+/**
+ * A room's chart as this phone will play it: the song found here, the
+ * host's notes parsed, and whether the chart is the same one this phone has
+ * ([sameChart]), in which case the run counts towards its local scores.
+ */
+private data class RoomPlan(
+    val song: GlyphSong,
+    val simfile: tf.monochrome.android.glyph.chart.GlyphSimfile,
+    val difficulty: StepManiaDifficulty,
+    val hash: String,
+    val sameChart: Boolean,
+)

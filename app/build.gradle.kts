@@ -100,6 +100,14 @@ android {
             "BUILT_IN_CPU_SERVER",
             "\"${(localProperties.getProperty("tryptmania.cpuServer") ?: System.getenv("TRYPTMANIA_CPU_SERVER") ?: "").trim()}\"",
         )
+        // The rooms server for Trypt Mania's multiplayer (TryptMania-Parser's
+        // multiplayer/ service on Railway), the same way: local.properties
+        // `tryptmania.roomsServer` or TRYPTMANIA_ROOMS_SERVER.
+        buildConfigField(
+            "String",
+            "BUILT_IN_ROOMS_SERVER",
+            "\"${(localProperties.getProperty("tryptmania.roomsServer") ?: System.getenv("TRYPTMANIA_ROOMS_SERVER") ?: "").trim()}\"",
+        )
 
         externalNativeBuild {
             cmake {
