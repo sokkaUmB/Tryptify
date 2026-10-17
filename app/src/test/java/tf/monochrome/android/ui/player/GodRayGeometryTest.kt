@@ -180,7 +180,7 @@ class GodRayGeometryTest {
     }
 
     private fun light(fx: LyricsFxSettings, band: Rect?, letters: Rect?, scale: Float = 1080f) = LyricRayLight(
-        fx = fx, accent = androidx.compose.ui.graphics.Color.Blue, moving = false,
+        baseFx = fx, accent = androidx.compose.ui.graphics.Color.Blue, moving = false,
         time = androidx.compose.runtime.mutableStateOf(0f),
         tilt = androidx.compose.runtime.mutableStateOf(Offset.Zero),
         pulse = null, band = { band }, lettersBox = { letters }, scale = scale,

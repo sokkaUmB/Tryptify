@@ -197,6 +197,10 @@ class PreferencesManager @Inject constructor(
         private val LYRICS_BASS_REACT = floatPreferencesKey("lyrics_bass_react")
         // Full Player Visuals Studio settings as one JSON blob (takes precedence).
         private val LYRICS_FX_JSON = stringPreferencesKey("lyrics_fx_json")
+        // Visual settings that follow the music (a JSON array of VisualLink),
+        // and the one switch that pauses every music link at once.
+        private val VISUAL_LINKS_JSON = stringPreferencesKey("visual_links_json")
+        private val MUSIC_LINKS_PAUSED = booleanPreferencesKey("music_links_paused")
         private val GLOBE_FX_JSON = stringPreferencesKey("globe_fx_json")
         // User-saved Lyrics FX presets (a JSON array of {name, settings}).
         private val LYRICS_FX_CUSTOM_PRESETS_JSON = stringPreferencesKey("lyrics_fx_custom_presets_json")
@@ -514,6 +518,7 @@ class PreferencesManager @Inject constructor(
             MINI_PLAYER_HIDE_WITH_TABS,
             ROMAJI_LYRICS, LYRICS_WORD_PROVIDER,
             LYRICS_FX_JSON, LYRICS_FX_CUSTOM_PRESETS_JSON, GLOBE_FX_JSON, PLAYER_GLASS_JSON,
+            VISUAL_LINKS_JSON, MUSIC_LINKS_PAUSED,
             PLAYER_GLASS_CUSTOM_PRESETS_JSON, MINI_PLAYER_GLASS_JSON, WAVE_CANDY_JSON,
             SPECTRUM_WATERFALL_JSON,
             VISUALIZER_SENSITIVITY, VISUALIZER_BRIGHTNESS, VISUALIZER_AUDIO_DELAY_MS,
@@ -2262,6 +2267,31 @@ class PreferencesManager @Inject constructor(
     suspend fun setLyricsFx(settings: LyricsFxSettings) {
         val clamped = settings.clamped()
         dataStore.edit { it[LYRICS_FX_JSON] = json.encodeToString(clamped) }
+    }
+
+    /**
+     * The visual settings that follow the music. Cleaned on the way in and out
+     * ([tf.monochrome.android.domain.model.VisualLinkCodec]): a link to a
+     * setting this version does not know is dropped, and every range is clamped
+     * into its setting's own.
+     */
+    val visualLinks: Flow<List<tf.monochrome.android.domain.model.VisualLink>> = dataStore.data
+        .map { it[VISUAL_LINKS_JSON] }
+        .distinctUntilChanged()
+        .map { tf.monochrome.android.domain.model.VisualLinkCodec.decode(it) }
+
+    suspend fun setVisualLinks(links: List<tf.monochrome.android.domain.model.VisualLink>) {
+        val clean = tf.monochrome.android.domain.model.VisualLinkCodec.sanitize(links)
+        dataStore.edit { it[VISUAL_LINKS_JSON] = tf.monochrome.android.domain.model.VisualLinkCodec.encode(clean) }
+    }
+
+    /** Every music link paused at once (Music links › the top switch). */
+    val musicLinksPaused: Flow<Boolean> = dataStore.data
+        .map { it[MUSIC_LINKS_PAUSED] ?: false }
+        .distinctUntilChanged()
+
+    suspend fun setMusicLinksPaused(paused: Boolean) {
+        dataStore.edit { it[MUSIC_LINKS_PAUSED] = paused }
     }
 
     /**

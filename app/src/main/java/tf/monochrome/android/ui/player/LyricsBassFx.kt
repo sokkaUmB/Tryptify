@@ -161,11 +161,12 @@ internal fun Modifier.bassBeat(
     pulse: State<Float>,
     fx: LyricsFxSettings,
     anchors: LyricGlyphAnchors?,
+    live: VisualLinkLive = VisualLinkLive.None,
 ): Modifier {
     if (fx.bassReact <= 0.01f) return this
     var mod = this.graphicsLayer {
         val p = pulse.value * fx.bassReact
-        val s = 1f + fx.pumpAmount * p
+        val s = 1f + live.lyrics(fx).pumpAmount * p
         scaleX = s
         scaleY = s
     }
@@ -197,12 +198,15 @@ internal fun LyricsFxLayer(
     edgeHug: Boolean = false,
 ) {
     if (fx.bassReact <= 0.01f) return
+    val live = LocalVisualLinks.current
+    val baseFx = fx
     var origin by remember { mutableStateOf(Offset.Zero) }
     Box(
         modifier
             .fillMaxSize()
             .onGloballyPositioned { origin = it.positionInRoot() }
             .drawBehind {
+                val fx = live.lyrics(baseFx)
                 val p = (pulse.value * fx.bassReact).coerceIn(0f, 1.6f)
                 if (p <= 0.03f) return@drawBehind
 

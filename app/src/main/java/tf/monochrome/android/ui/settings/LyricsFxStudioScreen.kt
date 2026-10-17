@@ -1,6 +1,8 @@
 package tf.monochrome.android.ui.settings
 
 import tf.monochrome.android.ui.navigation.popBackStackSafe
+import tf.monochrome.android.ui.navigation.navigateTool
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -181,6 +183,17 @@ import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
 import androidx.compose.material3.RadioButton
 import kotlinx.coroutines.flow.SharingStarted
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import tf.monochrome.android.data.repository.MusicLinksRepository
+import tf.monochrome.android.domain.model.VisualLinkTargets
+import tf.monochrome.android.ui.musiclinks.LinkedTrackMarker
+import tf.monochrome.android.ui.musiclinks.LocalMusicLinkHost
+import tf.monochrome.android.ui.musiclinks.musicLinkColor
+import tf.monochrome.android.ui.player.LocalVisualLinks
+import tf.monochrome.android.ui.player.rememberVisualLinkDriver
 
 @HiltViewModel
 class LyricsFxStudioViewModel @Inject constructor(
@@ -190,7 +203,11 @@ class LyricsFxStudioViewModel @Inject constructor(
     queueManager: tf.monochrome.android.player.QueueManager,
     /** The player's own beat analyzer, so the preview of the playing song pulses with it. */
     val spectrumAnalyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap,
+    musicLinksRepository: MusicLinksRepository,
 ) : ViewModel() {
+    /** The visual music links: the Lyrics tab's sliders make and change them, and its preview runs them. */
+    val musicLinks = VisualLinkEditing(viewModelScope, musicLinksRepository)
+
     /** The currently-playing lyrics + position, so the preview can show them live. */
     val currentLyrics: StateFlow<tf.monochrome.android.domain.model.Lyrics?> = nowPlayingLyrics.lyrics
     val currentPositionMs: StateFlow<Long> = nowPlayingLyrics.positionMs
@@ -484,6 +501,25 @@ fun LyricsFxStudioScreen(
     // process death.
     var selectedTab by rememberSaveable { mutableStateOf(0) }
 
+    // Music links. The preview runs the saved links with the one being edited
+    // in place of its saved version; the sliders mark which settings move and
+    // open the link sheet. The sheet and the editor are drawn over this screen
+    // in its own window, beside the haze source they frost.
+    val linkUi = remember { StudioLinkUi() }
+    val linkHaze = rememberHazeState()
+    val savedLinks = viewModel.musicLinks.links.collectAsStateWithLifecycle()
+    val previewLinks by viewModel.musicLinks.previewLinks.collectAsStateWithLifecycle()
+    val linkLive = rememberVisualLinkDriver(
+        tap = viewModel.spectrumAnalyzer,
+        links = previewLinks,
+        active = selectedTab == 2,
+        delayMs = fx.bluetoothDelayMs,
+    )
+    val linkHost = rememberVisualLinkHost(savedLinks, linkLive) { linkUi.sheetFor = it }
+    val density = LocalDensity.current
+    var screenTopPx by remember { mutableFloatStateOf(0f) }
+    var previewBottomPx by remember { mutableFloatStateOf(0f) }
+
     // Preset save / import / share dialog state.
     var showSaveDialog by rememberSaveable { mutableStateOf(false) }
     var showImportDialog by rememberSaveable { mutableStateOf(false) }
@@ -493,12 +529,27 @@ fun LyricsFxStudioScreen(
     // imported in Settings › Appearance since this screen opened shows up.
     LaunchedEffect(fx.customFont) { if (fx.customFont) viewModel.refreshFonts() }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().onGloballyPositioned { screenTopPx = it.boundsInRoot().top }) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(if (selectedTab == 2) Modifier.hazeSource(linkHaze) else Modifier),
+    ) {
         TopAppBar(
             title = { Text(stringResource(R.string.fx_player_visuals_studio)) },
             navigationIcon = {
                 IconButton(onClick = { navController.popBackStackSafe() }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back))
+                }
+            },
+            actions = {
+                // Every music link in one place, and the switch that pauses them all.
+                IconButton(onClick = { navController.navigateTool(tf.monochrome.android.ui.navigation.Screen.MusicLinks) }) {
+                    Icon(
+                        Icons.Default.MusicNote,
+                        contentDescription = stringResource(R.string.music_links_title),
+                        tint = if (savedLinks.value.isNotEmpty()) musicLinkColor() else LocalContentColor.current,
+                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
@@ -732,10 +783,16 @@ fun LyricsFxStudioScreen(
             return@Column
         }
 
+        CompositionLocalProvider(
+            LocalMusicLinkHost provides linkHost,
+            LocalVisualLinks provides linkLive,
+        ) {
         // Preview + presets are pinned above the scrolling sliders, so the
         // live example stays locked in view while you tune every parameter.
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            StudioPreview(fx, currentLyrics, viewModel.currentPositionMs, viewModel.spectrumAnalyzer)
+            Box(Modifier.onGloballyPositioned { previewBottomPx = it.boundsInRoot().bottom }) {
+                StudioPreview(fx, currentLyrics, viewModel.currentPositionMs, viewModel.spectrumAnalyzer)
+            }
             Spacer(Modifier.height(12.dp))
 
             // Preset bar header: a Save button (store the current look) and an
@@ -981,6 +1038,7 @@ fun LyricsFxStudioScreen(
                 FxSlider(
                     stringResource(R.string.fx_tilt), "%.0f°".format(fx.rotationDegrees) + if (fx.rotationDegrees < 0.5f) " (off)" else "",
                     fx.rotationDegrees, 0f..25f,
+                    linkKey = "lyrics.rotationDegrees",
                 ) { viewModel.update { s -> s.copy(rotationDegrees = it) } }
                 FxSlider(stringResource(R.string.fx_wave_speed), "%.2fx".format(fx.waveSpeed), fx.waveSpeed, 0.25f..3f) {
                     viewModel.update { s -> s.copy(waveSpeed = it) }
@@ -990,12 +1048,13 @@ fun LyricsFxStudioScreen(
                     fx.wavePhaseStep, 0.05f..0.9f,
                     description = stringResource(R.string.fx_low_one_smooth_ribbon_high_choppy_per_letter),
                 ) { viewModel.update { s -> s.copy(wavePhaseStep = it) } }
-                FxSlider(stringResource(R.string.fx_wave_travel), "%.1f dp".format(fx.waveTravelDp), fx.waveTravelDp, 0f..8f) {
+                FxSlider(stringResource(R.string.fx_wave_travel), "%.1f dp".format(fx.waveTravelDp), fx.waveTravelDp, 0f..8f, linkKey = "lyrics.waveTravelDp") {
                     viewModel.update { s -> s.copy(waveTravelDp = it) }
                 }
                 FxSlider(
                     stringResource(R.string.fx_shadow_depth), "${(fx.shadowDepth * 100).toInt()}%", fx.shadowDepth, 0f..1f,
                     description = stringResource(R.string.fx_lyric_shadow_desc),
+                    linkKey = "lyrics.shadowDepth",
                 ) { viewModel.update { s -> s.copy(shadowDepth = it) } }
             }
 
@@ -1006,7 +1065,7 @@ fun LyricsFxStudioScreen(
                     fx.bassReact, 0f..1f,
                     description = stringResource(R.string.fx_master_intensity_for_pump_and_glow),
                 ) { viewModel.update { s -> s.copy(bassReact = it) } }
-                FxSlider(stringResource(R.string.fx_pump_amount), "+${(fx.pumpAmount * 100).toInt()}%", fx.pumpAmount, 0f..0.25f) {
+                FxSlider(stringResource(R.string.fx_pump_amount), "+${(fx.pumpAmount * 100).toInt()}%", fx.pumpAmount, 0f..0.25f, linkKey = "lyrics.pumpAmount") {
                     viewModel.update { s -> s.copy(pumpAmount = it) }
                 }
                 FxSlider(
@@ -1025,10 +1084,10 @@ fun LyricsFxStudioScreen(
 
             item {
                 StudioSection(stringResource(R.string.fx_glow))
-                FxSlider(stringResource(R.string.settings_glow_radius), "+%.0f dp".format(fx.glowRadiusDp), fx.glowRadiusDp, 0f..160f) {
+                FxSlider(stringResource(R.string.settings_glow_radius), "+%.0f dp".format(fx.glowRadiusDp), fx.glowRadiusDp, 0f..160f, linkKey = "lyrics.glowRadiusDp") {
                     viewModel.update { s -> s.copy(glowRadiusDp = it) }
                 }
-                FxSlider(stringResource(R.string.settings_glow_brightness), "${(fx.glowBrightness * 100).toInt()}%", fx.glowBrightness, 0f..0.6f) {
+                FxSlider(stringResource(R.string.settings_glow_brightness), "${(fx.glowBrightness * 100).toInt()}%", fx.glowBrightness, 0f..0.6f, linkKey = "lyrics.glowBrightness") {
                     viewModel.update { s -> s.copy(glowBrightness = it) }
                 }
                 // "Glow behind album art" is a personal toggle, not a theme
@@ -1046,20 +1105,24 @@ fun LyricsFxStudioScreen(
                     stringResource(R.string.fx_glass_opacity), "${(fx.glassBodyOpacity * 100).toInt()}%",
                     fx.glassBodyOpacity, 0.2f..1f,
                     description = stringResource(R.string.fx_lower_lets_more_of_the_backdrop_read_through_the),
+                    linkKey = "lyrics.glassBodyOpacity",
                 ) { viewModel.update { s -> s.copy(glassBodyOpacity = it) } }
                 FxSlider(
                     stringResource(R.string.fx_refraction), "%.2f".format(fx.glassRefraction), fx.glassRefraction, 0f..0.4f,
                     description = stringResource(R.string.fx_how_hard_the_beveled_edges_lens_the_backdrop),
+                    linkKey = "lyrics.glassRefraction",
                 ) { viewModel.update { s -> s.copy(glassRefraction = it) } }
                 FxSlider(
                     stringResource(R.string.fx_edge_highlight), "${(fx.glassRimBrightness * 100).toInt()}%",
                     fx.glassRimBrightness, 0f..2f,
                     description = stringResource(R.string.fx_brightness_of_the_specular_glass_rim),
+                    linkKey = "lyrics.glassRimBrightness",
                 ) { viewModel.update { s -> s.copy(glassRimBrightness = it) } }
                 FxSlider(
                     stringResource(R.string.fx_chromatic_aberration), "${(fx.glassDispersion * 100).toInt()}%",
                     fx.glassDispersion, 0f..2f,
                     description = stringResource(R.string.fx_colour_fringing_where_the_edges_refract),
+                    linkKey = "lyrics.glassDispersion",
                 ) { viewModel.update { s -> s.copy(glassDispersion = it) } }
                 FxSlider(
                     stringResource(R.string.fx_bevel_samples), "${1 + 4 * fx.glassSampleRings} taps/px",
@@ -1085,14 +1148,17 @@ fun LyricsFxStudioScreen(
                 FxSlider(
                     stringResource(R.string.fx_roundness), "%.2f".format(fx.glassRoundness), fx.glassRoundness, 0.5f..2f,
                     description = stringResource(R.string.fx_rolls_the_glass_edge_from_a_sharp_bevel_to_a),
+                    linkKey = "lyrics.glassRoundness",
                 ) { viewModel.update { s -> s.copy(glassRoundness = it) } }
                 FxSlider(
                     stringResource(R.string.fx_depth_profondeur), "%.2f".format(fx.glassDepth), fx.glassDepth, 0.5f..2f,
                     description = stringResource(R.string.fx_lyric_depth_desc),
+                    linkKey = "lyrics.glassDepth",
                 ) { viewModel.update { s -> s.copy(glassDepth = it) } }
                 FxSlider(
                     stringResource(R.string.fx_frosted_blur), "${(fx.glassFrost * 100).toInt()}%", fx.glassFrost, 0f..1f,
                     description = stringResource(R.string.fx_frosts_the_glass_from_clear_to_misted),
+                    linkKey = "lyrics.glassFrost",
                 ) { viewModel.update { s -> s.copy(glassFrost = it) } }
             }
 
@@ -1101,6 +1167,7 @@ fun LyricsFxStudioScreen(
                 FxSlider(
                     stringResource(R.string.fx_light_angle), "${fx.glassLightAngleDeg.toInt()}°", fx.glassLightAngleDeg, 0f..360f,
                     description = stringResource(R.string.fx_direction_the_key_light_comes_from_and_where_the),
+                    linkKey = "lyrics.glassLightAngleDeg",
                 ) { viewModel.update { s -> s.copy(glassLightAngleDeg = it) } }
                 FxSlider(
                     stringResource(R.string.fx_tilt_reactivity), "${(fx.glassTiltReactivity * 100).toInt()}%",
@@ -1110,14 +1177,17 @@ fun LyricsFxStudioScreen(
                 FxSlider(
                     stringResource(R.string.fx_edge_width), "${(fx.glassEdgeWidth * 100).toInt()}%", fx.glassEdgeWidth, 0f..1f,
                     description = stringResource(R.string.fx_reflective_rim_thin_crisp_edge_to_a_broad_glassy),
+                    linkKey = "lyrics.glassEdgeWidth",
                 ) { viewModel.update { s -> s.copy(glassEdgeWidth = it) } }
                 FxSlider(
                     stringResource(R.string.fx_reflection), "${(fx.glassReflection * 100).toInt()}%", fx.glassReflection, 0f..2f,
                     description = stringResource(R.string.fx_how_much_of_the_room_environment_reflection),
+                    linkKey = "lyrics.glassReflection",
                 ) { viewModel.update { s -> s.copy(glassReflection = it) } }
                 FxSlider(
                     stringResource(R.string.fx_gloss), "${(fx.glassGloss * 100).toInt()}%", fx.glassGloss, 0f..1f,
                     description = stringResource(R.string.fx_highlight_polish_soft_frosted_wide_glint_to_a),
+                    linkKey = "lyrics.glassGloss",
                 ) { viewModel.update { s -> s.copy(glassGloss = it) } }
                 FxSlider(
                     stringResource(R.string.fx_surface_motion), "${(fx.glassSurfaceMotion * 100).toInt()}%",
@@ -1153,6 +1223,19 @@ fun LyricsFxStudioScreen(
                 ) { Text(stringResource(R.string.fx_reset_to_defaults)) }
             }
         }
+        }
+    }
+    if (selectedTab == 2) {
+        StudioLinkOverlay(
+            ui = linkUi,
+            editing = viewModel.musicLinks,
+            fx = fx,
+            live = linkLive,
+            tap = viewModel.spectrumAnalyzer,
+            hazeState = linkHaze,
+            editorTop = with(density) { (previewBottomPx - screenTopPx).coerceAtLeast(0f).toDp() } + 4.dp,
+        )
+    }
     }
 }
 
@@ -2252,7 +2335,7 @@ private fun StudioPreview(
                             .liquidGlass(tint = accent, rayLight = rayLight)
                             // Before the pump, so the copy pumps with the letters.
                             .captureLetters(letters)
-                            .bassBeat(pulse, fx, anchors),
+                            .bassBeat(pulse, fx, anchors, LocalVisualLinks.current),
                     ) {
                         // The ripple runs on across rows, as in the player.
                         var phaseBase = 0
@@ -2479,8 +2562,19 @@ internal fun FxSlider(
      * once per gesture rather than once per frame.
      */
     onChangeFinished: (() -> Unit)? = null,
+    /**
+     * The music link key for this setting ([VisualLinkTargets]), for one that
+     * can follow the music. It gets a note after its value — green while it is
+     * linked — and a press and hold on its row opens the link sheet. Only
+     * where the screen provides a [LocalMusicLinkHost]; elsewhere it is an
+     * ordinary slider.
+     */
+    linkKey: String? = null,
     onChange: (Float) -> Unit,
 ) {
+    val linkHost = if (linkKey != null) LocalMusicLinkHost.current else null
+    val linked = linkHost != null && linkKey != null && linkHost.isLinked(linkKey)
+    val moveLabel = stringResource(R.string.music_link_move_with_music)
     // Compact, since some fifty of these fill the Studio and at full size the
     // Lyrics tab alone scrolled about 3000 dp: the label and value share one
     // smaller row, the description folds away behind a tap on that row (ⓘ),
@@ -2494,7 +2588,19 @@ internal fun FxSlider(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(
-                    if (description != null) {
+                    if (linkHost != null && linkKey != null) {
+                        // Hold to link: a tap still folds the description out.
+                        Modifier
+                            .combinedClickable(
+                                onClick = { if (description != null) showDescription = !showDescription },
+                                onLongClickLabel = moveLabel,
+                                onLongClick = { linkHost.open(linkKey) },
+                            )
+                            .semantics {
+                                contentDescription = listOfNotNull("$label, $valueLabel", description).joinToString(". ")
+                                customActions = listOf(CustomAccessibilityAction(moveLabel) { linkHost.open(linkKey); true })
+                            }
+                    } else if (description != null) {
                         Modifier
                             .clickable { showDescription = !showDescription }
                             // TalkBack reads the description whether or not it
@@ -2528,6 +2634,20 @@ internal fun FxSlider(
                 color = MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 1f else DISABLED_ALPHA),
                 modifier = Modifier.padding(start = 8.dp),
             )
+            if (linkHost != null && linkKey != null) {
+                // The way in for anyone who never thinks to hold: a tap on the
+                // note opens the same sheet.
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = if (linked) musicLinkColor() else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                    modifier = Modifier
+                        .padding(start = 2.dp)
+                        .clickable(onClickLabel = moveLabel) { linkHost.open(linkKey) }
+                        .padding(4.dp)
+                        .size(16.dp),
+                )
+            }
         }
         AnimatedVisibility(visible = description != null && showDescription) {
             Text(
@@ -2563,6 +2683,10 @@ internal fun FxSlider(
                 },
                 modifier = Modifier.fillMaxWidth().height(FX_SLIDER_HEIGHT),
             )
+        }
+        if (linked && linkHost != null && linkKey != null) {
+            // The link's reach along the track, and where the music has it now.
+            LinkedTrackMarker(linkKey, linkHost, range.start, range.endInclusive)
         }
     }
 }

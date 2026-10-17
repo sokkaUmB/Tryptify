@@ -591,7 +591,7 @@ internal fun SyncedLyricsView(
                 label = "lineEmphasis",
             )
             val beatModifier = (if (isActive && beatIntensity > 0.01f) {
-                Modifier.bassBeat(bassPulse, fx, lineAnchors)
+                Modifier.bassBeat(bassPulse, fx, lineAnchors, LocalVisualLinks.current)
             } else {
                 Modifier
             }).graphicsLayer {
@@ -1198,10 +1198,14 @@ private fun Letter3DText(
     color: Color,
     time: State<Float>,
 ) {
-    val fx = LocalLyricsFx.current
+    val baseFx = LocalLyricsFx.current
+    val live = LocalVisualLinks.current
     Box(
         modifier = Modifier
             .graphicsLayer {
+            // Music links move the tilt and the travel here, in the layer
+            // block, so the wave answers the beat without recomposing a letter.
+            val fx = live.lyrics(baseFx)
             val t = time.value * fx.waveSpeed
             // Slow temporal frequency (1.5 rad/s): the wave glides instead of
             // flickering — the eye tracks a slow ripple as one smooth motion.

@@ -132,6 +132,7 @@ internal fun Modifier.captureLetters(capture: LyricLetterCapture?, edgeFade: Boo
 @Composable
 internal fun LyricBackdropFx(backdrop: LyricBackdrop, modifier: Modifier = Modifier) {
     val fx = LocalLyricsFx.current
+    val live = LocalVisualLinks.current
     // The reasons it composes nothing go to the Debug Log's rays report.
     if (LocalLowPerformance.current.disableLiquidGlass) {
         RaysProbe.backdropState = "off: low-performance glass"
@@ -181,7 +182,7 @@ internal fun LyricBackdropFx(backdrop: LyricBackdrop, modifier: Modifier = Modif
                 } else {
                     null
                 }
-                val shade = if (shadow) lyricShadowEffect(fx, f) else null
+                val shade = if (shadow) lyricShadowEffect(live.lyrics(fx), f) else null
                 // The effect and the copy it reads are set in the one place,
                 // so the copy itself can never be drawn bare.
                 val effect = when {
@@ -239,7 +240,7 @@ internal fun LyricBackdropFx(backdrop: LyricBackdrop, modifier: Modifier = Modif
 @Composable
 internal fun Modifier.lyricRaysOnLetters(backdrop: LyricBackdrop?): Modifier {
     val light = backdrop?.light ?: return this
-    if (!light.fx.godRaysOnTop) return this
+    if (!light.baseFx.godRaysOnTop) return this
     return lyricGodRays(light, RayOutput.ON_LETTERS)
 }
 

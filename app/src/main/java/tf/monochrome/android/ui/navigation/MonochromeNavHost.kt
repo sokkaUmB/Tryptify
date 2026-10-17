@@ -191,6 +191,7 @@ sealed class Screen(val route: String) {
     data object Crossfeed : Screen("crossfeed")
     data object DebugLog : Screen("debug_log")
     data object LyricsFxStudio : Screen("lyrics_fx_studio")
+    data object MusicLinks : Screen("music_links")
     data object AtmosRenderer : Screen("atmos_renderer")
     data object HrtfDatabase : Screen("hrtf_database")
 }
@@ -792,6 +793,11 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 composable(Screen.LyricsFxStudio.route) {
                     tf.monochrome.android.devedit.DevEditScreen("lyrics_fx_studio") {
                         tf.monochrome.android.ui.settings.LyricsFxStudioScreen(navController = navController)
+                    }
+                }
+                composable(Screen.MusicLinks.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("music_links") {
+                        tf.monochrome.android.ui.musiclinks.MusicLinksScreen(navController = navController)
                     }
                 }
                 composable(Screen.AtmosRenderer.route) {

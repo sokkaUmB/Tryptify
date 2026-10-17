@@ -248,6 +248,12 @@ class PlayerViewModel @Inject constructor(
     }
     val lyricsFx: StateFlow<LyricsFxSettings> = preferences.lyricsFx
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LyricsFxSettings())
+
+    /** The visual settings following the music; empty while Music links are paused. */
+    val visualLinks: StateFlow<List<tf.monochrome.android.domain.model.VisualLink>> =
+        kotlinx.coroutines.flow.combine(preferences.visualLinks, preferences.musicLinksPaused) { links, paused ->
+            if (paused) emptyList() else links
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val nowPlayingViewMode: StateFlow<NowPlayingViewMode> = preferences.nowPlayingViewMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), NowPlayingViewMode.COVER_ART)
     val romajiLyrics: StateFlow<Boolean> = preferences.romajiLyrics

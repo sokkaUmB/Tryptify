@@ -106,6 +106,10 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
         ),
     )
         .at(SettingsDestination.Route("lyrics_fx_studio")),
+    entry(
+        "Music links", R.string.music_links_title, "Visual Studio",
+        listOf("fft", "audio reactive", "react", "modulation", "beat", "move with the music", "link", "god rays", "glow"),
+    ).at(SettingsDestination.Route("music_links")),
 
     // ── Appearance › Spectrum and visualizer ────────────────────────────
     // The projectM section used to live under Appearance; it moved to the

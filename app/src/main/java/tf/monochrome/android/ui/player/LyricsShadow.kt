@@ -49,14 +49,19 @@ internal fun Modifier.lyricShadow(rayLight: LyricRayLight? = null): Modifier {
     if (LocalLowPerformance.current.disableLiquidGlass) return this
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return this
     val origin = remember { mutableStateOf<Offset?>(null) }
-    return this.then(lyricShadowModifier(fx, rayLight, origin))
+    return this.then(lyricShadowModifier(fx, LocalVisualLinks.current, rayLight, origin))
 }
 
 @RequiresApi(Build.VERSION_CODES.S)
-private fun lyricShadowModifier(fx: LyricsFxSettings, rayLight: LyricRayLight?, origin: MutableState<Offset?>): Modifier =
+private fun lyricShadowModifier(
+    fx: LyricsFxSettings,
+    live: VisualLinkLive,
+    rayLight: LyricRayLight?,
+    origin: MutableState<Offset?>,
+): Modifier =
     Modifier.rayLayerOrigin(origin).graphicsLayer {
         if (size.minDimension <= 0f) return@graphicsLayer
-        val shadow = lyricShadowEffect(fx, origin.value?.let { rayLight?.frameFor(it) })
+        val shadow = lyricShadowEffect(live.lyrics(fx), origin.value?.let { rayLight?.frameFor(it) })
         // The letters, untouched, over their shadow.
         renderEffect = RenderEffect
             .createBlendModeEffect(shadow, RenderEffect.createOffsetEffect(0f, 0f), BlendMode.SRC_OVER)

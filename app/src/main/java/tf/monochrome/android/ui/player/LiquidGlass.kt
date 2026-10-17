@@ -70,7 +70,7 @@ internal fun Modifier.liquidGlass(
     val backdrop = LocalPlayerBackdrop.current
     if (LocalLowPerformance.current.disableLiquidGlass) return this
     if (!enabled || !fx.liquidGlass || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return this
-    return this.then(liquidGlassModifier(tint, fx, backdrop, rayLight))
+    return this.then(liquidGlassModifier(tint, fx, LocalVisualLinks.current, backdrop, rayLight))
 }
 
 /**
@@ -221,9 +221,11 @@ private fun fxaaModifier(strength: Float): Modifier {
 private fun liquidGlassModifier(
     tint: Color,
     fx: tf.monochrome.android.domain.model.LyricsFxSettings,
+    live: VisualLinkLive,
     backdrop: PlayerBackdrop,
     rayLight: LyricRayLight?,
 ): Modifier {
+    val baseFx = fx
     val shader = remember {
         runCatching { RuntimeShader(LIQUID_GLASS_SRC) }
             .onSuccess { LyricsDebug.log("liquid-glass shader compiled") }
@@ -242,6 +244,9 @@ private fun liquidGlassModifier(
 
     return Modifier.backdropAnchor(anchor).graphicsLayer {
         if (size.minDimension > 0f) {
+            // This frame's settings, music links included: read here, in the
+            // layer block, so a link redraws the glass and recomposes nothing.
+            val fx = live.lyrics(baseFx)
             shader.setFloatUniform("uSize", size.width, size.height)
             shader.setFloatUniform("uTime", timeSec.value)
             shader.setFloatUniform("uTilt", tilt.value.x, tilt.value.y)

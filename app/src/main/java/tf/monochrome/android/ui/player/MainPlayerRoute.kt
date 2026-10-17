@@ -245,6 +245,7 @@ fun MainPlayerRoute(
     }
 
     val lyricsFx by playerViewModel.lyricsFx.collectAsStateWithLifecycle()
+    val visualLinks by playerViewModel.visualLinks.collectAsStateWithLifecycle()
     val liveSpeed by playerViewModel.liveSpeed.collectAsStateWithLifecycle()
     val playerGlass by playerViewModel.playerGlass.collectAsStateWithLifecycle()
     val dacExclusive by playerViewModel.dacExclusive.collectAsStateWithLifecycle()
@@ -564,6 +565,15 @@ fun MainPlayerRoute(
     val beatOn = lyricsBeatOn || albumGlowOn
     val beatPulse: androidx.compose.runtime.State<Float>? =
         if (beatOn) rememberBassPulse(playerViewModel.spectrumAnalyzer, lyricsFx) else null
+    // The visual settings that follow the music. Like the beat engine, only
+    // while the lyrics are what the player shows: that is where every one of
+    // them is drawn, and nothing else would read the values.
+    val visualLive = rememberVisualLinkDriver(
+        tap = playerViewModel.spectrumAnalyzer,
+        links = visualLinks,
+        active = viewMode == NowPlayingViewMode.LYRICS,
+        delayMs = lyricsFx.bluetoothDelayMs,
+    )
     androidx.compose.runtime.LaunchedEffect(beatOn) {
         LyricsDebug.log("beat engine ${if (beatOn) "acquired (FFT analyzer staked)" else "released"}")
         if (!beatOn) { glyphAnchors.reset(); albumArtAnchor.reset() }
@@ -608,6 +618,9 @@ fun MainPlayerRoute(
             lettersBox = { lyricLetters.boxInRoot },
             fx = lyricsFx,
             debugName = "player",
+            // Built out here, before the provider below, so it is handed the
+            // links rather than reading them from a local it is not inside.
+            live = visualLive,
         )
     } else {
         null
@@ -619,6 +632,7 @@ fun MainPlayerRoute(
     CompositionLocalProvider(
         LocalLyricBackdrop provides lyricBackdrop,
         LocalLyricsFx provides lyricsFx,
+        LocalVisualLinks provides visualLive,
         LocalPlaybackSpeed provides liveSpeed,
         LocalLyricsSpectrum provides playerViewModel.spectrumAnalyzer,
         LocalLyricGlyphAnchors provides glyphAnchors.takeIf { lyricsBeatOn },

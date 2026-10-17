@@ -41,6 +41,8 @@ not Spain-only), Turkish, German.
 | nav bar (Home · … · Library, Search) | 导航栏 | ナビゲーションバー | barre de navigation | barra de navegación | gezinme çubuğu | Navigationsleiste |
 | Liquid glass | 液态玻璃 | リキッドグラス | verre liquide | cristal líquido | sıvı cam | Liquid Glass |
 | preset | 预设 | プリセット | préréglage | preset | ön ayar | Preset |
+| Music links (screen) / a link | 音乐联动 / 联动 | ミュージックリンク / リンク | Liens musicaux / lien | Enlaces musicales / enlace | Müzik bağlantıları / bağlantı | Musik-Kopplungen / Kopplung |
+| Move with the music (action) | 随音乐而动 | 音楽に合わせて動かす | Bouger avec la musique | Mover con la música | Müzikle hareket ettir | Mit der Musik bewegen |
 | token (Discord, ListenBrainz) | 令牌 | トークン | jeton | token | belirteç | Token |
 | scrobble | 同步收听记录（scrobble） | スクロブル | scrobbler | scrobbling | scrobble | scrobbeln |
 
