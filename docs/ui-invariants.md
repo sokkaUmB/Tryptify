@@ -444,7 +444,11 @@ that can be swiped away saying which songs got their words. A song with no
 file on the phone is downloaded through the app's own downloads first and
 kept, as Trypt Mania charts only what is on the phone. The lyrics view shows
 the same stage under the empty state, with "Cancel" while the line runs and
-"Time lyrics on the server" when it does not.
+"Time lyrics on the server" when it does not. By itself a song joins the line
+only after fifteen seconds of play (`SERVER_LYRICS_AFTER_MS`): on a phone
+skipping through a playlist, every song passed over was downloaded and timed
+for nobody. The worker runs up to eight songs at once, as many as the chart
+server said it has copies, like a chart batch's lanes.
 
 **The lyrics editor is built as the Player Visuals Studio is.** `StudioPreview`
 (the real renderer, condensed, with the listener's own Lyrics FX) pinned up

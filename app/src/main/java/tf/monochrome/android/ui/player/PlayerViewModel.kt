@@ -640,6 +640,12 @@ class PlayerViewModel @Inject constructor(
                                 // a file. Its answer arrives through
                                 // serverLyrics.results, above.
                                 if (LyricsRace.tier(found) < 3 && preferences.serverLyrics.first()) {
+                                    // Only once the song has been listened to for
+                                    // a while: a song skipped past would otherwise
+                                    // be downloaded and timed for nobody. This
+                                    // coroutine dies with the track, so skipping
+                                    // cancels the wait.
+                                    delay(SERVER_LYRICS_AFTER_MS)
                                     requestServerLyrics(track, unified, found)
                                 }
                             }
@@ -1571,5 +1577,8 @@ class PlayerViewModel @Inject constructor(
         // service that never comes up surfaces as a playback error rather than
         // a coroutine parked forever.
         const val CONTROLLER_CONNECT_TIMEOUT_MS = 5_000L
+
+        /** How long a song plays before it is sent to be timed by itself: long enough to mean it is being listened to. */
+        const val SERVER_LYRICS_AFTER_MS = 15_000L
     }
 }

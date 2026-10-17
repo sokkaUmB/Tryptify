@@ -22,6 +22,10 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import tf.monochrome.android.audio.stepmania.ChartPace
+import tf.monochrome.android.audio.stepmania.StepManiaGenerationWorker
 import tf.monochrome.android.R
 
 /**
@@ -36,45 +40,81 @@ class LyricsSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val engine: ServerLyricsEngine,
+    private val pace: ChartPace,
 ) : CoroutineWorker(context, params) {
 
-    private var current: Pair<String, LyricsStage>? = null
+    /** Each song being timed, by title, and its stage. */
+    private val current = linkedMapOf<String, LyricsStage>()
+    private var done = 0
 
     override suspend fun doWork(): Result {
         if (!engine.hasWork()) return Result.success()
         val outcomes = mutableListOf<LyricsOutcome>()
         try {
-            while (true) {
-                val job = engine.next() ?: break
-                show(job.track.title, LyricsStage.SENDING)
-                outcomes += engine.run(job) { stage -> show(job.track.title, stage) }
+            // Several songs at once, as a chart batch sends them: the server
+            // has as many copies as it said, and each takes one song at a
+            // time. Each lane takes the next song until the line is empty.
+            val lanes = StepManiaGenerationWorker.lanes(pace.snapshot(gpu = false).parallel).coerceAtMost(MAX_LANES)
+            coroutineScope {
+                repeat(lanes) {
+                    launch {
+                        while (true) {
+                            val job = engine.next() ?: break
+                            show(job.track.title, LyricsStage.SENDING)
+                            val outcome = engine.run(job) { stage -> show(job.track.title, stage) }
+                            synchronized(outcomes) { outcomes += outcome }
+                            finished(job.track.title)
+                        }
+                    }
+                }
             }
         } finally {
-            notifyFinished(outcomes)
+            notifyFinished(synchronized(outcomes) { outcomes.toList() })
         }
         return Result.success()
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo = foregroundInfo()
 
+    @Synchronized
     private fun show(title: String, stage: LyricsStage) {
-        current = title to stage
+        current[title] = stage
         // A foreground start can be refused from the background on Android
         // 12+; the work goes on without its notification then.
         runCatching { setForegroundAsync(foregroundInfo()) }
     }
 
+    @Synchronized
+    private fun finished(title: String) {
+        current.remove(title)
+        done += 1
+    }
+
+    @Synchronized
     private fun foregroundInfo(): ForegroundInfo {
         createChannel(applicationContext)
-        val (title, stage) = current ?: ("a song" to LyricsStage.SENDING)
-        val text = when (stage) {
-            LyricsStage.DOWNLOADING -> "Downloading the song first"
-            LyricsStage.SENDING -> "Sending the song to the server"
-            LyricsStage.HEARING -> "The server is hearing every word"
+        val first = current.entries.firstOrNull()
+        val total = done + current.size
+        val title = when {
+            current.size > 1 -> "Timing lyrics: ${current.size} songs"
+            first != null -> "Timing lyrics: ${first.key}"
+            else -> "Timing lyrics"
+        }
+        val stage = first?.value ?: LyricsStage.SENDING
+        val text = buildString {
+            if (current.size > 1 && first != null) append(first.key).append(" · ")
+            append(
+                when (stage) {
+                    LyricsStage.DOWNLOADING -> "Downloading the song first"
+                    LyricsStage.SENDING -> "Sending the song to the server"
+                    LyricsStage.HEARING -> "The server is hearing every word"
+                },
+            )
+            if (total > 1) append(" · $done of $total done")
         }
         val notification: Notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Timing lyrics: $title")
+            .setContentTitle(title)
             .setContentText(text)
             .setContentIntent(openApp())
             .setOngoing(true)
@@ -128,6 +168,9 @@ class LyricsSyncWorker @AssistedInject constructor(
 
     companion object {
         const val WORK_NAME = "lyrics_timing"
+
+        /** Songs in flight at once at most: each is a download and an upload from the phone. */
+        const val MAX_LANES = 8
         private const val CHANNEL_ID = "lyrics_timing"
         private const val NOTIFICATION_ID = 8300
         private const val DONE_NOTIFICATION_ID = 8301
