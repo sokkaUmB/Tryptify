@@ -65,6 +65,17 @@ class LyricsEditTest {
     }
 
     @Test
+    fun aSelectionAlwaysExists() {
+        // A tap on a plain line (no words) crashed the editor on an empty range (seen on device).
+        assertEquals(1 to 0, LyricsEdit.clamp(timed, 1, 3))
+        assertEquals(0 to 1, LyricsEdit.clamp(timed, 0, 7))
+        assertEquals(1 to 0, LyricsEdit.clamp(timed, 9, 9))
+        assertEquals(0 to 0, LyricsEdit.clamp(timed, -1, -1))
+        assertEquals(0 to 0, LyricsEdit.clamp(Lyrics(isSynced = true), 2, 2))
+        assertEquals(0 to 0, LyricsEdit.clamp(null, 2, 2))
+    }
+
+    @Test
     fun linesComeAndGoAndTellWhenOutOfOrder() {
         val more = LyricsEdit.insertLine(timed, 0, "between", 15_000)
         assertEquals(listOf("Hello darkness", "between", "plain line"), more.lines.map { it.text })

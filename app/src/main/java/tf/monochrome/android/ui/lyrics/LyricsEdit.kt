@@ -108,6 +108,18 @@ object LyricsEdit {
         return lyrics.copy(lines = lyrics.lines.filterIndexed { i, _ -> i != index })
     }
 
+    /**
+     * A selection that exists in [lyrics]: the last line and word at most,
+     * the first at least, and word zero on a line with no words (the editor
+     * crashed on that line's empty range, seen on device).
+     */
+    fun clamp(lyrics: Lyrics?, line: Int, word: Int): Pair<Int, Int> {
+        val lines = lyrics?.lines.orEmpty()
+        val at = line.coerceIn(0, (lines.size - 1).coerceAtLeast(0))
+        val words = lines.getOrNull(at)?.words?.size ?: 0
+        return at to word.coerceIn(0, (words - 1).coerceAtLeast(0))
+    }
+
     /** Lines in time order, for saving: the editor shows them as they are. */
     fun sorted(lyrics: Lyrics): Lyrics = lyrics.copy(lines = lyrics.lines.sortedBy { it.timeMs }, isSynced = true)
 

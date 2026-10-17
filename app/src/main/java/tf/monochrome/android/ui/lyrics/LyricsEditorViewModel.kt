@@ -123,9 +123,9 @@ class LyricsEditorViewModel @Inject constructor(
     }
 
     fun select(line: Int, word: Int = 0) {
-        val lines = _draft.value?.lines ?: return
-        _selectedLine.value = line.coerceIn(0, (lines.size - 1).coerceAtLeast(0))
-        _selectedWord.value = word.coerceIn(0, (lines.getOrNull(_selectedLine.value)?.words?.size ?: 1) - 1)
+        val (at, w) = LyricsEdit.clamp(_draft.value ?: return, line, word)
+        _selectedLine.value = at
+        _selectedWord.value = w
     }
 
     /** One move, undoable. */
