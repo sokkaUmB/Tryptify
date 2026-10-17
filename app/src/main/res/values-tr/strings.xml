@@ -1379,6 +1379,15 @@
     <string name="eq_filter_bands_caps">FİLTRE BANTLARI</string>
     <string name="eq_max_hz_caps">MAKS. HZ</string>
     <string name="eq_export_eq">EQ’yu dışa aktar</string>
+    <string name="eq_nothing_export">Nothing Ear\'a aktar</string>
+    <string name="eq_nothing_title">Nothing Ear EQ</string>
+    <string name="eq_nothing_fitting">8 banda uyarlanıyor…</string>
+    <string name="eq_nothing_fit">8 bant, bu EQ\'dan en fazla %1$s dB fark (ortalama %2$s dB)</string>
+    <string name="eq_nothing_howto">Nothing X\'te tara: Ekolayzer → Gelişmiş → QR simgesi. Başka bir ekrandan taramak için görseli kaydet.</string>
+    <string name="eq_nothing_hack">Bazı bantlar ±6 dB\'yi aşabilir. Nothing X bunları korur, ancak kaydırıcıları 0 gösterir ve birini oynatmak onu sıfırlar.</string>
+    <string name="eq_nothing_save">Görseli kaydet</string>
+    <string name="eq_nothing_saved">QR kodu kaydedildi</string>
+    <string name="eq_nothing_save_failed">QR kodu kaydedilemedi</string>
     <string name="eq_save_as_preset">Ön ayar olarak kaydet</string>
     <string name="eq_remove_band">Bandı kaldır</string>
     <string name="eq_next_sample">Sonraki örnek</string>

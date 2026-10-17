@@ -290,6 +290,8 @@ dependencies {
     // JAudioTagger — write Vorbis comments into downloaded FLACs (THX designation)
     // and read them back on rescan. Pure JVM; only text tags are touched.
     implementation(libs.jaudiotagger)
+    // QR codes for the Nothing Ear EQ export
+    implementation(libs.zxing.core)
 
     // Hilt
     implementation(libs.hilt.android)

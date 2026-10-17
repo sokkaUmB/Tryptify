@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import tf.monochrome.android.audio.eq.AutoEqEngine
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Save
@@ -143,6 +144,7 @@ fun EqualizerScreen(
     var importForRight by rememberSaveable { mutableStateOf(false) }
     var showProfileImport by rememberSaveable { mutableStateOf(false) }
     var showHelp by rememberSaveable { mutableStateOf(false) }
+    var showNothingExport by rememberSaveable { mutableStateOf(false) }
     var headphoneSelectForRight by rememberSaveable { mutableStateOf(false) }
     var pendingTargetData by rememberSaveable { mutableStateOf("") }
     var targetName by rememberSaveable { mutableStateOf("") }
@@ -799,6 +801,26 @@ fun EqualizerScreen(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    IconButton(
+                        onClick = {
+                            if (activeBands.isEmpty()) {
+                                android.widget.Toast.makeText(context, context.getString(R.string.eq_no_bands_to_export), android.widget.Toast.LENGTH_SHORT).show()
+                            } else {
+                                showNothingExport = true
+                            }
+                        },
+                        modifier = Modifier
+                            .size(52.dp)
+                            .liquidGlass(
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                    ) {
+                        Icon(
+                            Icons.Default.QrCode2,
+                            contentDescription = stringResource(R.string.eq_nothing_export),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Spacer(modifier = Modifier.weight(1f))
                     IconButton(
                         onClick = {
@@ -1237,6 +1259,16 @@ fun EqualizerScreen(
 
     if (showHelp) {
         AutoEqHelpSheet(onDismiss = { showHelp = false })
+    }
+
+    if (showNothingExport) {
+        // The earbuds run one EQ for both ears: export the ear on screen, with
+        // the tone shelves folded in, since they are part of what plays.
+        NothingEarExportDialog(
+            bands = activeBands + toneControls.toBands(),
+            name = activePreset?.name ?: "Tryptify",
+            onDismiss = { showNothingExport = false },
+        )
     }
 
     if (showProfileImport) {

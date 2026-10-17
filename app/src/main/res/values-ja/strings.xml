@@ -1336,6 +1336,15 @@
     <string name="eq_filter_bands_caps">フィルターバンド</string>
     <string name="eq_max_hz_caps">最大 Hz</string>
     <string name="eq_export_eq">EQ を書き出す</string>
+    <string name="eq_nothing_export">Nothing Ear に書き出す</string>
+    <string name="eq_nothing_title">Nothing Ear EQ</string>
+    <string name="eq_nothing_fitting">8 バンドに合わせています…</string>
+    <string name="eq_nothing_fit">8 バンド、この EQ との差は最大 %1$s dB(平均 %2$s dB)</string>
+    <string name="eq_nothing_howto">Nothing X でスキャン: イコライザー → 詳細 → QR アイコン。別の画面から読み取るには画像を保存してください。</string>
+    <string name="eq_nothing_hack">±6 dB を超えるバンドがあります。Nothing X はその値を保持しますが、スライダーには 0 と表示され、動かすとリセットされます。</string>
+    <string name="eq_nothing_save">画像を保存</string>
+    <string name="eq_nothing_saved">QR コードを保存しました</string>
+    <string name="eq_nothing_save_failed">QR コードを保存できませんでした</string>
     <string name="eq_save_as_preset">プリセットとして保存</string>
     <string name="eq_remove_band">バンドを削除</string>
     <string name="eq_next_sample">次のサンプル</string>
