@@ -2505,6 +2505,7 @@
     <string name="crt_reset_slider">%1$s をリセット</string>
     <string name="crt_presets">プリセット</string>
     <string name="crt_presets_hint">タップで適用します。「保存」で今の見た目を残し、「書き出し」と「読み込み」でファイルとして受け渡せます。</string>
+    <string name="crt_preset_standard">デフォルト</string>
     <string name="crt_preset_arcade">アーケード</string>
     <string name="crt_preset_trinitron">トリニトロン</string>
     <string name="crt_preset_living_room">リビング</string>

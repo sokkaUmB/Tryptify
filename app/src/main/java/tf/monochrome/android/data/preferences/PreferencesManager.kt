@@ -694,9 +694,14 @@ class PreferencesManager @Inject constructor(
         dataStore.edit { it[APP_TV_SHADER] = shader.id }
     }
 
-    /** The CRT effect's sliders, each held to its range; every default until one is moved. */
+    /**
+     * The CRT effect's sliders, each held to its range; until one is moved,
+     * the effect's own default look (CrtPresets.DEFAULT).
+     */
     val appTvTuning: Flow<tf.monochrome.android.glyph.engine.GlyphTvTuning> = dataStore.data.map { prefs ->
-        tf.monochrome.android.glyph.engine.GlyphTvTuning.decode(prefs[APP_TV_TUNING])
+        prefs[APP_TV_TUNING]?.takeIf { it.isNotBlank() }
+            ?.let { tf.monochrome.android.glyph.engine.GlyphTvTuning.decode(it) }
+            ?: tf.monochrome.android.glyph.engine.CrtPresets.DEFAULT.tuning
     }
 
     suspend fun setAppTvTuning(tuning: tf.monochrome.android.glyph.engine.GlyphTvTuning) {

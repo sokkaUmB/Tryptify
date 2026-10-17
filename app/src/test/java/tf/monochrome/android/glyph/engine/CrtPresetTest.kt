@@ -7,23 +7,56 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The four built-in CRT looks, and a preset's file going out and back in. */
+/** The built-in CRT looks, the effect's default among them, and a preset's file going out and back in. */
 class CrtPresetTest {
 
     private val height = 2400
 
     @Test
-    fun thereAreFourBuiltInsEachDistinctAndInRange() {
+    fun theDefaultIsTheOwnersTuningAndComesFirst() {
+        val default = CrtPresets.DEFAULT
+        assertEquals(CrtPresets.STANDARD, CrtPresets.BUILT_IN.first())
+        assertEquals(default, CrtPresets.builtIns(height).first())
+        assertEquals(GlyphTvShader.CRT, default.shader)
+        val tv = default.tuning
+        assertEquals(0.3403984f, tv.strength, 1e-6f)
+        assertEquals(1f, tv.mask, 1e-6f)
+        assertEquals(13.298708f, tv.curveTopDeg, 1e-5f)
+        assertEquals(14.036858f, tv.curveSideDeg, 1e-5f)
+        assertEquals(0.9638945f, tv.corners, 1e-6f)
+        assertEquals(4, tv.pixelSizes[GlyphTvShader.CRT])
+        assertEquals(5, tv.pixelSizes[GlyphTvShader.ROYALE])
+        // Already in range, and the same on every screen.
+        assertEquals(tv, tv.clamped())
+        assertEquals(default, CrtPresets.builtIn(CrtPresets.STANDARD, 0))
+    }
+
+    @Test
+    fun resetGoesBackToTheDefaultGivenAndKeepsTheOtherLooksSizes() {
+        val moved = CrtPresets.DEFAULT.tuning.copy(strength = 1f, vignette = 0f)
+            .withPixelSize(GlyphTvShader.CRT, 9).withPixelSize(GlyphTvShader.WAVE, 9)
+        val back = moved.reset(GlyphTvShader.CRT, CrtPresets.DEFAULT.tuning)
+        assertEquals(CrtPresets.DEFAULT.tuning.strength, back.strength)
+        assertEquals(CrtPresets.DEFAULT.tuning.vignette, back.vignette)
+        assertEquals(4, back.pixelSizes[GlyphTvShader.CRT])
+        assertEquals(9, back.pixelSizes[GlyphTvShader.WAVE])
+        // Without a base, the shader's own numbers, as before.
+        assertEquals(GlyphTvTuning().strength, moved.reset(GlyphTvShader.CRT).strength)
+        assertEquals(null, moved.reset(GlyphTvShader.CRT).pixelSizes[GlyphTvShader.CRT])
+    }
+
+    @Test
+    fun thereAreFiveBuiltInsEachDistinctAndInRange() {
         val presets = CrtPresets.builtIns(height)
-        assertEquals(4, presets.size)
+        assertEquals(5, presets.size)
         assertEquals(CrtPresets.BUILT_IN, presets.map { it.builtInId })
         // None is the plain picture, and every one is already in range.
         presets.forEach { preset ->
             assertNotEquals(GlyphTvShader.OFF, preset.shader)
             assertEquals(preset.tuning, preset.tuning.clamped())
         }
-        // Four different looks, not one look four times.
-        assertEquals(4, presets.map { it.shader to it.tuning }.toSet().size)
+        // Five different looks, not one look five times.
+        assertEquals(5, presets.map { it.shader to it.tuning }.toSet().size)
     }
 
     @Test

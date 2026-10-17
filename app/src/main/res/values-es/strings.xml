@@ -2637,6 +2637,7 @@
     <string name="crt_reset_slider">Restablecer %1$s</string>
     <string name="crt_presets">Ajustes predefinidos</string>
     <string name="crt_presets_hint">Toca uno para usarlo. Guardar conserva el aspecto actual; Exportar e Importar lo comparten como archivo.</string>
+    <string name="crt_preset_standard">Predeterminado</string>
     <string name="crt_preset_arcade">Arcade</string>
     <string name="crt_preset_trinitron">Trinitron</string>
     <string name="crt_preset_living_room">Salón</string>

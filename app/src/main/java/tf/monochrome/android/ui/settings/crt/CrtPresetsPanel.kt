@@ -64,6 +64,7 @@ fun CrtPresetsPanel(
 
     val builtInName: (CrtPreset) -> String = { preset ->
         when (preset.builtInId) {
+            CrtPresets.STANDARD -> context.getString(R.string.crt_preset_standard)
             CrtPresets.ARCADE -> context.getString(R.string.crt_preset_arcade)
             CrtPresets.TRINITRON -> context.getString(R.string.crt_preset_trinitron)
             CrtPresets.LIVING_ROOM -> context.getString(R.string.crt_preset_living_room)

@@ -1386,8 +1386,8 @@ blue up to 3 dp either side of green.
 **CRT presets are one panel, in every place the CRT is set.**
 `CrtPresetsPanel` sits in Settings › Appearance › CRT effect, the Lyrics FX
 tab and Trypt Mania's Graphics, all reading one store (`CrtPresetStore`), so
-a look saved in one is offered in the others. Four built-ins (Arcade,
-Trinitron, Living room, VHS) come first, then the user's own. A chip is
+a look saved in one is offered in the others. The built-ins come first:
+Default, then Arcade, Trinitron, Living room and VHS; then the user's own. A chip is
 picked only when the look on screen is exactly it; a picked one of the
 user's can be deleted. Picking one sets the look and every slider together,
 and turns the effect on. Save names the look on screen; Export writes it to
@@ -1396,6 +1396,14 @@ a `.crt.json` file (type `tryptify-crt-preset`, the sliders in
 user's and applies it, every slider held to its range. The built-ins' line
 counts follow the screen's height, since a TV pixel is a whole number of
 the phone's own.
+
+**The CRT effect has a default look of its own** (`CrtPresets.DEFAULT`,
+the owner's tuning: the CRT look at a third of its strength, a full mask,
+bowed glass with round corners, a thin frame, a little glare). Until a
+slider is moved the app-wide effect is that look, and its Reset and every
+per-slider reset go back to it. The effect itself stays off until switched
+on. Trypt Mania's game TV keeps the shader's own numbers as its defaults;
+the Default chip is there too.
 
 **Every CRT slider has its own reset** (`SliderReset`): beside its label
 or reading, always there so the row never jumps, dimmed and inert while

@@ -2571,6 +2571,7 @@
     <string name="crt_reset_slider">%1$s sıfırla</string>
     <string name="crt_presets">Hazır ayarlar</string>
     <string name="crt_presets_hint">Kullanmak için birine dokun. Kaydet ekrandaki görünümü saklar; Dışa aktar ve İçe aktar onu dosya olarak paylaşır.</string>
+    <string name="crt_preset_standard">Varsayılan</string>
     <string name="crt_preset_arcade">Atari salonu</string>
     <string name="crt_preset_trinitron">Trinitron</string>
     <string name="crt_preset_living_room">Oturma odası</string>

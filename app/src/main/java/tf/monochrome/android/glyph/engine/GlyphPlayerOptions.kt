@@ -432,10 +432,13 @@ data class GlyphTvTuning(
     )
 
     /**
-     * Back to [shader]'s defaults: every slider that look shows, and its own
-     * pixel size; the other looks' sizes are kept.
+     * Back to [shader]'s defaults, as [base] has them: every slider that look
+     * shows, and its own pixel size; the other looks' sizes are kept. [base]
+     * is the shader's own numbers unless a place has a default of its own
+     * (the app's CRT effect: [CrtPresets.DEFAULT]).
      */
-    fun reset(shader: GlyphTvShader): GlyphTvTuning = GlyphTvTuning(pixelSizes = pixelSizes - shader)
+    fun reset(shader: GlyphTvShader, base: GlyphTvTuning = GlyphTvTuning()): GlyphTvTuning =
+        base.copy(pixelSizes = (pixelSizes - shader) + base.pixelSizes.filterKeys { it == shader })
 
     /**
      * One line for a settings store: `name=value` pairs, `;` between them,

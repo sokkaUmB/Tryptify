@@ -178,7 +178,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
                 stringResource(R.string.settings_crt_tv_pixels, window.width / pixel, window.height / pixel)
             },
             value = pixel.toFloat(),
-            default = GlyphTvTuning.defaultPixelSize(shader, density, window.height).coerceIn(range).toFloat(),
+            default = TV_DEFAULTS.pixelSize(shader, density, window.height).toFloat(),
             range = range.first.toFloat()..range.last.toFloat(),
             steps = range.last - range.first - 1,
             onChange = { drag(tv.withPixelSize(shader, it.roundToInt())) },
@@ -333,7 +333,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
         OutlinedButton(
             onClick = {
                 live.tuning = null
-                prefs.setAppTvTuning(tv.reset(shader))
+                prefs.setAppTvTuning(tv.reset(shader, tf.monochrome.android.glyph.engine.CrtPresets.DEFAULT.tuning))
             },
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -490,5 +490,5 @@ private fun CrtSlider(
     )
 }
 
-/** Every CRT slider's default, for its reset. */
-private val TV_DEFAULTS = GlyphTvTuning()
+/** Every CRT slider's default, for its reset: the CRT effect's own default look. */
+private val TV_DEFAULTS = tf.monochrome.android.glyph.engine.CrtPresets.DEFAULT.tuning

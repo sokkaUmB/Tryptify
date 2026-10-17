@@ -29,12 +29,35 @@ data class CrtPreset(
 }
 
 /**
- * The four built-in looks, and the file a preset is exported as.
+ * The built-in looks ([DEFAULT] first, then four), and the file a preset is
+ * exported as.
  *
  * The built-ins need the screen's height: a TV pixel is a whole number of
  * the phone's own, so "240 lines" is a different pixel size on every phone.
  */
 object CrtPresets {
+
+    /**
+     * The CRT effect's own default, the owner's tuning: the CRT look, soft
+     * (a third of the effect), a full mask, bowed glass with round corners,
+     * a thin frame, and a little glare. What the app-wide effect starts from
+     * and its resets go back to. Its pixel sizes are fixed, as tuned.
+     */
+    const val STANDARD = "standard"
+    private const val STANDARD_LINE =
+        "strength=0.3403984;brightness=0.8908269;scanlines=0.54010546;mask=1.0;glow=0.63548666;sharpness=1.0;" +
+            "chromatic=0.0;curveTop=13.298708;curveSide=14.036858;tiltSide=0.0;tiltTop=0.0;bezel=0.14916582;" +
+            "corners=0.9638945;vignette=0.40265927;glare=0.33509004;royaleMask=1;royaleTriad=0;royaleMaskStrength=1.0;" +
+            "royaleBeamWidth=0.4;royaleBeamShape=0.25;royaleHalation=0.0;royaleDiffusion=0.15;royaleBloom=0.0;" +
+            "royaleBorder=0.25;px.scanlines=4;px.diagonal=3;px.triangular=2;px.wave=6;px.crt=4;px.royale=5"
+
+    /** [STANDARD] as a preset. */
+    val DEFAULT: CrtPreset = CrtPreset(
+        name = "Default",
+        shader = GlyphTvShader.CRT,
+        tuning = GlyphTvTuning.decode(STANDARD_LINE).clamped(),
+        builtInId = STANDARD,
+    )
 
     const val ARCADE = "arcade"
     const val TRINITRON = "trinitron"
@@ -42,10 +65,11 @@ object CrtPresets {
     const val VHS = "vhs"
 
     /** The built-ins' ids, in the order the chips show them. */
-    val BUILT_IN = listOf(ARCADE, TRINITRON, LIVING_ROOM, VHS)
+    val BUILT_IN = listOf(STANDARD, ARCADE, TRINITRON, LIVING_ROOM, VHS)
 
     /** The built-in [id] on a screen [windowHeightPx] tall; null for an unknown id. */
     fun builtIn(id: String, windowHeightPx: Int): CrtPreset? = when (id) {
+        STANDARD -> DEFAULT
         // An arcade cabinet's monitor: hard scanlines, a strong shadow mask,
         // the phosphors blooming, and glass bowed toward the player.
         ARCADE -> CrtPreset(

@@ -2576,6 +2576,7 @@
     <string name="crt_reset_slider">Reset %1$s</string>
     <string name="crt_presets">Presets</string>
     <string name="crt_presets_hint">Tap one to use it. Save keeps the look on screen; Export and Import pass it on as a file.</string>
+    <string name="crt_preset_standard">Default</string>
     <string name="crt_preset_arcade">Arcade</string>
     <string name="crt_preset_trinitron">Trinitron</string>
     <string name="crt_preset_living_room">Living room</string>
