@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
+import tf.monochrome.android.ui.glyph.LocalAppTvShader
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.luminance
@@ -144,7 +145,12 @@ internal fun rememberFrameSeconds(animated: Boolean = true): State<Float> {
     // most expensive thing the setting touches: while the player or the mini
     // player is on screen this pins the process at display refresh rate, and
     // the mini player is mounted by the nav host on every tab.
-    if (animated && !LocalLowPerformance.current.disableAnimations) {
+    // Under the CRT effect over the whole app the glass holds still too: the
+    // app is one layer through two full-screen shader passes, and every
+    // frame of glass motion re-ran both over every pixel — a phone running
+    // hot on the library screen (seen on device). The tube and the mask
+    // hide a breath of glass anyway.
+    if (animated && !LocalLowPerformance.current.disableAnimations && !LocalAppTvShader.current) {
         LaunchedEffect(Unit) {
             while (true) {
                 withFrameNanos { now ->

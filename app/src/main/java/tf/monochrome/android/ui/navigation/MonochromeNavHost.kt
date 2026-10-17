@@ -1317,10 +1317,17 @@ private fun TabChrome(
         ) {
             miniPlayer?.invoke(Modifier.fillMaxWidth())
         }
+        // The two rows never share the screen at half strength: the one going
+        // fades out first, then the one coming fades in. Crossfaded, the full
+        // bar's slab and its shadow sat at half opacity behind the folded pill
+        // and the mini player for a quarter of a second, a grey slab across the
+        // bottom with every fold (seen on device).
+        val outMillis = foldMillis * 2 / 5
         AnimatedContent(
             targetState = collapsed,
             transitionSpec = {
-                fadeIn(tween(foldMillis)) togetherWith fadeOut(tween(foldMillis)) using
+                fadeIn(tween(foldMillis - outMillis, delayMillis = outMillis)) togetherWith
+                    fadeOut(tween(outMillis)) using
                     SizeTransform(clip = false)
             },
             label = "tabChromeFold",

@@ -269,6 +269,14 @@ nor its shadow, and the preview shows a flat pill that is not what ships,
 which is what it did until this was fixed. The backdrop must have detail:
 over a smooth gradient, blur, refraction and dispersion move nothing visible.
 
+**Under the CRT effect over the whole app, the glass holds still.**
+`rememberFrameSeconds` runs no frame clock while `LocalAppTvShader` is on, as
+it runs none under "Disable animations": the app is one layer through two
+full-screen shader passes, and every frame of glass motion re-ran both over
+every pixel, so the library screen alone ran the phone hot (seen on device).
+The tube and the mask hide a breath of glass anyway. Turning the CRT off
+brings the motion back.
+
 ### Lyrics: letter glass and god rays
 
 **The lyric glass reads the same optics as the player's, and its defaults are
@@ -661,6 +669,13 @@ disables those eyes, the view model refuses the write, and `visiblePages()`
 restores them regardless — the third layer is not redundant: a hidden set can
 arrive from another device's settings sync without either of the first two ever
 running on this one. Hiding Discover or Radio removes its tab, nothing more.
+
+**The bottom bar's fold is two fades in turn, never a crossfade.** The row
+going fades out in the first two fifths of the fold, then the row coming
+fades in (`TabChrome`'s `AnimatedContent`). Crossfaded, the full-width bar's
+slab and its glass shadow sat at half opacity behind the folded pill and the
+mini player for a quarter of a second: a grey slab across the bottom of the
+screen with every scroll (seen on device).
 
 ### List rows
 
