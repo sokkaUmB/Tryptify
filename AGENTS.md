@@ -1,7 +1,7 @@
 # Tryptify — notes for agents
 
-`CLAUDE.md` is gitignored in this repo, so anything that has to survive a fresh
-clone lives here or under `docs/`.
+Project notes live here and under `docs/`. `CLAUDE.md` imports this file and
+adds the owner's standing rules (branch, secrets, how to report back).
 
 ## Read before changing the UI
 

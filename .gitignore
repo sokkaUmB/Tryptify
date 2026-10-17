@@ -123,8 +123,6 @@ tools/cities15000.zip
 # but these ship in the APK — and the licence file has to travel with the fonts
 # it covers, so it is not optional.
 
-# Local Claude Code guidance (untracked by request)
-CLAUDE.md
 tools/__pycache__/
 
 # Design canvas sources. The seeded .html is 2 MB of build output and stays
