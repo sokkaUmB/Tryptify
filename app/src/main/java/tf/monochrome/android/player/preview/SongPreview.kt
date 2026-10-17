@@ -41,6 +41,8 @@ import tf.monochrome.android.data.cache.DeezerStreamCacheManager
 import tf.monochrome.android.data.cache.QobuzPartialDataSource
 import tf.monochrome.android.data.cache.QobuzStreamCacheManager
 import tf.monochrome.android.data.cache.SchemeRoutingDataSource
+import tf.monochrome.android.domain.model.AudioQuality
+import tf.monochrome.android.domain.model.PlaybackSource
 import tf.monochrome.android.domain.model.SourceType
 import tf.monochrome.android.domain.model.Track
 import tf.monochrome.android.domain.model.UnifiedTrack
@@ -88,12 +90,18 @@ class SongPreview @Inject constructor(
     private var playedFromMs = -1L
 
     fun start(track: Track) = begin(keyOf(track)) {
-        val (item, _) = resolver.resolveMediaItem(track, askForOtherService = false)
+        val (item, _) = resolver.resolveMediaItem(track, askForOtherService = false, quality = previewQuality(track.id, track.deezerId))
         item?.let { Clip(it, startMs(it.localConfiguration?.uri?.scheme, track.duration, drop = null)) }
     }
 
     fun start(track: UnifiedTrack) = begin(keyOf(track)) {
-        val resolved = resolver.resolveUnifiedTrack(track, askForOtherService = false)
+        val source = track.source
+        val quality = when (source) {
+            is PlaybackSource.QobuzCached -> previewQuality(source.qobuzId, null)
+            is PlaybackSource.DeezerPreview -> previewQuality(null, source.deezerId)
+            else -> PREVIEW_QUALITY
+        }
+        val resolved = resolver.resolveUnifiedTrack(track, askForOtherService = false, quality = quality)
         if (!resolved.isPlayable || resolved.isEncrypted) return@begin null
         val drop = if (track.sourceType == SourceType.LOCAL) rememberedDrop(track.id) else null
         Clip(resolved.mediaItem, startMs(resolved.mediaItem.localConfiguration?.uri?.scheme, track.durationSeconds, drop))
@@ -127,6 +135,21 @@ class SongPreview @Inject constructor(
     }
 
     private class Clip(val item: MediaItem, val startMs: Long)
+
+    /**
+     * What a preview streams at: 320 kbps, which starts in a moment and costs
+     * little for 25 s of a song that may not be played at all — unless the
+     * song is already in the Qobuz or Deezer cache whole at any quality, which
+     * plays from disk and is better than any stream. A file on the phone
+     * takes no quality at all; the resolver finds it first.
+     */
+    private fun previewQuality(qobuzId: Long?, deezerId: Long?): AudioQuality? {
+        for (quality in AudioQuality.entries) {
+            if (qobuzId != null && runCatching { qobuzCache.peekCached(qobuzId, quality) }.getOrNull() != null) return null
+            if (deezerId != null && runCatching { deezerCache.peekCached(deezerId, quality) }.getOrNull() != null) return null
+        }
+        return PREVIEW_QUALITY
+    }
 
     private fun begin(key: String, resolve: suspend () -> Clip?) {
         // Another song held: its preview ends now, not after a fade.
@@ -256,6 +279,9 @@ class SongPreview @Inject constructor(
 
         /** How long a preview plays. */
         const val PREVIEW_MS = 25_000L
+
+        /** What a preview streams at: 320 kbps on every catalogue (AAC on TIDAL and Apple, MP3 on Qobuz and Deezer). */
+        val PREVIEW_QUALITY = AudioQuality.HIGH
 
         private const val FADE_IN_MS = 120f
         private const val FADE_OUT_MS = 1_500f

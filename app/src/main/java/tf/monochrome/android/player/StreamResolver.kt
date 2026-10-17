@@ -85,7 +85,15 @@ class StreamResolver @Inject constructor(
     // [askForOtherService]: when TIDAL cannot play the track, whether to ask
     // the listener about the Qobuz copy (SourceConsent). False for background
     // resolves of an upcoming track, which must not ask while another plays.
-    suspend fun resolveMediaItem(track: Track, askForOtherService: Boolean = true): Pair<MediaItem?, TrackStream?> {
+    //
+    // [quality]: the stream quality to ask for instead of the listener's
+    // setting — the song preview asks for 320 kbps, which starts in a moment
+    // and costs little; null plays as the settings say.
+    suspend fun resolveMediaItem(
+        track: Track,
+        askForOtherService: Boolean = true,
+        quality: AudioQuality? = null,
+    ): Pair<MediaItem?, TrackStream?> {
         // On-device copy wins over the stream, whichever screen queued this.
         localFor(
             title = track.title,
@@ -110,19 +118,19 @@ class StreamResolver @Inject constructor(
         // here covers all of them at once — the same guard HiFiApiClient's
         // getLyrics already applies for the same reason.
         if (qobuzIdRegistry.isQobuzTrack(track.id)) {
-            return Pair(qobuzCachedMediaItem(track), null)
+            return Pair(qobuzCachedMediaItem(track, quality), null)
         }
 
         // Deezer ids share the number range with TIDAL's, so this must come
         // before the TIDAL lookup below — and before its Qobuz fallback, which
         // would fetch the ISRC of the TIDAL track that has this number.
         if (track.deezerId != null || qobuzIdRegistry.isDeezerTrack(track.id)) {
-            val uri = deezerStreamUri(track.deezerId ?: track.id, repository.streamQuality(ApiService.DEEZER))
+            val uri = deezerStreamUri(track.deezerId ?: track.id, quality ?: repository.streamQuality(ApiService.DEEZER))
                 ?: return Pair(null, null)
             return Pair(buildFileMediaItem(track, uri), null)
         }
 
-        val streamResult = repository.getTrackStream(track.id)
+        val streamResult = if (quality != null) repository.getTrackStream(track.id, quality) else repository.getTrackStream(track.id)
         val trackStream = streamResult.getOrNull()
 
         // For non-DASH streams the URL must be non-blank — DASH carries its
@@ -197,7 +205,11 @@ class StreamResolver @Inject constructor(
 
     // New method for UnifiedTrack
     @OptIn(UnstableApi::class)
-    suspend fun resolveUnifiedTrack(track: UnifiedTrack, askForOtherService: Boolean = true): ResolvedMedia {
+    suspend fun resolveUnifiedTrack(
+        track: UnifiedTrack,
+        askForOtherService: Boolean = true,
+        quality: AudioQuality? = null,
+    ): ResolvedMedia {
         val source = track.source
 
         // Prefer the on-device copy over any remote source. This sits in the
@@ -233,10 +245,10 @@ class StreamResolver @Inject constructor(
         return when (source) {
             is PlaybackSource.LocalFile -> resolveLocalFile(track, source)
             is PlaybackSource.CollectionDirect -> resolveCollectionDirect(track, source)
-            is PlaybackSource.HiFiApi -> resolveHiFiApi(track, source, askForOtherService)
-            is PlaybackSource.QobuzCached -> resolveQobuzCached(track, source)
-            is PlaybackSource.AppleCached -> resolveAppleCached(track, source)
-            is PlaybackSource.DeezerPreview -> resolveDeezer(track, source)
+            is PlaybackSource.HiFiApi -> resolveHiFiApi(track, source, askForOtherService, quality)
+            is PlaybackSource.QobuzCached -> resolveQobuzCached(track, source, quality)
+            is PlaybackSource.AppleCached -> resolveAppleCached(track, source, quality)
+            is PlaybackSource.DeezerPreview -> resolveDeezer(track, source, quality)
             is PlaybackSource.RadioStream -> resolveRadioStream(track, source)
         }
     }
@@ -297,10 +309,11 @@ class StreamResolver @Inject constructor(
     private suspend fun resolveAppleCached(
         track: UnifiedTrack,
         source: PlaybackSource.AppleCached,
+        quality: AudioQuality? = null,
     ): ResolvedMedia {
         val streamUrl = repository.appleStreamUrl(
             appleId = source.appleId,
-            quality = source.preferredQuality,
+            quality = quality ?: source.preferredQuality,
             atmos = track.isThxSpatialAudio,
         ).getOrNull()
 
@@ -334,8 +347,9 @@ class StreamResolver @Inject constructor(
     private suspend fun resolveDeezer(
         track: UnifiedTrack,
         source: PlaybackSource.DeezerPreview,
+        quality: AudioQuality? = null,
     ): ResolvedMedia {
-        val uri = deezerStreamUri(source.deezerId, repository.streamQuality(ApiService.DEEZER))
+        val uri = deezerStreamUri(source.deezerId, quality ?: repository.streamQuality(ApiService.DEEZER))
 
         val metadata = MediaMetadata.Builder()
             .setTitle(track.title)
@@ -379,11 +393,12 @@ class StreamResolver @Inject constructor(
     private suspend fun resolveQobuzCached(
         track: UnifiedTrack,
         source: PlaybackSource.QobuzCached,
+        wanted: AudioQuality? = null,
     ): ResolvedMedia {
         // Starts the download and returns once the headers are in; the player
         // reads the cache file as it fills. Null still means "can't play this"
         // (Qobuz unconfigured, or the request failed outright).
-        val quality = repository.streamQuality(ApiService.QOBUZ)
+        val quality = wanted ?: repository.streamQuality(ApiService.QOBUZ)
         val started = qobuzCache.openPartial(source.qobuzId, quality) != null
 
         val metadata = MediaMetadata.Builder()
@@ -446,8 +461,8 @@ class StreamResolver @Inject constructor(
      * treat a null MediaItem as "skip this track", which is the right outcome —
      * far better than quietly serving someone else's recording from TIDAL.
      */
-    private suspend fun qobuzCachedMediaItem(track: Track): MediaItem? {
-        val quality = repository.streamQuality(ApiService.QOBUZ)
+    private suspend fun qobuzCachedMediaItem(track: Track, wanted: AudioQuality? = null): MediaItem? {
+        val quality = wanted ?: repository.streamQuality(ApiService.QOBUZ)
         val started = runCatching { qobuzCache.openPartial(track.id, quality) }
             .getOrNull() ?: return null
         return buildFileMediaItem(
@@ -557,8 +572,9 @@ class StreamResolver @Inject constructor(
         track: UnifiedTrack,
         source: PlaybackSource.HiFiApi,
         askForOtherService: Boolean,
+        quality: AudioQuality? = null,
     ): ResolvedMedia {
-        val streamResult = repository.getTrackStream(source.tidalId)
+        val streamResult = if (quality != null) repository.getTrackStream(source.tidalId, quality) else repository.getTrackStream(source.tidalId)
         val trackStream = streamResult.getOrNull()
 
         // DASH carries its MPD inline (PlaybackService rebuilds the source),

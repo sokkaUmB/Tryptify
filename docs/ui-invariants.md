@@ -712,6 +712,14 @@ its text, from the accent through amber to red as the time runs out
 `LocalSongPreview`, given at the nav host the way `LocalPlayInTryptMania` is, so
 no screen wires it by hand.
 
+**A held song streams at 320 kbps.** `SongPreview` asks the resolver for
+`AudioQuality.HIGH` (AAC on TIDAL and Apple, MP3 on Qobuz and Deezer): a
+25 s preview of a song that may never be played should start in a moment
+and cost little, not fetch a Hi-Res FLAC that the Qobuz cache fills from
+the front. A song already in the Qobuz or Deezer cache whole, at any
+quality, plays from disk instead; a file on the phone needs no stream at
+all. The listener's quality setting is untouched for real plays.
+
 - **The lift is watched, never consumed.** The watcher reads every event at
   `PointerEventPass.Initial` and leaves it for the row's tap and the list's
   scroll. Consuming the up would leave the row pressed and a scroll that started
