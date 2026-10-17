@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import tf.monochrome.android.data.db.dao.DownloadDao
+import tf.monochrome.android.data.db.dao.LyricsCacheDao
 import tf.monochrome.android.data.db.dao.EqPresetDao
 import tf.monochrome.android.data.db.dao.FavoriteDao
 import tf.monochrome.android.data.db.dao.HistoryDao
@@ -83,6 +84,7 @@ abstract class MusicDatabase : RoomDatabase() {
     abstract fun playEventDao(): PlayEventDao
     abstract fun playlistDao(): PlaylistDao
     abstract fun downloadDao(): DownloadDao
+    abstract fun lyricsCacheDao(): LyricsCacheDao
     abstract fun eqPresetDao(): EqPresetDao
     abstract fun localMediaDao(): LocalMediaDao
     abstract fun collectionDao(): CollectionDao

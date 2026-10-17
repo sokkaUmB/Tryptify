@@ -17,6 +17,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import tf.monochrome.android.data.repository.LyricsRace
+import tf.monochrome.android.data.repository.ServerLyricsStatus
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
@@ -78,6 +80,7 @@ class PlayerViewModel @Inject constructor(
     private val compressorEffect: tf.monochrome.android.audio.dsp.oxford.CompressorEffect,
     private val crossfeedEffect: tf.monochrome.android.audio.dsp.crossfeed.CrossfeedEffect,
     private val nowPlayingLyrics: tf.monochrome.android.player.NowPlayingLyricsHolder,
+    private val serverLyrics: tf.monochrome.android.data.repository.ServerLyricsEngine,
     private val playbackState: tf.monochrome.android.player.PlaybackStateRepository,
     private val bpmTap: tf.monochrome.android.audio.tempo.BpmTapProcessor,
     private val sourceConsent: tf.monochrome.android.player.SourceConsent,
@@ -188,6 +191,15 @@ class PlayerViewModel @Inject constructor(
 
     private val _isLyricsLoading = MutableStateFlow(false)
     val isLyricsLoading: StateFlow<Boolean> = _isLyricsLoading.asStateFlow()
+
+    /** Where the current song's server timing stands (ServerLyricsEngine); null while there is nothing to say. */
+    val serverLyricsStatus: StateFlow<ServerLyricsStatus?> =
+        kotlinx.coroutines.flow.combine(currentTrack, serverLyrics.status) { track, all -> track?.let { all[it.id] } }
+            .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Whether a server under Settings › Connections times lyrics: the action is offered only then. */
+    val hasLyricsServer: StateFlow<Boolean> = serverLyrics.hasServer
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5_000), false)
 
     /**
      * The audio being decoded is E-AC-3, the codec that carries a Dolby Atmos
@@ -541,6 +553,13 @@ class PlayerViewModel @Inject constructor(
         // Mirror the now-playing lyrics + position into the app-scoped holder so
         // other screens (the Player Visuals Studio preview) can show the real lyrics.
         viewModelScope.launch { _currentLyrics.collect { nowPlayingLyrics.setLyrics(it) } }
+        // A server's timing lands when it lands, minutes after the race:
+        // shown if the song is still on, kept for it either way.
+        viewModelScope.launch {
+            serverLyrics.results.collect { (trackId, lyrics) ->
+                if (currentTrack.value?.id == trackId) _currentLyrics.value = lyrics
+            }
+        }
         viewModelScope.launch { _positionMs.collect { nowPlayingLyrics.setPosition(it) } }
         // The sampler records where in a track a capture came from, and cannot
         // reach a MediaController from its own view model.
@@ -608,12 +627,21 @@ class PlayerViewModel @Inject constructor(
                                 // back to LRCLib (track + artist + album +
                                 // duration) when TIDAL returns no lyrics — with
                                 // a local file's own artist, not its album's.
-                                _currentLyrics.value = repository.getLyrics(
+                                val found = repository.getLyrics(
                                     track.id,
                                     LyricsLookup.trackFor(track, unified),
                                     skipTidal = skipTidal,
                                 ).getOrNull()
+                                _currentLyrics.value = found
                                 _isLyricsLoading.value = false
+                                // No word timing from any catalogue: the
+                                // server hears the song itself, by itself,
+                                // when the setting allows and the song has
+                                // a file. Its answer arrives through
+                                // serverLyrics.results, above.
+                                if (LyricsRace.tier(found) < 3 && preferences.serverLyrics.first()) {
+                                    requestServerLyrics(track, unified, found)
+                                }
                             }
                             // Observe liked status
                             launch {
@@ -629,6 +657,24 @@ class PlayerViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    /** Sends the current song to a lyrics server by hand, whatever lyrics it has. */
+    fun syncLyricsOnServer() {
+        val track = currentTrack.value ?: return
+        if (isLiveStreamTrack(track)) return
+        viewModelScope.launch { requestServerLyrics(track, unifiedTrackRegistry[track.id], _currentLyrics.value) }
+    }
+
+    private suspend fun requestServerLyrics(track: Track, unified: UnifiedTrack?, found: Lyrics?) {
+        serverLyrics.request(
+            track = track,
+            unified = unified,
+            query = repository.lyricsQueryFor(LyricsLookup.trackFor(track, unified)),
+            // The words the race found, timed or not, for the server to keep.
+            plain = found?.lines?.joinToString("\n") { it.text }?.takeIf { it.isNotBlank() },
+            convertToRomaji = preferences.romajiLyrics.first(),
+        )
     }
 
     fun toggleLikeCurrentTrack() {

@@ -14,6 +14,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.TextButton
+import tf.monochrome.android.data.repository.ServerLyricsStatus
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -325,6 +329,8 @@ internal fun LyricsHeroBox(
     positionMs: StateFlow<Long>,
     onSeekTo: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    serverStatus: ServerLyricsStatus? = null,
+    onSyncOnServer: (() -> Unit)? = null,
 ) {
     Box(modifier = modifier.lyricsEdgeFade()) {
         when {
@@ -335,17 +341,18 @@ internal fun LyricsHeroBox(
                     color = Color.White.copy(alpha = 0.85f),
                 )
             }
-            lyrics == null || lyrics.lines.isEmpty() -> Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
+            lyrics == null || lyrics.lines.isEmpty() -> Column(
+                Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = stringResource(R.string.lyrics_none),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 24.dp),
                 )
+                ServerLyricsNote(serverStatus, onSyncOnServer)
             }
             lyrics.isSynced -> SyncedLyricsView(
                 lines = lyrics.lines,
@@ -354,6 +361,37 @@ internal fun LyricsHeroBox(
                 onSeekTo = onSeekTo,
             )
             else -> UnsyncedLyricsView(lines = lyrics.lines)
+        }
+    }
+}
+
+/**
+ * The server's word under the empty state, and the one action: text under
+ * text, no pane (docs/ui-invariants.md, "Lyrics"). The button is offered
+ * only while no job runs and a lyrics server is configured ([onSync] null).
+ */
+@Composable
+private fun ServerLyricsNote(status: ServerLyricsStatus?, onSync: (() -> Unit)?) {
+    val note = when (status) {
+        is ServerLyricsStatus.Working -> stringResource(R.string.lyrics_server_working, status.host)
+        is ServerLyricsStatus.Failed -> stringResource(R.string.lyrics_server_failed, status.reason)
+        ServerLyricsStatus.NoFile -> stringResource(R.string.lyrics_server_no_file)
+        ServerLyricsStatus.NoServer -> stringResource(R.string.lyrics_server_no_server)
+        null -> null
+    }
+    if (note != null) {
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = note,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center,
+        )
+    }
+    if (onSync != null && status !is ServerLyricsStatus.Working) {
+        Spacer(Modifier.height(4.dp))
+        TextButton(onClick = onSync) {
+            Text(stringResource(R.string.lyrics_server_sync), color = Color.White.copy(alpha = 0.85f))
         }
     }
 }

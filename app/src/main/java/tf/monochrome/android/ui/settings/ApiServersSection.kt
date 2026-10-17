@@ -60,6 +60,7 @@ private fun ApiService.sourceType(): SourceType? = when (this) {
     ApiService.APPLE -> SourceType.APPLE
     ApiService.DEEZER -> SourceType.DEEZER
     ApiService.STEMS -> null
+    ApiService.LYRICS -> null
 }
 
 /** A detected service: its brand pill, or a plain one with its name. */

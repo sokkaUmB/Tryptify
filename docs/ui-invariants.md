@@ -424,6 +424,18 @@ The rays are off by default, and the 17 presets ahead of `Sunburst` set no
 glass optic and no ray field, so nobody's lyrics change on upgrade. The
 low-performance glass switch drops the rays with the glass.
 
+**The lyrics view's empty state carries the server's word, and one action.**
+Under "No lyrics available" the view says where a server timing stands
+(`ServerLyricsStatus`: timing on which host, failed and why, no file to send,
+no server) in the same dim white as the empty text, and offers one text
+button, "Time lyrics on the server", only while no job runs and a lyrics
+server is configured. The same action sits in the player's overflow menu, so a
+song that has plain or line-timed lyrics can still be sent. Nothing here is a
+pane, a chip or a card: it is text under text, as the empty state was. The
+timing itself never joins the lyrics race, which has fifteen seconds; it runs
+in `ServerLyricsEngine` after the race, outlives the track, and its answer is
+kept in `cached_lyrics` and read before any race from then on.
+
 ### Text on glass
 
 **Text on glass follows the glass, not the theme** (`GlassInkScope`). Every pane

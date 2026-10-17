@@ -27,7 +27,7 @@ object BuiltInServer {
         if (at < 0) return servers + entry(url)
         val kept = servers[at]
         return servers.filterIndexed { i, s -> i == at || hostOf(s.url) != host }
-            .map { if (it === kept) it.copy(url = url, services = it.services + ApiService.STEMS) else it }
+            .map { if (it === kept) it.copy(url = url, services = it.services + SERVICES) else it }
     }
 
     /** Whether [url] is the build's server, which the list does not offer to remove. */
@@ -37,10 +37,13 @@ object BuiltInServer {
     }
 
     /**
-     * The entry as added: a CPU stem server, as it says of itself, so Slow
-     * finds it before it has been asked, and Fast tries it last.
+     * The entry as added: a CPU stem and lyrics server, as it says of itself,
+     * so Slow finds it before it has been asked, and Fast tries it last.
      */
-    fun entry(url: String): ApiServer = ApiServer(url = url, services = setOf(ApiService.STEMS), stemDevice = "cpu")
+    fun entry(url: String): ApiServer = ApiServer(url = url, services = SERVICES, stemDevice = "cpu")
+
+    /** What the build's server serves: it separates for charts and times lyrics. */
+    private val SERVICES = setOf(ApiService.STEMS, ApiService.LYRICS)
 
     /** What the list shows for it: its host, never its secret path. */
     fun shownAs(url: String): String = hostOf(url)

@@ -23,6 +23,14 @@ enum class ApiService(val label: String, val probePath: String) {
      * never searched, only asked to separate.
      */
     STEMS("Stem separation", "/api/stems/info"),
+
+    /**
+     * Synced lyrics from the same TryptMania Parser server: it separates the
+     * vocals, hears them with Whisper and sends back when every word is
+     * sung, as lines of timed words. Given the plain lyrics the app already
+     * found, it keeps them word for word and only adds the times.
+     */
+    LYRICS("Synced lyrics", "/api/lyrics/info"),
 }
 
 /**

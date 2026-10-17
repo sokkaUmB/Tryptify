@@ -31,6 +31,7 @@ import javax.inject.Singleton
 class MusicRepository @Inject constructor(
     private val apiClient: HiFiApiClient,
     private val lyricsResolver: LyricsResolver,
+    private val serverLyrics: ServerLyricsEngine,
     private val preferences: PreferencesManager,
     @ApplicationContext private val context: Context
 ) {
@@ -171,6 +172,12 @@ class MusicRepository @Inject constructor(
         val wordProvider = preferences.lyricsWordProvider.first()
         val cacheKey = LyricsCacheKey(trackId, skipTidal, romajiEnabled, wordProvider)
         synchronized(lyricsCache) { lyricsCache[cacheKey] }?.let { return@runCatching it }
+        // Lyrics a server timed for this song, word by word, are kept for
+        // good and beat any race: no catalogue times this recording better.
+        serverLyrics.cached(trackId, romajiEnabled)?.let { timed ->
+            synchronized(lyricsCache) { lyricsCache[cacheKey] = timed }
+            return@runCatching timed
+        }
 
         // TIDAL by id is the highest-quality path (LRC + word-level timing).
         // Qobuz: the id can't be used on TIDAL (different namespace → wrong
@@ -222,7 +229,7 @@ class MusicRepository @Inject constructor(
      * title, and it is what tells a live take from the studio one, so it goes
      * back on for matching; the sources strip it again to search.
      */
-    private fun lyricsQueryFor(track: Track): LyricsQuery? {
+    fun lyricsQueryFor(track: Track): LyricsQuery? {
         val title = track.title.takeIf { it.isNotBlank() } ?: return null
         val credit = track.artists.map { it.name }.filter { it.isNotBlank() }.joinToString(", ")
             .ifBlank { track.artist?.name.orEmpty() }

@@ -323,6 +323,7 @@ class PreferencesManager @Inject constructor(
         private val VISUALIZER_BRIGHTNESS = intPreferencesKey("visualizer_brightness")
         private val ROMAJI_LYRICS = booleanPreferencesKey("romaji_lyrics")
         private val LYRICS_WORD_PROVIDER = stringPreferencesKey("lyrics_word_provider")
+        private val SERVER_LYRICS = booleanPreferencesKey("server_lyrics")
         private val DOWNLOAD_LYRICS = booleanPreferencesKey("download_lyrics")
         private val AUTO_DOWNLOAD_LIKED = booleanPreferencesKey("auto_download_liked")
         private val NOW_PLAYING_VIEW_MODE = stringPreferencesKey("now_playing_view_mode")
@@ -526,7 +527,7 @@ class PreferencesManager @Inject constructor(
             CUSTOM_API_ENDPOINT, QOBUZ_INSTANCE_URL, APPLE_INSTANCE_URL, APPLE_WRAPPER_URL, API_SERVERS, DEV_MODE_ENABLED,
             NOW_PLAYING_VIEW_MODE, PLAYER_DYNAMIC_COLOR, PLAYER_BLURRED_BACKGROUND,
             MINI_PLAYER_HIDE_WITH_TABS,
-            ROMAJI_LYRICS, LYRICS_WORD_PROVIDER,
+            ROMAJI_LYRICS, LYRICS_WORD_PROVIDER, SERVER_LYRICS,
             LYRICS_FX_JSON, LYRICS_FX_CUSTOM_PRESETS_JSON, GLOBE_FX_JSON, PLAYER_GLASS_JSON,
             PLAYER_GLASS_CUSTOM_PRESETS_JSON, MINI_PLAYER_GLASS_JSON, WAVE_CANDY_JSON,
             SPECTRUM_WATERFALL_JSON,
@@ -1433,6 +1434,14 @@ class PreferencesManager @Inject constructor(
     val downloadLyrics: Flow<Boolean> = dataStore.data.map { it[DOWNLOAD_LYRICS] ?: false }
 
     /**
+     * Send a song with no word-timed lyrics to a lyrics server (Settings ›
+     * Connections) to be heard and timed, by itself. On by default: the
+     * build's own server times lyrics, and only songs with a file on the
+     * phone are sent.
+     */
+    val serverLyrics: Flow<Boolean> = dataStore.data.map { it[SERVER_LYRICS] ?: true }
+
+    /**
      * Download a song as it's liked. Off by default, and deliberately
      * forward-only: turning it on downloads nothing that is already liked.
      * Sweeping an existing Liked Songs list would enqueue thousands of workers
@@ -1528,6 +1537,9 @@ class PreferencesManager @Inject constructor(
     }
     suspend fun setDownloadLyrics(enabled: Boolean) {
         dataStore.edit { it[DOWNLOAD_LYRICS] = enabled }
+    }
+    suspend fun setServerLyrics(enabled: Boolean) {
+        dataStore.edit { it[SERVER_LYRICS] = enabled }
     }
     suspend fun setAutoDownloadLikedSongs(enabled: Boolean) {
         dataStore.edit { it[AUTO_DOWNLOAD_LIKED] = enabled }

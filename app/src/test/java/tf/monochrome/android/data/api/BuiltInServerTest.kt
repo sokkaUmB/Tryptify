@@ -19,6 +19,8 @@ class BuiltInServerTest {
         val list = BuiltInServer.ensure(listOf(tidal), built)!!
         assertEquals(listOf(tidal, BuiltInServer.entry(built)), list)
         assertEquals(false, list.last().separatesOnGpu)
+        // It separates for charts and times lyrics, so both find it before it is probed.
+        assertEquals(setOf(ApiService.STEMS, ApiService.LYRICS), list.last().services)
         // Slow finds it before it has been asked anything.
         assertEquals(
             listOf(list.last()),
@@ -40,7 +42,7 @@ class BuiltInServerTest {
         val own = ApiServer(url = "https://PARSER.example.app/old", services = setOf(ApiService.STEMS), checkedAt = 5L, stemDevice = "cpu")
         val other = ApiServer(url = "https://parser.example.app", services = emptySet())
         val list = BuiltInServer.ensure(listOf(own, tidal, other), built)!!
-        assertEquals(listOf(own.copy(url = built), tidal), list)
+        assertEquals(listOf(own.copy(url = built, services = setOf(ApiService.STEMS, ApiService.LYRICS)), tidal), list)
     }
 
     @Test
