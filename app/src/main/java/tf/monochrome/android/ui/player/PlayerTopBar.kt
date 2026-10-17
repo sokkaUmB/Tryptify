@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
@@ -69,6 +70,7 @@ fun PlayerTopBar(
     onOpenSettings: () -> Unit,
     /** Null when no server under Settings › Connections times lyrics: the item is not shown. */
     onSyncLyricsOnServer: (() -> Unit)? = null,
+    onEditLyrics: (() -> Unit)? = null,
     onGoToArtist: (() -> Unit)? = null,
     onGoToAlbum: (() -> Unit)? = null,
 ) {
@@ -206,6 +208,13 @@ fun PlayerTopBar(
                             text = { Text(stringResource(R.string.lyrics_server_sync)) },
                             onClick = { onSyncLyricsOnServer(); menuExpanded = false },
                             leadingIcon = { Icon(Icons.Default.Lyrics, contentDescription = null) },
+                        )
+                    }
+                    if (onEditLyrics != null) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_edit_lyrics)) },
+                            onClick = { onEditLyrics(); menuExpanded = false },
+                            leadingIcon = { Icon(Icons.Default.EditNote, contentDescription = null) },
                         )
                     }
                     DropdownMenuItem(

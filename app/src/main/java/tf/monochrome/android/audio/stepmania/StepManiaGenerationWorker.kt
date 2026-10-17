@@ -295,8 +295,13 @@ class StepManiaGenerationWorker @AssistedInject constructor(
     companion object {
         const val WORK_NAME = "trypt_mania_chart"
 
-        /** The most songs in flight at once, however many copies a server says it has. */
-        const val MAX_LANES = 8
+        /**
+         * The most songs in flight at once, however many copies a server says
+         * it has: the Railway deploy runs 42 replicas, and one more uploads
+         * ahead. The HTTP client lets that many requests at one host
+         * (NetworkModule); OkHttp's own limit is five.
+         */
+        const val MAX_LANES = 43
 
         /** Songs in flight for a server that separates [parallel] at a time: those, and one uploading ahead. */
         fun lanes(parallel: Int?): Int = ((parallel ?: 1).coerceAtLeast(1) + 1).coerceAtMost(MAX_LANES)

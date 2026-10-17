@@ -668,14 +668,19 @@ class PlayerViewModel @Inject constructor(
 
     private suspend fun requestServerLyrics(track: Track, unified: UnifiedTrack?, found: Lyrics?) {
         serverLyrics.request(
-            track = track,
-            unified = unified,
-            query = repository.lyricsQueryFor(LyricsLookup.trackFor(track, unified)),
-            // The words the race found, timed or not, for the server to keep.
-            plain = found?.lines?.joinToString("\n") { it.text }?.takeIf { it.isNotBlank() },
-            convertToRomaji = preferences.romajiLyrics.first(),
+            tf.monochrome.android.data.repository.LyricsJob(
+                track = track,
+                unified = unified,
+                query = repository.lyricsQueryFor(LyricsLookup.trackFor(track, unified)),
+                // The words the race found, timed or not, for the server to keep.
+                plain = found?.lines?.joinToString("\n") { it.text }?.takeIf { it.isNotBlank() },
+                convertToRomaji = preferences.romajiLyrics.first(),
+            ),
         )
     }
+
+    /** Empties the lyrics line and stops its worker. */
+    fun cancelServerLyrics() = serverLyrics.cancelAll()
 
     fun toggleLikeCurrentTrack() {
         val track = currentTrack.value ?: return

@@ -54,6 +54,7 @@ class ChartPaceTest {
         assertEquals(2, StepManiaGenerationWorker.lanes(1))
         assertEquals("Modal's four CPU copies", 5, StepManiaGenerationWorker.lanes(4))
         assertEquals("Railway's six replicas", 7, StepManiaGenerationWorker.lanes(6))
+        assertEquals("Railway's 42 replicas, one uploading ahead", 43, StepManiaGenerationWorker.lanes(42))
         assertEquals(StepManiaGenerationWorker.MAX_LANES, StepManiaGenerationWorker.lanes(50))
     }
 

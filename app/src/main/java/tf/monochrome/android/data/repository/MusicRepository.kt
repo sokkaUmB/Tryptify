@@ -205,6 +205,11 @@ class MusicRepository @Inject constructor(
         lyrics
     }
 
+    /** Drops what the last few songs' cache holds for [trackId]: its lyrics were replaced or forgotten. */
+    fun forgetLyrics(trackId: Long) {
+        synchronized(lyricsCache) { lyricsCache.keys.removeAll { it.trackId == trackId } }
+    }
+
     private data class LyricsCacheKey(
         val trackId: Long,
         val skipTidal: Boolean,

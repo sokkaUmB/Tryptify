@@ -2165,7 +2165,7 @@ private fun PreviewCover(index: Int, modifier: Modifier, corner: Dp) {
 }
 
 @Composable
-private fun StudioPreview(
+internal fun StudioPreview(
     fx: LyricsFxSettings,
     lyrics: Lyrics?,
     positionMs: kotlinx.coroutines.flow.StateFlow<Long>,

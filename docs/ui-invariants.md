@@ -436,6 +436,29 @@ timing itself never joins the lyrics race, which has fifteen seconds; it runs
 in `ServerLyricsEngine` after the race, outlives the track, and its answer is
 kept in `cached_lyrics` and read before any race from then on.
 
+**Timing lyrics is a Trypt Mania job, not a spinner.** Songs go in a line
+(`ServerLyricsEngine.request`) and `LyricsSyncWorker` drains it as
+`StepManiaGenerationWorker` drains the chart queue: an ongoing notification
+naming the song and its stage (downloading, sending, hearing), then a note
+that can be swiped away saying which songs got their words. A song with no
+file on the phone is downloaded through the app's own downloads first and
+kept, as Trypt Mania charts only what is on the phone. The lyrics view shows
+the same stage under the empty state, with "Cancel" while the line runs and
+"Time lyrics on the server" when it does not.
+
+**The lyrics editor is built as the Player Visuals Studio is.** `StudioPreview`
+(the real renderer, condensed, with the listener's own Lyrics FX) pinned up
+top, the transport and the one big "Stamp now" button under it, the lines as
+plain rows (the selected one tinted with the accent at a seventh, never a
+pane), and every setting below in `StudioSection`s with `FxToggle` and
+`FxNudge`. It reaches the song through the shared `PlayerViewModel`, passed in
+from the nav host as the other tool screens get it, so a stamp is the song's
+own position and a tapped line seeks. Saving goes through
+`ServerLyricsEngine.publish`: the same `cached_lyrics` row a server would
+write, the player's lyrics replaced at once, and the download's `.lrc`
+rewritten with word times. The row list pads its bottom by
+`LocalBottomChromeInset`, like the Studio.
+
 ### Text on glass
 
 **Text on glass follows the glass, not the theme** (`GlassInkScope`). Every pane

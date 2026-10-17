@@ -660,6 +660,7 @@ fun MainPlayerRoute(
             onOpenLyricsStudio = { navController.navigateTool(Screen.LyricsFxStudio) },
             onOpenSettings = { navController.navigateTool(Screen.Settings, Screen.Settings.createRoute()) },
             onSyncLyricsOnServer = if (hasLyricsServer) playerViewModel::syncLyricsOnServer else null,
+            onEditLyrics = { navController.navigateTool(Screen.LyricsEditor) },
             onGoToArtist = navController.trackArtistAction(currentTrack, playerViewModel.unifiedFor(currentTrack)),
             onGoToAlbum = navController.trackAlbumAction(currentTrack, playerViewModel.unifiedFor(currentTrack)),
         )
@@ -906,6 +907,7 @@ fun MainPlayerRoute(
                     positionMs = playerViewModel.positionMs,
                     serverStatus = serverLyricsStatus,
                     onSyncOnServer = if (hasLyricsServer) playerViewModel::syncLyricsOnServer else null,
+                    onCancelServer = playerViewModel::cancelServerLyrics,
                     // One element, two states: compact taps expand
                     // (synced lyrics only); expanded line taps seek and
                     // gap taps collapse.

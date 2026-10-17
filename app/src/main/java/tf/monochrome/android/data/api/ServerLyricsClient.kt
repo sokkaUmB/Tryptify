@@ -7,6 +7,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.onUpload
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.forms.ChannelProvider
 import io.ktor.client.request.forms.MultiPartFormDataContent
@@ -28,6 +29,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
@@ -73,14 +76,23 @@ class ServerLyricsClient @Inject constructor(
         plain: String?,
         convertToRomaji: Boolean,
         language: String? = null,
+        /** Called once the whole song is up: from then on the server is hearing it. */
+        onUploaded: () -> Unit = {},
     ): ServerLyrics {
         val length = sizeOf(source)?.takeIf { it > 0 }
+        var told = false
         val response = httpClient.post("$server/api/lyrics/sync") {
             // The server says nothing until the song is done: a separation
             // and a transcription, minutes on a CPU host, plus a cold start.
             timeout {
                 requestTimeoutMillis = TIMEOUT_MS
                 socketTimeoutMillis = TIMEOUT_MS
+            }
+            onUpload { sent, total ->
+                if (!told && total != null && sent >= total) {
+                    told = true
+                    onUploaded()
+                }
             }
             setBody(
                 MultiPartFormDataContent(
@@ -137,6 +149,46 @@ class ServerLyricsClient @Inject constructor(
             return fromData(data, host, convertToRomaji) ?: throw IOException("The server sent no lyrics")
         }
 
+        /**
+         * Lyrics made by hand, in the shape of a server's answer, so the
+         * cache holds one kind of thing and [fromCached] reads both.
+         */
+        fun toData(lyrics: Lyrics, lrc: String?): String {
+            val lines = JsonArray(
+                lyrics.lines.map { line ->
+                    val words = line.words.ifEmpty {
+                        // A line with no words is one word for the whole line's time.
+                        listOf(LyricWord(line.timeMs, line.timeMs, line.text))
+                    }
+                    JsonObject(
+                        mapOf(
+                            "start" to JsonPrimitive(line.timeMs / 1000.0),
+                            "end" to JsonPrimitive(words.last().endMs / 1000.0),
+                            "estimated" to JsonPrimitive(false),
+                            "words" to JsonArray(
+                                words.mapIndexed { i, w ->
+                                    JsonObject(
+                                        mapOf(
+                                            "text" to JsonPrimitive(if (i < words.lastIndex) w.text + " " else w.text),
+                                            "start" to JsonPrimitive(w.startMs / 1000.0),
+                                            "end" to JsonPrimitive(w.endMs / 1000.0),
+                                        ),
+                                    )
+                                },
+                            ),
+                        ),
+                    )
+                },
+            )
+            val data = mutableMapOf<String, JsonElement>(
+                "mode" to JsonPrimitive("edited"),
+                "model" to JsonPrimitive("the lyrics editor"),
+                "lines" to lines,
+            )
+            lrc?.let { data["lrc"] = JsonPrimitive(it) }
+            return JsonObject(data).toString()
+        }
+
         /** An answer's `data`, as the cache keeps it, back as lyrics; null when it has no lines. */
         fun fromCached(json: Json, dataJson: String, convertToRomaji: Boolean): ServerLyrics? =
             runCatching { json.parseToJsonElement(dataJson).jsonObject }.getOrNull()
@@ -154,7 +206,7 @@ class ServerLyricsClient @Inject constructor(
                 if (device == "cuda") append(" (GPU)")
             }
             // The host rides along into the cache, so a kept answer still says where it came from.
-            val kept = JsonObject(data + ("host" to kotlinx.serialization.json.JsonPrimitive(host)))
+            val kept = JsonObject(data + ("host" to JsonPrimitive(host)))
             return ServerLyrics(
                 lyrics = Lyrics(lines = lines, isSynced = true),
                 mode = data["mode"]?.jsonPrimitive?.contentOrNull ?: "aligned",
