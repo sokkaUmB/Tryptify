@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import java.io.File
 
@@ -44,6 +45,81 @@ fun loadAppFontFamily(context: Context, fontId: String?): FontFamily? {
         }
     }.getOrNull()
 }
+
+/**
+ * A font as a style draws it at a letter width: [family], already as narrow
+ * or wide as its own `wdth` axis can draw, and [scaleX], the squeeze left to
+ * apply to its glyphs (1 when the axis reached the width; the whole width
+ * for a font with no such axis).
+ */
+class WidthFont(val family: FontFamily, val scaleX: Float)
+
+/**
+ * [fontId] (null or Inter's id: Inter) with its letters [widthPercent] wide.
+ * A variable font with a width axis is declared at that width, as far as its
+ * axis goes; whatever it cannot reach is left to [WidthFont.scaleX].
+ */
+fun loadWidthFont(context: Context, fontId: String?, widthPercent: Int): WidthFont {
+    val wanted = widthPercent.toFloat()
+    val inter = WidthFont(InterFontFamily, wanted / 100f)
+    if (fontId.isNullOrBlank() || fontId == INTER_FONT_ID) return inter
+    return runCatching {
+        if (BundledFonts.isBundled(fontId)) {
+            val path = BundledFonts.assetPathOf(fontId)
+            val axis = assetAxes(context, path)["wdth"]
+            if (axis == null || widthPercent == 100) {
+                WidthFont(loadAppFontFamily(context, fontId) ?: InterFontFamily, if (axis == null) wanted / 100f else 1f)
+            } else {
+                val drawn = wanted.coerceIn(axis.start, axis.endInclusive)
+                WidthFont(
+                    FontFamily(ALL_WEIGHTS.map { Font(path, context.assets, it, FontStyle.Normal, widthSettings(it, FontStyle.Normal, drawn)) }),
+                    wanted / drawn,
+                )
+            }
+        } else {
+            val file = File(fontId)
+            if (!file.exists()) return inter
+            importedWidthFont(file, wanted)
+        }
+    }.getOrDefault(inter)
+}
+
+/** An imported font at a width: its variable cuts with a width axis draw it, any other is squeezed. */
+private fun importedWidthFont(file: File, wanted: Float): WidthFont {
+    val cuts = FontFamilies.familyOf(file)?.cuts.orEmpty()
+    val axis = cuts.mapNotNull { it.widthAxis }.reduceOrNull { a, b -> maxOf(a.start, b.start)..minOf(a.endInclusive, b.endInclusive) }
+    // Only when every cut can draw the width: a static cut beside them could not.
+    if (wanted == 100f || cuts.isEmpty() || axis == null || cuts.any { it.widthAxis == null }) {
+        return WidthFont(importedFontFamily(file), wanted / 100f)
+    }
+    val drawn = wanted.coerceIn(axis.start, axis.endInclusive)
+    return WidthFont(
+        FontFamily(
+            cuts.flatMap { cut ->
+                val style = if (cut.italic) FontStyle.Italic else FontStyle.Normal
+                ALL_WEIGHTS.map { Font(cut.file, it, style, widthSettings(it, style, drawn)) }
+            },
+        ),
+        wanted / drawn,
+    )
+}
+
+private fun widthSettings(weight: FontWeight, style: FontStyle, width: Float) = FontVariation.Settings(
+    FontVariation.weight(weight.weight),
+    FontVariation.italic(if (style == FontStyle.Italic) 1f else 0f),
+    FontVariation.width(width),
+)
+
+/** A bundled font's variation axes, read once per file. */
+private val assetAxesCache = java.util.concurrent.ConcurrentHashMap<String, Map<String, ClosedFloatingPointRange<Float>>>()
+
+private fun assetAxes(context: Context, path: String): Map<String, ClosedFloatingPointRange<Float>> =
+    assetAxesCache.getOrPut(path) {
+        runCatching {
+            val bytes = context.assets.open(path).use { it.readBytes() }
+            (FontFileInspector.inspect(bytes) as? FontInspection.Font)?.axes.orEmpty()
+        }.getOrDefault(emptyMap())
+    }
 
 /**
  * Inter by name: what a typography-table style stores to ask for the default

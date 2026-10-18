@@ -61,7 +61,15 @@ sealed interface FontInspection {
          * "Inter" / "Light").
          */
         val groupFamily: String? = family,
+        /**
+         * A variable font's axes by tag ("wght", "wdth"…), each with the range it
+         * spans. A font with "wdth" draws condensed and wide letters itself.
+         */
+        val axes: Map<String, ClosedFloatingPointRange<Float>> = emptyMap(),
     ) : FontInspection {
+        /** The span of its width axis, in percent of normal, or null when it has none. */
+        val widthAxis: ClosedFloatingPointRange<Float>? get() = axes["wdth"]
+
         /**
          * The name to show: the family, with its style when the style says
          * more than "the usual one", so two static cuts of one family stay
@@ -126,6 +134,7 @@ object FontFileInspector {
     private const val MAX_TABLES = 512
     private const val MAX_NAME_RECORDS = 4096
     private const val MAX_NAME_LENGTH = 512
+    private const val MAX_AXES = 64
 
     fun inspect(file: File): FontInspection =
         runCatching { FileFontSource(file).use { inspect(it) } }
@@ -192,8 +201,33 @@ object FontFileInspector {
             weight = weight,
             italic = italic,
             groupFamily = names[16] ?: names[1]?.let(::withoutStyleWords),
+            axes = tables["fvar"]?.let { (offset, length) -> readAxes(source, offset, length) }.orEmpty(),
         )
     }
+
+    /**
+     * The `fvar` table's axes: after a 16-byte header naming where the axis
+     * records start and how many there are, each record is a 4-byte tag, then
+     * its minimum, default and maximum as 16.16 fixed-point numbers.
+     */
+    private fun readAxes(source: FontSource, tableOffset: Long, tableLength: Long): Map<String, ClosedFloatingPointRange<Float>> {
+        val arrayOffset = source.u16(tableOffset + 4) ?: return emptyMap()
+        val count = source.u16(tableOffset + 8) ?: return emptyMap()
+        val size = source.u16(tableOffset + 10) ?: return emptyMap()
+        if (count > MAX_AXES || size < 20) return emptyMap()
+        val axes = LinkedHashMap<String, ClosedFloatingPointRange<Float>>()
+        for (i in 0 until count) {
+            val rec = tableOffset + arrayOffset + i.toLong() * size
+            if (rec + 20 > tableOffset + tableLength) break
+            val tag = source.read(rec, 4)?.let { String(it, Charsets.ISO_8859_1) } ?: break
+            val min = source.fixed(rec + 4) ?: break
+            val max = source.fixed(rec + 12) ?: break
+            if (min <= max) axes[tag] = min..max
+        }
+        return axes
+    }
+
+    private fun FontSource.fixed(offset: Long): Float? = u32(offset)?.let { it.toInt() / 65536f }
 
     /** "Inter Light" → "Inter", "Source Sans Pro Bold Italic" → "Source Sans Pro"; never empty. */
     internal fun withoutStyleWords(family: String): String {

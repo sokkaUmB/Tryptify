@@ -83,7 +83,11 @@ class FontBrowserViewModel @Inject constructor(
 
     fun setTypographyStyle(role: TypeRole, style: TypeStyleOverride) = editTypography { it.with(role, style) }
 
-    fun resetTypography() = editTypography { TypographySettings.DEFAULT }
+    /** Every style back to the app's own; the page's Width, which has its own control, stays. */
+    fun resetTypography() = editTypography { TypographySettings(widthPercent = it.widthPercent) }
+
+    /** How wide every style's letters are drawn, unless a style says otherwise. */
+    fun setTypographyWidth(percent: Int) = editTypography { it.withWidth(percent) }
 
     private val _pendingDelete = MutableStateFlow<ImportedFont?>(null)
     val pendingDelete: StateFlow<ImportedFont?> = _pendingDelete.asStateFlow()

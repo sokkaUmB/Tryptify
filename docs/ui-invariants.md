@@ -564,12 +564,29 @@ Plain text drawn in `bodyLarge` (the lyrics' plain view, the search field,
 "no lyrics") pins Regular, since that style is the row title.
 
 **The typography table** (Settings › Fonts, under the fonts): Material's
-fifteen styles, each with its own font, weight (Thin to Black), size and
-letter spacing, stored as `TypographySettings` and applied in
+fifteen styles, each with its own font, weight (Thin to Black), size, letter
+spacing and letter width, stored as `TypographySettings` and applied in
 `buildTypography` over `TypeDefaults`. A style left alone follows the main
-font and the defaults; the text-size setting scales the table's sizes too;
-a bigger size takes a taller line in proportion. Every font loads at all nine
-weights (`loadAppFontFamily`), so a variable font draws each one.
+font, the defaults and the page's Width; the text-size setting scales the
+table's sizes too; a bigger size takes a taller line in proportion. Every
+font loads at all nine weights (`loadAppFontFamily`), so a variable font draws
+each one.
+
+**Width is drawn by the font where it can, squeezed where it cannot.** The
+page's Width (70% condensed to 130% wide, in steps of 5) and a style's own
+width go through `loadWidthFont`: a font with a `wdth` axis (Bricolage,
+IBM Plex Sans, Instrument Sans, any import whose every cut has one) is
+declared at that width, and whatever its axis cannot reach, and every font
+without one, is a `TextGeometricTransform` squeeze. Touches and layout follow
+the squeezed text, since Compose measures it as drawn.
+
+**The Fonts page is condensed** (the owner picked it from four mockups): the
+font being tried is one row with its Use button; the text panel holds the
+size steps as one segmented line and the Width slider; the fonts are chips in
+their own letters, a hold on an imported one deletes it; and the table edits
+every style in its own row, a weight menu and size and width steppers, with
+the font and letter spacing in a menu on the style's name. No row opens: a
+change is made where it shows.
 
 ### Text on glass
 
@@ -677,8 +694,7 @@ into its glass instead of the track, at the same height, and a swipe along the
 bar skips or keeps.
 
 **Settings has one home per setting.** The font size (the five steps and
-Use system font size) is on the Fonts page, under the preview, beside the
-fonts it scales; Appearance keeps only the Font Library row that leads
+Use system font size) is on the Fonts page, in the text panel beside Width; Appearance keeps only the Font Library row that leads
 there. There is no Now Playing group: the view mode is what a tap on the
 player's artwork changes, the player's tint is Appearance › Dynamic Colors,
 and the blurred album background is always on. The two removed switches

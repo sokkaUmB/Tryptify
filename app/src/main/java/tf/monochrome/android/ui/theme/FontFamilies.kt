@@ -13,6 +13,8 @@ data class FontCut(
     val italic: Boolean,
     /** One file that renders every weight (`fvar`). */
     val variable: Boolean,
+    /** Its width axis's span in percent, when it draws condensed and wide letters itself. */
+    val widthAxis: ClosedFloatingPointRange<Float>? = null,
 )
 
 /**
@@ -59,7 +61,7 @@ object FontFamilies {
     fun cutOf(file: File): FontCut? {
         val font = FontFileInspector.inspect(file) as? FontInspection.Font ?: return null
         val family = font.groupFamily?.takeIf { it.isNotBlank() } ?: file.nameWithoutExtension
-        return FontCut(file, family, font.weight, font.italic, font.variable)
+        return FontCut(file, family, font.weight, font.italic, font.variable, font.widthAxis)
     }
 
     /** [cuts] as families, each family's cuts upright first, light to heavy; families by name. */

@@ -5,6 +5,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextGeometricTransform
 import androidx.compose.ui.unit.sp
 import tf.monochrome.android.R
 import tf.monochrome.android.domain.model.TypeRole
@@ -21,23 +22,34 @@ val InterFontFamily = FontFamily(
 /**
  * The full Material 3 Typography: the app's scale ([TypeDefaults]) under the
  * listener's typography table ([settings], Settings › Fonts), in [fontFamily]
- * unless a style names another font, which [fontFor] loads. [scale] is the
- * text-size setting and scales every size, the table's included.
+ * unless a style names another font. [scale] is the text-size setting and
+ * scales every size, the table's included.
+ *
+ * [fontFor] hands back a style's font at its letter width (its font id, null
+ * for the main font): a font with a width axis drawn that wide, and what is
+ * left to squeeze. Without one, the main font is squeezed to the width.
  */
 fun buildTypography(
     fontFamily: FontFamily,
     scale: Float,
     settings: TypographySettings = TypographySettings.DEFAULT,
-    fontFor: (String) -> FontFamily? = { null },
+    fontFor: (fontId: String?, widthPercent: Int) -> WidthFont? = { _, _ -> null },
 ): Typography {
     fun style(role: TypeRole): TextStyle {
         val spec = settings.resolved(role)
+        val font = fontFor(settings[role].fontId, spec.widthPercent)
+            ?: WidthFont(fontFamily, spec.widthPercent / 100f)
         return TextStyle(
-            fontFamily = settings[role].fontId?.let(fontFor) ?: fontFamily,
+            fontFamily = font.family,
             fontWeight = FontWeight(spec.weight),
             fontSize = (spec.sizeSp * scale).sp,
             lineHeight = (spec.lineHeightSp * scale).sp,
             letterSpacing = spec.letterSpacingSp.sp,
+            textGeometricTransform = if (kotlin.math.abs(font.scaleX - 1f) > 0.001f) {
+                TextGeometricTransform(scaleX = font.scaleX)
+            } else {
+                null
+            },
         )
     }
     return Typography(

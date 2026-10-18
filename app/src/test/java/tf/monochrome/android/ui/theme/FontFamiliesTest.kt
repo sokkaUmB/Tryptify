@@ -99,6 +99,19 @@ class FontFamiliesTest {
     }
 
     @Test
+    fun `a width axis is read where a font has one`() {
+        // Plex Sans draws 75% to 100% wide itself; Chivo has weight alone.
+        val plex = FontFileInspector.inspect(File("src/main/assets/fonts/ibm_plex_sans.ttf")) as FontInspection.Font
+        assertEquals(75f, plex.widthAxis!!.start, 0f)
+        assertEquals(100f, plex.widthAxis!!.endInclusive, 0f)
+        assertTrue("wght" in plex.axes)
+        val chivo = FontFileInspector.inspect(File("src/main/assets/fonts/chivo.ttf")) as FontInspection.Font
+        assertEquals(null, chivo.widthAxis)
+        // A static font has no axes at all.
+        assertTrue((FontFileInspector.inspect(res("inter_regular")) as FontInspection.Font).axes.isEmpty())
+    }
+
+    @Test
     fun `an old font's family loses its weight word`() {
         assertEquals("Inter", FontFileInspector.withoutStyleWords("Inter Light"))
         assertEquals("Source Sans Pro", FontFileInspector.withoutStyleWords("Source Sans Pro Bold Italic"))

@@ -2040,6 +2040,20 @@ typo_weight_600	SemiBold	半粗	やや太	Demi-gras	Seminegrita	Yarı kalın	Sem
 typo_weight_700	Bold	粗	太	Gras	Negrita	Kalın	Bold
 typo_weight_800	ExtraBold	特粗	極太	Extra-gras	Extranegrita	Ekstra kalın	ExtraBold
 typo_weight_900	Black	黑	超極太	Noir	Negra	Siyah	Black
+typo_width	Width	宽度	幅	Largeur	Anchura	Genişlik	Breite
+typo_style_col	Style	样式	スタイル	Style	Estilo	Stil	Stil
+typo_use_short	Use	使用	使用	Utiliser	Usar	Kullan	Verwenden
+typo_smaller	Smaller	缩小	小さく	Plus petit	Más pequeño	Daha küçük	Kleiner
+typo_bigger	Bigger	放大	大きく	Plus grand	Más grande	Daha büyük	Größer
+typo_narrower	Narrower	更窄	狭く	Plus étroit	Más estrecho	Daha dar	Schmaler
+typo_wider	Wider	更宽	広く	Plus large	Más ancho	Daha geniş	Breiter
+typo_tighter	Tighter	更紧	詰める	Plus serré	Más junto	Daha sıkı	Enger
+typo_looser	Looser	更松	広げる	Plus espacé	Más separado	Daha açık	Weiter
+typo_hold_to_delete	Hold an imported font to delete it.	长按导入的字体即可删除。	インポートしたフォントを長押しすると削除できます。	Maintenez une police importée pour la supprimer.	Mantén pulsada una fuente importada para borrarla.	Silmek için içe aktarılan yazı tipine basılı tutun.	Halte eine importierte Schrift gedrückt, um sie zu löschen.
+typo_condensed	Condensed	紧缩	コンデンス	Condensé	Condensada	Dar	Schmal
+typo_normal	Normal	正常	標準	Normal	Normal	Normal	Normal
+typo_wide	Wide	加宽	ワイド	Large	Ancha	Geniş	Breit
+typo_main_short	Main	主字体	メイン	Principale	Principal	Ana	Haupt
 fonts_delete_title	Delete %1$s?	要删除 %1$s 吗？	%1$s を削除しますか？	Supprimer %1$s ?	¿Eliminar %1$s?	%1$s silinsin mi?	%1$s löschen?
 fonts_delete_body	It’s removed from this device. If it’s the font in use, the app goes back to Inter.	它将从此设备中移除。如果它是正在使用的字体，应用会改回 Inter。	この端末から削除されます。使用中のフォントの場合は Inter に戻ります。	Elle est supprimée de cet appareil. Si c’est la police utilisée, l’app revient à Inter.	Se elimina de este dispositivo. Si es la fuente en uso, la app vuelve a Inter.	Bu cihazdan kaldırılır. Kullanımdaki yazı tipiyse uygulama Inter’e döner.	Sie wird von diesem Gerät entfernt. Ist sie die aktive Schrift, kehrt die App zu Inter zurück.
 discover_today_title	Today’s discovery	今日发现	今日の発見	La découverte du jour	El descubrimiento de hoy	Bugünün keşfi	Entdeckung des Tages

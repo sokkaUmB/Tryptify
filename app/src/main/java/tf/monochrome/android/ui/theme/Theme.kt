@@ -627,8 +627,8 @@ fun MonochromeTheme(
     /** Settings › Fonts › Typography: per style, a font, weight, size and spacing. */
     typographySettings: tf.monochrome.android.domain.model.TypographySettings =
         tf.monochrome.android.domain.model.TypographySettings.DEFAULT,
-    /** The fonts the table names, loaded, by font id. */
-    typographyFonts: Map<String, FontFamily> = emptyMap(),
+    /** The fonts the table draws with, loaded at their widths: by (font id, null for the main font; width). */
+    typographyFonts: Map<Pair<String?, Int>, WidthFont> = emptyMap(),
     /**
      * The album palette as its *state*, not its value.
      *
@@ -690,7 +690,7 @@ fun MonochromeTheme(
     )
     val family = customFontFamily ?: InterFontFamily
     val typography = remember(fontScale, family, typographySettings, typographyFonts) {
-        buildTypography(family, fontScale, typographySettings) { typographyFonts[it] }
+        buildTypography(family, fontScale, typographySettings) { id, width -> typographyFonts[id to width] }
     }
 
     // By default the album palette is NOT overlaid on the global scheme — doing

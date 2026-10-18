@@ -13,8 +13,18 @@ enum class TypeRole {
     LABEL_LARGE, LABEL_MEDIUM, LABEL_SMALL,
 }
 
-/** A style as the app draws it before the listener's table, at 100% text size. */
-data class TypeSpec(val weight: Int, val sizeSp: Float, val lineHeightSp: Float, val letterSpacingSp: Float)
+/**
+ * A style as the app draws it before the listener's table, at 100% text size.
+ * [widthPercent] is how wide its letters are drawn: 100 as designed, less for
+ * condensed, more for wide.
+ */
+data class TypeSpec(
+    val weight: Int,
+    val sizeSp: Float,
+    val lineHeightSp: Float,
+    val letterSpacingSp: Float,
+    val widthPercent: Int = 100,
+)
 
 /**
  * The app's own type scale. Titles and row titles sit a size under Material's
@@ -56,8 +66,11 @@ data class TypeStyleOverride(
     /** At 100% text size: the text-size setting still scales it. */
     val sizeSp: Float? = null,
     val letterSpacingSp: Float? = null,
+    /** This style's own letter width, over the table's [TypographySettings.widthPercent]. */
+    val widthPercent: Int? = null,
 ) {
-    val isDefault: Boolean get() = fontId == null && weight == null && sizeSp == null && letterSpacingSp == null
+    val isDefault: Boolean
+        get() = fontId == null && weight == null && sizeSp == null && letterSpacingSp == null && widthPercent == null
 
     fun clamped(): TypeStyleOverride = copy(
         fontId = fontId?.takeIf { it.isNotBlank() },
@@ -65,6 +78,7 @@ data class TypeStyleOverride(
         sizeSp = sizeSp?.takeIf { it.isFinite() }?.let { (it * 2).roundToInt() / 2f }?.coerceIn(MIN_SIZE_SP, MAX_SIZE_SP),
         letterSpacingSp = letterSpacingSp?.takeIf { it.isFinite() }
             ?.let { (it * 100).roundToInt() / 100f }?.coerceIn(MIN_SPACING_SP, MAX_SPACING_SP),
+        widthPercent = widthPercent?.let(::clampWidth),
     )
 
     companion object {
@@ -72,6 +86,13 @@ data class TypeStyleOverride(
         const val MAX_SIZE_SP = 64f
         const val MIN_SPACING_SP = -1f
         const val MAX_SPACING_SP = 2f
+        const val MIN_WIDTH = 70
+        const val MAX_WIDTH = 130
+        const val WIDTH_STEP = 5
+
+        /** [percent] to the nearest step the table offers, within its range. */
+        fun clampWidth(percent: Int): Int =
+            ((percent / WIDTH_STEP.toFloat()).roundToInt() * WIDTH_STEP).coerceIn(MIN_WIDTH, MAX_WIDTH)
     }
 }
 
@@ -81,7 +102,16 @@ data class TypeStyleOverride(
  * version drops or adds costs nothing either way.
  */
 @Serializable
-data class TypographySettings(val styles: Map<String, TypeStyleOverride> = emptyMap()) {
+data class TypographySettings(
+    val styles: Map<String, TypeStyleOverride> = emptyMap(),
+    /** How wide every style's letters are drawn unless the style says otherwise: 100 as designed. */
+    val widthPercent: Int = 100,
+) {
+    /** Nothing changed from the app's own type. */
+    val isDefault: Boolean get() = styles.isEmpty() && widthPercent == 100
+
+    /** The table with every style's letters [percent] wide, unless the style says otherwise. */
+    fun withWidth(percent: Int): TypographySettings = copy(widthPercent = TypeStyleOverride.clampWidth(percent))
 
     operator fun get(role: TypeRole): TypeStyleOverride = styles[role.name] ?: TypeStyleOverride()
 
@@ -102,8 +132,13 @@ data class TypographySettings(val styles: Map<String, TypeStyleOverride> = empty
             // A bigger size takes a taller line in proportion, so nothing is clipped.
             lineHeightSp = base.lineHeightSp * size / base.sizeSp,
             letterSpacingSp = o.letterSpacingSp ?: base.letterSpacingSp,
+            widthPercent = o.widthPercent ?: TypeStyleOverride.clampWidth(widthPercent),
         )
     }
+
+    /** The widths the styles are drawn at, each with the font it is drawn in (null: the main font). */
+    val fontWidths: Set<Pair<String?, Int>>
+        get() = TypeRole.entries.map { this[it].fontId to resolved(it).widthPercent }.toSet()
 
     /** The fonts the table asks for besides the main one. */
     val fontIds: Set<String>
@@ -120,7 +155,7 @@ data class TypographySettings(val styles: Map<String, TypeStyleOverride> = empty
         fun decode(text: String?): TypographySettings {
             if (text.isNullOrBlank()) return DEFAULT
             val read = runCatching { json.decodeFromString(serializer(), text) }.getOrNull() ?: return DEFAULT
-            var out = DEFAULT
+            var out = DEFAULT.withWidth(read.widthPercent)
             for (role in TypeRole.entries) read.styles[role.name]?.let { out = out.with(role, it) }
             return out
         }

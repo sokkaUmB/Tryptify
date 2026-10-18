@@ -1360,7 +1360,7 @@ class PreferencesManager @Inject constructor(
 
     suspend fun setTypography(settings: tf.monochrome.android.domain.model.TypographySettings) {
         dataStore.edit { prefs ->
-            if (settings.styles.isEmpty()) prefs.remove(TYPOGRAPHY_JSON)
+            if (settings.isDefault) prefs.remove(TYPOGRAPHY_JSON)
             else prefs[TYPOGRAPHY_JSON] = tf.monochrome.android.domain.model.TypographySettings.encode(settings)
         }
     }

@@ -264,10 +264,14 @@ class MainActivity : ComponentActivity() {
             // The typography table, and the fonts its styles name besides the main one.
             val typographySettings by preferences.typography
                 .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.domain.model.TypographySettings.DEFAULT)
-            val typographyFonts = remember(typographySettings.fontIds, fontLoadContext) {
-                typographySettings.fontIds
-                    .mapNotNull { id -> tf.monochrome.android.ui.theme.loadAppFontFamily(fontLoadContext, id)?.let { id to it } }
-                    .toMap()
+            // Each (font, width) the styles draw at, loaded once: the main font at
+            // its own width needs nothing, being customFontFamily itself.
+            val typographyFonts = remember(typographySettings.fontWidths, customFontPath, fontLoadContext) {
+                typographySettings.fontWidths
+                    .filterNot { (id, width) -> id == null && width == 100 }
+                    .associateWith { (id, width) ->
+                        tf.monochrome.android.ui.theme.loadWidthFont(fontLoadContext, id ?: customFontPath, width)
+                    }
             }
 
             // "Remove liquid glass" is folded into the detected profile rather

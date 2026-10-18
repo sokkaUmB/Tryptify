@@ -2,51 +2,37 @@ package tf.monochrome.android.ui.settings.fonts
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,9 +42,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,6 +56,7 @@ import tf.monochrome.android.R
 import tf.monochrome.android.data.fonts.FontImportReport
 import tf.monochrome.android.data.fonts.FontSkipReason
 import tf.monochrome.android.data.fonts.ImportedFont
+import tf.monochrome.android.domain.model.TypeStyleOverride
 import tf.monochrome.android.ui.components.GlassPanel
 import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
@@ -77,8 +64,8 @@ import tf.monochrome.android.ui.navigation.LocalMiniPlayerGlass
 import tf.monochrome.android.ui.settings.LocalSettingsSearchInset
 import tf.monochrome.android.ui.theme.BundledFonts
 import tf.monochrome.android.ui.theme.InterFontFamily
-import tf.monochrome.android.ui.theme.MonoDimens
 import tf.monochrome.android.ui.theme.loadAppFontFamily
+import kotlin.math.roundToInt
 
 /** One entry in the browser: the default, a font that ships, or an import. */
 internal data class FontChoice(
@@ -93,25 +80,28 @@ internal data class FontChoice(
     val usable: Boolean get() = imported?.usable ?: true
 }
 
-private enum class FontFilter { ALL, INCLUDED, IMPORTED }
-
 /**
- * Settings › Fonts: a browser for every font the app can wear, each one shown
- * in its own letters. A page of the Settings pager, under its own chip, so it
- * has no bar of its own: Settings' bar is above it, and the import action sits
- * with the filters.
+ * Settings › Fonts: the font the app is drawn in, its size and letter width,
+ * and the typography table, condensed so the whole page reads in a few
+ * screens rather than a long scroll of large cards.
  *
- * Its glass is the app's, not this screen's: the preview and the import pane
- * are [GlassPanel]s cut from the UI panels material that Visual Studio tunes
- * ([LocalMiniPlayerGlass]), the cards are Material 3 row surfaces
- * ([materialSurface]), and "Remove liquid glass" flattens the panels like
- * everywhere else. The panels frost a backdrop drawn for them underneath — the screen's
- * own source, as a sibling, never the app-wide one they are drawn inside.
+ * Top to bottom: the font being tried, in a single row with its Use button;
+ * the text panel, the size steps and the Width slider; the fonts as chips in
+ * their own letters (a tap tries one, holding an imported one deletes it,
+ * "+ Import" adds more); and the typography table, every style edited in its
+ * own row. A page of the Settings pager, under its own chip, so it has no bar
+ * of its own.
+ *
+ * Its glass is the app's, not this screen's: the panels are [GlassPanel]s cut
+ * from the UI panels material that Visual Studio tunes ([LocalMiniPlayerGlass]),
+ * and "Remove liquid glass" flattens them like everywhere else. The panels
+ * frost a backdrop drawn for them underneath — the screen's own source, as a
+ * sibling, never the app-wide one they are drawn inside.
  */
 @Composable
 fun FontBrowserPage(
     viewModel: FontBrowserViewModel = hiltViewModel(),
-    /** The app's font size, drawn under the preview: Settings' own state, so passed in. */
+    /** The app's text size, in the text panel: Settings' own state, so passed in. */
     fontSize: @Composable () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -122,10 +112,6 @@ fun FontBrowserPage(
     val report by viewModel.report.collectAsStateWithLifecycle()
     val pendingDelete by viewModel.pendingDelete.collectAsStateWithLifecycle()
     val typography by viewModel.typography.collectAsStateWithLifecycle()
-
-    var filter by rememberSaveable { mutableStateOf(FontFilter.ALL) }
-    var sample by rememberSaveable { mutableStateOf("") }
-    var weight by rememberSaveable { mutableFloatStateOf(500f) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         viewModel.import(uris)
@@ -144,15 +130,9 @@ fun FontBrowserPage(
             }
         }
     }
-    val shown = remember(choices, filter) {
-        when (filter) {
-            FontFilter.ALL -> choices
-            FontFilter.INCLUDED -> choices.filter { it.origin != FontChoice.Origin.IMPORTED }
-            FontFilter.IMPORTED -> choices.filter { it.origin == FontChoice.Origin.IMPORTED }
-        }
-    }
     val previewChoice = choices.firstOrNull { it.key == previewKey } ?: choices.first()
     val previewFamily = rememberFontFamily(context, previewChoice)
+    val mainFont = choices.firstOrNull { it.key == activeKey } ?: choices.first()
 
     pendingDelete?.let { font ->
         AlertDialog(
@@ -171,105 +151,226 @@ fun FontBrowserPage(
     }
 
     val haze = rememberHazeState()
+    val panel: @Composable (@Composable () -> Unit) -> Unit = { content ->
+        GlassPanel(
+            hazeState = haze,
+            glass = LocalMiniPlayerGlass.current,
+            avoidNavigationBar = false,
+            // In a scrolling list: a swipe on the pane scrolls it.
+            blockTouchesBelow = false,
+        ) { content() }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         FontBackdrop(
             family = previewFamily,
             modifier = Modifier.fillMaxSize().hazeSource(haze),
         )
-        Column(modifier = Modifier.fillMaxSize()) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize(),
-                // The settings search bar floats over the pager; its height
-                // comes down as top padding so the preview starts clear of it.
-                contentPadding = PaddingValues(
-                    top = LocalSettingsSearchInset.current,
-                    bottom = 96.dp + LocalBottomChromeInset.current,
-                ),
-            ) {
-                item(key = "preview", span = { GridItemSpan(maxLineSpan) }) {
-                    GlassPanel(
-                        hazeState = haze,
-                        glass = LocalMiniPlayerGlass.current,
-                        avoidNavigationBar = false,
-                        // In a scrolling grid: a swipe on the pane scrolls it.
-                        blockTouchesBelow = false,
-                    ) {
-                        PreviewPane(
-                            choice = previewChoice,
-                            family = previewFamily,
-                            inUse = previewChoice.key == activeKey,
-                            sample = sample,
-                            onSampleChange = { sample = it },
-                            weight = weight,
-                            onWeightChange = { weight = it },
-                            onApply = viewModel::apply,
-                        )
-                    }
-                }
-                item(key = "size", span = { GridItemSpan(maxLineSpan) }) {
-                    GlassPanel(
-                        hazeState = haze,
-                        glass = LocalMiniPlayerGlass.current,
-                        avoidNavigationBar = false,
-                        blockTouchesBelow = false,
-                    ) {
-                        fontSize()
-                    }
-                }
-                item(key = "filters", span = { GridItemSpan(maxLineSpan) }) {
-                    FilterRow(selected = filter, onSelect = { filter = it }, onImport = launchPicker)
-                }
-                itemsIndexed(shown, key = { _, c -> c.key }) { index, choice ->
-                    FontCard(
-                        choice = choice,
-                        family = rememberFontFamily(context, choice),
-                        selected = choice.key == previewKey,
-                        inUse = choice.key == activeKey,
-                        onSelect = { viewModel.preview(choice.key) },
-                        onDelete = choice.imported?.let { font -> { viewModel.requestDelete(font) } },
-                        modifier = Modifier.padding(
-                            start = if (index % 2 == 0) 12.dp else 6.dp,
-                            end = if (index % 2 == 0) 6.dp else 12.dp,
-                            top = 6.dp,
-                            bottom = 6.dp,
-                        ),
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            // The settings search bar floats over the pager; its height
+            // comes down as top padding so the first panel starts clear of it.
+            contentPadding = PaddingValues(
+                top = LocalSettingsSearchInset.current,
+                bottom = 96.dp + LocalBottomChromeInset.current,
+            ),
+        ) {
+            item(key = "preview") {
+                panel {
+                    PreviewRow(
+                        choice = previewChoice,
+                        family = previewFamily,
+                        inUse = previewChoice.key == activeKey,
+                        onApply = viewModel::apply,
                     )
                 }
-                item(key = "import", span = { GridItemSpan(maxLineSpan) }) {
-                    GlassPanel(
-                        hazeState = haze,
-                        glass = LocalMiniPlayerGlass.current,
-                        avoidNavigationBar = false,
-                        // In a scrolling grid: a swipe on the pane scrolls it.
-                        blockTouchesBelow = false,
+            }
+            item(key = "text") {
+                panel {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        ImportPane(
-                            importing = importing,
-                            report = report,
-                            onChoose = launchPicker,
-                            onDismissReport = viewModel::dismissReport,
-                        )
-                    }
-                }
-                item(key = "typography", span = { GridItemSpan(maxLineSpan) }) {
-                    GlassPanel(
-                        hazeState = haze,
-                        glass = LocalMiniPlayerGlass.current,
-                        avoidNavigationBar = false,
-                        // In a scrolling grid: a swipe on the pane scrolls it.
-                        blockTouchesBelow = false,
-                    ) {
-                        TypographyTable(
-                            settings = typography,
-                            fonts = choices,
-                            mainFont = choices.firstOrNull { it.key == activeKey } ?: choices.first(),
-                            onChange = viewModel::setTypographyStyle,
-                            onResetAll = viewModel::resetTypography,
-                        )
+                        fontSize()
+                        WidthRow(percent = typography.widthPercent, onCommit = viewModel::setTypographyWidth)
                     }
                 }
             }
+            item(key = "fonts") {
+                FontChips(
+                    choices = choices,
+                    previewKey = previewKey,
+                    activeKey = activeKey,
+                    importing = importing,
+                    onPreview = viewModel::preview,
+                    onDelete = viewModel::requestDelete,
+                    onImport = launchPicker,
+                )
+            }
+            report?.let { r ->
+                item(key = "report") {
+                    panel { ImportReport(r, onDismiss = viewModel::dismissReport) }
+                }
+            }
+            item(key = "typography") {
+                panel {
+                    TypographyTable(
+                        settings = typography,
+                        fonts = choices,
+                        mainFont = mainFont,
+                        onChange = viewModel::setTypographyStyle,
+                        onResetAll = viewModel::resetTypography,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** The font being tried, as one row: a sample in it, its name, and Use (or In use). */
+@Composable
+private fun PreviewRow(choice: FontChoice, family: FontFamily, inUse: Boolean, onApply: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                stringResource(R.string.fonts_preview_track),
+                style = MaterialTheme.typography.bodyLarge.copy(fontFamily = family),
+                color = scheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                "${stringResource(R.string.fonts_preview_artist)} · ${choice.name}",
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = family),
+                color = scheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (inUse) {
+            InUseBadge()
+        } else {
+            FilledTonalButton(
+                onClick = onApply,
+                contentPadding = PaddingValues(horizontal = 14.dp),
+                modifier = Modifier.heightIn(min = 36.dp),
+            ) { Text(stringResource(R.string.typo_use_short)) }
+        }
+    }
+}
+
+/**
+ * The page's Width: how wide every style's letters are drawn, 70% (condensed)
+ * to 130% (wide), unless a style in the table says otherwise. A font with a
+ * width axis draws it itself; any other is squeezed (loadWidthFont).
+ */
+@Composable
+private fun WidthRow(percent: Int, onCommit: (Int) -> Unit) {
+    var draft by remember(percent) { mutableFloatStateOf(percent.toFloat()) }
+    val steps = (TypeStyleOverride.MAX_WIDTH - TypeStyleOverride.MIN_WIDTH) / TypeStyleOverride.WIDTH_STEP - 1
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.typo_width), style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(64.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Slider(
+                value = draft,
+                onValueChange = { draft = it },
+                // Written when the finger lifts: every screen re-lays its text.
+                onValueChangeFinished = { onCommit(draft.roundToInt()) },
+                valueRange = TypeStyleOverride.MIN_WIDTH.toFloat()..TypeStyleOverride.MAX_WIDTH.toFloat(),
+                steps = steps,
+                modifier = Modifier.height(32.dp),
+            )
+            Row {
+                listOf(R.string.typo_condensed, R.string.typo_normal, R.string.typo_wide).forEachIndexed { i, label ->
+                    Text(
+                        stringResource(label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = when (i) { 0 -> TextAlign.Start; 1 -> TextAlign.Center; else -> TextAlign.End },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+        Text(
+            "${TypeStyleOverride.clampWidth(draft.roundToInt())}%",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(44.dp),
+        )
+    }
+}
+
+/**
+ * Every font as a chip in its own letters: a tap tries it in the row above,
+ * the one in use carries a check, holding an imported one deletes it, and
+ * "+ Import" adds more.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
+@Composable
+private fun FontChips(
+    choices: List<FontChoice>,
+    previewKey: String,
+    activeKey: String,
+    importing: Boolean,
+    onPreview: (String) -> Unit,
+    onDelete: (ImportedFont) -> Unit,
+    onImport: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scheme = MaterialTheme.colorScheme
+    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            choices.forEach { choice ->
+                val family = rememberFontFamily(context, choice)
+                val selected = choice.key == previewKey
+                val deleteLabel = choice.imported?.let { stringResource(R.string.settings_delete_font, choice.name) }
+                Text(
+                    choice.name + if (choice.key == activeKey) " ✓" else "",
+                    style = MaterialTheme.typography.labelLarge.copy(fontFamily = family),
+                    color = when {
+                        !choice.usable -> scheme.error
+                        selected -> scheme.onPrimary
+                        else -> scheme.onSurface
+                    },
+                    maxLines = 1,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .then(
+                            if (selected) Modifier.background(scheme.primary)
+                            else Modifier.materialSurface(shape = RoundedCornerShape(10.dp))
+                                .border(1.dp, scheme.outlineVariant, RoundedCornerShape(10.dp)),
+                        )
+                        .combinedClickable(
+                            onClick = { onPreview(choice.key) },
+                            onLongClick = choice.imported?.let { font -> { onDelete(font) } },
+                            onLongClickLabel = deleteLabel,
+                        )
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                )
+            }
+            Text(
+                if (importing) stringResource(R.string.fonts_checking) else "+ " + stringResource(R.string.fonts_import),
+                style = MaterialTheme.typography.labelLarge,
+                color = scheme.primary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(1.dp, scheme.primary, RoundedCornerShape(10.dp))
+                    .clickable(enabled = !importing, onClick = onImport)
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+            )
+        }
+        if (choices.any { it.imported != null }) {
+            Text(
+                stringResource(R.string.typo_hold_to_delete),
+                style = MaterialTheme.typography.labelSmall,
+                color = scheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, start = 2.dp),
+            )
         }
     }
 }
@@ -325,234 +426,6 @@ private fun FontBackdrop(family: FontFamily, modifier: Modifier) {
 }
 
 @Composable
-private fun PreviewPane(
-    choice: FontChoice,
-    family: FontFamily,
-    inUse: Boolean,
-    sample: String,
-    onSampleChange: (String) -> Unit,
-    weight: Float,
-    onWeightChange: (Float) -> Unit,
-    onApply: () -> Unit,
-) {
-    val scheme = MaterialTheme.colorScheme
-    val type = MaterialTheme.typography
-    val previewWeight = FontWeight(weight.toInt())
-    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stringResource(R.string.fonts_preview_label, choice.name),
-                style = type.labelLarge,
-                color = scheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            if (inUse) InUseBadge()
-        }
-        Text(
-            text = sample.ifBlank { stringResource(R.string.fonts_sample_default) },
-            style = type.headlineMedium.copy(fontFamily = family, fontWeight = previewWeight),
-            color = scheme.onSurface,
-        )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(MonoDimens.shapeMd)
-                .background(scheme.surfaceContainerHigh.copy(alpha = 0.6f))
-                .padding(8.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(MonoDimens.shapeSm)
-                    .background(scheme.primaryContainer),
-            )
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.fonts_preview_track),
-                    style = type.bodyLarge.copy(fontFamily = family, fontWeight = previewWeight),
-                    color = scheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = stringResource(R.string.fonts_preview_artist),
-                    style = type.bodyMedium.copy(fontFamily = family),
-                    color = scheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = stringResource(R.string.fonts_preview_heading),
-                style = type.titleLarge.copy(fontFamily = family, fontWeight = previewWeight),
-                color = scheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = "0123456789 · 140 BPM",
-                style = type.bodyMedium.copy(fontFamily = family),
-                color = scheme.onSurfaceVariant,
-            )
-        }
-        OutlinedTextField(
-            value = sample,
-            onValueChange = onSampleChange,
-            label = { Text(stringResource(R.string.fonts_sample_label)) },
-            placeholder = { Text(stringResource(R.string.fonts_sample_hint)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.fonts_weight), style = type.labelLarge, color = scheme.onSurfaceVariant)
-            Slider(
-                value = weight,
-                onValueChange = onWeightChange,
-                valueRange = 300f..700f,
-                steps = 3,
-                modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
-            )
-            Text(
-                text = stringResource(weightName(weight)),
-                style = type.labelLarge,
-                color = scheme.onSurfaceVariant,
-                modifier = Modifier.width(72.dp),
-            )
-        }
-        Button(
-            onClick = onApply,
-            enabled = !inUse,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-        ) {
-            Text(
-                text = if (inUse) stringResource(R.string.fonts_using, choice.name)
-                else stringResource(R.string.fonts_use, choice.name),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-private fun weightName(weight: Float): Int = when (weight.toInt()) {
-    in 0..349 -> R.string.fonts_weight_light
-    in 350..449 -> R.string.fonts_weight_regular
-    in 450..549 -> R.string.fonts_weight_medium
-    in 550..649 -> R.string.fonts_weight_semibold
-    else -> R.string.fonts_weight_bold
-}
-
-@Composable
-private fun FilterRow(selected: FontFilter, onSelect: (FontFilter) -> Unit, onImport: () -> Unit) {
-    val labels = listOf(
-        FontFilter.ALL to R.string.fonts_filter_all,
-        FontFilter.INCLUDED to R.string.settings_included,
-        FontFilter.IMPORTED to R.string.settings_imported,
-    )
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(labels) { (value, label) ->
-            tf.monochrome.android.ui.mixer.GlassChoiceChip(
-                label = stringResource(label),
-                selected = selected == value,
-                accent = MaterialTheme.colorScheme.primary,
-                onClick = { onSelect(value) },
-            )
-        }
-        item {
-            tf.monochrome.android.ui.mixer.GlassChoiceChip(
-                label = stringResource(R.string.fonts_import),
-                selected = false,
-                accent = MaterialTheme.colorScheme.primary,
-                onClick = onImport,
-                leadingIcon = Icons.Default.Add,
-            )
-        }
-    }
-}
-
-@Composable
-private fun FontCard(
-    choice: FontChoice,
-    family: FontFamily,
-    selected: Boolean,
-    inUse: Boolean,
-    onSelect: () -> Unit,
-    onDelete: (() -> Unit)?,
-    modifier: Modifier = Modifier,
-) {
-    val scheme = MaterialTheme.colorScheme
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 136.dp)
-            .clip(MonoDimens.shapeLg)
-            .materialSurface(shape = MonoDimens.shapeLg)
-            .then(
-                if (selected) Modifier.border(2.dp, scheme.primary, MonoDimens.shapeLg) else Modifier,
-            )
-            .selectable(selected = selected, onClick = onSelect, role = Role.RadioButton)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Row(verticalAlignment = Alignment.Top) {
-            Text(
-                text = "Aa",
-                fontFamily = family,
-                fontSize = 40.sp,
-                lineHeight = 44.sp,
-                color = scheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            when {
-                inUse -> InUseBadge()
-                onDelete != null -> IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.settings_delete_font, choice.name),
-                        tint = scheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-        }
-        Text(
-            text = choice.name,
-            fontFamily = family,
-            style = MaterialTheme.typography.titleMedium.copy(fontFamily = family),
-            color = scheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        val note = when {
-            !choice.usable -> stringResource(R.string.fonts_unusable)
-            // A font that came as several files is one entry, its variations
-            // each drawing their own weight (FontFamilies).
-            choice.origin == FontChoice.Origin.IMPORTED && (choice.imported?.styles ?: 1) > 1 ->
-                stringResource(R.string.fonts_imported_styles, choice.imported!!.styles)
-            choice.origin == FontChoice.Origin.IMPORTED -> stringResource(R.string.settings_imported)
-            else -> choice.note
-        }
-        if (note != null) {
-            Text(
-                text = note,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (choice.usable) scheme.onSurfaceVariant else scheme.error,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-@Composable
 private fun InUseBadge() {
     Text(
         text = stringResource(R.string.fonts_in_use),
@@ -565,77 +438,37 @@ private fun InUseBadge() {
     )
 }
 
+/** What the last import did: the fonts it added and each file it turned away, and why. */
 @Composable
-private fun ImportPane(
-    importing: Boolean,
-    report: FontImportReport?,
-    onChoose: () -> Unit,
-    onDismissReport: () -> Unit,
-) {
+private fun ImportReport(r: FontImportReport, onDismiss: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val type = MaterialTheme.typography
-    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(scheme.secondaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Default.FileUpload, contentDescription = null, tint = scheme.onSecondaryContainer)
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.fonts_import_title), style = type.titleMedium, color = scheme.onSurface)
-                Text(stringResource(R.string.fonts_import_formats), style = type.bodySmall, color = scheme.onSurfaceVariant)
-            }
+    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (r.added.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.fonts_added, r.added.joinToString(", ") { it.name }),
+                style = type.bodyMedium,
+                color = scheme.onSurface,
+            )
         }
-        Text(stringResource(R.string.fonts_import_body), style = type.bodyMedium, color = scheme.onSurfaceVariant)
-        if (importing) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            Text(stringResource(R.string.fonts_checking), style = type.bodySmall, color = scheme.onSurfaceVariant)
-        } else {
-            FilledTonalButton(onClick = onChoose, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.fonts_choose_files))
-            }
+        r.skipped.forEach { skip ->
+            Text(
+                text = when (skip.reason) {
+                    FontSkipReason.NOT_A_FONT -> stringResource(R.string.fonts_skip_not_a_font, skip.file)
+                    FontSkipReason.WEB_FONT -> stringResource(R.string.fonts_skip_web_font, skip.file)
+                    FontSkipReason.TYPE1 -> stringResource(R.string.fonts_skip_type1, skip.file)
+                    FontSkipReason.EMPTY -> stringResource(R.string.fonts_skip_empty, skip.file)
+                    FontSkipReason.TOO_LARGE -> stringResource(R.string.fonts_skip_too_large, skip.file)
+                    FontSkipReason.ALREADY_THERE ->
+                        stringResource(R.string.fonts_skip_duplicate, skip.file, skip.existing.orEmpty())
+                    FontSkipReason.UNREADABLE -> stringResource(R.string.fonts_skip_unreadable, skip.file)
+                },
+                style = type.bodySmall,
+                color = scheme.onSurfaceVariant,
+            )
         }
-        report?.let { r ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(MonoDimens.shapeMd)
-                    .background(scheme.surfaceContainerHigh.copy(alpha = 0.7f))
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                if (r.added.isNotEmpty()) {
-                    Text(
-                        text = stringResource(R.string.fonts_added, r.added.joinToString(", ") { it.name }),
-                        style = type.bodyMedium,
-                        color = scheme.onSurface,
-                    )
-                }
-                r.skipped.forEach { skip ->
-                    Text(
-                        text = when (skip.reason) {
-                            FontSkipReason.NOT_A_FONT -> stringResource(R.string.fonts_skip_not_a_font, skip.file)
-                            FontSkipReason.WEB_FONT -> stringResource(R.string.fonts_skip_web_font, skip.file)
-                            FontSkipReason.TYPE1 -> stringResource(R.string.fonts_skip_type1, skip.file)
-                            FontSkipReason.EMPTY -> stringResource(R.string.fonts_skip_empty, skip.file)
-                            FontSkipReason.TOO_LARGE -> stringResource(R.string.fonts_skip_too_large, skip.file)
-                            FontSkipReason.ALREADY_THERE ->
-                                stringResource(R.string.fonts_skip_duplicate, skip.file, skip.existing.orEmpty())
-                            FontSkipReason.UNREADABLE -> stringResource(R.string.fonts_skip_unreadable, skip.file)
-                        },
-                        style = type.bodySmall,
-                        color = scheme.onSurfaceVariant,
-                    )
-                }
-                TextButton(onClick = onDismissReport, modifier = Modifier.align(Alignment.End)) {
-                    Text(stringResource(R.string.action_dismiss))
-                }
-            }
+        TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+            Text(stringResource(R.string.action_dismiss))
         }
     }
 }

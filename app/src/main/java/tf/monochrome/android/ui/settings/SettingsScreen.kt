@@ -22,6 +22,7 @@ import tf.monochrome.android.R
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -4236,55 +4237,46 @@ private fun PaperSwatch(
  * The font size: five fixed steps, or the size set in Android. On the Fonts
  * page, beside the fonts it scales.
  */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 internal fun FontSizeSection(viewModel: SettingsViewModel) {
     val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     val followSystemFontScale by viewModel.fontScaleFollowSystem.collectAsStateWithLifecycle()
-    // Padded as the preview pane above it is: this sits inside a glass panel,
-    // not on the settings page, so nothing gives it a margin but itself.
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        // One heading: the chips below are the size, and need no second label.
-        SettingsGroupHeader(stringResource(R.string.settings_font_size))
-        SettingSwitchItem(
-            title = stringResource(R.string.settings_use_system_font_size),
-            subtitle = stringResource(R.string.settings_follow_the_size_set_in_android_settings_display),
-            checked = followSystemFontScale,
-            onCheckedChange = { viewModel.setFontScaleFollowSystem(it) }
-        )
-
-        // A legacy value from the old free-form slider (e.g. 1.37) won't equal
-        // any step, so select the closest one instead of leaving nothing
-        // highlighted. Picking a chip then writes the exact step back.
-        val selectedPreset = remember(fontScale) {
-            FONT_SCALE_PRESETS.minByOrNull { kotlin.math.abs(it.scale - fontScale) }
+    // A legacy value from the old free-form slider (e.g. 1.37) won't equal
+    // any step, so select the closest one instead of leaving nothing
+    // highlighted. Picking a step then writes the exact step back.
+    val selectedPreset = remember(fontScale) {
+        FONT_SCALE_PRESETS.indexOf(FONT_SCALE_PRESETS.minByOrNull { kotlin.math.abs(it.scale - fontScale) })
+    }
+    // Compact, on the Fonts page's text panel: the five steps on one line as
+    // percentages beside their label, and Android's size as a switch under it.
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.typo_size),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.width(64.dp),
+            )
+            tf.monochrome.android.ui.settings.fonts.CompactSegmented(
+                labels = FONT_SCALE_PRESETS.map { "${(it.scale * 100).roundToInt()}%" },
+                descriptions = FONT_SCALE_PRESETS.map { stringResource(it.label) },
+                selected = if (followSystemFontScale) null else selectedPreset,
+                enabled = !followSystemFontScale,
+                onSelect = { viewModel.setFontScale(FONT_SCALE_PRESETS[it].scale) },
+                modifier = Modifier.weight(1f),
+            )
         }
-        // Wrapped, not scrolled: all five steps in view, none cut at the
-        // panel's edge.
-        androidx.compose.foundation.layout.FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FONT_SCALE_PRESETS.forEach { preset ->
-                tf.monochrome.android.ui.mixer.GlassChoiceChip(
-                    label = stringResource(preset.label),
-                    selected = !followSystemFontScale && preset == selectedPreset,
-                    accent = MaterialTheme.colorScheme.primary,
-                    enabled = !followSystemFontScale,
-                    onClick = { viewModel.setFontScale(preset.scale) },
-                )
-            }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.settings_use_system_font_size),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f).padding(start = 64.dp),
+            )
+            Switch(
+                checked = followSystemFontScale,
+                onCheckedChange = { viewModel.setFontScaleFollowSystem(it) },
+                modifier = Modifier.scale(0.8f),
+            )
         }
-
-        Text(
-            stringResource(R.string.settings_preview_the_quick_brown_fox_jumps_over_the_lazy),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp)
-        )
     }
 }
