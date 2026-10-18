@@ -24,6 +24,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import tf.monochrome.android.audio.dsp.model.BusConfig
 import tf.monochrome.android.audio.dsp.model.BusLevels
 import tf.monochrome.android.audio.dsp.model.FxTapFrame
+import tf.monochrome.android.audio.dsp.model.KnobLink
+import tf.monochrome.android.audio.dsp.model.KnobLinkCodec
 import tf.monochrome.android.audio.dsp.model.MixUpmix
 import tf.monochrome.android.audio.dsp.model.PluginInstance
 import tf.monochrome.android.data.preferences.PreferencesManager
@@ -57,6 +59,27 @@ class DspEngineManager @Inject constructor(
     private val _upmix = MutableStateFlow(false)
     val upmix: StateFlow<Boolean> = _upmix.asStateFlow()
 
+    /**
+     * The knobs that follow the music. Saved with the mix ([KnobLinkCodec]),
+     * handed to the engine whenever they change or a mix is loaded, and moved
+     * with their effects by the chain edits below exactly as the engine moves
+     * its own copy.
+     */
+    private val _knobLinks = MutableStateFlow<List<KnobLink>>(emptyList())
+    val knobLinks: StateFlow<List<KnobLink>> = _knobLinks.asStateFlow()
+    private val modValuesBuffer = FloatArray(KnobLinkCodec.MAX_LINKS * 4)
+
+    // Every music link paused from the Music links page; the knob being
+    // shaped in the editor plays regardless, or there would be nothing to hear.
+    @Volatile private var allKnobLinksPaused = false
+    @Volatile private var knobPreviewKey: String? = null
+
+    /** The knob whose link the editor has open, which plays even while all links are paused. */
+    fun setKnobLinkPreview(key: String?) {
+        knobPreviewKey = key
+        pushKnobLinks()
+    }
+
     private val _clipped = MutableStateFlow(false)
     val clipped: StateFlow<Boolean> = _clipped.asStateFlow()
 
@@ -75,6 +98,13 @@ class DspEngineManager @Inject constructor(
     private val saveSignal = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     init {
+        // The Music links page's master switch pauses the knobs too.
+        scope.launch {
+            preferences.musicLinksPaused.collect { paused ->
+                allKnobLinksPaused = paused
+                pushKnobLinks()
+            }
+        }
         @OptIn(FlowPreview::class)
         scope.launch {
             saveSignal.debounce(500L).collect {
@@ -149,7 +179,8 @@ class DspEngineManager @Inject constructor(
             if (!json.isNullOrEmpty() && json != "{}" &&
                 processor.getEnginePtr() == 0L && !edited
             ) {
-                _buses.value = labelled(parseBusConfigsFromJson(MixUpmix.strip(json)))
+                _buses.value = labelled(parseBusConfigsFromJson(engineOnly(json)))
+                _knobLinks.value = KnobLinkCodec.read(json)
                 // Before the first track configures the pipeline, or the
                 // first song after launch would play without it.
                 applyUpmix(MixUpmix.isOn(json))
@@ -383,12 +414,14 @@ class DspEngineManager @Inject constructor(
         val ptr = processor.getEnginePtr()
         if (ptr != 0L) {
             if (!processor.nativeRemoveBus(ptr, busIndex)) return false
+            _knobLinks.value = KnobLinkCodec.afterRemoveBus(_knobLinks.value, busIndex)
             syncFromEngine()
         } else {
             // No engine yet: do to the mirror what the engine would do —
             // drop the bus and move every bus above it down one index.
             val bus = _buses.value.firstOrNull { it.index == busIndex }
             if (bus == null || !bus.isRemovable) return false
+            _knobLinks.value = KnobLinkCodec.afterRemoveBus(_knobLinks.value, busIndex)
             _buses.value = labelled(
                 _buses.value.filter { it.index != busIndex }.map {
                     val moved = if (it.index > busIndex) it.copy(index = it.index - 1) else it
@@ -502,6 +535,7 @@ class DspEngineManager @Inject constructor(
             else slotIndex.coerceIn(0, bus.plugins.size)
         }
         if (resultSlot >= 0) {
+            _knobLinks.value = KnobLinkCodec.afterInsert(_knobLinks.value, busIndex, resultSlot)
             updateBus(busIndex) { bus ->
                 val plugins = bus.plugins.toMutableList()
                 plugins.add(resultSlot, PluginInstance(
@@ -519,6 +553,7 @@ class DspEngineManager @Inject constructor(
     fun removePlugin(busIndex: Int, slotIndex: Int) {
         val ptr = processor.getEnginePtr()
         if (ptr != 0L) processor.nativeRemovePlugin(ptr, busIndex, slotIndex)
+        _knobLinks.value = KnobLinkCodec.afterRemove(_knobLinks.value, busIndex, slotIndex)
         updateBus(busIndex) { bus ->
             val plugins = bus.plugins.toMutableList()
             if (slotIndex in plugins.indices) {
@@ -532,6 +567,10 @@ class DspEngineManager @Inject constructor(
     fun movePlugin(busIndex: Int, fromSlot: Int, toSlot: Int) {
         val ptr = processor.getEnginePtr()
         if (ptr != 0L) processor.nativeMovePlugin(ptr, busIndex, fromSlot, toSlot)
+        val chain = _buses.value.firstOrNull { it.index == busIndex }?.plugins?.size ?: 0
+        if (fromSlot != toSlot && fromSlot in 0 until chain && toSlot in 0 until chain) {
+            _knobLinks.value = KnobLinkCodec.afterMove(_knobLinks.value, busIndex, fromSlot, toSlot)
+        }
         updateBus(busIndex) { bus ->
             val plugins = bus.plugins.toMutableList()
             if (fromSlot in plugins.indices && toSlot in plugins.indices) {
@@ -640,20 +679,91 @@ class DspEngineManager @Inject constructor(
     fun getStateJson(): String {
         val ptr = processor.getEnginePtr()
         val buses = if (ptr == 0L) DspStateJson.encode(_buses.value) else processor.nativeGetStateJson(ptr)
-        return MixUpmix.attach(buses, _upmix.value)
+        return KnobLinkCodec.attach(MixUpmix.attach(buses, _upmix.value), _knobLinks.value)
     }
 
     fun loadStateJson(json: String) {
         // A mix without the key turns the upmix off: loading a preset is
         // loading all of it.
         applyUpmix(MixUpmix.isOn(json))
-        val engineJson = MixUpmix.strip(json)
+        val engineJson = engineOnly(json)
         val ptr = processor.getEnginePtr()
         if (ptr != 0L) processor.nativeLoadStateJson(ptr, engineJson)
         // Sync Kotlin state from what the engine made of it — which, while a
         // wide stream plays, can be more buses than the JSON had.
         if (ptr != 0L) syncFromEngine() else _buses.value = labelled(parseBusConfigsFromJson(engineJson))
+        // Loading drops the engine's links; the mix's own go back on, those
+        // that still have a knob under them.
+        _knobLinks.value = KnobLinkCodec.read(json).filter { link ->
+            val bus = _buses.value.firstOrNull { it.index == link.bus }
+            bus != null && link.slot < bus.plugins.size
+        }
+        pushKnobLinks()
     }
+
+    // ── Knobs that follow the music ─────────────────────────────────────
+
+    /** Adds [link], or replaces the link on the same knob. */
+    fun putKnobLink(link: KnobLink) {
+        _knobLinks.value = KnobLinkCodec.sanitize(_knobLinks.value.filterNot { it.key == link.key } + link)
+        pushKnobLinks()
+        requestSave()
+    }
+
+    /** Removes the link on knob [key]; returns it, for an undo. */
+    fun removeKnobLink(key: String): KnobLink? {
+        val gone = _knobLinks.value.firstOrNull { it.key == key } ?: return null
+        _knobLinks.value = _knobLinks.value - gone
+        pushKnobLinks()
+        requestSave()
+        return gone
+    }
+
+    fun setKnobLinkPaused(key: String, paused: Boolean) {
+        _knobLinks.value = _knobLinks.value.map { if (it.key == key) it.copy(paused = paused) else it }
+        pushKnobLinks()
+        requestSave()
+    }
+
+    /** An id no link in this mix has. */
+    fun newKnobLinkId(): Int = (_knobLinks.value.maxOfOrNull { it.id } ?: -1) + 1
+
+    /**
+     * Where the music has each linked knob now, and the band's strength,
+     * by knob key. Lock-free on the native side; empty without an engine.
+     */
+    fun knobLinkValues(): Pair<Map<String, Float>, Map<String, Float>> {
+        val ptr = processor.getEnginePtr()
+        if (ptr == 0L || _knobLinks.value.isEmpty()) return emptyMap<String, Float>() to emptyMap()
+        val n = processor.nativeGetModValues(ptr, modValuesBuffer)
+        val byId = _knobLinks.value.associateBy { it.id }
+        val values = HashMap<String, Float>()
+        val strengths = HashMap<String, Float>()
+        var i = 0
+        while (i + 3 < n) {
+            byId[modValuesBuffer[i].toInt()]?.let { link ->
+                values[link.key] = modValuesBuffer[i + 2]
+                strengths[link.key] = modValuesBuffer[i + 3]
+            }
+            i += 4
+        }
+        return values to strengths
+    }
+
+    private fun pushKnobLinks() {
+        val ptr = processor.getEnginePtr()
+        if (ptr == 0L) return
+        val links = if (allKnobLinksPaused) {
+            val preview = knobPreviewKey
+            _knobLinks.value.map { if (it.key == preview) it else it.copy(paused = true) }
+        } else {
+            _knobLinks.value
+        }
+        processor.nativeSetModRoutes(ptr, KnobLinkCodec.toNative(links))
+    }
+
+    /** [json] with the keys only Kotlin reads taken out, for the engine. */
+    private fun engineOnly(json: String): String = KnobLinkCodec.strip(MixUpmix.strip(json))
 
     /** Turns the Atmos upmix on or off, as an edit to the mix. */
     fun setUpmix(on: Boolean) {

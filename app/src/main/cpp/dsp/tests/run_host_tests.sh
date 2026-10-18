@@ -46,6 +46,12 @@ echo "== state_fixture_test"
 $cxx $flags "$here/state_fixture_test.cpp" "$dsp/dsp_engine.cpp" -o "$out/state_fixture_test"
 "$out/state_fixture_test" "$here/../../../../test/resources/mixer_state_fixture.json"
 
+# Knobs that follow the music: the follower against the Kotlin side's numbers,
+# with -ffast-math as on the phone, and links through the engine's chain edits.
+echo "== mod_route_test"
+$cxx $flags -ffast-math "$here/mod_route_test.cpp" "$dsp/dsp_engine.cpp" -o "$out/mod_route_test"
+"$out/mod_route_test"
+
 # The oversampler: exact latency, linear phase, passband null, image rejection.
 echo "== oversampler_test"
 $cxx $flags "$here/oversampler_test.cpp" -o "$out/oversampler_test"

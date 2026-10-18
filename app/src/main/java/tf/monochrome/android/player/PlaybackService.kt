@@ -1610,7 +1610,11 @@ class PlaybackService : MediaSessionService() {
             // Without the upmix switch: the tail runs its own chain, which
             // has no upmix stage, and the engine needs only the buses.
             dspStateJson = runCatching {
-                tf.monochrome.android.audio.dsp.model.MixUpmix.strip(dspManager.getStateJson())
+                // Without the knob links too: they are handed over apart from
+                // the state, and the tail plays out at the knobs' own values.
+                tf.monochrome.android.audio.dsp.model.KnobLinkCodec.strip(
+                    tf.monochrome.android.audio.dsp.model.MixUpmix.strip(dspManager.getStateJson()),
+                )
             }.getOrNull(),
             autoEqBandsL = autoEq.bandsL,
             autoEqBandsR = autoEq.bandsR,

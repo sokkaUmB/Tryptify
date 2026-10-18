@@ -235,6 +235,10 @@ fun MixerScreen(
     // paints the source's flat colour instead of a blur.
     val mixerHaze = rememberHazeState()
 
+    // Knobs that follow the music: the sheet a held knob opens, and its editor.
+    val knobLinkUi = remember { KnobLinkUi() }
+    val knobLinkHost = rememberKnobLinkHost(viewModel.knobLinks) { knobLinkUi.sheetFor = it }
+
     // ── Mixer ⇆ DSP-canvas drag-to-reveal transition ────────────────────
     // progress 0 = mixer fully shown, 1 = canvas fully shown. The two pages
     // are stacked as a filmstrip and translated by `progress`; a header-only
@@ -394,6 +398,10 @@ fun MixerScreen(
                 }
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     val fxTap by viewModel.fxTap.collectAsStateWithLifecycle()
+                    // Every knob in the chain can follow the music: hold one.
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        tf.monochrome.android.ui.musiclinks.LocalMusicLinkHost provides knobLinkHost,
+                    ) {
                     tf.monochrome.android.ui.mixer.fxchain.FxChainPage(
                         buses = buses,
                         selectedBusIndex = selectedBusIndex,
@@ -413,6 +421,7 @@ fun MixerScreen(
                         onPreset = { b, s, p -> viewModel.applyFxPreset(b, s, p) },
                         onMove = { b, from, to -> viewModel.movePlugin(b, from, to) },
                     )
+                    }
                 }
             }
             }
@@ -653,6 +662,13 @@ fun MixerScreen(
             }
             }
         }
+        // Over both pages, beside the backdrop the glass frosts.
+        KnobLinkOverlay(
+            ui = knobLinkUi,
+            editing = viewModel.knobLinks,
+            tap = viewModel.spectrumAnalyzer,
+            hazeState = mixerHaze,
+        )
     }
 
     // ── Plugin picker dialog ────────────────────────────────────────────

@@ -2185,4 +2185,9 @@
     <plurals name="theme_import_apply">
         <item quantity="other">使用 %1$d 个部分</item>
     </plurals>
+    <string name="music_link_stepped">此设置按档位切换，无法随音乐平滑变化。</string>
+    <string name="music_link_listens_song">歌曲</string>
+    <string name="music_link_listens_song_desc">进入混音器时的歌曲。</string>
+    <string name="music_link_listens_bus">此总线</string>
+    <string name="music_link_listens_bus_desc">到达此总线、尚未经过其效果的声音。</string>
 </resources>

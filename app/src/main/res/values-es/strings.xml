@@ -2299,4 +2299,9 @@
         <item quantity="many">Usar %1$d de partes</item>
         <item quantity="other">Usar %1$d partes</item>
     </plurals>
+    <string name="music_link_stepped">Este ajuste cambia por pasos, así que no puede moverse con la música.</string>
+    <string name="music_link_listens_song">La canción</string>
+    <string name="music_link_listens_song_desc">La canción tal como entra en el mezclador.</string>
+    <string name="music_link_listens_bus">Este bus</string>
+    <string name="music_link_listens_bus_desc">Lo que llega a este bus, antes de sus efectos.</string>
 </resources>

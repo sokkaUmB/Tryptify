@@ -378,6 +378,25 @@ The rays are off by default, and the 17 presets ahead of `Sunburst` set no
 glass optic and no ray field, so nobody's lyrics change on upgrade. The
 low-performance glass switch drops the rays with the glass.
 
+### Music links
+
+A setting that "moves with the music" never moves its saved value. The visual
+links publish this frame's values in `VisualLinkLive`, and the renderers fold
+them in **inside their draw and layer blocks** (`live.lyrics(baseFx)`), the way
+the bass pulse is read. Read in composition, every lyric layer would recompose
+sixty times a second. Composition may read `linkedKeys` alone, which changes
+only when the links do — to keep a clock running for a linked ray setting.
+
+The knobs are the same rule in native code: the engine keeps each linked
+knob's own value (`Route::base`) and saves *that*, so a mix saved mid-song
+holds what the listener set, not where a kick left it. A knob turned while
+linked sets its own value and leaves the sound to the link.
+
+The link sheet and the editor are in-window glass, siblings of their screen's
+haze source, never a dialog or a `ModalBottomSheet` (see Glass). The live
+reach and position on a slider or knob are drawn in the draw phase from
+`MusicLinkHost.liveValue`; they redraw the control and recompose nothing.
+
 ### Text on glass
 
 **Text on glass follows the glass, not the theme** (`GlassInkScope`). Every pane

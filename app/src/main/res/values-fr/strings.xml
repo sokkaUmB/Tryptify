@@ -2299,4 +2299,9 @@
         <item quantity="many">Utiliser %1$d d’éléments</item>
         <item quantity="other">Utiliser %1$d éléments</item>
     </plurals>
+    <string name="music_link_stepped">Ce réglage passe d’un cran à l’autre : il ne peut pas suivre la musique en douceur.</string>
+    <string name="music_link_listens_song">Le titre</string>
+    <string name="music_link_listens_song_desc">Le titre tel qu’il entre dans la table de mixage.</string>
+    <string name="music_link_listens_bus">Ce bus</string>
+    <string name="music_link_listens_bus_desc">Ce qui arrive sur ce bus, avant ses effets.</string>
 </resources>

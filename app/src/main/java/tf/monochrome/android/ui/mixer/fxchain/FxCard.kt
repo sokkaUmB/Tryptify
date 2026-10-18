@@ -86,6 +86,8 @@ fun FxCard(
     onOversample: (Int) -> Unit,
     onPreset: (FxPreset) -> Unit,
     modifier: Modifier = Modifier,
+    /** Each knob's music link key, where knobs can follow the music; null for none. */
+    linkKeyFor: (paramIndex: Int) -> String? = { null },
 ) {
     val bypassed = plugin.bypassed
     val chevronRotation by animateFloatAsState(
@@ -200,9 +202,9 @@ fun FxCard(
 
                 val defs = getParamDefs(plugin.type)
                 if (plugin.type == SnapinType.EQ_10BAND) {
-                    Eq10BandKnobs(defs, plugin, accent, onParam)
+                    Eq10BandKnobs(defs, plugin, accent, onParam, linkKeyFor)
                 } else {
-                    KnobGrid(defs, plugin, accent, onParam)
+                    KnobGrid(defs, plugin, accent, onParam, linkKeyFor)
                 }
 
                 DryWetRow(plugin.dryWet, accent, onDryWet)
@@ -280,6 +282,7 @@ private fun KnobGrid(
     plugin: PluginInstance,
     accent: Color,
     onParam: (Int, Float) -> Unit,
+    linkKeyFor: (Int) -> String? = { null },
 ) {
     val columns = 4
     val rows = (defs.size + columns - 1) / columns
@@ -302,7 +305,8 @@ private fun KnobGrid(
                         onValueChange = { onParam(paramIndex, it) },
                         modifier = Modifier.weight(1f),
                         steps = def.steps,
-                        default = def.default
+                        default = def.default,
+                        linkKey = linkKeyFor(paramIndex),
                     )
                 } else {
                     Spacer(modifier = Modifier.weight(1f))
@@ -322,6 +326,7 @@ private fun Eq10BandKnobs(
     plugin: PluginInstance,
     accent: Color,
     onParam: (Int, Float) -> Unit,
+    linkKeyFor: (Int) -> String? = { null },
 ) {
     // Param 0 = preamp; then 5 params per band.
     if (defs.isNotEmpty()) {
@@ -335,7 +340,8 @@ private fun Eq10BandKnobs(
                 onValueChange = { onParam(0, it) },
                 modifier = Modifier.weight(1f),
                 steps = def.steps,
-                default = def.default
+                default = def.default,
+                linkKey = linkKeyFor(0),
             )
             Spacer(modifier = Modifier.weight(3f))
         }
@@ -363,7 +369,8 @@ private fun Eq10BandKnobs(
                     onValueChange = { onParam(paramIndex, it) },
                     modifier = Modifier.weight(1f),
                     steps = def.steps,
-                    default = def.default
+                    default = def.default,
+                    linkKey = linkKeyFor(paramIndex),
                 )
             }
         }

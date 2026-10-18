@@ -1,5 +1,6 @@
 #pragma once
 #include "snapin_processor.h"
+#include "mod_route.h"
 #include <vector>
 #include <memory>
 #include <mutex>
@@ -236,8 +237,33 @@ public:
     // State serialization
     // [full] includes the buses routing grew that are still untouched; the
     // default leaves them out, which is the form to save or export.
+    // A knob that follows the music saves its own value, not where the music
+    // has it this block.
     std::string getStateJson(bool full = false) const;
+    // Drops every music link: they travel beside the state (KnobLinkCodec),
+    // and the caller hands them back with setModRoutes once it is loaded.
     void loadStateJson(const std::string& json);
+
+    // ── Music links on knobs ────────────────────────────────────────────
+    // Replaces every link with [data], KnobLinkCodec.toNative's flat form:
+    // per link MOD_HEADER floats, then its formula program. Parsed off the
+    // lock and swapped in under it. A link that stays (same id, same knob)
+    // keeps its follower and the knob's own value; a new one takes the
+    // knob's value now as its own; one that goes puts its knob back.
+    void setModRoutes(const float* data, int len);
+    // [id, bus, value, strength] per link, for the knobs' rings: the value
+    // the music has the knob at and the band's strength, 0..1. Lock-free.
+    // Returns the number of floats written.
+    int getModValues(float* out, int maxFloats) const;
+    int modRouteCount() const { return modPublished_.load(std::memory_order_relaxed); }
+    // A lane of a wide stream follows the primary's links where the primary
+    // runs them, so every channel of the bed moves together; where it does
+    // not (a bus only this lane feeds), the lane listens for itself.
+    void followMods(const DspEngine* leader) { modLeader_ = leader; }
+    // [other]'s links, followers and all: for a lane cloned from it.
+    void copyModRoutesFrom(DspEngine& other);
+    // Floats before each link's program in setModRoutes' data.
+    static constexpr int MOD_HEADER = 18;
 
 private:
     Bus buses_[TOTAL_BUSES];
@@ -319,4 +345,27 @@ private:
 
     // Clipping flag
     std::atomic<bool> clipped_{false};
+
+    // Music links (under chainMutex_), and what they publish for the UI and
+    // for the lanes that follow this one, by link index.
+    modroute::Route mods_[modroute::MAX_ROUTES];
+    int modCount_ = 0;
+    std::atomic<int> modPublished_{0};
+    std::atomic<int> modId_[modroute::MAX_ROUTES] = {};
+    std::atomic<int> modBus_[modroute::MAX_ROUTES] = {};
+    std::atomic<float> modLive_[modroute::MAX_ROUTES] = {};
+    std::atomic<float> modStrength_[modroute::MAX_ROUTES] = {};
+    // Bumped each time this engine computes a link: a following lane takes
+    // the value only while it is still moving.
+    std::atomic<unsigned> modTick_[modroute::MAX_ROUTES] = {};
+    const DspEngine* modLeader_ = nullptr;
+    // Moves the links on [bus] (a knob's value only) before its chain runs:
+    // [song] is the piece of the player's signal, [busIn] the bus's input.
+    void modulateLocked(int bus, const float* songL, const float* songR,
+                        const float* busInL, const float* busInR, int numFrames);
+    modroute::Route* routeForLocked(int bus, int slot, int param);
+    const modroute::Route* routeForLocked(int bus, int slot, int param) const;
+    // Drops link [i], keeping the order of the rest, and republishes.
+    void dropModLocked(int i);
+    void publishModsLocked();
 };

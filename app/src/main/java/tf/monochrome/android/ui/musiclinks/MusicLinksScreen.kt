@@ -36,7 +36,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -83,13 +85,40 @@ class MusicLinksViewModel @Inject constructor(
     repository: MusicLinksRepository,
     preferences: PreferencesManager,
     val spectrumAnalyzer: SpectrumAnalyzerTap,
+    private val dsp: tf.monochrome.android.audio.dsp.DspEngineManager,
 ) : ViewModel() {
     val editing = VisualLinkEditing(viewModelScope, repository)
+
+    /** The mixer's knob links, each with the name of its effect, knob and bus. */
+    val knobLinks: StateFlow<List<KnobLinkRowModel>> =
+        kotlinx.coroutines.flow.combine(dsp.knobLinks, dsp.buses) { links, buses ->
+            links.mapNotNull { link ->
+                val bus = buses.firstOrNull { it.index == link.bus } ?: return@mapNotNull null
+                val plugin = bus.plugins.getOrNull(link.slot) ?: return@mapNotNull null
+                val def = tf.monochrome.android.ui.mixer.getParamDefs(plugin.type).getOrNull(link.param)
+                    ?: return@mapNotNull null
+                KnobLinkRowModel(link, "${plugin.displayName} · ${def.name}", bus.name, def)
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun setKnobPaused(key: String, paused: Boolean) = dsp.setKnobLinkPaused(key, paused)
+
+    fun removeKnob(key: String): tf.monochrome.android.audio.dsp.model.KnobLink? = dsp.removeKnobLink(key)
+
+    fun restoreKnob(link: tf.monochrome.android.audio.dsp.model.KnobLink) = dsp.putKnobLink(link)
 
     /** The listener's own lyric settings: where a new link rests, and what a setting needs to show. */
     val lyricsFx: StateFlow<LyricsFxSettings> =
         preferences.lyricsFx.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LyricsFxSettings.DEFAULT)
 }
+
+/** A knob link as the Music links page lists it. */
+data class KnobLinkRowModel(
+    val link: tf.monochrome.android.audio.dsp.model.KnobLink,
+    val title: String,
+    val busName: String,
+    val def: tf.monochrome.android.ui.mixer.ParamDef,
+)
 
 /**
  * Every music link in one place: a master switch that pauses them all
@@ -109,7 +138,10 @@ fun MusicLinksScreen(
     val allPaused by editing.allPaused.collectAsStateWithLifecycle()
     val draft by editing.draft.collectAsStateWithLifecycle()
     val fx by viewModel.lyricsFx.collectAsStateWithLifecycle()
+    val knobs by viewModel.knobLinks.collectAsStateWithLifecycle()
     val ui = remember { StudioLinkUi() }
+    // The knob link just removed and its name, while its undo is on offer.
+    var removedKnob by remember { mutableStateOf<Pair<tf.monochrome.android.audio.dsp.model.KnobLink, String>?>(null) }
 
     // Only the link in the editor runs here: there is no preview on this
     // page, and the meter is all that needs it.
@@ -169,7 +201,7 @@ fun MusicLinksScreen(
                             }
                         }
                     }
-                    if (links.isEmpty()) {
+                    if (links.isEmpty() && knobs.isEmpty()) {
                         item(key = "empty") {
                             LinkCard(backdrop) {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -200,7 +232,8 @@ fun MusicLinksScreen(
                                 }
                             }
                         }
-                    } else {
+                    }
+                    if (links.isNotEmpty()) {
                         item(key = "lyrics_header") {
                             Text(
                                 stringResource(R.string.music_links_group_lyrics),
@@ -220,6 +253,25 @@ fun MusicLinksScreen(
                                     editing.start(link.target, target.read(fx))
                                 },
                                 onRemove = { ui.removed = editing.remove(link.target) },
+                            )
+                        }
+                    }
+                    if (knobs.isNotEmpty()) {
+                        item(key = "mixer_header") {
+                            Text(
+                                stringResource(R.string.music_links_group_mixer),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 2.dp),
+                            )
+                        }
+                        items(knobs, key = { "knob:" + it.link.key }) { row ->
+                            KnobRow(
+                                row = row,
+                                allPaused = allPaused,
+                                hazeState = backdrop,
+                                onPause = { viewModel.setKnobPaused(row.link.key, !row.link.paused) },
+                                onRemove = { viewModel.removeKnob(row.link.key)?.let { removedKnob = it to row.title } },
                             )
                         }
                     }
@@ -255,6 +307,22 @@ fun MusicLinksScreen(
                 onCancel = editing::cancel,
                 onRemove = { ui.removed = editing.remove(key) },
                 listensTo = { WhatYouHearRow() },
+            )
+        }
+
+        val goneKnob = removedKnob
+        if (goneKnob != null && d == null) {
+            androidx.compose.runtime.LaunchedEffect(goneKnob) {
+                kotlinx.coroutines.delay(6000)
+                if (removedKnob == goneKnob) removedKnob = null
+            }
+            UndoBar(
+                text = stringResource(R.string.music_link_removed, goneKnob.second),
+                hazeState = overlay,
+                onUndo = {
+                    viewModel.restoreKnob(goneKnob.first)
+                    removedKnob = null
+                },
             )
         }
 
@@ -355,6 +423,68 @@ private fun LinkRow(
                     height = 44.dp,
                     onClickLabel = stringResource(R.string.music_link_remove),
                 ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.music_link_remove),
+                        modifier = Modifier.padding(horizontal = 14.dp).size(20.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun KnobRow(
+    row: KnobLinkRowModel,
+    allPaused: Boolean,
+    hazeState: HazeState,
+    onPause: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    val link = row.link
+    val green = musicLinkColor()
+    LinkCard(hazeState) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = if (link.paused || allPaused) LocalContentColor.current.copy(alpha = 0.5f) else green,
+                    modifier = Modifier.size(24.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(row.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        row.busName + " · " + followsText(link.shape, link.paused) + " · " + stringResource(
+                            R.string.music_link_range_value,
+                            tf.monochrome.android.ui.mixer.formatParamValue(link.shape.lowest, row.def),
+                            tf.monochrome.android.ui.mixer.formatParamValue(link.shape.highest, row.def),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = LocalContentColor.current.copy(alpha = 0.8f),
+                    )
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                GlassPill(
+                    onClick = onPause,
+                    hazeState = hazeState,
+                    height = 44.dp,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(if (link.paused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            stringResource(if (link.paused) R.string.music_link_resume else R.string.music_link_pause),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                        )
+                    }
+                }
+                GlassPill(onClick = onRemove, hazeState = hazeState, height = 44.dp, onClickLabel = stringResource(R.string.music_link_remove)) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = stringResource(R.string.music_link_remove),

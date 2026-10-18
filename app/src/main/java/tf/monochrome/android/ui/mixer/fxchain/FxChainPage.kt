@@ -181,6 +181,9 @@ fun FxChainPage(
                     onParam = { pi, v -> onParam(selectedBusIndex, index, pi, v) },
                     onOversample = { f -> onOversample(selectedBusIndex, index, f) },
                     onPreset = { p -> onPreset(selectedBusIndex, index, p) },
+                    linkKeyFor = { pi ->
+                        tf.monochrome.android.audio.dsp.model.KnobLink.keyOf(selectedBusIndex, index, pi)
+                    },
                     modifier = Modifier
                         .zIndex(if (isDragged) 1f else 0f)
                         .graphicsLayer {

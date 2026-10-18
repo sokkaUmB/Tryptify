@@ -30,7 +30,12 @@ class MixerViewModel @Inject constructor(
     private val spatialStore: tf.monochrome.android.audio.dsp.spatial.SpatialPlacementStore,
     private val channelDetector: tf.monochrome.android.audio.dsp.ChannelDetectorProcessor,
     atmosProcessor: tf.monochrome.android.audio.atmos.AtmosAudioProcessor,
+    /** The song's spectrum, for the knob link editor's band picture. */
+    val spectrumAnalyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap,
 ) : ViewModel() {
+
+    /** Knobs that follow the music: making, changing and polling them. */
+    val knobLinks = KnobLinkEditing(dspManager)
 
     // ── Spatial map ─────────────────────────────────────────────────────
 
@@ -125,6 +130,7 @@ class MixerViewModel @Inject constructor(
     fun pollTick() {
         dspManager.pollLevels()
         dspManager.pollFxTap(_selectedBusIndex.value)
+        knobLinks.poll()
     }
 
     private val _showPluginPicker = MutableStateFlow(false)

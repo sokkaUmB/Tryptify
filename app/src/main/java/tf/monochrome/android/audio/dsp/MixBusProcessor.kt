@@ -154,6 +154,10 @@ class MixBusProcessor @Inject constructor(
     // As the engine runs now, with buses a wide stream grew; for the UI mirror.
     external fun nativeGetLiveStateJson(enginePtr: Long): String
     external fun nativeLoadStateJson(enginePtr: Long, stateJson: String)
+    /** Replaces every knob link on every lane: [data] is KnobLinkCodec.toNative's. */
+    external fun nativeSetModRoutes(enginePtr: Long, data: FloatArray)
+    /** [id, bus, value, strength] per knob link into [out]; returns the floats written. */
+    external fun nativeGetModValues(enginePtr: Long, out: FloatArray): Int
 
     companion object {
         init { DspNativeLoader.ensureLoaded() }

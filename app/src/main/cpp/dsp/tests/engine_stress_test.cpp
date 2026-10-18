@@ -320,7 +320,7 @@ void chaos(int seconds) {
     while (std::chrono::steady_clock::now() < until) {
         const int bus = pick(TOTAL_BUSES + 2) - 1;  // includes invalid -1 and 17
         const int slot = pick(MAX_PLUGINS_PER_BUS + 2) - 1;
-        switch (pick(16)) {
+        switch (pick(18)) {
             case 0: case 1: case 2:
                 engine.forEach([&](DspEngine& e) { e.addPlugin(bus, slot, pick(static_cast<int>(SnapinType::COUNT) + 1)); });
                 break;
@@ -389,6 +389,37 @@ void chaos(int seconds) {
                 engine.getBusLevels(levels, TOTAL_BUSES * 4);
                 engine.getAndResetClipped();
                 engine.forEach([](DspEngine& e) { e.resetMeters(); });
+                break;
+            }
+            case 16: {
+                // Music links on knobs: some real, some pointing nowhere, the
+                // odd one with junk in it, and a formula on a few.
+                std::vector<float> data;
+                const int links = pick(6);
+                for (int k = 0; k < links; k++) {
+                    const float junk = (rng() % 9 == 0) ? std::numeric_limits<float>::quiet_NaN() : 0.0f;
+                    const int programLen = (rng() % 3 == 0) ? 10 : 0;
+                    const float header[DspEngine::MOD_HEADER] = {
+                        static_cast<float>(pick(8)), static_cast<float>(pick(TOTAL_BUSES + 2) - 1),
+                        static_cast<float>(pick(MAX_PLUGINS_PER_BUS + 2) - 1), static_cast<float>(pick(12)),
+                        static_cast<float>(pick(2)), 20.0f + static_cast<float>(pick(5000)) + junk,
+                        6000.0f + static_cast<float>(pick(20000)), static_cast<float>(pick(200)) - 100.0f,
+                        static_cast<float>(pick(20000)) - 10000.0f, static_cast<float>(pick(3)),
+                        static_cast<float>(pick(60)), static_cast<float>(pick(2000)), static_cast<float>(pick(3)),
+                        -static_cast<float>(pick(96)), static_cast<float>(pick(48)) - 24.0f,
+                        static_cast<float>(pick(25)), static_cast<float>(pick(4)), static_cast<float>(programLen),
+                    };
+                    data.insert(data.end(), header, header + DspEngine::MOD_HEADER);
+                    // value + band * 10
+                    const float program[] = {1, 0, 2, 0, 0, 10, 5, 0, 3, 0};
+                    if (programLen) data.insert(data.end(), program, program + programLen);
+                }
+                engine.forEach([&](DspEngine& e) { e.setModRoutes(data.data(), static_cast<int>(data.size())); });
+                break;
+            }
+            case 17: {
+                float values[modroute::MAX_ROUTES * 4];
+                engine.getModValues(values, modroute::MAX_ROUTES * 4);
                 break;
             }
             default:

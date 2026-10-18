@@ -511,6 +511,10 @@ void DspEngine::processMixBusesLocked(const float* left, const float* right, int
         buses_[b].peakL.store(blockPeakL_[b], std::memory_order_relaxed);
         buses_[b].peakR.store(blockPeakR_[b], std::memory_order_relaxed);
     }
+    // The master's knobs, on the mixed signal its slots are about to get. Here
+    // rather than in processBlockLocked so a multi-lane host, which steps the
+    // master slots itself, moves them too.
+    modulateLocked(MASTER_BUS, left, right, sumL_.data(), sumR_.data(), numFrames);
 }
 
 void DspEngine::processMixPieceLocked(const float* left, const float* right, int offset, int numFrames,
@@ -565,6 +569,10 @@ void DspEngine::processMixPieceLocked(const float* left, const float* right, int
             tapAdd(l, inPL, inRingL_, inRingPos_, numFrames, delay, 1.0f, 1.0f);
             tapAdd(r, inPR, inRingR_, inRingPos_, numFrames, delay, 1.0f, 1.0f);
         }
+
+        // Knobs following the music move first, so the chain runs on this
+        // piece's values. Off with the mixer, like the chain itself.
+        if (!mixBypass) modulateLocked(b, inPL, inPR, l, r, numFrames);
 
         // Run plugin chain with dry/wet blending (skip when mixer DSP is
         // bypassed — but still at the chain's delay, as bypassed slots are).
@@ -822,6 +830,10 @@ int DspEngine::addPlugin(int busIndex, int slotIndex, int pluginType) {
         // straight to begin() + slot, and slot -1 wrote before the vector.
         idx = std::max(0, std::min(slotIndex, size));
         bus.plugins.insert(bus.plugins.begin() + idx, std::move(proc));
+        // Links on the effects after it move along a slot with them.
+        for (int i = 0; i < modCount_; i++) {
+            if (mods_[i].bus == busIndex && mods_[i].slot >= idx) mods_[i].slot++;
+        }
     }
 
     LOGD("Added plugin type %d to bus %d slot %d", pluginType, busIndex, idx);
@@ -844,6 +856,12 @@ void DspEngine::removePlugin(int busIndex, int slotIndex) {
         if (slotIndex < 0 || slotIndex >= static_cast<int>(bus.plugins.size())) return;
         retired = std::move(bus.plugins[slotIndex]);
         bus.plugins.erase(bus.plugins.begin() + slotIndex);
+        // Its links go with it; the ones after it move up a slot.
+        for (int i = modCount_ - 1; i >= 0; i--) {
+            if (mods_[i].bus != busIndex) continue;
+            if (mods_[i].slot == slotIndex) dropModLocked(i);
+            else if (mods_[i].slot > slotIndex) mods_[i].slot--;
+        }
     }
     LOGD("Removed plugin from bus %d slot %d", busIndex, slotIndex);
 }
@@ -860,6 +878,9 @@ void DspEngine::movePlugin(int busIndex, int fromSlot, int toSlot) {
     auto plugin = std::move(bus.plugins[fromSlot]);
     bus.plugins.erase(bus.plugins.begin() + fromSlot);
     bus.plugins.insert(bus.plugins.begin() + toSlot, std::move(plugin));
+    for (int i = 0; i < modCount_; i++) {
+        if (mods_[i].bus == busIndex) mods_[i].slot = modroute::slotAfterMove(mods_[i].slot, fromSlot, toSlot);
+    }
 }
 
 void DspEngine::setParameter(int busIndex, int slotIndex, int paramIndex, float value) {
@@ -867,6 +888,13 @@ void DspEngine::setParameter(int busIndex, int slotIndex, int paramIndex, float 
     std::lock_guard<std::mutex> lock(chainMutex_);
     Bus& bus = buses_[busIndex];
     if (slotIndex < 0 || slotIndex >= static_cast<int>(bus.plugins.size())) return;
+    if (modroute::Route* r = routeForLocked(busIndex, slotIndex, paramIndex)) {
+        // The music has this knob. Turning it sets the knob's own value —
+        // what is saved, and what comes back when the link pauses or goes —
+        // and leaves the sound to the link.
+        if (dspIsFinite(value)) r->base = value;
+        if (!r->paused) return;
+    }
     if (bus.plugins[slotIndex]) {
         bus.plugins[slotIndex]->applyParameter(paramIndex, value);
     }
@@ -1065,6 +1093,12 @@ bool DspEngine::removeBus(int busIndex) {
         for (int b = busIndex; b < count; b++) moveBusLocked(buses_[b], buses_[b + 1]);
         resetBusLocked(buses_[count]);
         mixBusCount_.store(count - 1, std::memory_order_relaxed);
+        // Links on the bus go with it; the ones above it move down with theirs.
+        for (int i = modCount_ - 1; i >= 0; i--) {
+            if (mods_[i].bus == busIndex) dropModLocked(i);
+            else if (mods_[i].bus > busIndex && mods_[i].bus != MASTER_BUS) mods_[i].bus--;
+        }
+        publishModsLocked();
     }
     LOGD("Removed bus %d", busIndex);
     return true;
@@ -1295,7 +1329,8 @@ std::string DspEngine::getStateJson(bool full) const {
                << ",\"params\":[";
             for (int i = 0; i < plug->getNumParameters(); i++) {
                 if (i > 0) ss << ",";
-                ss << plug->getParameter(i);
+                const modroute::Route* r = routeForLocked(b, p, i);
+                ss << (r ? r->base : plug->getParameter(i));
             }
             ss << "]}";
         }
@@ -1528,6 +1563,9 @@ void DspEngine::loadStateJson(const std::string& json) {
         const int routed = routedCount_.load(std::memory_order_relaxed);
         mixBusCount_.store(std::max(saved, routed), std::memory_order_relaxed);
         autoGrownFrom_.store(saved < routed ? saved : -1, std::memory_order_relaxed);
+        // The links belonged to the chains being replaced.
+        modCount_ = 0;
+        publishModsLocked();
         for (int b = 0; b < TOTAL_BUSES; b++) {
             buses_[b].plugins.swap(staged[b]);
             buses_[b].gainDb.store(stagedBus[b].gainDb, std::memory_order_relaxed);
@@ -1563,4 +1601,221 @@ void DspEngine::loadStateJson(const std::string& json) {
     // here, at scope exit, with the lock already released — so the audio thread
     // never waits on a destructor.
     LOGD("Loaded state JSON, %d buses parsed", busIdx);
+}
+
+// ── Music links on knobs ────────────────────────────────────────────────
+
+modroute::Route* DspEngine::routeForLocked(int bus, int slot, int param) {
+    for (int i = 0; i < modCount_; i++) {
+        modroute::Route& r = mods_[i];
+        if (r.bus == bus && r.slot == slot && r.param == param) return &r;
+    }
+    return nullptr;
+}
+
+const modroute::Route* DspEngine::routeForLocked(int bus, int slot, int param) const {
+    for (int i = 0; i < modCount_; i++) {
+        const modroute::Route& r = mods_[i];
+        if (r.bus == bus && r.slot == slot && r.param == param) return &r;
+    }
+    return nullptr;
+}
+
+void DspEngine::dropModLocked(int i) {
+    if (i < 0 || i >= modCount_) return;
+    for (int k = i; k + 1 < modCount_; k++) mods_[k] = mods_[k + 1];
+    modCount_--;
+    publishModsLocked();
+}
+
+void DspEngine::publishModsLocked() {
+    for (int i = 0; i < modroute::MAX_ROUTES; i++) {
+        const bool on = i < modCount_;
+        modId_[i].store(on ? mods_[i].id : -1, std::memory_order_relaxed);
+        modBus_[i].store(on ? mods_[i].bus : -1, std::memory_order_relaxed);
+        if (!on) continue;
+        const modroute::Route& r = mods_[i];
+        modLive_[i].store(r.hasApplied ? r.applied : r.base, std::memory_order_relaxed);
+        modStrength_[i].store(r.follower.strength, std::memory_order_relaxed);
+    }
+    modPublished_.store(modCount_, std::memory_order_relaxed);
+}
+
+// An integer field of the flat form; out of range or non-finite is `fallback`.
+static inline int modInt(float v, int lo, int hi, int fallback) {
+    if (!dspIsFinite(v) || v < static_cast<float>(lo) || v > static_cast<float>(hi)) return fallback;
+    return static_cast<int>(v);
+}
+
+static inline float modFloat(float v, float lo, float hi, float fallback) {
+    return dspIsFinite(v) ? std::max(lo, std::min(hi, v)) : fallback;
+}
+
+void DspEngine::setModRoutes(const float* data, int len) {
+    using modroute::Route;
+    // Parsed off the lock: the staging is an allocation, and the audio thread
+    // must never wait on one.
+    std::unique_ptr<Route[]> staged(new Route[modroute::MAX_ROUTES]);
+    int count = 0;
+    int pos = 0;
+    while (data != nullptr && pos + MOD_HEADER <= len && count < modroute::MAX_ROUTES) {
+        const float* h = data + pos;
+        const int programLen = modInt(h[17], 0, modroute::MAX_PROGRAM, -1);
+        if (programLen < 0 || pos + MOD_HEADER + programLen > len) break;
+        pos += MOD_HEADER + programLen;
+
+        Route& r = staged[count];
+        r = Route();
+        r.id = modInt(h[0], 0, 1 << 30, -1);
+        r.bus = modInt(h[1], 0, TOTAL_BUSES - 1, -1);
+        r.slot = modInt(h[2], 0, MAX_PLUGINS_PER_BUS - 1, -1);
+        r.param = modInt(h[3], 0, 255, -1);
+        if (r.id < 0 || r.bus < 0 || r.slot < 0 || r.param < 0) continue;
+        modroute::Shape& s = r.shape;
+        s.source = modInt(h[4], 0, 1, modroute::SONG);
+        const float nyquistish = 0.45f * static_cast<float>(sampleRate_);
+        s.loHz = modFloat(h[5], 10.0f, 20000.0f, 30.0f);
+        s.hiHz = modFloat(h[6], s.loHz * 1.1f, std::max(s.loHz * 1.1f, 20000.0f), 150.0f);
+        s.hiHz = std::min(s.hiHz, std::max(s.loHz * 1.1f, nyquistish));
+        s.lowest = modFloat(h[7], -1e7f, 1e7f, 0.0f);
+        s.highest = modFloat(h[8], -1e7f, 1e7f, 0.0f);
+        s.way = modInt(h[9], 0, 2, modroute::UP);
+        s.attackMs = modFloat(h[10], 0.1f, 5000.0f, 8.0f);
+        s.releaseMs = modFloat(h[11], 1.0f, 20000.0f, 130.0f);
+        s.curve = modInt(h[12], 0, 2, modroute::EVEN);
+        s.quietDb = modFloat(h[13], -120.0f, 0.0f, -60.0f);
+        s.boostDb = modFloat(h[14], -48.0f, 48.0f, 0.0f);
+        s.smoothHz = modFloat(h[15], 0.0f, 200.0f, 10.0f);
+        const int flags = modInt(h[16], 0, 3, 1);
+        s.pauseWhenSilent = (flags & 1) != 0;
+        r.paused = (flags & 2) != 0;
+        s.programLen = programLen;
+        for (int k = 0; k < programLen; k++) {
+            const float v = h[MOD_HEADER + k];
+            s.program[k] = dspIsFinite(v) ? v : 0.0f;
+        }
+        bool duplicate = false;
+        for (int k = 0; k < count && !duplicate; k++) {
+            const Route& o = staged[k];
+            duplicate = o.id == r.id || (o.bus == r.bus && o.slot == r.slot && o.param == r.param);
+        }
+        if (!duplicate) count++;
+    }
+
+    std::lock_guard<std::mutex> lock(chainMutex_);
+    auto pluginAt = [&](int bus, int slot) -> SnapinProcessor* {
+        if (!isActiveBus(bus)) return nullptr;
+        Bus& b = buses_[bus];
+        if (slot < 0 || slot >= static_cast<int>(b.plugins.size())) return nullptr;
+        return b.plugins[static_cast<size_t>(slot)].get();
+    };
+    auto sameKnob = [](const Route& a, const Route& b) {
+        return a.id == b.id && a.bus == b.bus && a.slot == b.slot && a.param == b.param;
+    };
+    // Links that go put their knobs back first, so a new link on the same
+    // knob takes the knob's own value rather than where the music left it.
+    for (int i = 0; i < modCount_; i++) {
+        bool stays = false;
+        for (int k = 0; k < count && !stays; k++) stays = sameKnob(mods_[i], staged[k]);
+        if (stays) continue;
+        if (SnapinProcessor* p = pluginAt(mods_[i].bus, mods_[i].slot)) p->applyParameter(mods_[i].param, mods_[i].base);
+    }
+    for (int k = 0; k < count; k++) {
+        Route& r = staged[k];
+        const Route* old = nullptr;
+        for (int i = 0; i < modCount_ && !old; i++) {
+            if (sameKnob(mods_[i], r)) old = &mods_[i];
+        }
+        SnapinProcessor* p = pluginAt(r.bus, r.slot);
+        if (old) {
+            r.base = old->base;
+            r.follower = old->follower;
+            r.detector = old->detector;
+            r.applied = old->applied;
+            r.hasApplied = old->hasApplied && !r.paused;
+            r.leaderTick = old->leaderTick;
+            // Paused now: the knob goes back to its own value.
+            if (r.paused && !old->paused && p) p->applyParameter(r.param, r.base);
+        } else {
+            r.base = (p && r.param < p->getNumParameters()) ? p->getParameter(r.param) : 0.0f;
+        }
+    }
+    for (int k = 0; k < count; k++) mods_[k] = staged[k];
+    modCount_ = count;
+    publishModsLocked();
+    // `staged` is freed here, after the lock — it is the caller's allocation.
+}
+
+int DspEngine::getModValues(float* out, int maxFloats) const {
+    const int count = std::min(modPublished_.load(std::memory_order_relaxed), maxFloats / 4);
+    for (int i = 0; i < count; i++) {
+        out[i * 4] = static_cast<float>(modId_[i].load(std::memory_order_relaxed));
+        out[i * 4 + 1] = static_cast<float>(modBus_[i].load(std::memory_order_relaxed));
+        out[i * 4 + 2] = modLive_[i].load(std::memory_order_relaxed);
+        out[i * 4 + 3] = modStrength_[i].load(std::memory_order_relaxed);
+    }
+    return count * 4;
+}
+
+void DspEngine::copyModRoutesFrom(DspEngine& other) {
+    if (&other == this) return;
+    std::unique_ptr<modroute::Route[]> copy(new modroute::Route[modroute::MAX_ROUTES]);
+    int count;
+    {
+        std::lock_guard<std::mutex> lock(other.chainMutex_);
+        count = other.modCount_;
+        for (int i = 0; i < count; i++) copy[i] = other.mods_[i];
+    }
+    std::lock_guard<std::mutex> lock(chainMutex_);
+    for (int i = 0; i < count; i++) mods_[i] = copy[i];
+    modCount_ = count;
+    publishModsLocked();
+}
+
+void DspEngine::modulateLocked(int bus, const float* songL, const float* songR,
+                               const float* busInL, const float* busInR, int numFrames) {
+    if (modCount_ == 0 || numFrames <= 0) return;
+    Bus& b = buses_[bus];
+    const float rate = static_cast<float>(sampleRate_);
+    for (int i = 0; i < modCount_; i++) {
+        modroute::Route& r = mods_[i];
+        if (r.bus != bus || r.paused) continue;
+        if (r.slot < 0 || r.slot >= static_cast<int>(b.plugins.size()) || !b.plugins[static_cast<size_t>(r.slot)]) continue;
+        SnapinProcessor& plugin = *b.plugins[static_cast<size_t>(r.slot)];
+
+        float value;
+        bool hold = false;
+        const unsigned leaderTick = modLeader_ != nullptr
+            ? modLeader_->modTick_[i].load(std::memory_order_relaxed) : 0u;
+        if (modLeader_ != nullptr && leaderTick != r.leaderTick &&
+            modLeader_->modId_[i].load(std::memory_order_relaxed) == r.id) {
+            // The primary moved this knob since we last looked: every lane
+            // takes its value, so the channels of a wide stream move as one.
+            r.leaderTick = leaderTick;
+            value = modLeader_->modLive_[i].load(std::memory_order_relaxed);
+            modStrength_[i].store(modLeader_->modStrength_[i].load(std::memory_order_relaxed), std::memory_order_relaxed);
+        } else {
+            const bool fromBus = r.shape.source == modroute::BUS;
+            const float* sl = fromBus ? busInL : songL;
+            const float* sr = fromBus ? busInR : songR;
+            r.detector.design(r.shape.loHz, r.shape.hiHz, static_cast<double>(sampleRate_));
+            value = r.hasApplied ? r.applied : r.base;
+            for (int done = 0; done < numFrames; done += modroute::DETECT_PIECE) {
+                const int n = std::min(modroute::DETECT_PIECE, numFrames - done);
+                value = r.follower.step(r.detector.blockDb(sl + done, sr + done, n), n / rate, r.shape);
+            }
+            modStrength_[i].store(r.follower.strength, std::memory_order_relaxed);
+            modTick_[i].fetch_add(1, std::memory_order_relaxed);
+            // Gone quiet: the knob rests where it is and the effect is left
+            // alone until the band comes back.
+            hold = r.hasApplied && r.follower.asleep(r.shape);
+        }
+        if (hold) continue;
+        if (!r.hasApplied || std::fabs(value - r.applied) > 1e-6f * (1.0f + std::fabs(value))) {
+            plugin.applyParameter(r.param, value);
+            r.applied = value;
+            r.hasApplied = true;
+        }
+        modLive_[i].store(value, std::memory_order_relaxed);
+    }
 }

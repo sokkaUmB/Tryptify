@@ -2205,3 +2205,8 @@ theme_pack_downloads#other	%1$d downloads	%1$d 次下载	%1$d 件のダウンロ
 theme_import_apply#one	Use %1$d part	使用 %1$d 个部分	%1$d 項目を使う	Utiliser %1$d élément	Usar %1$d parte	%1$d parçayı kullan	%1$d Teil verwenden
 theme_import_apply#many	Use %1$d parts	使用 %1$d 个部分	%1$d 項目を使う	Utiliser %1$d d’éléments	Usar %1$d de partes	%1$d parçayı kullan	%1$d Teile verwenden
 theme_import_apply#other	Use %1$d parts	使用 %1$d 个部分	%1$d 項目を使う	Utiliser %1$d éléments	Usar %1$d partes	%1$d parçayı kullan	%1$d Teile verwenden
+music_link_stepped	This setting clicks between steps, so it can’t glide with the music.	此设置按档位切换，无法随音乐平滑变化。	この設定は段階で切り替わるため、音楽に合わせて動かせません。	Ce réglage passe d’un cran à l’autre : il ne peut pas suivre la musique en douceur.	Este ajuste cambia por pasos, así que no puede moverse con la música.	Bu ayar kademeli değişir; müzikle akıcı biçimde hareket edemez.	Diese Einstellung springt in Stufen und kann der Musik nicht folgen.
+music_link_listens_song	The song	歌曲	曲	Le titre	La canción	Şarkı	Der Titel
+music_link_listens_song_desc	The song as it comes into the mixer.	进入混音器时的歌曲。	ミキサーに入ってくる曲です。	Le titre tel qu’il entre dans la table de mixage.	La canción tal como entra en el mezclador.	Miksere girdiği hâliyle şarkı.	Der Titel, so wie er in den Mixer kommt.
+music_link_listens_bus	This bus	此总线	このバス	Ce bus	Este bus	Bu bus	Dieser Bus
+music_link_listens_bus_desc	What reaches this bus, before its effects.	到达此总线、尚未经过其效果的声音。	このバスに届く音（エフェクトの前）です。	Ce qui arrive sur ce bus, avant ses effets.	Lo que llega a este bus, antes de sus efectos.	Bu bus’a ulaşan ses, efektlerinden önce.	Was diesen Bus erreicht, vor seinen Effekten.

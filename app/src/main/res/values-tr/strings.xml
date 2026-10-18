@@ -2242,4 +2242,9 @@
         <item quantity="one">%1$d parçayı kullan</item>
         <item quantity="other">%1$d parçayı kullan</item>
     </plurals>
+    <string name="music_link_stepped">Bu ayar kademeli değişir; müzikle akıcı biçimde hareket edemez.</string>
+    <string name="music_link_listens_song">Şarkı</string>
+    <string name="music_link_listens_song_desc">Miksere girdiği hâliyle şarkı.</string>
+    <string name="music_link_listens_bus">Bu bus</string>
+    <string name="music_link_listens_bus_desc">Bu bus’a ulaşan ses, efektlerinden önce.</string>
 </resources>

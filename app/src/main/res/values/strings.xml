@@ -2243,4 +2243,9 @@
         <item quantity="one">Use %1$d part</item>
         <item quantity="other">Use %1$d parts</item>
     </plurals>
+    <string name="music_link_stepped">This setting clicks between steps, so it can’t glide with the music.</string>
+    <string name="music_link_listens_song">The song</string>
+    <string name="music_link_listens_song_desc">The song as it comes into the mixer.</string>
+    <string name="music_link_listens_bus">This bus</string>
+    <string name="music_link_listens_bus_desc">What reaches this bus, before its effects.</string>
 </resources>

@@ -2242,4 +2242,9 @@
         <item quantity="one">%1$d Teil verwenden</item>
         <item quantity="other">%1$d Teile verwenden</item>
     </plurals>
+    <string name="music_link_stepped">Diese Einstellung springt in Stufen und kann der Musik nicht folgen.</string>
+    <string name="music_link_listens_song">Der Titel</string>
+    <string name="music_link_listens_song_desc">Der Titel, so wie er in den Mixer kommt.</string>
+    <string name="music_link_listens_bus">Dieser Bus</string>
+    <string name="music_link_listens_bus_desc">Was diesen Bus erreicht, vor seinen Effekten.</string>
 </resources>

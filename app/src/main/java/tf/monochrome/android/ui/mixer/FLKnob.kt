@@ -47,6 +47,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
 import tf.monochrome.android.ui.components.adjustableSemantics
+import tf.monochrome.android.ui.musiclinks.LocalMusicLinkHost
+import tf.monochrome.android.ui.musiclinks.musicLinkColor
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import kotlin.math.cos
 import kotlin.math.round
 import kotlin.math.sin
@@ -92,8 +97,20 @@ internal fun FLKnobControl(
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
     steps: Int? = null,
-    default: Float? = null
+    default: Float? = null,
+    /**
+     * This knob's music link key (KnobLink.key), where the screen provides a
+     * [LocalMusicLinkHost]: a press and hold opens its link sheet, and while
+     * it is linked the knob wears a note, its reach as a green arc and a dot
+     * where the music has it this frame.
+     */
+    linkKey: String? = null,
 ) {
+    val linkHost = if (linkKey != null) LocalMusicLinkHost.current else null
+    val linked = linkHost != null && linkKey != null && linkHost.isLinked(linkKey)
+    val latestLinkHost by rememberUpdatedState(linkHost)
+    val moveLabel = stringResource(R.string.music_link_move_with_music)
+    val green = musicLinkColor()
     val fraction = ((value - min) / (max - min)).coerceIn(0f, 1f)
     var isTouching by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
@@ -134,10 +151,14 @@ internal fun FLKnobControl(
     ) {
         // Label (brighter when touching)
         Text(
-            text = label,
+            text = if (linked) "♪ $label" else label,
             fontSize = 9.sp,
-            fontWeight = if (isTouching) FontWeight.Bold else FontWeight.Medium,
-            color = if (isTouching) color else cs.onSurfaceVariant,
+            fontWeight = if (isTouching || linked) FontWeight.Bold else FontWeight.Medium,
+            color = when {
+                isTouching -> color
+                linked -> green
+                else -> cs.onSurfaceVariant
+            },
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -157,17 +178,37 @@ internal fun FLKnobControl(
                     stateText = { formatParamValue(it, ParamDef(label, min, max, it, unit, steps)) },
                     onValueChange = { onValueChange(snapValue(it, min, max, steps)) },
                 )
+                .then(
+                    if (linkHost != null && linkKey != null) {
+                        Modifier.semantics {
+                            customActions = listOf(CustomAccessibilityAction(moveLabel) { linkHost.open(linkKey); true })
+                        }
+                    } else {
+                        Modifier
+                    },
+                )
                 // Double-tap resets to the parameter default. Kept in its own
                 // detector so it composes with — and yields to — the drag
                 // gesture below: a real drag consumes movement, which cancels
                 // this tap detector before it can fire.
-                .pointerInput(min, max, steps) {
+                .pointerInput(min, max, steps, linkKey) {
                     detectTapGestures(
                         onDoubleTap = {
                             val d = latestDefault ?: return@detectTapGestures
                             latestOnValueChange(snapValue(d, min, max, steps))
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        }
+                        },
+                        // Hold, without turning, to make it move with the music.
+                        onLongPress = if (linkKey != null) {
+                            {
+                                latestLinkHost?.let { host ->
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    host.open(linkKey)
+                                }
+                            }
+                        } else {
+                            null
+                        },
                     )
                 }
                 .pointerInput(min, max) {
@@ -403,6 +444,33 @@ internal fun FLKnobControl(
             )
             drawCircle(color = color.copy(alpha = 0.35f), radius = d(4.5.dp), center = tip)
             drawCircle(color = lerp(color, Color.White, 0.35f), radius = d(2.dp), center = tip)
+
+            // The music link: its reach just outside the ticks, and where the
+            // music has the knob now. Both read here, in the draw phase, so
+            // the knob redraws with the music and recomposes for nothing.
+            val host = latestLinkHost
+            if (linked && host != null && linkKey != null && max > min) {
+                val reach = host.rangeOf(linkKey)
+                val outer = radius + d(10.dp)
+                if (reach != null) {
+                    val a = ((minOf(reach.start, reach.endInclusive) - min) / (max - min)).coerceIn(0f, 1f)
+                    val b = ((maxOf(reach.start, reach.endInclusive) - min) / (max - min)).coerceIn(0f, 1f)
+                    drawArc(
+                        color = green.copy(alpha = 0.55f),
+                        startAngle = 135f + a * 270f,
+                        sweepAngle = ((b - a) * 270f).coerceAtLeast(2f),
+                        useCenter = false,
+                        topLeft = Offset(cx - outer, cy - outer),
+                        size = Size(outer * 2, outer * 2),
+                        style = Stroke(width = d(2.dp), cap = StrokeCap.Round),
+                    )
+                }
+                host.liveValue(linkKey)?.let { v ->
+                    val f = ((v - min) / (max - min)).coerceIn(0f, 1f)
+                    val ang = Math.toRadians((135.0 + f * 270.0)).toFloat()
+                    drawCircle(green, radius = d(3.dp), center = Offset(cx + outer * cos(ang), cy + outer * sin(ang)))
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(2.dp))

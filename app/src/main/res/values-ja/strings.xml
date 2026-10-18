@@ -2185,4 +2185,9 @@
     <plurals name="theme_import_apply">
         <item quantity="other">%1$d 項目を使う</item>
     </plurals>
+    <string name="music_link_stepped">この設定は段階で切り替わるため、音楽に合わせて動かせません。</string>
+    <string name="music_link_listens_song">曲</string>
+    <string name="music_link_listens_song_desc">ミキサーに入ってくる曲です。</string>
+    <string name="music_link_listens_bus">このバス</string>
+    <string name="music_link_listens_bus_desc">このバスに届く音（エフェクトの前）です。</string>
 </resources>

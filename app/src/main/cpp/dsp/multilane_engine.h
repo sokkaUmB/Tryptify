@@ -116,6 +116,11 @@ public:
                 // them when the stream narrows and lane 0 drops them.
                 e->inheritGrowth(grownFrom);
                 e->setMixBypassed(mixBypass);
+                // The music links travel beside the state, not in it, so
+                // they are copied over; and the lane follows the primary's,
+                // so the bed's channels move together.
+                e->copyModRoutesFrom(primary());
+                e->followMods(&primary());
                 fresh.push_back(std::move(e));
             }
         }
@@ -182,6 +187,30 @@ public:
                 }
             }
         }
+    }
+
+    /**
+     * [id, bus, value, strength] per music link, as DspEngine::getModValues,
+     * each link read from the lane that runs its bus: the primary's, but for
+     * a bus another lane feeds alone, that lane's.
+     */
+    int getModValues(float* out, int maxFloats) {
+        std::lock_guard<std::mutex> lock(shapeMutex_);
+        const int n = primary().getModValues(out, maxFloats);
+        if (laneCount() <= 1) return n;
+        float other[modroute::MAX_ROUTES * 4];
+        for (int k = 1; k < laneCount(); k++) {
+            const int bus = lanes_[k]->routedBus();
+            if (bus < 0) continue;
+            const int m = std::min(n, lanes_[k]->getModValues(other, modroute::MAX_ROUTES * 4));
+            for (int i = 0; i + 3 < m; i += 4) {
+                if (static_cast<int>(other[i + 1]) == bus && other[i] == out[i]) {
+                    out[i + 2] = other[i + 2];
+                    out[i + 3] = other[i + 3];
+                }
+            }
+        }
+        return n;
     }
 
     /** Runs [f] on the lane whose channels feed [busIndex] (else the primary). */
