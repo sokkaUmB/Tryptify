@@ -2167,6 +2167,7 @@
     <string name="theme_store_empty_mine">Henüz bir tema paylaşmadınız. Kendinizinkini yüklemek için Görünümümü paylaş’a dokunun.</string>
     <string name="theme_store_not_set_up">Tema Mağazası bu uygulama için henüz açılmadı.</string>
     <string name="theme_store_offline">Tema Mağazası’na ulaşılamadı. Bağlantınızı kontrol edin.</string>
+    <string name="theme_store_gone">Bu tema artık Tema Mağazası’nda değil. Yazarı kaldırmış olabilir.</string>
     <string name="theme_store_limit">50 tema paylaştınız; bir hesabın sınırı bu. Yenisini paylaşmak için birini silin.</string>
     <string name="theme_store_bad_pack">Bu tema okunamadı. Uygulamanın daha yeni bir sürümünden olabilir.</string>
     <string name="theme_store_by">%1$s tarafından</string>

@@ -2112,6 +2112,7 @@
     <string name="theme_store_empty_mine">まだテーマを共有していません。「自分の外観を共有」をタップして公開しましょう。</string>
     <string name="theme_store_not_set_up">このアプリではテーマストアがまだ有効になっていません。</string>
     <string name="theme_store_offline">テーマストアに接続できませんでした。接続を確認してください。</string>
+    <string name="theme_store_gone">このテーマはもうテーマストアにありません。作者が削除した可能性があります。</string>
     <string name="theme_store_limit">共有できるテーマは 1 アカウントにつき 50 件までです。新しく共有するには 1 件削除してください。</string>
     <string name="theme_store_bad_pack">このテーマを読み込めませんでした。新しいバージョンのアプリで作られた可能性があります。</string>
     <string name="theme_store_by">作成：%1$s</string>

@@ -1,18 +1,35 @@
 package tf.monochrome.android.data.repository
 
-import io.github.jan.supabase.postgrest.exception.PostgrestRestException
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.exceptions.RestException
+import io.ktor.client.HttpClient
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.request
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.appendPathSegments
+import io.ktor.http.content.TextContent
+import io.ktor.http.isSuccess
+import io.ktor.http.takeFrom
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import tf.monochrome.android.BuildConfig
 import tf.monochrome.android.data.auth.SupabaseAuthManager
 import tf.monochrome.android.data.auth.UserProfile
 import tf.monochrome.android.domain.model.ThemePack
 import tf.monochrome.android.domain.model.ThemePackCodec
 import tf.monochrome.android.domain.model.ThemePart
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -38,10 +55,10 @@ enum class StoreSort { POPULAR, NEW, MINE }
 
 /** Why a store call failed, in the terms the screen speaks. */
 sealed class StoreError(message: String) : Exception(message) {
-    /** No account, or the session ran out. */
+    /** No account, or the session ran out and would not refresh. */
     class SignedOut : StoreError("signed out")
 
-    /** The store's tables are not on the server yet (docs/supabase/theme_store.sql). */
+    /** The store's server is up but has no database to keep packs in. */
     class NotSetUp : StoreError("store not set up")
 
     /** Fifty packs already. */
@@ -50,11 +67,15 @@ sealed class StoreError(message: String) : Exception(message) {
     /** The pack is not a theme pack, or it is too big. */
     class BadPack : StoreError("bad pack")
 
+    /** No such pack: its author deleted it. */
+    class Gone : StoreError("gone")
+
     class Network(cause: Throwable) : StoreError(cause.message ?: "network")
 }
 
+/** A pack as the server sends it. The keys are its columns. */
 @Serializable
-private data class SbThemePack(
+internal data class WirePack(
     val id: String = "",
     val user_id: String = "",
     val author_name: String = "",
@@ -72,7 +93,7 @@ private data class SbThemePack(
 )
 
 @Serializable
-private data class SbThemePackWrite(
+private data class WritePack(
     val author_name: String,
     val name: String,
     val description: String,
@@ -84,61 +105,110 @@ private data class SbThemePackWrite(
 )
 
 @Serializable
-private data class SbThemeLike(val pack_id: String)
+private data class WriteListed(val listed: Boolean)
 
 @Serializable
-private data class SbThemeReport(val pack_id: String, val reason: String)
+private data class WriteReport(val reason: String)
+
+@Serializable
+private data class LikedIds(val ids: List<String> = emptyList())
+
+/** How the store server's answers read, apart from the network that carries them. */
+internal object StoreWire {
+    private val lenient = Json { ignoreUnknownKeys = true }
+
+    /**
+     * The error an answer that was not a success stands for. The server names
+     * its own (`{"error":"limit_reached"}`); anything else on the way — a proxy's
+     * 502, a page from the host — is the network's, whatever its status.
+     */
+    fun errorOf(status: Int, body: String): StoreError {
+        val code = runCatching {
+            lenient.parseToJsonElement(body).jsonObject["error"]?.jsonPrimitive?.contentOrNull
+        }.getOrNull()
+        return when (code) {
+            "signed_out" -> StoreError.SignedOut()
+            "limit_reached" -> StoreError.LimitReached()
+            "bad_pack", "too_big" -> StoreError.BadPack()
+            "not_found" -> StoreError.Gone()
+            "not_set_up" -> StoreError.NotSetUp()
+            else -> if (status == 401) StoreError.SignedOut() else StoreError.Network(IOException("theme store answered $status"))
+        }
+    }
+
+    fun sortName(sort: StoreSort) = when (sort) {
+        StoreSort.POPULAR -> "popular"
+        StoreSort.NEW -> "new"
+        StoreSort.MINE -> "mine"
+    }
+
+    /** A code as typed: letters and digits only, whatever else came with it. */
+    fun cleanCode(code: String) = code.filter { it.isLetterOrDigit() }.uppercase().take(16)
+}
+
+internal fun WirePack.toStore() = StorePack(
+    id = id,
+    authorId = user_id,
+    authorName = author_name,
+    name = name,
+    description = description,
+    parts = parts.mapNotNull { p -> ThemePart.entries.firstOrNull { it.name == p } }.toSet(),
+    accent = accent,
+    background = background,
+    listed = listed,
+    shareCode = share_code,
+    likes = likes,
+    downloads = downloads,
+    createdAt = created_at,
+)
 
 /**
- * The Theme Store on Supabase. Every call needs an account — the tables grant
- * nothing to anonymous users, and the client is built with
- * `requireValidSession`, so a signed-out call fails here before it is sent.
+ * The Theme Store, on its own server (`server/theme-store`, a Railway Function
+ * with its own Postgres). Every call needs an account: it carries the Supabase
+ * session's access token, which the server checks against the project's public
+ * keys. A token that has run out is refreshed once and the call sent again.
  */
 @Singleton
 class ThemeStoreRepository @Inject constructor(
     private val auth: SupabaseAuthManager,
     private val packs: ThemePackRepository,
+    private val http: HttpClient,
+    private val json: Json,
 ) {
-    private val postgrest get() = auth.supabase.postgrest
+    private val refreshing = Mutex()
 
     val user: StateFlow<UserProfile?> = auth.userProfile
 
     suspend fun browse(sort: StoreSort, query: String, page: Int): Result<List<StorePack>> = call {
-        val uid = requireUser()
         val q = query.trim().replace("%", "").replace("_", "").take(40)
-        postgrest[TABLE].select(Columns.list(LIST_COLUMNS)) {
-            filter {
-                if (sort == StoreSort.MINE) eq("user_id", uid) else eq("listed", true)
-                if (q.isNotEmpty()) ilike("name", "%$q%")
-            }
-            when (sort) {
-                StoreSort.POPULAR -> {
-                    order("likes", Order.DESCENDING)
-                    order("downloads", Order.DESCENDING)
-                }
-                StoreSort.NEW, StoreSort.MINE -> order("created_at", Order.DESCENDING)
-            }
-            range((page * PAGE).toLong(), (page * PAGE + PAGE - 1).toLong())
-        }.decodeList<SbThemePack>().map { it.toStore() }
+        val res = send(
+            HttpMethod.Get, "packs",
+            query = buildMap {
+                put("sort", StoreWire.sortName(sort))
+                if (q.isNotEmpty()) put("q", q)
+                put("page", page.coerceAtLeast(0).toString())
+            },
+        )
+        json.decodeFromString<List<WirePack>>(res.bodyAsText()).map { it.toStore() }
     }
 
     /** The pack itself, decoded and cleaned for this build. */
     suspend fun fetch(id: String): Result<Pair<StorePack, ThemePack>> = call {
-        requireUser()
-        val row = postgrest[TABLE].select { filter { eq("id", id) } }.decodeSingle<SbThemePack>()
+        val row = json.decodeFromString<WirePack>(send(HttpMethod.Get, "packs", id).bodyAsText())
         val pack = packs.decode(row.pack) ?: throw StoreError.BadPack()
         row.toStore() to pack
     }
 
     /** A pack by its share code, listed or not. Null when no pack has that code. */
     suspend fun byCode(code: String): Result<StorePack?> = call {
-        requireUser()
-        val clean = code.filter { it.isLetterOrDigit() }.uppercase().take(16)
+        val clean = StoreWire.cleanCode(code)
         if (clean.isEmpty()) return@call null
-        postgrest.rpc("theme_pack_by_code", buildJsonObject { put("p_code", clean) })
-            .decodeList<SbThemePack>()
-            .firstOrNull()
-            ?.toStore()
+        try {
+            val row = json.decodeFromString<WirePack>(send(HttpMethod.Get, "codes", clean).bodyAsText())
+            row.toStore()
+        } catch (_: StoreError.Gone) {
+            null
+        }
     }
 
     /** Publishes [pack] (its personal settings already stripped by [ThemePackCodec.forSharing]). */
@@ -155,8 +225,9 @@ class ThemeStoreRepository @Inject constructor(
             throw StoreError.BadPack()
         }
         val colours = clean.colours
-        postgrest[TABLE].insert(
-            SbThemePackWrite(
+        val body = json.encodeToString(
+            WritePack.serializer(),
+            WritePack(
                 author_name = (profile.displayName ?: "").trim().take(40),
                 name = clean.name,
                 description = description.trim().take(MAX_DESCRIPTION),
@@ -166,109 +237,105 @@ class ThemeStoreRepository @Inject constructor(
                 pack = text,
                 listed = listed,
             ),
-        ) { select(Columns.list(LIST_COLUMNS)) }.decodeSingle<SbThemePack>().toStore()
+        )
+        val row = json.decodeFromString<WirePack>(send(HttpMethod.Post, "packs", body = body).bodyAsText())
+        row.toStore()
     }
 
     suspend fun setListed(id: String, listed: Boolean): Result<Unit> = call {
-        requireUser()
-        postgrest[TABLE].update({ set("listed", listed) }) { filter { eq("id", id) } }
+        send(HttpMethod.Patch, "packs", id, body = json.encodeToString(WriteListed.serializer(), WriteListed(listed)))
         Unit
     }
 
     suspend fun delete(id: String): Result<Unit> = call {
-        requireUser()
-        postgrest[TABLE].delete { filter { eq("id", id) } }
+        send(HttpMethod.Delete, "packs", id)
         Unit
     }
 
     /** The ids among [ids] this account likes. */
     suspend fun likedAmong(ids: List<String>): Result<Set<String>> = call {
-        val uid = requireUser()
         if (ids.isEmpty()) return@call emptySet()
-        postgrest[LIKES].select(Columns.list("pack_id")) {
-            filter {
-                eq("user_id", uid)
-                isIn("pack_id", ids)
-            }
-        }.decodeList<SbThemeLike>().map { it.pack_id }.toSet()
+        val res = send(HttpMethod.Get, "likes", query = mapOf("ids" to ids.take(100).joinToString(",")))
+        json.decodeFromString<LikedIds>(res.bodyAsText()).ids.toSet()
     }
 
     suspend fun setLiked(id: String, liked: Boolean): Result<Unit> = call {
-        val uid = requireUser()
-        if (liked) {
-            postgrest[LIKES].upsert(SbThemeLike(id)) { ignoreDuplicates = true }
-        } else {
-            postgrest[LIKES].delete { filter { eq("pack_id", id); eq("user_id", uid) } }
-        }
+        send(if (liked) HttpMethod.Put else HttpMethod.Delete, "packs", id, "like")
         Unit
     }
 
     /** Counts a download, once per person; failures are not worth telling anyone about. */
     suspend fun markDownloaded(id: String) {
-        runCatching { postgrest.rpc("theme_pack_downloaded", buildJsonObject { put("p_id", id) }) }
+        call { send(HttpMethod.Post, "packs", id, "download") }
     }
 
+    /** One report per person and pack; the server takes a second as the first. */
     suspend fun report(id: String, reason: String): Result<Unit> = call {
-        requireUser()
-        try {
-            postgrest[REPORTS].insert(SbThemeReport(id, reason.trim().take(MAX_DESCRIPTION)))
-        } catch (e: PostgrestRestException) {
-            // Reported already: one report per person and pack is the point.
-            if (e.code != "23505") throw e
-        }
+        val body = json.encodeToString(WriteReport.serializer(), WriteReport(reason.trim().take(MAX_DESCRIPTION)))
+        send(HttpMethod.Post, "packs", id, "report", body = body)
         Unit
     }
 
-    private fun requireUser(): String = user.value?.id ?: throw StoreError.SignedOut()
+    /**
+     * One call to the store, under `/v1/[path]`. A 401 refreshes the session and
+     * sends it once more; any other failure is thrown as the [StoreError] it means.
+     */
+    private suspend fun send(
+        method: HttpMethod,
+        vararg path: String,
+        query: Map<String, String> = emptyMap(),
+        body: String? = null,
+    ): HttpResponse {
+        suspend fun attempt(token: String) = http.request {
+            this.method = method
+            url {
+                takeFrom(BuildConfig.THEME_STORE_URL)
+                appendPathSegments("v1", *path)
+                query.forEach { (k, v) -> parameters.append(k, v) }
+            }
+            bearerAuth(token)
+            if (body != null) setBody(TextContent(body, ContentType.Application.Json))
+        }
+
+        val token = auth.supabase.auth.currentAccessTokenOrNull() ?: throw StoreError.SignedOut()
+        var res = attempt(token)
+        if (res.status == HttpStatusCode.Unauthorized) res = attempt(refreshed(token))
+        if (!res.status.isSuccess()) throw StoreWire.errorOf(res.status.value, res.bodyAsText())
+        return res
+    }
+
+    /**
+     * A token newer than [stale]. Calls that fail together refresh once: the
+     * first refreshes, the rest find its token already there.
+     */
+    private suspend fun refreshed(stale: String): String = refreshing.withLock {
+        val now = auth.supabase.auth.currentAccessTokenOrNull()
+        if (now != null && now != stale) return@withLock now
+        try {
+            auth.supabase.auth.refreshCurrentSession()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: RestException) {
+            // Supabase refused the refresh token: the session is over.
+            throw StoreError.SignedOut()
+        } catch (e: Exception) {
+            throw StoreError.Network(e)
+        }
+        auth.supabase.auth.currentAccessTokenOrNull() ?: throw StoreError.SignedOut()
+    }
 
     private suspend fun <T> call(block: suspend () -> T): Result<T> =
         try {
             Result.success(block())
         } catch (e: StoreError) {
             Result.failure(e)
-        } catch (e: PostgrestRestException) {
-            Result.failure(
-                when {
-                    // PostgREST's "relation does not exist" / "function not found".
-                    e.code == "42P01" || e.code == "PGRST202" || e.code == "PGRST205" -> StoreError.NotSetUp()
-                    e.message?.contains("theme pack limit reached") == true -> StoreError.LimitReached()
-                    e.statusCode == 401 -> StoreError.SignedOut()
-                    else -> StoreError.Network(e)
-                },
-            )
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            Result.failure(
-                if (e.javaClass.simpleName == "SessionRequiredException") StoreError.SignedOut() else StoreError.Network(e),
-            )
+            Result.failure(StoreError.Network(e))
         }
 
-    private fun SbThemePack.toStore() = StorePack(
-        id = id,
-        authorId = user_id,
-        authorName = author_name,
-        name = name,
-        description = description,
-        parts = parts.mapNotNull { p -> ThemePart.entries.firstOrNull { it.name == p } }.toSet(),
-        accent = accent,
-        background = background,
-        listed = listed,
-        shareCode = share_code,
-        likes = likes,
-        downloads = downloads,
-        createdAt = created_at,
-    )
-
     private companion object {
-        const val TABLE = "theme_packs"
-        const val LIKES = "theme_likes"
-        const val REPORTS = "theme_reports"
-        const val PAGE = 20
         const val MAX_DESCRIPTION = 280
-        val LIST_COLUMNS = listOf(
-            "id", "user_id", "author_name", "name", "description", "parts", "accent", "background",
-            "listed", "share_code", "likes", "downloads", "created_at",
-        )
     }
 }

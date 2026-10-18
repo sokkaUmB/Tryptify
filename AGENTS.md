@@ -173,6 +173,20 @@ Do not use Info-ZIP's own split (`zip -s`, giving `.z01`, `.z02`, `.zip`). It
 failed that round trip here — the rejoined archive was corrupt and the APK in it
 was not the one built — and Android extractors handle it poorly anyway.
 
+## Theme Store server
+
+The Theme Store does not live in Supabase. Its API is
+[`server/theme-store/index.ts`](server/theme-store/README.md), a single-file
+Railway Function (Bun) in project humble-charm with its own Railway Postgres.
+Sign-in stays Supabase: the app sends the session's access token, and the
+server verifies it against the project's public JWKS, or asks Supabase Auth
+when the token was signed with the shared secret. It holds no secret.
+
+Railway does not deploy it from this repository. Change `index.ts`, run its
+test (`bun run test.ts` against a local Postgres, see the README), then replace
+the function's code with the whole file. `ThemeStoreWireTest` holds the app and
+the server to the same theme parts, size cap and error codes.
+
 ## Commits
 
 Author as `tryptz`. No co-author trailers and no tool attribution in commit

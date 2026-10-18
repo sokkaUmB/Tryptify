@@ -445,6 +445,7 @@ internal fun errorText(error: StoreError): String = stringResource(
         is StoreError.SignedOut -> R.string.theme_store_sign_in_title
         is StoreError.LimitReached -> R.string.theme_store_limit
         is StoreError.BadPack -> R.string.theme_store_bad_pack
+        is StoreError.Gone -> R.string.theme_store_gone
         is StoreError.Network -> R.string.theme_store_offline
     },
 )

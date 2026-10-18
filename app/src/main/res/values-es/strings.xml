@@ -2222,6 +2222,7 @@
     <string name="theme_store_empty_mine">Todavía no has compartido ningún tema. Toca Compartir mi estilo para subir el tuyo.</string>
     <string name="theme_store_not_set_up">La tienda de temas aún no está activada en esta app.</string>
     <string name="theme_store_offline">No se pudo conectar con la tienda de temas. Revisa tu conexión.</string>
+    <string name="theme_store_gone">Este tema ya no está en la tienda de temas. Puede que su autor lo haya quitado.</string>
     <string name="theme_store_limit">Has compartido 50 temas, el máximo por cuenta. Elimina uno para compartir otro.</string>
     <string name="theme_store_bad_pack">No se pudo leer este tema. Puede ser de una versión más reciente de la app.</string>
     <string name="theme_store_by">de %1$s</string>

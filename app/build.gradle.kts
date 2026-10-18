@@ -67,6 +67,15 @@ android {
         )
         buildConfigField("String", "SPOTIFY_REDIRECT_URI", "\"tryptify://spotify-callback\"")
 
+        // The Theme Store's API (server/theme-store, a Railway Function). It
+        // holds no secret: every call carries the listener's Supabase session,
+        // which the server checks against the project's public keys.
+        buildConfigField(
+            "String",
+            "THEME_STORE_URL",
+            "\"${localProperties.getProperty("themeStore.url") ?: "https://theme-store-production-a3db.up.railway.app"}\"",
+        )
+
         // Last.fm application key, shared by every install — CHARTS ONLY.
         //
         // Genre charts call tag.getTopTracks: unauthenticated, read-only, public
