@@ -2521,7 +2521,7 @@ internal fun FxSlider(
                 // note opens the same sheet.
                 Icon(
                     imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
+                    contentDescription = moveLabel,
                     tint = if (linked) musicLinkColor() else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                     modifier = Modifier
                         .padding(start = 2.dp)

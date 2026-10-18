@@ -159,11 +159,13 @@ private fun posToHz(pos: Float): Float =
     LinkShape.MIN_HZ * (LinkShape.MAX_HZ / LinkShape.MIN_HZ).pow(pos.coerceIn(0f, 1f))
 
 /**
- * The dim layer behind a link sheet. A tap on it closes the sheet; nothing
- * reaches the screen underneath.
+ * The dim layer behind a link sheet: Back closes the sheet, and nothing
+ * reaches the screen underneath. A tap on it closes the sheet too, unless
+ * [dismissOnTap] is off — the editor's, where a stray tap beside the panel
+ * must not throw away a link half made.
  */
 @Composable
-fun MusicLinkScrim(onDismiss: () -> Unit, dim: Float = 0.32f) {
+fun MusicLinkScrim(onDismiss: () -> Unit, dim: Float = 0.32f, dismissOnTap: Boolean = true) {
     BackHandler(onBack = onDismiss)
     val closeLabel = stringResource(R.string.action_close)
     Box(
@@ -172,8 +174,8 @@ fun MusicLinkScrim(onDismiss: () -> Unit, dim: Float = 0.32f) {
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClickLabel = closeLabel,
-                onClick = onDismiss,
+                onClickLabel = if (dismissOnTap) closeLabel else null,
+                onClick = { if (dismissOnTap) onDismiss() },
             ),
     ) {
         Canvas(Modifier.fillMaxSize()) { drawRect(Color.Black.copy(alpha = dim)) }
@@ -364,7 +366,7 @@ fun BoxScope.MusicLinkEditor(
      */
     topClearance: Dp = Dp.Unspecified,
 ) {
-    MusicLinkScrim(onCancel, dim = if (topClearance != Dp.Unspecified) 0f else 0.32f)
+    MusicLinkScrim(onCancel, dim = if (topClearance != Dp.Unspecified) 0f else 0.32f, dismissOnTap = false)
     val accent = MaterialTheme.colorScheme.primary
     CompositionLocalProvider(LocalGlassBackdrop provides hazeState) {
         GlassPanel(
