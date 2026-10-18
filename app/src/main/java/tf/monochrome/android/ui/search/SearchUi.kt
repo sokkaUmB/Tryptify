@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.search
 
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.trackArtistAction
 import tf.monochrome.android.ui.navigation.trackAlbumAction
 import androidx.activity.compose.BackHandler
@@ -89,7 +90,6 @@ import tf.monochrome.android.ui.components.TrackContextMenu
 import tf.monochrome.android.ui.components.TrackSelectionBar
 import tf.monochrome.android.ui.components.bounceCombinedClick
 import tf.monochrome.android.ui.components.rememberTrackSelectionState
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.navigation.Screen
 import tf.monochrome.android.ui.navigation.openAlbum
 import tf.monochrome.android.ui.navigation.openArtist
@@ -147,7 +147,7 @@ fun SearchHistoryContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .liquidGlass(shape = MonoDimens.shapeMd),
+                        .materialSurface(shape = MonoDimens.shapeMd),
                     shape = MonoDimens.shapeMd,
                     color = Color.Transparent,
                     onClick = { onSelect(item) }
@@ -649,7 +649,7 @@ private fun UnifiedSearchTrackItem(
             .fillMaxWidth()
             .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
             .bounceCombinedClick(onClick = onClick, onLongClick = holdToPreview ?: onLongClick ?: onMoreClick)
-            .liquidGlass(shape = MonoDimens.shapeMd)
+            .materialSurface(shape = MonoDimens.shapeMd)
             .songPreviewHold(SongPreview.keyOf(track), MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent
@@ -770,7 +770,7 @@ private fun PlaylistSearchItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
-            .liquidGlass(shape = MonoDimens.shapeMd),
+            .materialSurface(shape = MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         color = Color.Transparent,
         onClick = onClick

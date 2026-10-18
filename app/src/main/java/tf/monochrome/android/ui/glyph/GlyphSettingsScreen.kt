@@ -97,7 +97,7 @@ import tf.monochrome.android.glyph.engine.GlyphTvTuning
 import tf.monochrome.android.glyph.input.GlyphKeyBindings
 import tf.monochrome.android.performance.LocalPerformanceProfile
 import tf.monochrome.android.ui.components.GlassPill
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
 import tf.monochrome.android.ui.theme.MonoDimens
 import kotlin.math.roundToInt
@@ -574,7 +574,7 @@ private fun TapPad(caption: String, count: String, onTap: (Long) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(TAP_PAD_HEIGHT)
-            .liquidGlass(shape = MonoDimens.shapeLg)
+            .materialSurface(shape = MonoDimens.shapeLg)
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)

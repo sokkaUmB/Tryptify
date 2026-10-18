@@ -13,8 +13,8 @@ import androidx.compose.runtime.compositionLocalOf
  *
  * The two compose rather than override — [disableLiquidGlass] is folded into
  * `PerformanceProfile.allowHazeBlur` when the profile is provided (see
- * `MainActivity`), so the ~25 call sites of `Modifier.liquidGlass` that already
- * gate on the tier need no change at all.
+ * `MainActivity`), so every haze frost that already gates on the tier needs
+ * no change at all.
  */
 data class LowPerformanceSettings(
     val disableAnimations: Boolean = false,

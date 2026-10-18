@@ -243,7 +243,7 @@ fun PressableGlass(
                 onClick = onClick,
             )
             .clip(shape)
-            .glassBase(hazeState, glass, shape),
+            .glassBase(glass, shape),
         contentAlignment = contentAlignment,
     ) {
         GlassMaterial(hazeState = hazeState, glass = glass, corner = corner, press = press, punch = punch)

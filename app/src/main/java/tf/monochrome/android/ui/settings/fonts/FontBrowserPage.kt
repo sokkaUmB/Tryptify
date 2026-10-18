@@ -71,7 +71,7 @@ import tf.monochrome.android.data.fonts.FontImportReport
 import tf.monochrome.android.data.fonts.FontSkipReason
 import tf.monochrome.android.data.fonts.ImportedFont
 import tf.monochrome.android.ui.components.GlassPanel
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
 import tf.monochrome.android.ui.navigation.LocalMiniPlayerGlass
 import tf.monochrome.android.ui.settings.LocalSettingsSearchInset
@@ -103,9 +103,9 @@ private enum class FontFilter { ALL, INCLUDED, IMPORTED }
  *
  * Its glass is the app's, not this screen's: the preview and the import pane
  * are [GlassPanel]s cut from the UI panels material that Visual Studio tunes
- * ([LocalMiniPlayerGlass]), the cards are row glass ([liquidGlass], no backdrop
- * of their own), and "Remove liquid glass" flattens all of it like everywhere
- * else. The panels frost a backdrop drawn for them underneath — the screen's
+ * ([LocalMiniPlayerGlass]), the cards are Material 3 row surfaces
+ * ([materialSurface]), and "Remove liquid glass" flattens the panels like
+ * everywhere else. The panels frost a backdrop drawn for them underneath — the screen's
  * own source, as a sibling, never the app-wide one they are drawn inside.
  */
 @Composable
@@ -476,7 +476,7 @@ private fun FontCard(
             .fillMaxWidth()
             .heightIn(min = 136.dp)
             .clip(MonoDimens.shapeLg)
-            .liquidGlass(shape = MonoDimens.shapeLg)
+            .materialSurface(shape = MonoDimens.shapeLg)
             .then(
                 if (selected) Modifier.border(2.dp, scheme.primary, MonoDimens.shapeLg) else Modifier,
             )

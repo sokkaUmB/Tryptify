@@ -49,9 +49,9 @@ import tf.monochrome.android.data.api.ApiService
 import tf.monochrome.android.data.api.ProbeResult
 import tf.monochrome.android.domain.model.SourceType
 import tf.monochrome.android.ui.components.SourcePill
-import tf.monochrome.android.ui.components.liquidGlass
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.ui.components.materialSurface
 
 /** The brand pill a detected catalog wears, the one Search uses; null for a service that is not a catalog. */
 private fun ApiService.sourceType(): SourceType? = when (this) {
@@ -180,7 +180,7 @@ private fun ApiServerCard(
     )
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
-            .liquidGlass(shape = RoundedCornerShape(8.dp)),
+            .materialSurface(shape = RoundedCornerShape(8.dp)),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(8.dp),
     ) {

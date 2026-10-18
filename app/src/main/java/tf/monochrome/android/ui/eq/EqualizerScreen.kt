@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.eq
 
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -78,7 +79,6 @@ import androidx.navigation.NavController
 import tf.monochrome.android.domain.model.EqBand
 import tf.monochrome.android.domain.model.FilterType
 import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
 import kotlin.math.roundToInt
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
 import androidx.compose.ui.res.stringResource
@@ -562,7 +562,7 @@ fun EqualizerScreen(
                                         },
                                         modifier = Modifier
                                             .size(44.dp)
-                                            .liquidGlass(shape = RoundedCornerShape(8.dp))
+                                            .materialSurface(shape = RoundedCornerShape(8.dp))
                                     ) {
                                         Icon(
                                             Icons.Default.UploadFile,
@@ -603,7 +603,7 @@ fun EqualizerScreen(
                                         },
                                         modifier = Modifier
                                             .size(44.dp)
-                                            .liquidGlass(shape = RoundedCornerShape(8.dp))
+                                            .materialSurface(shape = RoundedCornerShape(8.dp))
                                     ) {
                                         Icon(
                                             Icons.Default.UploadFile,
@@ -639,8 +639,8 @@ fun EqualizerScreen(
                                         },
                                         modifier = Modifier
                                             .size(44.dp)
-                                            .liquidGlass(
-                                                shape = RoundedCornerShape(8.dp)
+                                            .materialSurface(
+                                                shape = RoundedCornerShape(8.dp),
                                             )
                                     ) {
                                         Icon(
@@ -683,8 +683,8 @@ fun EqualizerScreen(
                                     onClick = { targetFilePicker.launch("text/*") },
                                     modifier = Modifier
                                         .size(44.dp)
-                                        .liquidGlass(
-                                            shape = RoundedCornerShape(8.dp)
+                                        .materialSurface(
+                                            shape = RoundedCornerShape(8.dp),
                                         )
                                 ) {
                                     Icon(
@@ -791,8 +791,8 @@ fun EqualizerScreen(
                         },
                         modifier = Modifier
                             .size(52.dp)
-                            .liquidGlass(
-                                shape = RoundedCornerShape(12.dp)
+                            .materialSurface(
+                                shape = RoundedCornerShape(12.dp),
                             )
                     ) {
                         Icon(
@@ -811,8 +811,8 @@ fun EqualizerScreen(
                         },
                         modifier = Modifier
                             .size(52.dp)
-                            .liquidGlass(
-                                shape = RoundedCornerShape(12.dp)
+                            .materialSurface(
+                                shape = RoundedCornerShape(12.dp),
                             )
                     ) {
                         Icon(
@@ -833,7 +833,7 @@ fun EqualizerScreen(
                         enabled = currentBands.isNotEmpty(),
                         modifier = Modifier
                             .size(52.dp)
-                            .liquidGlass(shape = RoundedCornerShape(12.dp))
+                            .materialSurface(shape = RoundedCornerShape(12.dp))
                     ) {
                         Icon(
                             Icons.Default.Save,
@@ -910,7 +910,7 @@ fun EqualizerScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 4.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .liquidGlass(shape = RoundedCornerShape(10.dp))
+                                .materialSurface(shape = RoundedCornerShape(10.dp))
                                 .padding(horizontal = 14.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -964,7 +964,7 @@ fun EqualizerScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 4.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .liquidGlass(shape = RoundedCornerShape(10.dp))
+                                .materialSurface(shape = RoundedCornerShape(10.dp))
                                 .bounceClick(onClick = { viewModel.loadPreset(preset.id) })
                         ) {
                             // Mini graph
@@ -1088,7 +1088,7 @@ fun EqualizerScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .liquidGlass(shape = RoundedCornerShape(8.dp))
+                            .materialSurface(shape = RoundedCornerShape(8.dp))
                             .clickable { showHeadphoneSelect = true }
                             .padding(horizontal = 14.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -1187,7 +1187,7 @@ fun EqualizerScreen(
                                 .weight(1f)
                                 .height(44.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .liquidGlass(shape = RoundedCornerShape(8.dp))
+                                .materialSurface(shape = RoundedCornerShape(8.dp))
                                 .bounceClick(onClick = { viewModel.resetToFlat() }),
                             contentAlignment = Alignment.Center
                         ) {
@@ -1198,7 +1198,7 @@ fun EqualizerScreen(
                                 .weight(1f)
                                 .height(44.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .liquidGlass(shape = RoundedCornerShape(8.dp))
+                                .materialSurface(shape = RoundedCornerShape(8.dp))
                                 .bounceClick(onClick = { showSaveDialog = true }),
                             contentAlignment = Alignment.Center
                         ) {
@@ -1385,7 +1385,7 @@ fun EqBandSlider(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .liquidGlass(shape = RoundedCornerShape(8.dp))
+            .materialSurface(shape = RoundedCornerShape(8.dp))
             .padding(12.dp)
     ) {
         // --- Filter type ---
@@ -1410,7 +1410,7 @@ fun EqBandSlider(
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(6.dp))
-                        .liquidGlass(
+                        .materialSurface(
                             shape = RoundedCornerShape(6.dp),
                             tintAlpha = if (isSel) 0.45f else 0.15f,
                         )
@@ -1521,7 +1521,7 @@ private fun SampleStepper(
     Column(
         modifier = modifier
             .size(width = 36.dp, height = 44.dp)
-            .liquidGlass(shape = RoundedCornerShape(8.dp)),
+            .materialSurface(shape = RoundedCornerShape(8.dp)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(

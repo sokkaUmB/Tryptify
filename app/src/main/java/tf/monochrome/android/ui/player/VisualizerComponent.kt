@@ -54,7 +54,7 @@ import tf.monochrome.android.domain.model.VisualizerEnginePhase
 import tf.monochrome.android.domain.model.VisualizerEngineStatus
 import tf.monochrome.android.visualizer.ProjectMAudioBus
 import tf.monochrome.android.visualizer.ProjectMEngineRepository
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.overArtScrim
 import tf.monochrome.android.visualizer.ProjectMRendererView
 
 private val VisualizerInk = Color(0xFF060913)
@@ -166,11 +166,7 @@ fun VisualizerComponent(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(16.dp)
-                    .liquidGlass(
-                        shape = RoundedCornerShape(18.dp),
-                        tintAlpha = 0.15f,
-                        borderAlpha = 0.10f
-                    ),
+                    .overArtScrim(shape = RoundedCornerShape(18.dp), tintAlpha = 0.15f),
                 shape = RoundedCornerShape(18.dp),
                 color = Color.Transparent,
                 contentColor = Color.White
@@ -344,11 +340,7 @@ private fun ProjectMStatusOverlay(
     Surface(
         modifier = modifier
             .padding(10.dp)
-            .liquidGlass(
-                shape = RoundedCornerShape(999.dp),
-                tintAlpha = 0.12f,
-                borderAlpha = 0.10f
-            ),
+            .overArtScrim(shape = RoundedCornerShape(999.dp), tintAlpha = 0.12f),
         shape = RoundedCornerShape(999.dp),
         color = Color.Transparent,
         contentColor = Color.White

@@ -68,7 +68,7 @@ import tf.monochrome.android.glyph.engine.GlyphJudgement
 import tf.monochrome.android.glyph.engine.GlyphStepGrade
 import tf.monochrome.android.glyph.engine.StepManiaScoreKeeper
 import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.theme.MonoDimens
 
 /**
@@ -388,7 +388,7 @@ private fun JudgementRing(
             modifier = Modifier
                 .padding(RING_STROKE_FOCUSED + 10.dp)
                 .fillMaxSize()
-                .liquidGlass(shape = CircleShape),
+                .materialSurface(shape = CircleShape),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
             content = centre,

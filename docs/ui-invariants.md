@@ -62,14 +62,30 @@ output is bit-identical to the alpha-only glass. The profile is circular, not a 
 width, only its outermost pixels bent, and on device the refraction read as too
 weak.
 
-**With "Remove liquid glass" on, glass is flat Material 3, never nothing.**
-`Modifier.liquidGlass` draws a flat fill in the caller's shape, between
-`surfaceContainerLow` and `surfaceContainerHighest` by the caller's `tintAlpha`
-(a quieter pane a tone lower), and `GlassPanel` its own `surfaceContainerHigh`. The switch turns off the haze
-blur too, and the shared modifier used to fall through to the LOW-tier return
-and draw nothing: the nav bar, the mini player and every pane went
-see-through, and the page read straight through them (seen on device). The
-switch is for the blur, the rim and the refraction, not the surface.
+**The app has two looks: liquid glass and Material 3. There is no third.**
+Glass is the shader (`GlassPanel`, `GlassMaterial`, `playerGlass`, the live
+lens and `glassFrost`). Everything else stands on `Modifier.materialSurface`,
+a flat fill in the caller's shape between `surfaceContainerLow` and
+`surfaceContainerHighest` by the caller's `tintAlpha` (a quieter pane a tone
+lower); `GlassPanel` without its shader is its own `surfaceContainerHigh`.
+
+There used to be a third, the old frosted pane (`liquidGlass` in
+`ui/components`: a black tint, a gradient rim, a refraction sheen, Haze blur
+under chrome). Rows never run the shader, so every list row, card and tile
+wore it whenever liquid glass was on, and so did the chips, the tab bar and
+the mini player on any phone that could not run the shader. It read as neither
+look and cost a clip, a border and two fills per row on every scroll. Do not
+bring it back, and do not add a rim or a sheen to `materialSurface`: a list is
+Material 3 in both looks.
+
+**Never nothing.** The old modifier returned nothing at all on LOW-tier
+phones, and with "Remove liquid glass" on it once did too: the nav bar, the
+mini player and every pane went see-through and the page read straight
+through them (seen on device). `materialSurface` always draws.
+
+**White ink over artwork stands on `overArtScrim`, a black scrim, not on
+`materialSurface`.** The player hero's badges and buttons and the
+visualizer's: a container fill is light on a light theme, under white text.
 
 **Prototype: the mini player, the tab bar, `GlassPanel` and the full player's disc and dock bend the live screen**
 (`LiveGlassLens.kt`, behind `LIVE_LENS_GLASS`). **The mini player and the tab bar are one
@@ -598,7 +614,7 @@ heavy.
 
 **Every button in the player's sheet is `PressableGlass`**: the four status
 cards and the Visualizer and Waveform buttons under them, one material and one
-corner. Those two stayed on the flat `liquidGlass` tint after the cards moved,
+corner. Those two stayed on the old frosted tint after the cards moved,
 and read as dark outlined tiles beside real glass. Their "on" is the accent
 and a ring, not a stronger tint: glass has none to switch to.
 
@@ -665,15 +681,17 @@ while the NavHost is there.
 **The bar is the mini player's material, built the mini player's way.** It is a
 sibling of the haze source, never inside it; its slab is drawn solid and its
 glyphs are punched out of it, as the player's action dock does; and it asks
-`rememberLiquidGlassAvailable()` before drawing that slab, falling back to the
-frosted pane with ordinary icons, because a solid slab without the shader is an
-opaque block with holes in it. Its titles are plain text, not punched: the
+`rememberLiquidGlassAvailable()` before drawing that slab, because a solid
+slab without the shader is an opaque block with holes in it. Its titles are plain text, not punched: the
 glyphs are chunky because the bevel needs about 3dp of stroke to read as an
 edge, and an 11sp title's strokes are thinner than the bevel.
 
-**With liquid glass removed, the bar is Material 3's.** `FlatTabChrome`: a
-`NavigationBar` across the bottom with every tab in it, Search included, and
-the mini player docked flat above it. It stands on the system bar's inset
+**Without liquid glass, the bar is Material 3's.** Whenever the panels' glass
+cannot run — "Remove liquid glass", the UI panels tab's glass switched off,
+or a phone before Android 13 — `flatChrome` is
+`!rememberLiquidGlassAvailable(miniPlayerGlass)` and the app shows
+`FlatTabChrome`: a `NavigationBar` across the bottom with every tab in it,
+Search included, and the mini player docked flat above it. It stands on the system bar's inset
 itself, so `chromeHeight` has its own value for it (`FLAT_NAV_BAR_HEIGHT`),
 and it does not fold. The floating pill without its glass was a shape with
 nothing under it.
@@ -745,6 +763,11 @@ mini player for a quarter of a second: a grey slab across the bottom of the
 screen with every scroll (seen on device).
 
 ### List rows
+
+**Every list row is Material 3, in both looks.** Song rows (`TrackItem`, the
+library's `SongRow`, search results), the Library's category tiles, folders,
+album and artist cards stand on `materialSurface`, never glass: a list is the
+heaviest thing to scroll, and the shader is for chrome. See Glass.
 
 **Every list row is one shared height**, `MonoDimens.listRowHeight`, applied with
 `Modifier.height(...)` in place of vertical padding. Songs, artists, genres,
@@ -1243,7 +1266,7 @@ the HUD over them, the beat and lane colours and the judgement accents, and to
 readouts that change while they are read. The music wheel, the selection,
 generation and pause panels, Training Ground's controls and the results follow
 the theme: a top bar with Back and `SearchAction`, `SearchOverlay`, wheel items
-of `liquidGlass` at `MonoDimens.listRowHeight`, `GlassPanel`s, and buttons and
+of `materialSurface` at `MonoDimens.listRowHeight`, `GlassPanel`s, and buttons and
 chips from `GlassPill` and `GlassChoiceChip`. Text on a pane takes the glass's
 ink from `MaterialTheme`, never `GlyphTheme.Paper`: a fixed dark menu was the
 only dark screen in a light theme, and fixed white text on the app's glass is
@@ -1608,7 +1631,7 @@ on a card; its colours as text go through `menuAccent`. Its typefaces belong to
 the playfield (the HUD, the judgement and the combo), not the menus.
 
 **A choice of a few is `GlyphSegmented`, and the chosen one is filled.** A
-`liquidGlass` pill track with a solid thumb in `onSurface` and the chosen label
+`materialSurface` pill track with a solid thumb in `onSurface` and the chosen label
 knocked out in `surface`; the options' and Settings' tabs are the same control.
 Start (`GlyphButton(filled = true)`) and the one action of a panel that must
 read as the action are filled the same way, and switches pass `onSurface` as

@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.navigation
 
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.player.glassFrost
 import android.os.Build
 import androidx.compose.animation.core.Spring
@@ -63,7 +64,6 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import tf.monochrome.android.performance.LocalPerformanceProfile
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.player.BackdropArtFit
 import tf.monochrome.android.ui.player.LocalPlayerBackdrop
 import tf.monochrome.android.ui.player.LocalPlayerGlass
@@ -123,9 +123,10 @@ private val TabBloomBox = TabGlyph + TabBloomPadding * 2
  * tab: the glyph alone, centred).
  *
  * Without the shader — below API 33, glass off, or a device that cannot compile
- * it — the slab would be an opaque block with holes in it, so the bar falls
- * back to the app's frosted pane with ordinary icons, like the mini player's
- * legacy path.
+ * it — the app shows FlatTabChrome instead, Material 3's navigation bar. This
+ * bar then only ever runs without it in a preview (the Studio's UI panels tab
+ * with the panels' glass off), where it is a Material 3 surface with ordinary
+ * icons, like the mini player's.
  */
 @Composable
 internal fun GlassTabBar(
@@ -178,7 +179,7 @@ internal fun GlassTabBar(
         modifier = Modifier
             .fillMaxSize()
             .clip(shape)
-            .then(if (shaderGlass) Modifier else Modifier.liquidGlass(hazeState = hazeState, shape = shape)),
+            .then(if (shaderGlass) Modifier else Modifier.materialSurface(shape = shape)),
     ) {
         if (shaderGlass) {
             if (liveLens && hazeState != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

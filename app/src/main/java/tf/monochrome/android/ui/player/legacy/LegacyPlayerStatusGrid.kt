@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.player.legacy
 
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.player.PlayerDesignTokens
 
 import androidx.compose.animation.core.Spring
@@ -35,7 +36,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import tf.monochrome.android.ui.components.liquidGlass
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
 
@@ -132,10 +132,9 @@ private fun StatusCard(
         modifier = modifier
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .liquidGlass(
+            .materialSurface(
                 shape = RoundedCornerShape(PlayerDesignTokens.GlassCornerMedium),
                 tintAlpha = PlayerDesignTokens.GlassTintStrong,
-                borderAlpha = PlayerDesignTokens.GlassTintSoft,
             ),
         shape = RoundedCornerShape(PlayerDesignTokens.GlassCornerMedium),
         color = Color.Transparent,

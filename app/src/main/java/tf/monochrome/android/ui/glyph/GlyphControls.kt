@@ -53,7 +53,7 @@ import androidx.compose.ui.unit.dp
 import tf.monochrome.android.ui.components.GlassPill
 import tf.monochrome.android.ui.components.LocalGlassBackdrop
 import tf.monochrome.android.ui.components.glassSwitchColors
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.theme.MonoDimens
 
 /**
@@ -83,7 +83,7 @@ fun <T> GlyphSegmented(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
-            .liquidGlass(shape = MonoDimens.shapePill)
+            .materialSurface(shape = MonoDimens.shapePill)
             .semantics { contentDescription = description }
             .selectableGroup(),
     ) {

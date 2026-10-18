@@ -263,10 +263,9 @@ class MainActivity : ComponentActivity() {
             }
 
             // "Remove liquid glass" is folded into the detected profile rather
-            // than checked separately: allowHazeBlur is already the flag every
-            // `Modifier.liquidGlass` call site consults, so turning it off here
-            // reaches all of them — list rows, the mini player, the nav pill,
-            // the audio-tools sheet — without touching one of them.
+            // than checked separately: allowHazeBlur is the flag every haze
+            // frost consults, so turning it off here reaches all of them
+            // without touching one of them.
             val effectiveProfile = remember(performanceProfile, lowPerformance.disableLiquidGlass) {
                 if (lowPerformance.disableLiquidGlass) {
                     performanceProfile.copy(allowHazeBlur = false)

@@ -101,7 +101,6 @@ import tf.monochrome.android.domain.model.Track
 import tf.monochrome.android.domain.model.UnifiedArtistRef
 import tf.monochrome.android.domain.usecase.uiArtistRefs
 import tf.monochrome.android.ui.components.ClickableArtists
-import tf.monochrome.android.ui.components.liquidGlass
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
 
@@ -929,12 +928,11 @@ private fun StatusOverlayPanel(
         modifier = Modifier
             .fillMaxWidth()
             .padding(12.dp)
-            .shadow(elevation = 32.dp, shape = shape, clip = false)
-            .liquidGlass(shape = shape, tintAlpha = 0.22f, borderAlpha = 0.10f),
+            .shadow(elevation = 32.dp, shape = shape, clip = false),
         shape = shape,
-        // The old 92%-opaque black painted OVER the liquidGlass modifier and
-        // buried it — the sheet read as a flat slab. Glass mode keeps only a
-        // readability wash (the AGSL slab is nearly transparent at low
+        // The 92%-opaque black is the pane when there is no glass; there is
+        // no frosted layer under it (see materialSurface). Glass mode keeps
+        // only a readability wash (the AGSL slab is nearly transparent at low
         // bodyOpacity, and the tiles sit over bright album art); the opaque
         // fill remains solely as the pre-Tiramisu / glass-off fallback.
         //

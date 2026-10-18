@@ -140,7 +140,7 @@ fun GlassPanel(
             .padding(12.dp)
             .then(if (avoidNavigationBar) Modifier.navigationBarsPadding() else Modifier)
             .clip(MonoDimens.shapeLg)
-            .glassBase(hazeState, glass, MonoDimens.shapeLg, fallbackMinAlpha),
+            .glassBase(glass, MonoDimens.shapeLg, fallbackMinAlpha),
     ) {
         // The backstop for taps the panel's own children didn't want, and the
         // lowest layer on purpose.
@@ -193,36 +193,30 @@ internal fun shaderGlassFor(glass: PlayerGlassSettings): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
 /**
- * The base a glass pane is laid on, by tier. Nothing under shader glass (its
- * own layers are the pane); the app's plain glassmorphism where haze is
- * allowed; and an opaque surface otherwise, which cannot be a no-op — it is
- * the only thing standing between the pane and no background at all on a
- * low-tier device.
+ * The base a glass pane is laid on: nothing under shader glass (its own
+ * layers are the pane), and a Material 3 surface otherwise, which cannot be a
+ * no-op — it is the only thing standing between the pane and no background at
+ * all. There is no third, frosted tier: the app is liquid glass or Material 3
+ * (see [materialSurface]).
  */
 @Composable
 internal fun Modifier.glassBase(
-    hazeState: HazeState?,
     glass: PlayerGlassSettings,
     shape: Shape,
     fallbackMinAlpha: Float = FALLBACK_MIN_ALPHA,
-): Modifier {
-    val allowHaze = LocalPerformanceProfile.current.allowHazeBlur
-    val flat = LocalLowPerformance.current.disableLiquidGlass
-    return then(
-        when {
-            shaderGlassFor(glass) -> Modifier
-            allowHaze && !flat -> Modifier.liquidGlass(hazeState = hazeState, shape = shape)
-            // Last resort: no shader, no blur. It still must not be a
-            // fully opaque slab when the listener has asked for
-            // see-through glass, so body opacity governs this path too
-            // — floored so text stays readable over raw artwork.
-            else -> Modifier.background(
-                MaterialTheme.colorScheme.surfaceContainerHigh
-                    .copy(alpha = glass.bodyOpacity.coerceIn(fallbackMinAlpha.coerceIn(0f, 1f), 1f)),
-            )
-        },
-    )
-}
+): Modifier = then(
+    if (shaderGlassFor(glass)) {
+        Modifier
+    } else {
+        // Not a fully opaque slab when the listener has asked for see-through
+        // glass, so body opacity governs this path too — floored so text stays
+        // readable over raw artwork.
+        Modifier.background(
+            MaterialTheme.colorScheme.surfaceContainerHigh
+                .copy(alpha = glass.bodyOpacity.coerceIn(fallbackMinAlpha.coerceIn(0f, 1f), 1f)),
+        )
+    },
+)
 
 /** The low-performance fallback's least opacity: text stays readable over artwork. */
 internal const val FALLBACK_MIN_ALPHA = 0.55f

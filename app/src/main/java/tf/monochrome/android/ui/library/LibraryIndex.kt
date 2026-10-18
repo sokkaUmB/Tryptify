@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import tf.monochrome.android.data.local.db.LocalFacetTally
 import tf.monochrome.android.ui.components.FastScroller
 import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.detail.LocalFacet
 import tf.monochrome.android.ui.theme.MonoDimens
 import androidx.compose.ui.res.stringResource
@@ -78,11 +78,9 @@ enum class LibraryCategory(
 /**
  * The categories, as tiles.
  *
- * `headlineMedium` bold on a `liquidGlass` pane — the material the old page
- * list on Home used, before the tab bar replaced it — spaced 12dp so they read
- * as separate tiles rather than one striped slab, and **no hazeState**. This is inside the pager, which is
- * inside the app's one hazeSource, and a haze child within its own source is a
- * cycle Haze throws on at draw time.
+ * `headlineMedium` bold on a Material 3 surface (`materialSurface`, as every
+ * row), spaced 12dp so they read as separate tiles rather than one striped
+ * slab.
  *
  * No track counts. Every count would mean keeping that category's flow
  * collected for as long as the index is on screen, which is the opposite of
@@ -134,7 +132,7 @@ private fun CategoryTile(icon: ImageVector, label: String, onClick: () -> Unit) 
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MonoDimens.listItemPaddingH)
-            .liquidGlass(shape = MonoDimens.shapeMd)
+            .materialSurface(shape = MonoDimens.shapeMd)
             .bounceClick(onClick = onClick)
             .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,

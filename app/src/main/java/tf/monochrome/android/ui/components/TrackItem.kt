@@ -84,7 +84,7 @@ fun TrackItem(
                 onClick = onClick,
                 onLongClick = holdToPreview ?: onLongClick
             )
-            .liquidGlass(shape = MonoDimens.shapeMd)
+            .materialSurface(shape = MonoDimens.shapeMd)
             .songPreviewHold(SongPreview.keyOf(track), MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         // Selection wins over now-playing: while multi-selecting, whether a row

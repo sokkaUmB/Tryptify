@@ -32,7 +32,7 @@ fun ArtistItem(
         modifier = modifier
             .width(140.dp)
             .bounceClick(onClick = onClick)
-            .liquidGlass(shape = MonoDimens.shapeMd),
+            .materialSurface(shape = MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         color = Color.Transparent
     ) {

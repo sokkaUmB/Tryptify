@@ -66,7 +66,7 @@ import tf.monochrome.android.glyph.engine.GlyphScrollFamily
 import tf.monochrome.android.glyph.engine.GlyphScrollMode
 import tf.monochrome.android.glyph.training.GlyphCountIn
 import tf.monochrome.android.glyph.training.GlyphGauntlets
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.mixer.GlassChoiceChip
 import tf.monochrome.android.ui.theme.MonoDimens
 
@@ -416,7 +416,7 @@ private fun SegmentPicker(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(72.dp)
-                .liquidGlass(shape = MonoDimens.shapeMd)
+                .materialSurface(shape = MonoDimens.shapeMd)
                 .semantics {
                     contentDescription =
                         "Practice segment from ${timeLabel(start)} to ${timeLabel(end)}. " +

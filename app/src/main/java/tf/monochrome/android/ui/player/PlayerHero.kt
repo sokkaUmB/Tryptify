@@ -79,7 +79,7 @@ import kotlinx.coroutines.delay
 import tf.monochrome.android.domain.model.Track
 import tf.monochrome.android.domain.model.VisualizerEngineStatus
 import tf.monochrome.android.domain.model.VisualizerPreset
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.overArtScrim
 import tf.monochrome.android.visualizer.ProjectMEngineRepository
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
@@ -463,7 +463,7 @@ private fun VisualizerHeroOverlay(
 ) {
     Surface(
         modifier = modifier.padding(10.dp)
-            .liquidGlass(shape = RoundedCornerShape(18.dp), tintAlpha = 0.26f),
+            .overArtScrim(shape = RoundedCornerShape(18.dp), tintAlpha = 0.26f),
         shape = RoundedCornerShape(18.dp),
         color = Color.Transparent,
         contentColor = Color.White,
@@ -692,7 +692,7 @@ private fun AmbientPresetButton(
     // fighting; letting the glass wrap a 40dp IconButton is the same shape
     // the shared pill used to get and keeps the disc exactly on the glyph.
     Surface(
-        modifier = modifier.liquidGlass(shape = CircleShape, tintAlpha = 0.22f),
+        modifier = modifier.overArtScrim(shape = CircleShape, tintAlpha = 0.22f),
         shape = CircleShape,
         color = Color.Transparent,
         contentColor = Color.White,
@@ -920,11 +920,7 @@ private fun HeroCoverArt(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(10.dp)
-                        .liquidGlass(
-                            shape = RoundedCornerShape(999.dp),
-                            tintAlpha = 0.18f,
-                            borderAlpha = 0.12f,
-                        ),
+                        .overArtScrim(shape = RoundedCornerShape(999.dp), tintAlpha = 0.18f),
                     shape = RoundedCornerShape(999.dp),
                     color = Color.Transparent,
                     contentColor = Color.White,
@@ -986,7 +982,7 @@ private fun HeroIconButton(
             .size(32.dp)
             .clip(CircleShape)
             .clickable(enabled = enabled, onClick = onClick)
-            .liquidGlass(shape = CircleShape, tintAlpha = 0.18f, borderAlpha = 0.12f),
+            .overArtScrim(shape = CircleShape, tintAlpha = 0.18f),
         shape = CircleShape,
         color = Color.Transparent,
         contentColor = Color.White,

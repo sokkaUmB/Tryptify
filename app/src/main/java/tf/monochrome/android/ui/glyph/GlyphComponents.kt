@@ -52,7 +52,7 @@ import tf.monochrome.android.glyph.asset.GlyphAssetId
 import tf.monochrome.android.glyph.asset.GlyphAssetRepository
 import tf.monochrome.android.ui.components.GlassPill
 import tf.monochrome.android.ui.components.LocalGlassBackdrop
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.mixer.GlassChoiceChip
 import tf.monochrome.android.ui.theme.MonoDimens
 
@@ -141,7 +141,7 @@ fun GlyphImageStrip(
 }
 
 /**
- * A card on a menu page: the app's own row-and-card glass ([liquidGlass]),
+ * A card on a menu page: the app's own row-and-card surface ([materialSurface]),
  * so it follows the theme the way a track row does, light themes included.
  *
  * For the menus only — Training Ground's readouts and the results. The
@@ -156,7 +156,7 @@ fun GlyphPanel(
 ) {
     Column(
         modifier = modifier
-            .liquidGlass(shape = MonoDimens.shapeLg)
+            .materialSurface(shape = MonoDimens.shapeLg)
             .padding(contentPadding),
         content = content,
     )

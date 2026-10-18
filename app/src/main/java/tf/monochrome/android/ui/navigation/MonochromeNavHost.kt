@@ -1,6 +1,5 @@
 package tf.monochrome.android.ui.navigation
 
-import tf.monochrome.android.performance.LocalLowPerformance
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
@@ -64,7 +63,6 @@ import dev.chrisbanes.haze.rememberHazeState
 import tf.monochrome.android.ui.components.LocalGlassOverlayHost
 import tf.monochrome.android.ui.components.GlassOverlayLayer
 import tf.monochrome.android.ui.components.GlassOverlayHost
-import tf.monochrome.android.ui.components.liquidGlass
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -522,11 +520,14 @@ fun MonochromeNavHost(initialRoute: String? = null) {
     // tab bar, and the mini player stacked over it. Lists pad by the expanded
     // height even while the bar is folded — following the fold would jolt them.
     // Taking turns, nothing is ever stacked: both states are one row high.
-    // "Remove liquid glass" swaps the floating glass chrome for a flat Material 3
-    // navigation bar docked at the bottom, with the mini player on it: see
-    // FlatTabChrome. That one stands on the system bar rather than floating
-    // above it, so it has its own height.
-    val flatChrome = LocalLowPerformance.current.disableLiquidGlass
+    // Without liquid glass the floating chrome is a flat Material 3 navigation
+    // bar docked at the bottom, with the mini player on it: see FlatTabChrome.
+    // That one stands on the system bar rather than floating above it, so it
+    // has its own height. Without liquid glass means "Remove liquid glass", the
+    // UI panels' own glass switched off in Visual Studio, or a phone that
+    // cannot run the shader (before Android 13). There is no frosted pane in
+    // between: the app is liquid glass or Material 3.
+    val flatChrome = !tf.monochrome.android.ui.player.rememberLiquidGlassAvailable(miniPlayerGlass)
     val chromeHeight = when {
         !showChrome -> 0.dp
         flatChrome && showMiniPlayer -> FLAT_NAV_BAR_HEIGHT + CHROME_GAP + MINI_PLAYER_HEIGHT

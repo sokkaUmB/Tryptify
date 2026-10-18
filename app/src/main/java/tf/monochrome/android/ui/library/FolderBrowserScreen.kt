@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.library
 
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -66,7 +67,6 @@ import coil3.compose.AsyncImage
 import tf.monochrome.android.domain.model.UnifiedTrack
 import tf.monochrome.android.ui.components.FastScroller
 import tf.monochrome.android.ui.components.bounceCombinedClick
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.components.TrackArtistAlbumLine
 import tf.monochrome.android.ui.theme.MonoDimens
 import tf.monochrome.android.ui.components.UnifiedTrackContextMenuHost
@@ -224,12 +224,12 @@ fun FolderBrowserScreen(
                     // list's arrangement, because the tracks below share this
                     // LazyColumn and are a dense list, not tiles.
                     //
-                    // No hazeState, as everywhere else in scrolling content —
-                    // see liquidGlass.
+                    // A Material 3 surface, as everywhere else in scrolling
+                    // content — see materialSurface.
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 6.dp)
-                        .liquidGlass(shape = MonoDimens.shapeMd)
+                        .materialSurface(shape = MonoDimens.shapeMd)
                         .bounceCombinedClick(
                             onLongClick = { menuFolder = folder.path },
                             onClick = {

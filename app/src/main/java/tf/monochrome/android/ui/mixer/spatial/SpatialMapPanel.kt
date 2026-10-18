@@ -60,7 +60,7 @@ import tf.monochrome.android.audio.dsp.spatial.SpatialLayout
 import tf.monochrome.android.audio.dsp.spatial.SpatialPlacement
 import tf.monochrome.android.audio.dsp.spatial.clamped
 import tf.monochrome.android.domain.model.SpeakerChannel
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.mixer.GlassChoiceChip
 import tf.monochrome.android.ui.theme.MonoDimens
 import kotlin.math.abs
@@ -119,7 +119,7 @@ fun SpatialMapPanel(
 
     Column(
         modifier = modifier
-            .liquidGlass(hazeState = hazeState, shape = MonoDimens.shapeMd, tintAlpha = 0.30f)
+            .materialSurface(shape = MonoDimens.shapeMd, tintAlpha = 0.30f)
             .padding(MonoDimens.spacingSm),
         verticalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm),
     ) {

@@ -66,26 +66,13 @@ fun TrackListToolbar(
 
     // This is a sticky header: it stops at the top of the list and the songs
     // keep going underneath it, so it needs a material of its own or the rows
-    // slide straight through the icons. Glass rather than a flat fill, because
-    // a flat one draws a hard band across whatever it pins over — album art on
-    // the detail screens — and because the rest of the app's floating chrome is
-    // glass and this is the last piece that was not.
+    // slide straight through the icons.
     //
-    // Deliberately the no-haze path. This sits *inside* the layer the app marks
-    // as its haze source, so a blur here would be sampling a picture it is
-    // itself part of; the translucent tint and rim are a supported mode of the
-    // same material and cost nothing to composite.
-    //
-    // The explicit fallback is not optional: liquidGlass returns the modifier
-    // untouched on low tiers, which would leave a sticky header with no
-    // background at all.
-    // A scrim of the page's own colour, not a bordered pane.
-    //
-    // liquidGlass draws a rim on every edge, and a rim around something that
-    // spans the full width reads as a box sitting on the list rather than as
-    // the list passing behind it — which is the container this was asked not to
-    // be. A translucent wash of the background occludes the rows enough to keep
-    // the icons legible while still showing them moving underneath.
+    // A scrim of the page's own colour, not a bordered pane: a box with edges
+    // across the full width reads as sitting on the list rather than as the
+    // list passing behind it. A translucent wash of the background occludes
+    // the rows enough to keep the icons legible while still showing them
+    // moving underneath. No haze: this sits inside the app's haze source.
     Column(
         modifier = modifier
             .fillMaxWidth()

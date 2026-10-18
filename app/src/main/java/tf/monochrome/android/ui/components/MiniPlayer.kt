@@ -193,14 +193,11 @@ fun MiniPlayer(
     }
 
     if (!useGlass) {
-        // ── Legacy fallback (API < 33 or glass off): haze glass + Material icons ──
+        // ── Material 3 (API < 33 or glass off): a flat surface + Material icons ──
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .liquidGlass(
-                    hazeState = hazeState,
-                    shape = RoundedCornerShape(MiniCorner)
-                )
+                .materialSurface(shape = RoundedCornerShape(MiniCorner))
                 .clickable(interactionSource = null, indication = null, onClick = onClick)
                 .then(swipeGestures)
         ) {
@@ -568,7 +565,7 @@ private fun MiniTakeoverBar(
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .liquidGlass(hazeState = hazeState, shape = RoundedCornerShape(MiniCorner))
+                .materialSurface(shape = RoundedCornerShape(MiniCorner))
                 .then(swipes),
         ) {
             TakeoverRow(actions, progressHeight) { _, action ->

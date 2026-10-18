@@ -34,7 +34,7 @@ import tf.monochrome.android.R
  * 12-o'clock (0 = centre) to 5-o'clock (+1 = hard right).
  *
  * Uses MaterialTheme colours so the knob adapts to the current app
- * theme and blends with liquidGlass surfaces.  28 dp default size
+ * theme and blends with its Material 3 surfaces.  28 dp default size
  * fits the narrow FL Studio-layout channel strips.
  */
 @Composable

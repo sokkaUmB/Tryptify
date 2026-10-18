@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.mixer
 
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import android.net.Uri
 import android.widget.Toast
@@ -108,7 +109,6 @@ import tf.monochrome.android.audio.dsp.model.BusConfig
 import tf.monochrome.android.audio.dsp.model.BusLevels
 import tf.monochrome.android.audio.dsp.model.MixPreset
 import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.player.AlbumColors
 import tf.monochrome.android.ui.player.DynamicAlbumGlow
 import tf.monochrome.android.ui.player.PlayerBlurredArtBackground
@@ -380,10 +380,9 @@ fun MixerScreen(
                         .fillMaxWidth()
                         .shadow(elevation = 18.dp, shape = headerShape, clip = false)
                         .background(colorScheme.surface.copy(alpha = 0.90f), headerShape)
-                        .liquidGlass(
+                        .materialSurface(
                             shape = headerShape,
                             tintAlpha = PlayerDesignTokens.GlassTintMedium,
-                            borderAlpha = PlayerDesignTokens.GlassTintSoft
                         )
                         .padding(top = statusBarPadding)
                         // Swipe up here to slide the mixer back over the canvas.
@@ -451,10 +450,9 @@ fun MixerScreen(
                         .fillMaxWidth()
                         .shadow(elevation = 22.dp, shape = headerShape, clip = false)
                         .background(colorScheme.surface.copy(alpha = 0.90f), headerShape)
-                        .liquidGlass(
+                        .materialSurface(
                             shape = headerShape,
                             tintAlpha = PlayerDesignTokens.GlassTintMedium,
-                            borderAlpha = PlayerDesignTokens.GlassTintSoft
                         )
                         // Inset first so the drag area excludes the status-bar
                         // strip and doesn't fight the system notification shade.

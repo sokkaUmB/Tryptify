@@ -6,7 +6,7 @@ enum class DeviceTier { LOW, MID, HIGH }
  * Static performance envelope picked once at process start by [DeviceCapabilities.detect].
  * Pool sizes feed Kotlin's coroutine scheduler via `System.setProperty` before any
  * `Dispatchers.Default` work. The rest are read by feature-level consumers
- * (SpectrumAnalyzerTap, the Coil image loader, the liquidGlass modifier) as they come
+ * (SpectrumAnalyzerTap, the Coil image loader, the glass frost) as they come
  * online.
  */
 data class PerformanceProfile(

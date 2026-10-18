@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.sp
 import tf.monochrome.android.audio.dsp.SnapinType
 import tf.monochrome.android.audio.dsp.model.FxTapFrame
 import tf.monochrome.android.audio.dsp.model.PluginInstance
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.mixer.FLKnobControl
 import tf.monochrome.android.ui.mixer.ParamDef
 import tf.monochrome.android.ui.mixer.getParamDefs
@@ -65,7 +65,7 @@ import tf.monochrome.android.R
 /**
  * One Serum-style stackable effect module in the FX chain.
  *
- * The base surface is `liquidGlass` over `MaterialTheme` colours so it tracks
+ * The base surface is `materialSurface` over `MaterialTheme` colours so it tracks
  * the OS/app theme; the category [accent] appears only as the left stripe, the
  * tinted title, and the active bypass glow.
  */
@@ -100,11 +100,9 @@ fun FxCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(MonoDimens.shapeMd)
-            .liquidGlass(
+            .materialSurface(
                 shape = MonoDimens.shapeMd,
                 tintAlpha = if (dragging) 0.28f else if (expanded) 0.20f else 0.12f,
-                borderAlpha = if (dragging) MonoDimens.glassBorderAlpha * 2.5f
-                              else MonoDimens.glassBorderAlpha
             )
     ) {
         Row(

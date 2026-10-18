@@ -1,6 +1,7 @@
 package tf.monochrome.android.ui.settings
 
 import tf.monochrome.android.ui.components.UiText
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import tf.monochrome.android.ui.theme.goToPage
 import android.content.ActivityNotFoundException
@@ -143,7 +144,6 @@ import tf.monochrome.android.ui.eq.EqViewModel
 import tf.monochrome.android.ui.eq.EqProfileMiniGraph
 import tf.monochrome.android.domain.model.EqPreset
 import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.navigation.Screen
 import tf.monochrome.android.ui.theme.selectableThemes
 import tf.monochrome.android.ui.theme.themeDisplayNames
@@ -578,7 +578,7 @@ private fun EqualizerTab(
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .liquidGlass(shape = RoundedCornerShape(10.dp))
+                        .materialSurface(shape = RoundedCornerShape(10.dp))
                         .bounceClick(onClick = { eqViewModel.loadPreset(preset.id) })
                 ) {
                     EqProfileMiniGraph(

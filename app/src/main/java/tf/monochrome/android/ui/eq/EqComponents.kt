@@ -1,4 +1,5 @@
 package tf.monochrome.android.ui.eq
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.components.rememberGlassPress
 import tf.monochrome.android.ui.components.glassSqueeze
 
@@ -44,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tf.monochrome.android.domain.model.Headphone
 import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import tf.monochrome.android.R
@@ -113,7 +113,7 @@ fun ParameterDropdown(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .liquidGlass(shape = RoundedCornerShape(8.dp))
+                    .materialSurface(shape = RoundedCornerShape(8.dp))
                     .clickable { expanded = true }
                     .padding(horizontal = 12.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -272,7 +272,7 @@ fun SelectorRow(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(8.dp))
-                .liquidGlass(shape = RoundedCornerShape(8.dp))
+                .materialSurface(shape = RoundedCornerShape(8.dp))
                 .glassSqueeze(press = rememberGlassPress(), onClick = onClick)
                 .padding(horizontal = 14.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,

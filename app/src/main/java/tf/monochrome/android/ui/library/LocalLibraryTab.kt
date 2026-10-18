@@ -98,7 +98,7 @@ import tf.monochrome.android.ui.components.TrackArtistAlbumLine
 import tf.monochrome.android.ui.components.UnifiedTrackContextMenuHost
 import tf.monochrome.android.ui.components.bounceClick
 import tf.monochrome.android.ui.components.bounceCombinedClick
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.openAlbum
 import tf.monochrome.android.ui.navigation.Screen
 import tf.monochrome.android.ui.navigation.navigateSafe
@@ -784,7 +784,7 @@ private fun SongRow(
             .fillMaxWidth()
             .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
             .bounceCombinedClick(onClick = onClick, onLongClick = holdToPreview)
-            .liquidGlass(shape = MonoDimens.shapeMd)
+            .materialSurface(shape = MonoDimens.shapeMd)
             .songPreviewHold(SongPreview.keyOf(track), MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         color = if (nowPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
@@ -988,16 +988,12 @@ fun FolderList(
                     // and the gap between rows are what make these read as
                     // separate tiles rather than one striped slab.
                     //
-                    // No hazeState — see liquidGlass's own note. This is inside
-                    // the pager, which is inside the app's one hazeSource, and a
-                    // haze child within its own source is a cycle Haze throws
-                    // on. The tiles sit on the flat theme background, so a
-                    // backdrop blur of it would be that same colour anyway.
+                    // A Material 3 surface (materialSurface), as every row is.
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = MonoDimens.listItemPaddingH)
                         .height(MonoDimens.listRowHeight)
-                        .liquidGlass(shape = MonoDimens.shapeMd)
+                        .materialSurface(shape = MonoDimens.shapeMd)
                         .bounceCombinedClick(
                             onLongClick = { menuFolder = path },
                             onClick = { onFolderClick(path) },

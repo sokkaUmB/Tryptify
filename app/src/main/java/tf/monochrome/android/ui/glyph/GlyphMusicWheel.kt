@@ -90,7 +90,7 @@ import tf.monochrome.android.glyph.data.GlyphWheel
 import tf.monochrome.android.glyph.engine.GlyphWheelSound
 import tf.monochrome.android.ui.components.CoverImage
 import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.theme.MonoDimens
 
 /**
@@ -417,7 +417,7 @@ private fun WheelEntry(
                 if (centred) stateDescription = "In the centre"
                 if (label != null) onClick(label = label) { onClick(); true }
             }
-            .liquidGlass(shape = MonoDimens.shapeMd),
+            .materialSurface(shape = MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         color = when {
             centred -> scheme.primary.copy(alpha = 0.22f)

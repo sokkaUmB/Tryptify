@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.eq
 
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -54,7 +55,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import tf.monochrome.android.domain.model.EqPreset
 import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.navigation.Screen
 import tf.monochrome.android.ui.player.SpectrumOverlay
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
@@ -238,7 +238,7 @@ fun ParametricEqScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .liquidGlass(shape = RoundedCornerShape(12.dp))
+                            .materialSurface(shape = RoundedCornerShape(12.dp))
                             .bounceClick(onClick = { viewModel.addBand() })
                             .padding(vertical = 12.dp, horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -260,7 +260,7 @@ fun ParametricEqScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .liquidGlass(shape = RoundedCornerShape(12.dp))
+                            .materialSurface(shape = RoundedCornerShape(12.dp))
                             .bounceClick(onClick = {
                                 saveName = ""
                                 saveDescription = ""
@@ -286,7 +286,7 @@ fun ParametricEqScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .liquidGlass(shape = RoundedCornerShape(12.dp))
+                            .materialSurface(shape = RoundedCornerShape(12.dp))
                             .bounceClick(onClick = { showImportSheet = true })
                             .padding(vertical = 12.dp, horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -330,7 +330,7 @@ fun ParametricEqScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 4.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .liquidGlass(shape = RoundedCornerShape(10.dp))
+                            .materialSurface(shape = RoundedCornerShape(10.dp))
                             .bounceClick(onClick = { viewModel.loadPreset(preset.id) })
                     ) {
                         EqProfileMiniGraph(

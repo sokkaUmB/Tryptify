@@ -189,7 +189,7 @@ internal fun SpeedSegmented(
                     }
                 }
                 .clip(Capsule)
-                .glassBase(hazeState = null, glass = glass, shape = Capsule),
+                .glassBase(glass = glass, shape = Capsule),
         ) {
             GlassMaterial(hazeState = null, glass = glass, corner = Dp.Infinity, press = press)
             Box(Modifier.matchParentSize().border(1.5.dp, accent.copy(alpha = 0.85f), Capsule))
