@@ -2222,6 +2222,15 @@
     <string name="theme_store_not_set_up">此应用尚未启用主题商店。</string>
     <string name="theme_store_offline">无法连接主题商店。请检查网络连接。</string>
     <string name="theme_store_gone">此主题已不在主题商店中，作者可能已将其删除。</string>
+    <string name="theme_store_picture_of">%1$s 的图片</string>
+    <string name="theme_publish_picture">它在商店中的图片</string>
+    <string name="theme_publish_picture_desc">分享时拍摄，让大家在打开之前就能看到你的主题。</string>
+    <string name="theme_pack_picture">商店图片</string>
+    <string name="theme_pack_picture_desc">大家在商店卡片上看到的样子。</string>
+    <string name="theme_pack_picture_none">还没有图片。拍一张，让它在商店里更醒目。</string>
+    <string name="theme_pack_picture_take">重新拍摄图片</string>
+    <string name="theme_pack_picture_taking">正在拍摄图片…</string>
+    <string name="theme_pack_picture_failed">无法保存图片，请重试。</string>
     <string name="theme_store_limit">你已分享 50 个主题，已达单个帐号上限。删除一个后才能再分享。</string>
     <string name="theme_store_bad_pack">无法读取此主题，它可能来自更新版本的应用。</string>
     <string name="theme_store_by">作者：%1$s</string>

@@ -1898,6 +1898,8 @@ internal fun UiPanelsPreview(
     page: Color,
     /** The playing track; null shows a sample one. */
     track: Track?,
+    /** Drawn for a theme's store picture: no hint, no search bar, nothing that says "preview". */
+    picture: Boolean = false,
 ) {
     // The page's own ink, picked against the page: the swatch can make it any
     // colour, and theme text on a page it was not chosen for can vanish.
@@ -1928,7 +1930,7 @@ internal fun UiPanelsPreview(
         // The mini player and the tab bar read their glass from LocalPlayerGlass;
         // the nav host provides the mini player's settings there the same way.
         CompositionLocalProvider(LocalPlayerGlass provides glass) {
-            Column(Modifier.align(Alignment.TopCenter).fillMaxWidth()) {
+            if (!picture) Column(Modifier.align(Alignment.TopCenter).fillMaxWidth()) {
                 Text(
                     text = stringResource(R.string.fx_preview_drag_hint),
                     style = MaterialTheme.typography.labelSmall,
@@ -2135,6 +2137,8 @@ internal fun StudioPreview(
     lyrics: Lyrics?,
     positionMs: kotlinx.coroutines.flow.StateFlow<Long>,
     analyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap,
+    /** Drawn for a theme's store picture: the lyrics alone, without the reactivity label. */
+    picture: Boolean = false,
 ) {
     val anchors = remember { LyricGlyphAnchors() }
     val accent = MaterialTheme.colorScheme.primary
@@ -2364,7 +2368,7 @@ internal fun StudioPreview(
             }
             }
         }
-        Text(
+        if (!picture) Text(
             // Report the current beat reactivity (Bass reaction) rather than a
             // fixed tempo — the synthetic beat only exists to drive the FX, and
             // what the preview is actually demonstrating is how reactive the
@@ -2706,7 +2710,12 @@ internal fun FxSlider(
  * previews, and what a theme pack in the store shows for its player glass.
  */
 @Composable
-internal fun BoxScope.PlayerChromePreview(glass: PlayerGlassSettings, hazeState: HazeState) {
+internal fun BoxScope.PlayerChromePreview(
+    glass: PlayerGlassSettings,
+    hazeState: HazeState,
+    /** Drawn for a theme's store picture: without the "Preview" label. */
+    picture: Boolean = false,
+) {
     val accent = MaterialTheme.colorScheme.primary
     val previewTint = if (glass.tintColor != 0) Color(glass.tintColor) else accent
     val previewBgBrush = if (glass.previewBg != 0) SolidColor(Color(glass.previewBg)) else previewBackground(accent)
@@ -2827,7 +2836,7 @@ internal fun BoxScope.PlayerChromePreview(glass: PlayerGlassSettings, hazeState:
             )
         }
     }
-    Text(
+    if (!picture) Text(
         text = stringResource(R.string.fx_preview),
         style = MaterialTheme.typography.labelSmall,
         color = Color.White.copy(alpha = 0.35f),

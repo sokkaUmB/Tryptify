@@ -798,6 +798,35 @@ The tint goes through `customScheme` rather than swapping slots the way
 are hardcoded white, and falls apart across the menus, where the album accent
 lands on surfaces the base theme derived from a different colour entirely.
 
+### Theme Store pictures
+
+**A store picture is drawn by the real renderers, never mocked up.**
+`PackSnapshotFace` stacks the lyrics (`StudioPreview`), the player's transport
+and dock (`PlayerChromePreview`) and the mini player and tab bar
+(`UiPanelsPreview`) at a fixed 270 by 584 dp, under the pack's colours, font
+and glass, with sample songs and sample lyrics only. Their `picture = true`
+drops every label, hint and the panels' search bar: a picture that says
+"PREVIEW · reactivity 40%" is a screenshot of the Studio, not a theme.
+
+**It is recorded, not copied off the screen.** `SnapshotHost` draws the face
+first in the screen's root, under the page's opaque backdrop, into a
+`GraphicsLayer`, and reads it back with `toImageBitmap()`, which the GPU draws
+on Android 9 and up, blur and glass shaders included. A PixelCopy of the
+visible preview would catch the mini player, a sheet or the scroll position,
+and the publish page is a lazy list whose preview is gone by the time Share is
+reached. The host draws nothing between pictures.
+
+**A picture never blocks a share.** The pack goes up first and its picture
+after; a picture that fails leaves a shared pack whose card shows its colours
+(`PackSwatch`). The author's own pack page offers "Take a new picture", and a
+pack of theirs with none gets one the first time they open it.
+
+**The store is two tiles to a row, each one `PressableGlass`** with the picture
+inset at the top and the name, author, likes and downloads on the glass under
+it. The picture is what a theme is chosen by, so it gets the room; part icons
+stay on the pack's page. The list refreshes quietly on coming back to it
+(`refreshQuietly`), so a download or a like counts on the card at once.
+
 ### The globe
 
 Land rings are clipped to the visible hemisphere by cutting each ring into its

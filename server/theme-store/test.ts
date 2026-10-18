@@ -81,7 +81,7 @@ let b: string;
 
 async function setUp() {
     db = new SQL(url!);
-    await db.unsafe("drop table if exists theme_reports, theme_downloads, theme_likes, theme_packs cascade");
+    await db.unsafe("drop table if exists theme_reports, theme_downloads, theme_likes, theme_snapshots, theme_packs cascade");
     keys = await generateKeyPair("ES256");
     stranger = await generateKeyPair("ES256");
     const jwk = { ...(await exportJWK(keys.publicKey)), kid: "test", alg: "ES256", use: "sig" };
@@ -287,6 +287,54 @@ async function setUp() {
     assert.equal(first.length, 20);
     assert.equal(third.length, 10);
     assert.equal(first[0].name, "Bulk 49");
+  });
+
+  test("a pack's picture: the author sets it, anyone signed in sees it, it goes with the pack", async () => {
+    // A WebP by its header; the server checks the first bytes, not the name.
+    const webp = (size: number, seed = 1) => {
+      const b = new Uint8Array(size);
+      b.set(new TextEncoder().encode("RIFF"), 0);
+      b.set(new TextEncoder().encode("WEBP"), 8);
+      for (let i = 12; i < size; i++) b[i] = (i * 31 + seed) & 0xff;
+      return b;
+    };
+    const made = (await publish(a, { name: "Pictured" })).body;
+    assert.equal(made.snapshot, null);
+    const url = `http://store.test/v1/packs/${made.id}/snapshot`;
+    const put = (who: string, body: Uint8Array) =>
+      fetchStore(new Request(url, { method: "PUT", headers: { authorization: `Bearer ${who}`, "content-type": "image/webp" }, body }));
+    const get = (who: string) => fetchStore(new Request(url, { headers: { authorization: `Bearer ${who}` } }));
+
+    assert.equal((await get(b)).status, 404);
+    assert.equal((await put(b, webp(4000))).status, 404);
+    const first = await put(a, webp(4000));
+    assert.equal(first.status, 200);
+    const { snapshot } = (await first.json()) as { snapshot: string };
+    assert.match(snapshot, /^[0-9a-f]{16}$/);
+
+    const row = (await call("GET", "/v1/packs?sort=mine", a)).body.find((p: { id: string }) => p.id === made.id);
+    assert.equal(row.snapshot, snapshot);
+    assert.equal((await call("GET", `/v1/packs/${made.id}`, b)).body.snapshot, snapshot);
+
+    const got = await get(b);
+    assert.equal(got.status, 200);
+    assert.equal(got.headers.get("content-type"), "image/webp");
+    assert.equal(got.headers.get("etag"), `"${snapshot}"`);
+    assert.deepEqual(new Uint8Array(await got.arrayBuffer()), webp(4000));
+
+    const notImage = await put(a, new TextEncoder().encode("<svg onload=alert(1)></svg>"));
+    assert.equal(notImage.status, 400);
+    assert.equal(((await notImage.json()) as { error: string }).error, "bad_image");
+    assert.equal((await put(a, webp(170_000))).status, 413);
+
+    const again = (await (await put(a, webp(5000, 7))).json()) as { snapshot: string };
+    assert.notEqual(again.snapshot, snapshot);
+    assert.equal((await get(b)).headers.get("etag"), `"${again.snapshot}"`);
+
+    await call("DELETE", `/v1/packs/${made.id}`, a);
+    assert.equal((await get(a)).status, 404);
+    const [{ n }] = await db`select count(*)::int as n from theme_snapshots where pack_id = ${made.id}`;
+    assert.equal(n, 0);
   });
 
   test("an oversized body is refused before it is read", async () => {

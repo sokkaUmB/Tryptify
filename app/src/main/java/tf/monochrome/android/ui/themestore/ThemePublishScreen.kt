@@ -68,13 +68,19 @@ import tf.monochrome.android.domain.model.ThemePack
 import tf.monochrome.android.domain.model.ThemePart
 import tf.monochrome.android.ui.components.GlassPill
 import tf.monochrome.android.ui.components.LocalGlassBackdrop
-import tf.monochrome.android.ui.mixer.GlassChoiceChip
 import tf.monochrome.android.ui.musiclinks.LinksBackdrop
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
 import tf.monochrome.android.ui.navigation.LocalMiniPlayerGlass
 import tf.monochrome.android.ui.navigation.Screen
 import tf.monochrome.android.ui.navigation.navigateSafe
 import tf.monochrome.android.ui.navigation.popBackStackSafe
+import androidx.compose.ui.graphics.ImageBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import javax.inject.Inject
 
 data class PublishState(
@@ -106,14 +112,23 @@ class ThemePublishViewModel @Inject constructor(
         _state.value = s.copy(keep = if (on) s.keep + part else s.keep - part)
     }
 
-    fun publish(name: String, description: String, listed: Boolean) {
+    /**
+     * Shares the look with [picture] as its store picture. The pack goes up
+     * first and the picture after it: a picture that fails leaves a pack that
+     * is shared and shows its colours, never a share that failed.
+     */
+    fun publish(name: String, description: String, listed: Boolean, picture: ImageBitmap?) {
         val s = _state.value
         val look = s.look ?: return
         if (s.busy || name.isBlank() || s.keep.isEmpty()) return
         _state.value = s.copy(busy = true, error = null)
         viewModelScope.launch {
             store.publish(look.only(s.keep), name, description, listed)
-                .onSuccess { _state.value = _state.value.copy(busy = false, published = it) }
+                .onSuccess { made ->
+                    val image = picture?.let { withContext(Dispatchers.Default) { SnapshotCodec.encode(it) } }
+                    val hash = image?.let { store.setPicture(made.id, it).getOrNull() }
+                    _state.value = _state.value.copy(busy = false, published = made.copy(snapshot = hash ?: made.snapshot))
+                }
                 .onFailure { e -> _state.value = _state.value.copy(busy = false, error = e as? StoreError ?: StoreError.Network(e)) }
         }
     }
@@ -135,13 +150,17 @@ fun ThemePublishScreen(
     var name by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
     var listed by rememberSaveable { mutableStateOf(true) }
-    var face by rememberSaveable { mutableStateOf(PreviewFace.PANELS) }
     val backdrop = rememberHazeState()
+    val taker = remember { SnapshotTaker() }
+    var taking by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val navBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val accent = MaterialTheme.colorScheme.primary
     val copiedText = stringResource(R.string.theme_pack_code_copied)
 
     Box(Modifier.fillMaxSize()) {
+        // Under the opaque backdrop: drawn only while it takes the picture.
+        SnapshotHost(taker, viewModel.spectrumAnalyzer)
         LinksBackdrop(Modifier.fillMaxSize().hazeSource(backdrop))
         Column(Modifier.fillMaxSize()) {
             TopAppBar(
@@ -215,18 +234,25 @@ fun ThemePublishScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    PreviewFace.entries.forEach { f ->
-                                        GlassChoiceChip(
-                                            label = PreviewFaceLabel(f),
-                                            selected = face == f,
-                                            accent = accent,
-                                            height = 40.dp,
-                                            onClick = { face = f },
-                                        )
-                                    }
+                                Text(
+                                    stringResource(R.string.theme_publish_picture),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    stringResource(R.string.theme_publish_picture_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                // The picture as the store will show it, live: a part
+                                // switched off below drops out of it here too.
+                                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    PackSnapshotFace(
+                                        look.only(state.keep),
+                                        viewModel.spectrumAnalyzer,
+                                        Modifier.clip(RoundedCornerShape(24.dp)),
+                                    )
                                 }
-                                PackPreview(look, face, viewModel.spectrumAnalyzer)
                             }
                         }
                         item(key = "name") {
@@ -307,14 +333,21 @@ fun ThemePublishScreen(
                                     )
                                 }
                                 GlassPill(
-                                    onClick = { viewModel.publish(name, description, listed) },
+                                    onClick = {
+                                        scope.launch {
+                                            taking = true
+                                            val picture = taker.take(look.only(state.keep))
+                                            taking = false
+                                            viewModel.publish(name, description, listed, picture)
+                                        }
+                                    },
                                     hazeState = backdrop,
                                     height = 56.dp,
-                                    enabled = name.isNotBlank() && state.keep.isNotEmpty() && !state.busy,
+                                    enabled = name.isNotBlank() && state.keep.isNotEmpty() && !state.busy && !taking,
                                     glass = LocalMiniPlayerGlass.current.copy(tintColor = accent.toArgb()),
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
-                                    if (state.busy) {
+                                    if (state.busy || taking) {
                                         CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                                     } else {
                                         Row(verticalAlignment = Alignment.CenterVertically) {

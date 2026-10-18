@@ -93,6 +93,15 @@ import tf.monochrome.android.ui.navigation.LocalBottomChromeNow
 import tf.monochrome.android.ui.navigation.LocalMiniPlayerGlass
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import tf.monochrome.android.ui.settings.UndoBar
+import android.graphics.Bitmap
+import androidx.compose.ui.graphics.ImageBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.material.icons.filled.PhotoCamera
 import javax.inject.Inject
 
 data class PackDetailState(
@@ -104,6 +113,10 @@ data class PackDetailState(
     val preview: ThemePack? = null,
     val liked: Boolean = false,
     val mine: Boolean = false,
+    /** The author's store picture is being taken or sent. */
+    val pictureBusy: Boolean = false,
+    /** The last picture could not be taken or sent. */
+    val pictureFailed: Boolean = false,
 )
 
 /**
@@ -199,6 +212,27 @@ class ThemePackViewModel @Inject constructor(
     fun report(reason: String, onDone: (Boolean) -> Unit) {
         viewModelScope.launch { onDone(store.report(id, reason).isSuccess) }
     }
+
+    /** A pack's store picture, from the cache when it is there. */
+    suspend fun picture(pack: StorePack): Bitmap? = store.picture(pack)
+
+    fun takingPicture() {
+        _state.value = _state.value.copy(pictureBusy = true, pictureFailed = false)
+    }
+
+    /** Sends [picture] as this pack's store picture; the author's only. */
+    fun savePicture(picture: ImageBitmap?) {
+        viewModelScope.launch {
+            val image = picture?.let { withContext(Dispatchers.Default) { SnapshotCodec.encode(it) } }
+            val hash = image?.let { store.setPicture(id, it).getOrNull() }
+            val s = _state.value
+            _state.value = s.copy(
+                pictureBusy = false,
+                pictureFailed = hash == null,
+                info = if (hash != null) s.info?.copy(snapshot = hash) else s.info,
+            )
+        }
+    }
 }
 
 /** Which in-window sheet the pack page has open. */
@@ -222,8 +256,30 @@ fun ThemePackScreen(
     val reportedText = stringResource(R.string.theme_pack_reported)
     val undoneText = stringResource(R.string.theme_store_undone)
     val copiedText = stringResource(R.string.theme_pack_code_copied)
+    val taker = remember { SnapshotTaker() }
+    val scope = rememberCoroutineScope()
+    val takePicture: () -> Unit = {
+        state.preview?.let { look ->
+            scope.launch {
+                viewModel.takingPicture()
+                viewModel.savePicture(taker.take(look))
+            }
+        }
+    }
+    // A pack of yours from before store pictures gets one the first time you
+    // open it, so the store is not left showing its colours.
+    var autoTried by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state.mine, state.info?.id, state.info?.snapshot) {
+        val info = state.info
+        if (state.mine && info != null && info.snapshot == null && !autoTried && !state.pictureBusy) {
+            autoTried = true
+            takePicture()
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
+        // Under the opaque backdrop: drawn only while it takes the picture.
+        SnapshotHost(taker, viewModel.spectrumAnalyzer)
         Box(Modifier.fillMaxSize().hazeSource(overlay)) {
             LinksBackdrop(Modifier.fillMaxSize().hazeSource(backdrop))
             Column(Modifier.fillMaxSize()) {
@@ -360,6 +416,50 @@ fun ThemePackScreen(
                                     PackCard(backdrop) {
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                             Text(stringResource(R.string.theme_pack_yours), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                StorePicture(
+                                                    info,
+                                                    viewModel::picture,
+                                                    Modifier.width(72.dp).aspectRatio(SNAPSHOT_ASPECT).clip(RoundedCornerShape(12.dp)),
+                                                )
+                                                Spacer(Modifier.width(14.dp))
+                                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                    Text(stringResource(R.string.theme_pack_picture), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                                    Text(
+                                                        stringResource(
+                                                            when {
+                                                                state.pictureFailed -> R.string.theme_pack_picture_failed
+                                                                info.snapshot == null -> R.string.theme_pack_picture_none
+                                                                else -> R.string.theme_pack_picture_desc
+                                                            },
+                                                        ),
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = if (state.pictureFailed) MaterialTheme.colorScheme.error else LocalContentColor.current.copy(alpha = 0.8f),
+                                                    )
+                                                    GlassPill(
+                                                        onClick = takePicture,
+                                                        hazeState = backdrop,
+                                                        height = 40.dp,
+                                                        enabled = !state.pictureBusy,
+                                                    ) {
+                                                        Row(Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                            if (state.pictureBusy) {
+                                                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                                            } else {
+                                                                Icon(Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
+                                                            }
+                                                            Spacer(Modifier.width(6.dp))
+                                                            Text(
+                                                                stringResource(
+                                                                    if (state.pictureBusy) R.string.theme_pack_picture_taking else R.string.theme_pack_picture_take,
+                                                                ),
+                                                                fontWeight = FontWeight.Bold,
+                                                                maxLines = 1,
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Column(Modifier.weight(1f)) {
                                                     Text(stringResource(R.string.theme_pack_code_label), style = MaterialTheme.typography.bodySmall)

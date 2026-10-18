@@ -2278,6 +2278,15 @@
     <string name="theme_store_not_set_up">Tema Mağazası bu uygulama için henüz açılmadı.</string>
     <string name="theme_store_offline">Tema Mağazası’na ulaşılamadı. Bağlantınızı kontrol edin.</string>
     <string name="theme_store_gone">Bu tema artık Tema Mağazası’nda değil. Yazarı kaldırmış olabilir.</string>
+    <string name="theme_store_picture_of">%1$s görseli</string>
+    <string name="theme_publish_picture">Mağazadaki görseli</string>
+    <string name="theme_publish_picture_desc">Paylaşırken çekilir; böylece insanlar temanızı açmadan görür.</string>
+    <string name="theme_pack_picture">Mağaza görseli</string>
+    <string name="theme_pack_picture_desc">Mağazadaki kartında görünen.</string>
+    <string name="theme_pack_picture_none">Henüz görsel yok. Mağazada öne çıkması için bir tane çekin.</string>
+    <string name="theme_pack_picture_take">Yeni görsel çek</string>
+    <string name="theme_pack_picture_taking">Görsel çekiliyor…</string>
+    <string name="theme_pack_picture_failed">Görsel kaydedilemedi. Tekrar deneyin.</string>
     <string name="theme_store_limit">50 tema paylaştınız; bir hesabın sınırı bu. Yenisini paylaşmak için birini silin.</string>
     <string name="theme_store_bad_pack">Bu tema okunamadı. Uygulamanın daha yeni bir sürümünden olabilir.</string>
     <string name="theme_store_by">%1$s tarafından</string>

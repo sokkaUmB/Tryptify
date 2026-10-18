@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import tf.monochrome.android.domain.model.ThemePackCodec
 import tf.monochrome.android.domain.model.ThemePart
+import tf.monochrome.android.ui.themestore.SnapshotCodec
 import java.io.File
 
 /**
@@ -80,6 +81,20 @@ class ThemeStoreWireTest {
         val line = server.lines().first { it.trimStart().startsWith("const PARTS = new Set(") }
         val named = Regex("\"([A-Z_]+)\"").findAll(line).map { it.groupValues[1] }.toSet()
         assertEquals(ThemePart.entries.map { it.name }.toSet(), named)
+    }
+
+    @Test
+    fun `the server takes a store picture as big as the app will send`() {
+        val max = Regex("""const MAX_SNAPSHOT_BYTES = (\d+) \* (\d+);""").find(server)
+            ?.groupValues?.let { it[1].toInt() * it[2].toInt() } ?: 0
+        assertTrue("the app's picture cap must fit under the server's", SnapshotCodec.MAX_BYTES <= max)
+        // And a whole request carrying one gets through the body limit.
+        val body = Regex("""const MAX_BODY_BYTES = (\d+) \* (\d+);""").find(server)
+            ?.groupValues?.let { it[1].toInt() * it[2].toInt() } ?: 0
+        assertTrue(body >= max)
+        val row = """{"id":"a","snapshot":"0123456789abcdef"}"""
+        assertEquals("0123456789abcdef", json.decodeFromString(WirePack.serializer(), row).toStore().snapshot)
+        assertEquals(null, json.decodeFromString(WirePack.serializer(), """{"id":"a"}""").toStore().snapshot)
     }
 
     @Test

@@ -2334,6 +2334,15 @@
     <string name="theme_store_not_set_up">La tienda de temas aún no está activada en esta app.</string>
     <string name="theme_store_offline">No se pudo conectar con la tienda de temas. Revisa tu conexión.</string>
     <string name="theme_store_gone">Este tema ya no está en la tienda de temas. Puede que su autor lo haya quitado.</string>
+    <string name="theme_store_picture_of">Imagen de %1$s</string>
+    <string name="theme_publish_picture">Su imagen en la tienda</string>
+    <string name="theme_publish_picture_desc">Se toma al compartir, para que vean tu tema antes de abrirlo.</string>
+    <string name="theme_pack_picture">Imagen de la tienda</string>
+    <string name="theme_pack_picture_desc">Lo que se ve en su tarjeta de la tienda.</string>
+    <string name="theme_pack_picture_none">Aún no tiene imagen. Toma una para que destaque en la tienda.</string>
+    <string name="theme_pack_picture_take">Tomar una imagen nueva</string>
+    <string name="theme_pack_picture_taking">Tomando la imagen…</string>
+    <string name="theme_pack_picture_failed">No se pudo guardar la imagen. Inténtalo de nuevo.</string>
     <string name="theme_store_limit">Has compartido 50 temas, el máximo por cuenta. Elimina uno para compartir otro.</string>
     <string name="theme_store_bad_pack">No se pudo leer este tema. Puede ser de una versión más reciente de la app.</string>
     <string name="theme_store_by">de %1$s</string>

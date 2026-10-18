@@ -2222,6 +2222,15 @@
     <string name="theme_store_not_set_up">このアプリではテーマストアがまだ有効になっていません。</string>
     <string name="theme_store_offline">テーマストアに接続できませんでした。接続を確認してください。</string>
     <string name="theme_store_gone">このテーマはもうテーマストアにありません。作者が削除した可能性があります。</string>
+    <string name="theme_store_picture_of">%1$s の画像</string>
+    <string name="theme_publish_picture">ストアに表示される画像</string>
+    <string name="theme_publish_picture_desc">共有するときに撮影され、開く前にテーマを見てもらえます。</string>
+    <string name="theme_pack_picture">ストア画像</string>
+    <string name="theme_pack_picture_desc">ストアのカードに表示される画像です。</string>
+    <string name="theme_pack_picture_none">まだ画像がありません。撮影するとストアで目立ちます。</string>
+    <string name="theme_pack_picture_take">新しい画像を撮影</string>
+    <string name="theme_pack_picture_taking">画像を撮影中…</string>
+    <string name="theme_pack_picture_failed">画像を保存できませんでした。もう一度お試しください。</string>
     <string name="theme_store_limit">共有できるテーマは 1 アカウントにつき 50 件までです。新しく共有するには 1 件削除してください。</string>
     <string name="theme_store_bad_pack">このテーマを読み込めませんでした。新しいバージョンのアプリで作られた可能性があります。</string>
     <string name="theme_store_by">作成：%1$s</string>

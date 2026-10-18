@@ -54,8 +54,17 @@ Auth does not answer, the store says `auth_unreachable` (502) rather than
 | `PUT` / `DELETE /v1/packs/:id/like` | Like, unlike                                       |
 | `POST /v1/packs/:id/download`  | Counted once per person and pack                        |
 | `POST /v1/packs/:id/report`    | One report per person and pack                          |
+| `GET /v1/packs/:id/snapshot`   | The pack's store picture                                |
+| `PUT /v1/packs/:id/snapshot`   | Set or replace it, author only: the image as the body   |
 
-Errors are `{"error": code}`: `signed_out` (401), `bad_pack` (400),
+A store picture is the phone-shaped poster the app draws of a pack with its own
+renderers when it is shared (lyrics, player, and the mini player and tab bar),
+as WebP, at most 160 KB. The server takes WebP, PNG or JPEG by their first
+bytes, whatever the upload says it is. Every listing row carries `snapshot`, a
+short hash of the picture or null, and the app keeps pictures by that hash, so
+a replaced picture is fetched once and an unchanged one never again.
+
+Errors are `{"error": code}`: `signed_out` (401), `bad_pack` and `bad_image` (400),
 `not_found` (404), `limit_reached` (409), `too_big` (413), `auth_unreachable`
 (502), `not_set_up` (503, no database). `StoreWire.errorOf` in the app reads
 exactly these; anything else is treated as the network failing.

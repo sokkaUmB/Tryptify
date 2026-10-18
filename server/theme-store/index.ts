@@ -29,8 +29,12 @@ const JWKS = createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks.json`));
 
 const MAX_PACK_BYTES = 64 * 1024;
 // A request carries the pack as a JSON string, which escapes every quote in
-// it: up to twice the pack, plus the listing fields beside it.
-const MAX_BODY_BYTES = 144 * 1024;
+// it: up to twice the pack, plus the listing fields beside it. A picture is
+// sent as itself and is the larger of the two.
+const MAX_BODY_BYTES = 192 * 1024;
+// A pack's store picture: a phone-shaped WebP the app draws with its own
+// renderers, about 540 by 1140.
+const MAX_SNAPSHOT_BYTES = 160 * 1024;
 const MAX_PACKS_PER_PERSON = 50;
 const PAGE = 20;
 const PARTS = new Set(["COLOURS", "LYRICS", "PLAYER_GLASS", "PANELS", "FONT", "VISUALIZER", "MAPS", "LINKS"]);
@@ -58,6 +62,8 @@ const SCHEMA = [
      created_at   timestamptz not null default now(),
      updated_at   timestamptz not null default now()
    )`,
+  // A short hash of the pack's picture, or null: the app keeps pictures by it.
+  `alter table theme_packs add column if not exists snapshot text`,
   `create index if not exists theme_packs_popular on theme_packs (likes desc, downloads desc, created_at desc) where listed`,
   `create index if not exists theme_packs_newest on theme_packs (created_at desc) where listed`,
   `create index if not exists theme_packs_author on theme_packs (user_id, created_at desc)`,
@@ -73,6 +79,12 @@ const SCHEMA = [
      user_id    uuid        not null,
      created_at timestamptz not null default now(),
      primary key (pack_id, user_id)
+   )`,
+  `create table if not exists theme_snapshots (
+     pack_id    uuid        primary key references theme_packs (id) on delete cascade,
+     mime       text        not null,
+     image      bytea       not null check (octet_length(image) <= ${MAX_SNAPSHOT_BYTES}),
+     created_at timestamptz not null default now()
    )`,
   `create table if not exists theme_reports (
      id         bigserial   primary key,
@@ -203,7 +215,7 @@ app.get("/v1/packs", async (c) => {
   if (sort === "mine") {
     rows = await db!`
       select id, user_id, author_name, name, description, parts, accent, background, listed,
-             share_code, likes, downloads, created_at
+             share_code, likes, downloads, created_at, snapshot
         from theme_packs
        where user_id = ${uid} and (${q} = '' or name ilike ${like})
        order by created_at desc
@@ -211,7 +223,7 @@ app.get("/v1/packs", async (c) => {
   } else if (sort === "new") {
     rows = await db!`
       select id, user_id, author_name, name, description, parts, accent, background, listed,
-             share_code, likes, downloads, created_at
+             share_code, likes, downloads, created_at, snapshot
         from theme_packs
        where listed and (${q} = '' or name ilike ${like})
        order by created_at desc
@@ -219,7 +231,7 @@ app.get("/v1/packs", async (c) => {
   } else {
     rows = await db!`
       select id, user_id, author_name, name, description, parts, accent, background, listed,
-             share_code, likes, downloads, created_at
+             share_code, likes, downloads, created_at, snapshot
         from theme_packs
        where listed and (${q} = '' or name ilike ${like})
        order by likes desc, downloads desc, created_at desc
@@ -234,7 +246,7 @@ app.get("/v1/packs/:id", async (c) => {
   if (!UUID.test(id)) return fail(404, "not_found");
   const [row] = await db!`
     select id, user_id, author_name, name, description, parts, accent, background, listed,
-           share_code, likes, downloads, created_at, pack
+           share_code, likes, downloads, created_at, snapshot, pack
       from theme_packs where id = ${id}`;
   return row ? c.json(row) : fail(404, "not_found");
 });
@@ -245,7 +257,7 @@ app.get("/v1/codes/:code", async (c) => {
   if (!code) return fail(404, "not_found");
   const [row] = await db!`
     select id, user_id, author_name, name, description, parts, accent, background, listed,
-           share_code, likes, downloads, created_at
+           share_code, likes, downloads, created_at, snapshot
       from theme_packs where share_code = ${code}`;
   return row ? c.json(row) : fail(404, "not_found");
 });
@@ -284,7 +296,7 @@ app.post("/v1/packs", async (c) => {
               ${accent}, ${background}, ${pack}, ${listed}, ${code})
       on conflict (share_code) do nothing
       returning id, user_id, author_name, name, description, parts, accent, background, listed,
-                share_code, likes, downloads, created_at`;
+                share_code, likes, downloads, created_at, snapshot`;
     if (row) return c.json(row, 201);
   }
   return fail(503, "busy");
@@ -363,6 +375,46 @@ app.post("/v1/packs/:id/download", async (c) => {
   return found ? c.json({ ok: true }) : fail(404, "not_found");
 });
 
+/** A pack's picture, as the store shows it. */
+app.get("/v1/packs/:id/snapshot", async (c) => {
+  const id = c.req.param("id");
+  if (!UUID.test(id)) return fail(404, "not_found");
+  const [row] = await db!`
+    select s.mime, s.image, p.snapshot
+      from theme_snapshots s join theme_packs p on p.id = s.pack_id
+     where s.pack_id = ${id}`;
+  if (!row) return fail(404, "not_found");
+  // Named by its hash in every listing, so a copy never goes stale.
+  return new Response(row.image, {
+    headers: {
+      "content-type": row.mime,
+      "cache-control": "private, max-age=31536000, immutable",
+      etag: `"${row.snapshot}"`,
+    },
+  });
+});
+
+/** The author sets (or replaces) a pack's picture: the image itself as the body. */
+app.put("/v1/packs/:id/snapshot", async (c) => {
+  const id = c.req.param("id");
+  if (!UUID.test(id)) return fail(404, "not_found");
+  const bytes = new Uint8Array(await c.req.raw.arrayBuffer());
+  if (bytes.byteLength > MAX_SNAPSHOT_BYTES) return fail(413, "too_big");
+  const mime = imageType(bytes);
+  if (!mime) return fail(400, "bad_image");
+  const hash = new Bun.CryptoHasher("sha256").update(bytes).digest("hex").slice(0, 16);
+  const done = await db!.begin(async (tx) => {
+    const [pack] = await tx`select id from theme_packs where id = ${id} and user_id = ${c.get("uid")} for update`;
+    if (!pack) return false;
+    await tx`
+      insert into theme_snapshots (pack_id, mime, image) values (${id}, ${mime}, ${bytes})
+      on conflict (pack_id) do update set mime = excluded.mime, image = excluded.image, created_at = now()`;
+    await tx`update theme_packs set snapshot = ${hash}, updated_at = now() where id = ${id}`;
+    return true;
+  });
+  return done ? c.json({ snapshot: hash }) : fail(404, "not_found");
+});
+
 /** One report per person and pack; a second is taken as the first. */
 app.post("/v1/packs/:id/report", async (c) => {
   const id = c.req.param("id");
@@ -382,6 +434,15 @@ app.onError((err) => {
   console.error(err);
   return fail(500, "server_error");
 });
+
+/** What an upload is by its first bytes, whatever it says it is: WebP, PNG or JPEG, or null. */
+function imageType(b: Uint8Array): string | null {
+  const ascii = (from: number, to: number) => String.fromCharCode(...b.subarray(from, to));
+  if (b.length > 12 && ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
+  if (b.length > 8 && b[0] === 0x89 && ascii(1, 4) === "PNG" && b[4] === 0x0d && b[5] === 0x0a) return "image/png";
+  if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+  return null;
+}
 
 function shareCode(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(8));

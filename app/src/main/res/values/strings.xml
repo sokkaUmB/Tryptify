@@ -2279,6 +2279,15 @@
     <string name="theme_store_not_set_up">The Theme Store isn’t switched on for this app yet.</string>
     <string name="theme_store_offline">Couldn’t reach the Theme Store. Check your connection.</string>
     <string name="theme_store_gone">This theme isn’t in the store any more. Its author may have removed it.</string>
+    <string name="theme_store_picture_of">Picture of %1$s</string>
+    <string name="theme_publish_picture">Its picture in the store</string>
+    <string name="theme_publish_picture_desc">Taken when you share, so people see your theme before they open it.</string>
+    <string name="theme_pack_picture">Store picture</string>
+    <string name="theme_pack_picture_desc">What people see on its card in the store.</string>
+    <string name="theme_pack_picture_none">No picture yet. Take one so it stands out in the store.</string>
+    <string name="theme_pack_picture_take">Take a new picture</string>
+    <string name="theme_pack_picture_taking">Taking the picture…</string>
+    <string name="theme_pack_picture_failed">Couldn’t save the picture. Try again.</string>
     <string name="theme_store_limit">You’ve shared 50 themes, the most one account can. Delete one to share another.</string>
     <string name="theme_store_bad_pack">This theme couldn’t be read. It may be from a newer version of the app.</string>
     <string name="theme_store_by">by %1$s</string>

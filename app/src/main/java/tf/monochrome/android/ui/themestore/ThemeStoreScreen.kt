@@ -16,9 +16,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -105,6 +102,16 @@ import tf.monochrome.android.ui.navigation.Screen
 import tf.monochrome.android.ui.navigation.navigateSafe
 import tf.monochrome.android.ui.navigation.navigateTool
 import tf.monochrome.android.ui.navigation.popBackStackSafe
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.draw.clip
+import android.graphics.Bitmap
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import javax.inject.Inject
 
 /** One page of the store's list, and how it got there. */
@@ -184,6 +191,33 @@ class ThemeStoreViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The list again, as far down as it was read, without emptying it first:
+     * coming back from a pack, its likes and downloads (and a picture just
+     * taken) change under the reader instead of the list blinking empty.
+     */
+    fun refreshQuietly() {
+        if (_state.value.loading || store.user.value == null) return
+        val pages = page
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val all = mutableListOf<StorePack>()
+            var end = false
+            for (p in 0..pages) {
+                val got = store.browse(_sort.value, _query.value, p).getOrNull() ?: return@launch
+                all += got
+                if (got.size < 20) {
+                    end = true
+                    break
+                }
+            }
+            _state.value = _state.value.copy(items = all.distinctBy { it.id }, endReached = end)
+        }
+    }
+
+    /** A pack's store picture, from the cache when it is there. */
+    suspend fun picture(pack: StorePack): Bitmap? = store.picture(pack)
+
     /** Puts back the look from before the last theme. */
     fun undo(onDone: (Boolean) -> Unit) {
         viewModelScope.launch { onDone(packs.undo()) }
@@ -220,6 +254,8 @@ fun ThemeStoreScreen(
     val overlay = rememberHazeState()
     val navBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val undoneText = stringResource(R.string.theme_store_undone)
+    // Back from a pack: its counts and picture may have changed.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshQuietly() }
 
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().hazeSource(overlay)) {
@@ -273,6 +309,7 @@ fun ThemeStoreScreen(
                             onOpen = { navController.navigateSafe(Screen.ThemePackDetail.createRoute(it.id)) },
                             onRetry = viewModel::reload,
                             onMore = viewModel::loadMore,
+                            picture = viewModel::picture,
                         )
                     }
                 }
@@ -338,8 +375,9 @@ private fun StoreList(
     onOpen: (StorePack) -> Unit,
     onRetry: () -> Unit,
     onMore: () -> Unit,
+    picture: suspend (StorePack) -> Bitmap?,
 ) {
-    val listState = rememberLazyListState()
+    val listState = rememberLazyGridState()
     val nearEnd by remember {
         derivedStateOf {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
@@ -350,13 +388,18 @@ private fun StoreList(
     val accent = MaterialTheme.colorScheme.primary
 
     CompositionLocalProvider(LocalGlassBackdrop provides backdrop) {
-        LazyColumn(
+        // Two phone-shaped pictures to a row: the picture is what a theme is
+        // chosen by, so it gets the room, and the details sit under it.
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = topInset, bottom = bottomInset),
+            contentPadding = PaddingValues(start = 12.dp, top = topInset, end = 12.dp, bottom = bottomInset),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item(key = "actions") {
-                Column(Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item(key = "actions", span = { GridItemSpan(maxLineSpan) }) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         GlassPill(
                             onClick = onPublish,
@@ -399,9 +442,9 @@ private fun StoreList(
                 }
             }
             items(state.items, key = { it.id }) { pack ->
-                StoreCard(pack = pack, backdrop = backdrop, onClick = { onOpen(pack) })
+                StoreTile(pack = pack, backdrop = backdrop, picture = picture, onClick = { onOpen(pack) })
             }
-            item(key = "footer") {
+            item(key = "footer", span = { GridItemSpan(maxLineSpan) }) {
                 Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
                     when {
                         state.loading -> CircularProgressIndicator(modifier = Modifier.size(32.dp))
@@ -450,23 +493,38 @@ internal fun errorText(error: StoreError): String = stringResource(
     },
 )
 
+/**
+ * One theme in the store: its picture, then its name, its author and how it
+ * is doing, on one glass card that is the button.
+ */
 @Composable
-private fun StoreCard(pack: StorePack, backdrop: HazeState, onClick: () -> Unit) {
+private fun StoreTile(
+    pack: StorePack,
+    backdrop: HazeState,
+    picture: suspend (StorePack) -> Bitmap?,
+    onClick: () -> Unit,
+) {
     PressableGlass(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         corner = 24.dp,
         hazeState = backdrop,
-        contentAlignment = Alignment.CenterStart,
+        contentAlignment = Alignment.TopCenter,
     ) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            PackSwatch(pack.accent, pack.background, Modifier.size(84.dp))
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.padding(8.dp)) {
+            StorePicture(
+                pack,
+                picture,
+                Modifier.fillMaxWidth().aspectRatio(SNAPSHOT_ASPECT).clip(RoundedCornerShape(16.dp)),
+            )
+            Column(
+                Modifier.padding(start = 4.dp, top = 8.dp, end = 4.dp, bottom = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
                 Text(
                     pack.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.ExtraBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -478,19 +536,18 @@ private fun StoreCard(pack: StorePack, backdrop: HazeState, onClick: () -> Unit)
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                PartIcons(pack.parts)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                     Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(14.dp))
                     Text(" ${pack.likes}", style = MaterialTheme.typography.labelMedium)
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(10.dp))
                     Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(14.dp))
                     Text(" ${pack.downloads}", style = MaterialTheme.typography.labelMedium)
                     if (!pack.listed) {
-                        Spacer(Modifier.width(12.dp))
-                        Icon(Icons.Default.VisibilityOff, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Text(
-                            " " + stringResource(R.string.theme_store_unlisted),
-                            style = MaterialTheme.typography.labelMedium,
+                        Spacer(Modifier.width(10.dp))
+                        Icon(
+                            Icons.Default.VisibilityOff,
+                            contentDescription = stringResource(R.string.theme_store_unlisted),
+                            modifier = Modifier.size(14.dp),
                         )
                     }
                 }
