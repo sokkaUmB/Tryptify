@@ -201,6 +201,10 @@ class PreferencesManager @Inject constructor(
         // and the one switch that pauses every music link at once.
         private val VISUAL_LINKS_JSON = stringPreferencesKey("visual_links_json")
         private val MUSIC_LINKS_PAUSED = booleanPreferencesKey("music_links_paused")
+        // The look as it was before the last theme pack was applied, for its
+        // undo. Device-local on purpose, and so not in SETTINGS_SYNC_KEYS: it
+        // is state, not a choice, and another device has its own look to undo.
+        private val THEME_PACK_UNDO_JSON = stringPreferencesKey("theme_pack_undo_json")
         private val GLOBE_FX_JSON = stringPreferencesKey("globe_fx_json")
         // User-saved Lyrics FX presets (a JSON array of {name, settings}).
         private val LYRICS_FX_CUSTOM_PRESETS_JSON = stringPreferencesKey("lyrics_fx_custom_presets_json")
@@ -2292,6 +2296,17 @@ class PreferencesManager @Inject constructor(
 
     suspend fun setMusicLinksPaused(paused: Boolean) {
         dataStore.edit { it[MUSIC_LINKS_PAUSED] = paused }
+    }
+
+    /** The look before the last theme pack, as a pack, or null when there is nothing to undo. */
+    val themePackUndo: Flow<String?> = dataStore.data
+        .map { it[THEME_PACK_UNDO_JSON] }
+        .distinctUntilChanged()
+
+    suspend fun setThemePackUndo(json: String?) {
+        dataStore.edit {
+            if (json != null) it[THEME_PACK_UNDO_JSON] = json else it.remove(THEME_PACK_UNDO_JSON)
+        }
     }
 
     /**

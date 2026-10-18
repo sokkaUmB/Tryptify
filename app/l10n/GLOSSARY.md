@@ -43,6 +43,8 @@ not Spain-only), Turkish, German.
 | preset | 预设 | プリセット | préréglage | preset | ön ayar | Preset |
 | Music links (screen) / a link | 音乐联动 / 联动 | ミュージックリンク / リンク | Liens musicaux / lien | Enlaces musicales / enlace | Müzik bağlantıları / bağlantı | Musik-Kopplungen / Kopplung |
 | Move with the music (action) | 随音乐而动 | 音楽に合わせて動かす | Bouger avec la musique | Mover con la música | Müzikle hareket ettir | Mit der Musik bewegen |
+| Theme Store (screen) / theme (a pack in it) | 主题商店 / 主题 | テーマストア / テーマ | Boutique de thèmes / thème | Tienda de temas / tema | Tema Mağazası / tema | Theme-Store / Theme |
+| Share my look (action) | 分享我的外观 | 自分の外観を共有 | Partager mon look | Compartir mi estilo | Görünümümü paylaş | Meinen Look teilen |
 | token (Discord, ListenBrainz) | 令牌 | トークン | jeton | token | belirteç | Token |
 | scrobble | 同步收听记录（scrobble） | スクロブル | scrobbler | scrobbling | scrobble | scrobbeln |
 

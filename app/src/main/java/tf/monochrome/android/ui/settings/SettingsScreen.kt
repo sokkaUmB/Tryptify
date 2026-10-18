@@ -709,7 +709,11 @@ private tailrec fun android.content.Context.findActivityOrSelf(): android.conten
 @Composable
 private fun AppearanceTab(viewModel: SettingsViewModel, navController: NavController, onOpenFonts: () -> Unit) {
     SettingsTabContent {
-        AppearanceControls(viewModel, onOpenFonts = onOpenFonts)
+        AppearanceControls(
+            viewModel,
+            onOpenFonts = onOpenFonts,
+            onOpenThemeStore = { navController.navigateTool(Screen.ThemeStore) },
+        )
         Spacer(modifier = Modifier.height(16.dp))
         InterfaceControls(viewModel, navController)
     }
@@ -719,7 +723,7 @@ private fun AppearanceTab(viewModel: SettingsViewModel, navController: NavContro
 private enum class CustomColorTarget { Accent, Background }
 
 @Composable
-private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> Unit) {
+private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> Unit, onOpenThemeStore: () -> Unit) {
     val themeName by viewModel.theme.collectAsStateWithLifecycle()
     val dynamicColors by viewModel.dynamicColors.collectAsStateWithLifecycle()
     val dynamicColorMenus by viewModel.dynamicColorMenus.collectAsStateWithLifecycle()
@@ -747,6 +751,13 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
 
         SettingsGroupHeader(stringResource(R.string.settings_theme))
         SettingItem(title = stringResource(R.string.settings_color_theme), subtitle = themeDisplayNames[themeName] ?: themeName, onClick = { showThemeDropdown = true })
+        // A whole look, made by somebody else or shared by you: colours, glass,
+        // lyrics, fonts and music links in one go.
+        SettingItem(
+            title = stringResource(R.string.theme_store_title),
+            subtitle = stringResource(R.string.theme_store_settings_desc),
+            onClick = onOpenThemeStore,
+        )
         DropdownMenu(expanded = showThemeDropdown, onDismissRequest = { showThemeDropdown = false }) {
             // What may be *chosen* is narrower than what may be *named*: the
             // subtitle above still reads the full catalogue, so a stored key

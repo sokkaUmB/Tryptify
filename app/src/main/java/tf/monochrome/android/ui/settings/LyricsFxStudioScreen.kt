@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -1308,126 +1309,7 @@ private fun PlayerGlassTab(
                     track = previewTrack,
                 )
             } else {
-            // Live preview: the real transport buttons AND the action dock under the
-            // current button glass — the dock is the same hollowed-slab glass, so it
-            // tunes with these sliders exactly like the play button.
-            // The backdrop is a sibling of the pane above it, not its parent, so the
-            // pane can actually blur it — a haze effect cannot sample a layer it is
-            // drawn inside, and one that tries paints the source's flat colour.
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .hazeSource(previewHaze)
-                    .background(previewBgBrush),
-            )
-            // The preview's own backdrop, published to the chrome inside it,
-            // so the dock and the play disc frost something here exactly as
-            // they frost the player's background on the real screen. Without
-            // it Backdrop blur and Backdrop tint were two sliders whose effect
-            // you had to leave the Studio to see.
-            //
-            // Safe from the sample-your-own-layer trap: the source is the
-            // swatch above, which is a sibling of this content and not an
-            // ancestor of it.
-            CompositionLocalProvider(
-                LocalPlayerGlass provides glass,
-                LocalPlayerHaze provides previewHaze,
-                // Beside the haze it belongs to, so the dock's own frost
-                // gets it too.
-                LocalPlayerGlassGround provides previewGround,
-            ) {
-                // The transport as it actually sits on the player screen: straight
-                // over the backdrop, with nothing between. There was a GlassPanel
-                // here, on the argument that glass should be previewed over
-                // something rather than on a flat swatch — but the real player has
-                // no pane behind its transport (the invariants forbid one under a
-                // punched slab), and the pane it drew was the UI panels blob,
-                // tuned on the other tab. The swatch behind is the something.
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // Real transport icon: bigger skip + shape-accurate shadow,
-                        // exactly like the player.
-                        TransportIcon(
-                            painterResource(R.drawable.ic_glass_skip_previous_chevron), stringResource(R.string.action_previous), previewTint, {},
-                            size = PlayerDesignTokens.SkipIconSize,
-                        )
-                        // Solid glass disc with the play symbol punched out, plus the
-                        // same custom round drop shadow as the real play button.
-                        Box(
-                            Modifier.size(64.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            GlassDropShadow(
-                                color = lerp(Color.Black, previewTint, glass.shadowTint)
-                                    .copy(alpha = 0.28f + 0.55f * glass.shadowDepth),
-                                softness = glass.shadowSoftness,
-                                depth = glass.shadowDepth,
-                            )
-                            // The same frost and live lens the real disc gets
-                            // (PlayerTransportControls), so Backdrop blur, tint
-                            // and the lens move something here too, and the
-                            // disc reads the same as the dock beside it.
-                            PlayerGlassHaze(
-                                modifier = Modifier.matchParentSize(),
-                                shape = CircleShape,
-                                lensCorner = Dp.Infinity,
-                            )
-                            Box(
-                                Modifier.fillMaxSize().clip(CircleShape),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Canvas(
-                                    Modifier
-                                        .fillMaxSize()
-                                        .playerGlass(
-                                            previewTint,
-                                            lensCorner = Dp.Infinity,
-                                            liveUnder = rememberPlayerLiveLens(),
-                                        )
-                                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
-                                ) {
-                                    drawGlassPlayPauseDisc(morph = 0f, fill = previewTint)
-                                }
-                            }
-                        }
-                        TransportIcon(
-                            painterResource(R.drawable.ic_glass_skip_next_chevron), stringResource(R.string.action_next), previewTint, {},
-                            size = PlayerDesignTokens.SkipIconSize,
-                        )
-                    }
-                    // The real hollowed-slab dock, previewed under the same glass.
-                    PlayerActionDock(
-                        accent = accent,
-                        lyricsActive = false,
-                        shuffleActive = false,
-                        onLyrics = {},
-                        onShuffle = {},
-                        onMixer = {},
-                        onPlaylist = {},
-                    )
-                    // The glass thermometer scrubber, previewed at ~40%.
-                    GlassProgressTube(
-                        fraction = 0.4f,
-                        tint = previewTint,
-                        onSeek = {},
-                        onSeekFinished = {},
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-            Text(
-                text = stringResource(R.string.fx_preview),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.35f),
-                modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
-            )
+                PlayerChromePreview(glass = glass, hazeState = previewHaze)
             }
         }
         }
@@ -1913,7 +1795,7 @@ private val PreviewTabs = listOf(AppTab.HOME, AppTab.DISCOVER, AppTab.RADIO, App
  * the rim bend it.
  */
 @Composable
-private fun UiPanelsPreview(
+internal fun UiPanelsPreview(
     glass: PlayerGlassSettings,
     hazeState: HazeState,
     /** The page colour: the theme's, or the Background swatch's. */
@@ -2152,7 +2034,7 @@ private fun PreviewCover(index: Int, modifier: Modifier, corner: Dp) {
 }
 
 @Composable
-private fun StudioPreview(
+internal fun StudioPreview(
     fx: LyricsFxSettings,
     lyrics: Lyrics?,
     positionMs: kotlinx.coroutines.flow.StateFlow<Long>,
@@ -2689,6 +2571,141 @@ internal fun FxSlider(
             LinkedTrackMarker(linkKey, linkHost, range.start, range.endInclusive)
         }
     }
+}
+
+/**
+ * The player's own chrome under [glass]: the transport, the action dock and the
+ * scrubber, over a swatch that is their haze source. What the Player tab
+ * previews, and what a theme pack in the store shows for its player glass.
+ */
+@Composable
+internal fun BoxScope.PlayerChromePreview(glass: PlayerGlassSettings, hazeState: HazeState) {
+    val accent = MaterialTheme.colorScheme.primary
+    val previewTint = if (glass.tintColor != 0) Color(glass.tintColor) else accent
+    val previewBgBrush = if (glass.previewBg != 0) SolidColor(Color(glass.previewBg)) else previewBackground(accent)
+    val previewGround = if (glass.previewBg != 0) Color(glass.previewBg)
+        else lerp(Color.Black, accent, 0.22f)
+    val previewHaze = hazeState
+    // Live preview: the real transport buttons AND the action dock under the
+    // current button glass — the dock is the same hollowed-slab glass, so it
+    // tunes with these sliders exactly like the play button.
+    // The backdrop is a sibling of the pane above it, not its parent, so the
+    // pane can actually blur it — a haze effect cannot sample a layer it is
+    // drawn inside, and one that tries paints the source's flat colour.
+    Box(
+        Modifier
+            .matchParentSize()
+            .hazeSource(previewHaze)
+            .background(previewBgBrush),
+    )
+    // The preview's own backdrop, published to the chrome inside it,
+    // so the dock and the play disc frost something here exactly as
+    // they frost the player's background on the real screen. Without
+    // it Backdrop blur and Backdrop tint were two sliders whose effect
+    // you had to leave the Studio to see.
+    //
+    // Safe from the sample-your-own-layer trap: the source is the
+    // swatch above, which is a sibling of this content and not an
+    // ancestor of it.
+    CompositionLocalProvider(
+        LocalPlayerGlass provides glass,
+        LocalPlayerHaze provides previewHaze,
+        // Beside the haze it belongs to, so the dock's own frost
+        // gets it too.
+        LocalPlayerGlassGround provides previewGround,
+    ) {
+        // The transport as it actually sits on the player screen: straight
+        // over the backdrop, with nothing between. There was a GlassPanel
+        // here, on the argument that glass should be previewed over
+        // something rather than on a flat swatch — but the real player has
+        // no pane behind its transport (the invariants forbid one under a
+        // punched slab), and the pane it drew was the UI panels blob,
+        // tuned on the other tab. The swatch behind is the something.
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Real transport icon: bigger skip + shape-accurate shadow,
+                // exactly like the player.
+                TransportIcon(
+                    painterResource(R.drawable.ic_glass_skip_previous_chevron), stringResource(R.string.action_previous), previewTint, {},
+                    size = PlayerDesignTokens.SkipIconSize,
+                )
+                // Solid glass disc with the play symbol punched out, plus the
+                // same custom round drop shadow as the real play button.
+                Box(
+                    Modifier.size(64.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    GlassDropShadow(
+                        color = lerp(Color.Black, previewTint, glass.shadowTint)
+                            .copy(alpha = 0.28f + 0.55f * glass.shadowDepth),
+                        softness = glass.shadowSoftness,
+                        depth = glass.shadowDepth,
+                    )
+                    // The same frost and live lens the real disc gets
+                    // (PlayerTransportControls), so Backdrop blur, tint
+                    // and the lens move something here too, and the
+                    // disc reads the same as the dock beside it.
+                    PlayerGlassHaze(
+                        modifier = Modifier.matchParentSize(),
+                        shape = CircleShape,
+                        lensCorner = Dp.Infinity,
+                    )
+                    Box(
+                        Modifier.fillMaxSize().clip(CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Canvas(
+                            Modifier
+                                .fillMaxSize()
+                                .playerGlass(
+                                    previewTint,
+                                    lensCorner = Dp.Infinity,
+                                    liveUnder = rememberPlayerLiveLens(),
+                                )
+                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
+                        ) {
+                            drawGlassPlayPauseDisc(morph = 0f, fill = previewTint)
+                        }
+                    }
+                }
+                TransportIcon(
+                    painterResource(R.drawable.ic_glass_skip_next_chevron), stringResource(R.string.action_next), previewTint, {},
+                    size = PlayerDesignTokens.SkipIconSize,
+                )
+            }
+            // The real hollowed-slab dock, previewed under the same glass.
+            PlayerActionDock(
+                accent = accent,
+                lyricsActive = false,
+                shuffleActive = false,
+                onLyrics = {},
+                onShuffle = {},
+                onMixer = {},
+                onPlaylist = {},
+            )
+            // The glass thermometer scrubber, previewed at ~40%.
+            GlassProgressTube(
+                fraction = 0.4f,
+                tint = previewTint,
+                onSeek = {},
+                onSeekFinished = {},
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+    Text(
+        text = stringResource(R.string.fx_preview),
+        style = MaterialTheme.typography.labelSmall,
+        color = Color.White.copy(alpha = 0.35f),
+        modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
+    )
 }
 
 /** Room kept clear above the Studio sample for the reactivity label, and the same below. */

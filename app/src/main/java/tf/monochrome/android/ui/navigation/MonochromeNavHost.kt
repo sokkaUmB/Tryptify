@@ -192,6 +192,11 @@ sealed class Screen(val route: String) {
     data object DebugLog : Screen("debug_log")
     data object LyricsFxStudio : Screen("lyrics_fx_studio")
     data object MusicLinks : Screen("music_links")
+    data object ThemeStore : Screen("theme_store")
+    data object ThemePackDetail : Screen("theme_pack/{packId}") {
+        fun createRoute(packId: String) = "theme_pack/${android.net.Uri.encode(packId)}"
+    }
+    data object ThemePublish : Screen("theme_publish")
     data object AtmosRenderer : Screen("atmos_renderer")
     data object HrtfDatabase : Screen("hrtf_database")
 }
@@ -798,6 +803,24 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 composable(Screen.MusicLinks.route) {
                     tf.monochrome.android.devedit.DevEditScreen("music_links") {
                         tf.monochrome.android.ui.musiclinks.MusicLinksScreen(navController = navController)
+                    }
+                }
+                composable(Screen.ThemeStore.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("theme_store") {
+                        tf.monochrome.android.ui.themestore.ThemeStoreScreen(navController = navController)
+                    }
+                }
+                composable(
+                    route = Screen.ThemePackDetail.route,
+                    arguments = listOf(navArgument("packId") { type = NavType.StringType }),
+                ) {
+                    tf.monochrome.android.devedit.DevEditScreen("theme_pack") {
+                        tf.monochrome.android.ui.themestore.ThemePackScreen(navController = navController)
+                    }
+                }
+                composable(Screen.ThemePublish.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("theme_publish") {
+                        tf.monochrome.android.ui.themestore.ThemePublishScreen(navController = navController)
                     }
                 }
                 composable(Screen.AtmosRenderer.route) {

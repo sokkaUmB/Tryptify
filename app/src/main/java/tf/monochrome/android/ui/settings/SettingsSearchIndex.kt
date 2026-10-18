@@ -72,6 +72,10 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
         ),
     ),
     entry("Theme", R.string.settings_theme, "Appearance", listOf("colour", "color", "dark", "light", "white")),
+    entry(
+        "Theme Store", R.string.theme_store_title, "Appearance",
+        listOf("pack", "share", "download", "upload", "community", "look", "skin"),
+    ).at(SettingsDestination.Route("theme_store")),
     entry("Light paper", R.string.settings_light_paper, "Appearance", listOf("white", "warm", "crisp", "paper", "glare")),
     entry(
         "Color transition", R.string.settings_color_transition, "Appearance",
