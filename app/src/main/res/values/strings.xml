@@ -2031,6 +2031,7 @@
     <string name="fonts_skip_duplicate">%1$s is already in your fonts as %2$s</string>
     <string name="fonts_skip_unreadable">%1$s couldn’t be read</string>
     <string name="fonts_unusable">This file can’t be read as a font. Delete it to tidy up.</string>
+    <string name="fonts_imported_styles">Imported · %1$d styles, each at its own weight</string>
     <string name="fonts_delete_title">Delete %1$s?</string>
     <string name="fonts_delete_body">It’s removed from this device. If it’s the font in use, the app goes back to Inter.</string>
     <string name="discover_today_title">Today’s discovery</string>

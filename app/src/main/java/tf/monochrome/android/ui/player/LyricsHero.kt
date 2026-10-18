@@ -60,7 +60,6 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -936,17 +935,10 @@ internal fun rememberLyricFontFamily(fx: LyricsFxSettings): FontFamily? {
     if (!fx.customFont || fx.customFontPath.isBlank()) return null
     val path = fx.customFontPath
     return remember(path) {
-        runCatching {
-            val file = java.io.File(path)
-            if (file.exists()) {
-                LyricsDebug.log("custom font loaded: ${file.name}")
-                FontFamily(Font(file))
-            } else {
-                LyricsDebug.log("custom font MISSING, falling back to theme: $path")
-                null
-            }
-        }.onFailure { LyricsDebug.log("custom font FAILED to load ($path): ${it.message}") }
-            .getOrNull()
+        // With its variations, when the library holds other cuts of the family.
+        tf.monochrome.android.ui.theme.loadImportedFontFamily(path).also {
+            LyricsDebug.log(if (it != null) "custom font loaded: $path" else "custom font MISSING or unreadable, falling back to theme: $path")
+        }
     }
 }
 

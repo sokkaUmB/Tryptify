@@ -303,8 +303,8 @@ class LyricsFxStudioViewModel @Inject constructor(
     }
 
     /** Fonts the user has imported (Settings › Appearance copies them here). */
-    private val _availableFonts = MutableStateFlow<List<File>>(emptyList())
-    val availableFonts: StateFlow<List<File>> = _availableFonts.asStateFlow()
+    private val _availableFonts = MutableStateFlow<List<tf.monochrome.android.ui.theme.ImportedFamily>>(emptyList())
+    val availableFonts: StateFlow<List<tf.monochrome.android.ui.theme.ImportedFamily>> = _availableFonts.asStateFlow()
 
     /** The user's own saved presets, alongside the built-in ones. */
     val customPresets: StateFlow<List<tf.monochrome.android.domain.model.LyricsFxPreset>> =
@@ -336,13 +336,13 @@ class LyricsFxStudioViewModel @Inject constructor(
         refreshFonts()
     }
 
-    /** Re-list the imported font files off the main thread (directory I/O). */
+    /**
+     * Re-list the imported fonts off the main thread (every file is opened):
+     * one entry per family, its variations together (FontFamilies).
+     */
     fun refreshFonts() {
         viewModelScope.launch(Dispatchers.IO) {
-            _availableFonts.value = File(context.filesDir, "custom_fonts").listFiles()
-                ?.filter { it.isFile && (it.extension.equals("ttf", true) || it.extension.equals("otf", true)) }
-                ?.sortedBy { it.name.lowercase(java.util.Locale.US) }
-                ?: emptyList()
+            _availableFonts.value = tf.monochrome.android.ui.theme.FontFamilies.scan(File(context.filesDir, "custom_fonts"))
         }
     }
 
@@ -2524,7 +2524,7 @@ internal fun FxToggle(
 /** Collapsible picker over the fonts the user imported (Settings › Appearance). */
 @Composable
 private fun FontPicker(
-    fonts: List<File>,
+    fonts: List<tf.monochrome.android.ui.theme.ImportedFamily>,
     selectedPath: String,
     onSelect: (String) -> Unit,
 ) {
@@ -2538,7 +2538,9 @@ private fun FontPicker(
         return
     }
     var expanded by remember { mutableStateOf(false) }
-    val selectedName = fonts.firstOrNull { it.absolutePath == selectedPath }?.nameWithoutExtension
+    // Any file of a family selects the family: the path stored may be one of its cuts.
+    fun selects(family: tf.monochrome.android.ui.theme.ImportedFamily) = family.files.any { it.absolutePath == selectedPath }
+    val selectedName = fonts.firstOrNull(::selects)?.name
     Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
@@ -2558,12 +2560,12 @@ private fun FontPicker(
         }
         AnimatedVisibility(visible = expanded) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                fonts.forEach { file ->
-                    val isSelected = file.absolutePath == selectedPath
+                fonts.forEach { family ->
+                    val isSelected = selects(family)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSelect(file.absolutePath) }
+                            .clickable { onSelect(family.representative.file.absolutePath) }
                             .padding(vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -2574,7 +2576,7 @@ private fun FontPicker(
                             modifier = Modifier.padding(end = 12.dp),
                         )
                         Text(
-                            text = file.nameWithoutExtension,
+                            text = family.name,
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (isSelected) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurface,

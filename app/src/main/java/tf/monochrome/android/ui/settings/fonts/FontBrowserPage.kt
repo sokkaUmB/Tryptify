@@ -515,6 +515,10 @@ private fun FontCard(
         )
         val note = when {
             !choice.usable -> stringResource(R.string.fonts_unusable)
+            // A font that came as several files is one entry, its variations
+            // each drawing their own weight (FontFamilies).
+            choice.origin == FontChoice.Origin.IMPORTED && (choice.imported?.styles ?: 1) > 1 ->
+                stringResource(R.string.fonts_imported_styles, choice.imported!!.styles)
             choice.origin == FontChoice.Origin.IMPORTED -> stringResource(R.string.settings_imported)
             else -> choice.note
         }

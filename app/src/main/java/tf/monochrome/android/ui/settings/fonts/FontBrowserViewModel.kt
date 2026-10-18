@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tf.monochrome.android.data.fonts.FontImportReport
@@ -38,12 +37,17 @@ class FontBrowserViewModel @Inject constructor(
     private val library: FontLibrary,
 ) : ViewModel() {
 
-    /** The font in use, as a listing key. */
-    val activeKey: StateFlow<String> = preferences.customFontUri
-        .map { it ?: DEFAULT_FONT_KEY }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, DEFAULT_FONT_KEY)
-
     val imported: StateFlow<List<ImportedFont>> = library.imported
+
+    /**
+     * The font in use, as a listing key. A font chosen as one file of a family
+     * the library now lists as one entry (its other cuts imported since) is
+     * that entry.
+     */
+    val activeKey: StateFlow<String> = combine(preferences.customFontUri, library.imported) { id, fonts ->
+        if (id == null) return@combine DEFAULT_FONT_KEY
+        fonts.firstOrNull { font -> font.files.any { it.absolutePath == id } }?.id ?: id
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, DEFAULT_FONT_KEY)
 
     private val _picked = MutableStateFlow<String?>(null)
 

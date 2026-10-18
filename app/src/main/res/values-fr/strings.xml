@@ -2081,6 +2081,7 @@
     <string name="fonts_skip_duplicate">%1$s figure déjà dans vos polices sous le nom %2$s</string>
     <string name="fonts_skip_unreadable">Impossible de lire %1$s</string>
     <string name="fonts_unusable">Ce fichier ne peut pas être lu comme une police. Supprimez-le pour faire le ménage.</string>
+    <string name="fonts_imported_styles">Importée · %1$d styles, chacun à sa graisse</string>
     <string name="fonts_delete_title">Supprimer %1$s ?</string>
     <string name="fonts_delete_body">Elle est supprimée de cet appareil. Si c’est la police utilisée, l’app revient à Inter.</string>
     <string name="discover_today_title">La découverte du jour</string>

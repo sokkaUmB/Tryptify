@@ -1979,6 +1979,7 @@
     <string name="fonts_skip_duplicate">%1$s はすでに「%2$s」として追加されています</string>
     <string name="fonts_skip_unreadable">%1$s を読み取れませんでした</string>
     <string name="fonts_unusable">このファイルはフォントとして読み取れません。削除して整理できます。</string>
+    <string name="fonts_imported_styles">インポート済み · %1$d スタイル、それぞれの太さで</string>
     <string name="fonts_delete_title">%1$s を削除しますか？</string>
     <string name="fonts_delete_body">この端末から削除されます。使用中のフォントの場合は Inter に戻ります。</string>
     <string name="discover_today_title">今日の発見</string>

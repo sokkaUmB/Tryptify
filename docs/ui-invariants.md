@@ -674,6 +674,17 @@ read as on whatever was stored, so nobody is left with one off and no way
 back. A copy of a setting in a second place is not a convenience; it is two
 switches that can disagree.
 
+**An imported font is a family, not a file.** Fonts arrive as a file per
+weight; the library groups the files that name the same family
+(`FontFamilies`: the typographic family, else the legacy one without its
+weight word) into one entry, "Imported · 3 styles", and deleting it deletes
+them all. A chosen font is stored as one file's path, and loading it brings
+the rest of its family, each file at its own weight and slope
+(`loadAppFontFamily`, and the lyrics' font through `loadImportedFontFamily`),
+so Medium titles draw the Medium file. A family of one file is declared at
+every weight over that file, as before. `FontFamiliesTest` runs it on the
+app's own Inter, which is five files.
+
 ### Pages and the tab bar
 
 **The app has ONE pager over one flat list of pages** — Home, Discover, World

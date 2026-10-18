@@ -2081,6 +2081,7 @@
     <string name="fonts_skip_duplicate">%1$s ya está en tus fuentes como %2$s</string>
     <string name="fonts_skip_unreadable">No se pudo leer %1$s</string>
     <string name="fonts_unusable">Este archivo no se puede leer como fuente. Bórralo para ordenar.</string>
+    <string name="fonts_imported_styles">Importada · %1$d estilos, cada uno con su peso</string>
     <string name="fonts_delete_title">¿Eliminar %1$s?</string>
     <string name="fonts_delete_body">Se elimina de este dispositivo. Si es la fuente en uso, la app vuelve a Inter.</string>
     <string name="discover_today_title">El descubrimiento de hoy</string>

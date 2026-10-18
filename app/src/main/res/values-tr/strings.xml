@@ -2030,6 +2030,7 @@
     <string name="fonts_skip_duplicate">%1$s zaten yazı tiplerinizde %2$s olarak var</string>
     <string name="fonts_skip_unreadable">%1$s okunamadı</string>
     <string name="fonts_unusable">Bu dosya yazı tipi olarak okunamıyor. Temizlemek için silin.</string>
+    <string name="fonts_imported_styles">İçe aktarıldı · %1$d stil, her biri kendi kalınlığında</string>
     <string name="fonts_delete_title">%1$s silinsin mi?</string>
     <string name="fonts_delete_body">Bu cihazdan kaldırılır. Kullanımdaki yazı tipiyse uygulama Inter’e döner.</string>
     <string name="discover_today_title">Bugünün keşfi</string>

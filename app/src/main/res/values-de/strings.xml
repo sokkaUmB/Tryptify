@@ -2030,6 +2030,7 @@
     <string name="fonts_skip_duplicate">%1$s ist schon als %2$s in deinen Schriftarten</string>
     <string name="fonts_skip_unreadable">%1$s konnte nicht gelesen werden</string>
     <string name="fonts_unusable">Diese Datei lässt sich nicht als Schrift lesen. Lösch sie zum Aufräumen.</string>
+    <string name="fonts_imported_styles">Importiert · %1$d Schnitte, jeder in seiner Stärke</string>
     <string name="fonts_delete_title">%1$s löschen?</string>
     <string name="fonts_delete_body">Sie wird von diesem Gerät entfernt. Ist sie die aktive Schrift, kehrt die App zu Inter zurück.</string>
     <string name="discover_today_title">Entdeckung des Tages</string>

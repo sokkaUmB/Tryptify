@@ -51,6 +51,16 @@ sealed interface FontInspection {
         /** Carries an `fvar` table: one file renders every weight. */
         val variable: Boolean,
         val format: FontFormat,
+        /** Its weight, 1 to 1000 (OS/2 `usWeightClass`): 300 Light, 400 Regular, 700 Bold. */
+        val weight: Int = 400,
+        val italic: Boolean = false,
+        /**
+         * The family its cuts share, to group them by: the typographic family,
+         * else the legacy one with any weight or slope word taken off the end
+         * (an old font says "Inter Light" / "Regular" for what a new one says
+         * "Inter" / "Light").
+         */
+        val groupFamily: String? = family,
     ) : FontInspection {
         /**
          * The name to show: the family, with its style when the style says
@@ -167,13 +177,36 @@ object FontFileInspector {
         if ("head" !in tables || "cmap" !in tables || !hasOutlines) return reject()
 
         val names = tables["name"]?.let { (offset, length) -> readNames(source, offset, length) }.orEmpty()
+        // OS/2 carries the weight and the italic bit; head's macStyle is the
+        // older place for the slope, for a font without OS/2.
+        val os2 = tables["OS/2"]?.first
+        val weight = os2?.let { source.u16(it + 4) }?.takeIf { it in 1..1000 } ?: 400
+        val italic = os2?.let { source.u16(it + 62) }?.let { it and 1 != 0 }
+            ?: tables["head"]?.first?.let { source.u16(it + 44) }?.let { it and 2 != 0 }
+            ?: false
         return FontInspection.Font(
             family = names[16] ?: names[1],
             style = names[17] ?: names[2],
             variable = "fvar" in tables,
             format = if (version == TAG_OTTO) FontFormat.OPENTYPE_CFF else FontFormat.TRUETYPE,
+            weight = weight,
+            italic = italic,
+            groupFamily = names[16] ?: names[1]?.let(::withoutStyleWords),
         )
     }
+
+    /** "Inter Light" → "Inter", "Source Sans Pro Bold Italic" → "Source Sans Pro"; never empty. */
+    internal fun withoutStyleWords(family: String): String {
+        val words = family.trim().split(Regex("\\s+")).toMutableList()
+        while (words.size > 1 && words.last().lowercase().replace("-", "") in STYLE_WORDS) words.removeAt(words.lastIndex)
+        return words.joinToString(" ")
+    }
+
+    private val STYLE_WORDS = setOf(
+        "thin", "hairline", "extralight", "ultralight", "light", "book", "regular", "normal",
+        "medium", "semibold", "demibold", "bold", "extrabold", "ultrabold", "black", "heavy",
+        "italic", "oblique",
+    )
 
     /**
      * The best string for each name id in the `name` table: Windows Unicode in
