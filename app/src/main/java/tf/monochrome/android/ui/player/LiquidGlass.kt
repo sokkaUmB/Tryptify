@@ -200,12 +200,12 @@ internal fun Modifier.fxaa(): Modifier {
     // Nothing left to anti-alias once the glass relight is gone.
     if (LocalLowPerformance.current.disableLiquidGlass) return this
     if (!fx.fxaa || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return this
-    return this.then(fxaaModifier(fx.fxaaStrength))
+    return this.then(fxaaModifier(fx, LocalVisualLinks.current))
 }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-private fun fxaaModifier(strength: Float): Modifier {
+private fun fxaaModifier(fx: tf.monochrome.android.domain.model.LyricsFxSettings, live: VisualLinkLive): Modifier {
     val shader = remember {
         runCatching { RuntimeShader(FXAA_SRC) }
             .onSuccess { LyricsDebug.log("FXAA shader compiled") }
@@ -214,7 +214,8 @@ private fun fxaaModifier(strength: Float): Modifier {
     } ?: return Modifier
     return Modifier.graphicsLayer {
         if (size.minDimension > 0f) {
-            shader.setFloatUniform("uStrength", strength)
+            // Read here, so a music link on the strength moves it each frame.
+            shader.setFloatUniform("uStrength", live.lyrics(fx).fxaaStrength)
             renderEffect = RenderEffect
                 .createRuntimeShaderEffect(shader, "content")
                 .asComposeRenderEffect()
@@ -502,15 +503,7 @@ fun PlayerGlassHaze(
             // otherwise recompose this on every frame it runs.
             .graphicsLayer { alpha = fade.value }
             .clip(shape)
-            .hazeEffect(
-                state = haze,
-                style = dev.chrisbanes.haze.HazeStyle(
-                    backgroundColor = frostBg,
-                    blurRadius = g.hazeBlurDp.dp,
-                    tints = listOf(dev.chrisbanes.haze.HazeTint(frostTint)),
-                    noiseFactor = 0f,
-                ),
-            ),
+            .glassFrost(state = haze, glass = g, ground = frostBg, isDark = isDark),
     )
 }
 
@@ -564,6 +557,38 @@ val LocalPlayerGlassGround = compositionLocalOf { PlayerGlassGround }
 fun playerFrostTint(glass: tf.monochrome.android.domain.model.PlayerGlassSettings, isDark: Boolean): Color {
     val base = if (isDark) Color.Black.copy(alpha = 0.32f) else Color.White.copy(alpha = 0.26f)
     return base.copy(alpha = (base.alpha * glass.hazeTint).coerceIn(0f, 1f))
+}
+
+/**
+ * A haze pane frosted by [glass]: its Backdrop blur, and [playerFrostTint]
+ * over it toward [ground]. The one recipe every frosted pane uses.
+ *
+ * The blur and the tint are set in Haze's own block, which it re-runs when a
+ * value read there changes, without a recomposition: so a music link on
+ * Backdrop blur or tint moves the frost every frame and rebuilds nothing.
+ */
+@Composable
+fun Modifier.glassFrost(
+    state: dev.chrisbanes.haze.HazeState,
+    glass: tf.monochrome.android.domain.model.PlayerGlassSettings,
+    ground: Color,
+    isDark: Boolean = ground.luminance() <= 0.5f,
+): Modifier {
+    val links = LocalVisualLinks.current
+    val area = LocalGlassArea.current
+    return hazeEffect(
+        state = state,
+        style = dev.chrisbanes.haze.HazeStyle(
+            backgroundColor = ground,
+            blurRadius = glass.hazeBlurDp.dp,
+            tints = listOf(dev.chrisbanes.haze.HazeTint(playerFrostTint(glass, isDark))),
+            noiseFactor = 0f,
+        ),
+    ) {
+        val g = links.glass(glass, area)
+        blurRadius = g.hazeBlurDp.dp
+        tints = listOf(dev.chrisbanes.haze.HazeTint(playerFrostTint(g, isDark)))
+    }
 }
 
 /**
@@ -625,7 +650,7 @@ internal fun Modifier.playerGlass(
 @Composable
 private fun playerGlassModifier(
     tint: Color,
-    g: tf.monochrome.android.domain.model.PlayerGlassSettings,
+    base: tf.monochrome.android.domain.model.PlayerGlassSettings,
     bulgeCenter: Offset,
     bulgeAmount: () -> Float,
     bulgeRadiusFraction: Float,
@@ -639,7 +664,7 @@ private fun playerGlassModifier(
     // scaled by uLiquid, so at zero it renders identically frame to frame and
     // has no reason to drive a clock. This is the mini player, mounted app-wide
     // by the nav host, so the gate reaches every screen.
-    val timeSec = rememberFrameSeconds(animated = g.surfaceMotion > 0f)
+    val timeSec = rememberFrameSeconds(animated = base.surfaceMotion > 0f)
     // The same argument for the sensor. Every uTilt term in the shader is
     // multiplied by uTiltAmount, and tilt reactivity defaults to zero, so at
     // the default this surface's pixels do not depend on the phone's attitude
@@ -649,12 +674,17 @@ private fun playerGlassModifier(
     // times a second even with surface motion at zero. The surfaces that do
     // read tilt — the lyric glass, the panel, a non-zero reactivity here —
     // still acquire it, and they share the one listener as before.
-    val tilt = if (g.tiltReactivity > 0f) rememberGravityTilt() else NoTilt
+    val tilt = if (base.tiltReactivity > 0f) rememberGravityTilt() else NoTilt
     val backdrop = LocalPlayerBackdrop.current
     val anchor = rememberBackdropAnchor()
     val scrim = remember(backdrop.dominant) { backdropScrimTone(backdrop.dominant) }
+    // The music links move this glass in the layer block alone, so a linked
+    // setting redraws this layer each frame and recomposes nothing.
+    val links = LocalVisualLinks.current
+    val area = LocalGlassArea.current
     return Modifier.backdropAnchor(anchor).graphicsLayer {
         if (size.minDimension > 0f) {
+            val g = links.glass(base, area)
             shader.setFloatUniform("uSize", size.width, size.height)
             shader.setFloatUniform("uTime", timeSec.value)
             shader.setFloatUniform("uTilt", tilt.value.x, tilt.value.y)

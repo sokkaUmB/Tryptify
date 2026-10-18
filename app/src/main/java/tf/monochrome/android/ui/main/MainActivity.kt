@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.main
 
+import kotlinx.coroutines.flow.map
 import tf.monochrome.android.ui.glyph.tvShader
 import android.Manifest
 import android.annotation.SuppressLint
@@ -63,6 +64,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var performanceProfile: PerformanceProfile
     @Inject lateinit var libusbDriver: tf.monochrome.android.audio.usb.LibusbUacDriver
     @Inject lateinit var bypassVolumeController: tf.monochrome.android.audio.usb.BypassVolumeController
+    @Inject lateinit var musicLinks: tf.monochrome.android.data.repository.MusicLinksRepository
+    @Inject lateinit var spectrumAnalyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap
 
     /** Set once the onboarding flag has been read; releases the splash screen. */
     @Volatile private var onboardingGateLoaded = false
@@ -197,6 +200,28 @@ class MainActivity : ComponentActivity() {
             val appTvNow = remember(appTvStored) {
                 { tf.monochrome.android.ui.glyph.AppTvLive.tuning ?: appTvStored.value }
             }
+            // The app's own music links: the UI panels' glass (the mini player,
+            // the tab bar, every pane) and the CRT effect, which are on every
+            // screen. It holds the analyser only while one of those is linked;
+            // the player's driver runs the lyrics and its own controls, and
+            // reads through to this one for the rest.
+            // The link open in an editor runs here too, so the CRT moves with it.
+            val runningLinks by musicLinks.previewVisualLinks.collectAsStateWithLifecycle(initialValue = emptyList())
+            val appLinks = remember(runningLinks) {
+                runningLinks.filter { it.target.startsWith("panels.") || it.target.startsWith("tv.") }
+            }
+            val linkDelayMs by remember { preferences.lyricsFx.map { it.bluetoothDelayMs } }
+                .collectAsStateWithLifecycle(initialValue = 0f)
+            val appLive = tf.monochrome.android.ui.player.rememberVisualLinkDriver(
+                tap = spectrumAnalyzer,
+                links = appLinks,
+                active = true,
+                delayMs = linkDelayMs,
+            )
+            // What the CRT shader draws: the tuning with its linked settings
+            // live, read in the shader's layer block. Touches are mapped through
+            // appTvNow, the tuning as set: a link never moves where a tap lands.
+            val appTvDrawn = remember(appTvNow, appLive) { { appLive.tv(appTvNow()) } }
             val immersiveFullScreen by preferences.immersiveFullScreen
                 .collectAsStateWithLifecycle(initialValue = false)
             // The user's manual low-performance overrides, from Settings ›
@@ -305,8 +330,8 @@ class MainActivity : ComponentActivity() {
                     val tvRuns = tf.monochrome.android.ui.glyph.appTvShaderRuns(appTvShader)
                     // Over every screen, or handed to the lyric view alone.
                     val appTv = tvRuns && !appTvOnLyrics
-                    val lyricsTv = remember(tvRuns, appTvOnLyrics, appTvShader, appTvNow) {
-                        if (tvRuns && appTvOnLyrics) tf.monochrome.android.ui.glyph.LyricsTv(appTvShader, appTvNow) else null
+                    val lyricsTv = remember(tvRuns, appTvOnLyrics, appTvShader, appTvDrawn) {
+                        if (tvRuns && appTvOnLyrics) tf.monochrome.android.ui.glyph.LyricsTv(appTvShader, appTvDrawn) else null
                     }
                     SideEffect {
                         appTube = if (appTv) appTvNow else null
@@ -323,13 +348,14 @@ class MainActivity : ComponentActivity() {
                                 val at = it.positionInWindow()
                                 appTubeBounds.set(at.x, at.y, at.x + it.size.width, at.y + it.size.height)
                             }
-                            .then(if (appTv) Modifier.tvShader(appTvShader, tv = appTvNow) else Modifier),
+                            .then(if (appTv) Modifier.tvShader(appTvShader, tv = appTvDrawn) else Modifier),
                         color = MaterialTheme.colorScheme.background
                     ) {
                         CompositionLocalProvider(
                             tf.monochrome.android.ui.glyph.LocalAppTvShader provides appTv,
                             tf.monochrome.android.ui.glyph.LocalLyricsTv provides lyricsTv,
                             tf.monochrome.android.ui.glyph.LocalAppTube provides (if (appTv) appTvNow else null),
+                            tf.monochrome.android.ui.player.LocalVisualLinks provides appLive,
                         ) {
                             // First-run gate. null = flag not read yet (splash is
                             // still covering); false = wizard; true = main app.

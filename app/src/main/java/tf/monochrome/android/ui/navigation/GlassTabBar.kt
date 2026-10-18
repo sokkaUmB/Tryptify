@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.navigation
 
+import tf.monochrome.android.ui.player.glassFrost
 import android.os.Build
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -195,19 +196,10 @@ internal fun GlassTabBar(
                 )
             } else if (hazeState != null && profile.allowHazeBlur && glass.hazeBlurDp > 0f) {
                 val frostBg = MaterialTheme.colorScheme.background
-                val frostTint = playerFrostTint(glass, isDark = frostBg.luminance() <= 0.5f)
                 Box(
                     Modifier
                         .matchParentSize()
-                        .hazeEffect(
-                            state = hazeState,
-                            style = HazeStyle(
-                                backgroundColor = frostBg,
-                                blurRadius = glass.hazeBlurDp.dp,
-                                tints = listOf(HazeTint(frostTint)),
-                                noiseFactor = 0f,
-                            ),
-                        ),
+                        .glassFrost(state = hazeState, glass = glass, ground = frostBg),
                 )
             }
 

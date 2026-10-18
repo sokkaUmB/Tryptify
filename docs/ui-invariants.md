@@ -490,6 +490,38 @@ haze source, never a dialog or a `ModalBottomSheet` (see Glass). The live
 reach and position on a slider or knob are drawn in the draw phase from
 `MusicLinkHost.liveValue`; they redraw the control and recompose nothing.
 
+Every Studio tab links, not only Lyrics. A key's prefix is the part of the app
+that draws it (`LinkArea`): `lyrics.`, `player.` (the play disc, chevrons and
+dock), `panels.` (the mini player, tab bar and every pane), `tv.` (the CRT
+effect) and `visualizer.` (the ambient visualizer). Three drivers run them,
+each where its renderer lives:
+
+- The app's own, in `MainActivity`: `panels.` and `tv.`, which are on every
+  screen. It reads `MusicLinksRepository.previewVisualLinks`, so the link open
+  in an editor runs there too and the CRT moves while it is shaped.
+- The player's, in `MainPlayerRoute`: `player.`, `lyrics.` while the lyrics
+  show, `visualizer.` while the ambient visualizer is the background. Its
+  `parent` is the app's driver, so `LocalVisualLinks` there has both.
+- The Studio's, over the whole screen: every saved link plus the draft, for
+  its previews.
+
+Which glass a renderer is drawing is `LocalGlassArea` (PLAYER inside the player
+route and the Player tab's preview, PANELS everywhere else). Glass reads its
+live values with `links.glass(base, area)` in its layer and draw blocks, and the
+haze frost goes through `Modifier.glassFrost`, whose `hazeEffect` block re-reads
+the blur and tint each frame. Never build a `HazeStyle` from the glass settings
+in composition: the blur would ignore its link.
+
+The CRT effect draws `appLive.tv(tuning)`, but touches are still mapped through
+the tuning as set (`appTvNow`), and the curve and tilt cannot be linked: a tube
+bending with the beat would move where taps land. The ambient visualizer's
+render thread is handed its live opacity and black point (`updateLive`), NaN
+meaning "as saved", since it is a GL thread that cannot read Compose state.
+
+What a link may not move, and why, is the list in `VisualLinkTarget`'s doc.
+`VisualLinkTargetsTest` holds every target to a ♪ in the Studio's source and
+every ♪ to a target, and checks each one moves its own setting and no other.
+
 ### Text on glass
 
 **Text on glass follows the glass, not the theme** (`GlassInkScope`). Every pane

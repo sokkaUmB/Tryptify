@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.mixer
 
+import tf.monochrome.android.ui.player.glassFrost
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -253,18 +254,10 @@ fun FLChannelStrip(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .hazeEffect(
-                            state = hazeState,
-                            style = HazeStyle(
-                                backgroundColor = frostBg,
-                                blurRadius = glass.hazeBlurDp.dp,
-                                // The app's one frost recipe, scaled by the
-                                // listener's Backdrop tint. Thin on purpose:
-                                // most of what reads through should be the art.
-                                tints = listOf(HazeTint(playerFrostTint(glass, isDark))),
-                                noiseFactor = 0f,
-                            )
-                        )
+                        // The app's one frost recipe, scaled by the listener's
+                        // Backdrop tint. Thin on purpose: most of what reads
+                        // through should be the art.
+                        .glassFrost(state = hazeState, glass = glass, ground = frostBg, isDark = isDark)
                 )
             }
             Canvas(

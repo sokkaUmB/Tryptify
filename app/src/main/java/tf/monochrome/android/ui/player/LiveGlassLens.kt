@@ -134,12 +134,16 @@ internal fun Modifier.liveGlassLens(
     // "recording now" flag is only up during the source's own recording, so
     // a source caught once is left out for good.
     val inside = remember { java.util.Collections.newSetFromMap(java.util.WeakHashMap<HazeArea, Boolean>()) }
+    // Music links move this pane's blur and bend in the draw block alone.
+    val links = LocalVisualLinks.current
+    val area = LocalGlassArea.current
     return this
         .onGloballyPositioned { anchor.screen = it.positionOnScreen() }
         .clip(shape)
         .drawBehind {
             redraw.intValue
             if (size.minDimension <= 0f) return@drawBehind
+            val glass = links.glass(glass, area)
             // See LIVE_LENS_BLUR_SHARE for why a fifth. The slider is the only
             // say: 0 is crisp, unblurred refraction. A 6dp floor was tried and
             // taken out on device — at 0 the listener wants clear glass.

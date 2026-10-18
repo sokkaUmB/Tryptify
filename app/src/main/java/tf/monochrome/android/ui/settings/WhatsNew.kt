@@ -144,7 +144,7 @@ object WhatsNew {
                     kind = WhatsNewKind.NEW,
                     section = MUSIC_LINKS,
                     title = "Effects that move with the music",
-                    body = "Any god ray, glow, glass, wave or shadow setting in Player Visuals Studio can follow the kick, vocals, snare, hi-hats or a range you pick. Tap the ♪ beside a slider, or press and hold it, and choose Move with the music.",
+                    body = "Sliders on every tab of Player Visuals Studio, the CRT effect's too, can follow the kick, vocals, snare, hi-hats or a range you pick. Tap the ♪ beside a slider, or press and hold it, and choose Move with the music.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,

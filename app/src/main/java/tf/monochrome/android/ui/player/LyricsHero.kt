@@ -471,8 +471,10 @@ internal fun SyncedLyricsView(
     // No curve of their own while the CRT effect bows the whole app: the
     // tube bends the lyrics already (appTubeCurved).
     val appCurved = tf.monochrome.android.ui.glyph.appTubeCurved()
-    val curveTop = if (appCurved) 0f else fx.curvatureDeg
-    val curveSide = if (appCurved) 0f else fx.effectiveCurvatureSideDeg
+    // Read in the curve's layer, so a music link on either angle bends it live.
+    val curveLinks = LocalVisualLinks.current
+    val curveTop = { if (appCurved) 0f else curveLinks.lyrics(fx).curvatureDeg }
+    val curveSide = { if (appCurved) 0f else curveLinks.lyrics(fx).effectiveCurvatureSideDeg }
     // The curve over the sung line or the sung word alone (Lyrics FX › Curve).
     val curveTarget = if (fx.curved && !appCurved) fx.curvatureTarget else LyricsFxSettings.CURVE_ALL
     // The sung word is tracked for whichever of the two follows it.
@@ -1328,6 +1330,7 @@ private fun Letter3DText(
 internal fun UnsyncedLyricsView(lines: List<LyricLine>) {
     LaunchedEffect(lines) { LyricsDebug.log("unsynced lyrics loaded: ${lines.size} lines (no timing)") }
     val fx = LocalLyricsFx.current
+    val curveLinks = LocalVisualLinks.current
     val style = MaterialTheme.typography.bodyLarge.withLyricFont(rememberLyricFontFamily(fx))
     val sidePadding = 28.dp
     // Flat while the CRT effect bows the whole app (appTubeCurved).
@@ -1345,8 +1348,8 @@ internal fun UnsyncedLyricsView(lines: List<LyricLine>) {
                 .then(
                     if (fx.curvatureTarget == LyricsFxSettings.CURVE_ALL) {
                         Modifier.lyricCurvature(
-                            if (appCurved) 0f else fx.curvatureDeg,
-                            if (appCurved) 0f else fx.effectiveCurvatureSideDeg,
+                            { if (appCurved) 0f else curveLinks.lyrics(fx).curvatureDeg },
+                            { if (appCurved) 0f else curveLinks.lyrics(fx).effectiveCurvatureSideDeg },
                         )
                     } else {
                         Modifier

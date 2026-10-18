@@ -1,13 +1,20 @@
 package tf.monochrome.android.ui.settings
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
@@ -19,6 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -28,6 +38,9 @@ import tf.monochrome.android.glyph.engine.GlyphTvShader
 import tf.monochrome.android.glyph.engine.GlyphTvTuning
 import tf.monochrome.android.ui.glyph.AppTvLive
 import tf.monochrome.android.ui.glyph.appTvShaderRuns
+import tf.monochrome.android.ui.musiclinks.LinkedTrackMarker
+import tf.monochrome.android.ui.musiclinks.LocalMusicLinkHost
+import tf.monochrome.android.ui.musiclinks.musicLinkColor
 import kotlin.math.roundToInt
 
 /**
@@ -190,6 +203,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             value = tv.strength,
             default = TV_DEFAULTS.strength,
             onChange = { drag(tv.copy(strength = it)) },
+            linkKey = "tv.strength",
             onDone = commit,
         )
         CrtSlider(
@@ -200,6 +214,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             range = GlyphTvTuning.MIN_BRIGHTNESS..
                 GlyphTvTuning.MAX_BRIGHTNESS,
             onChange = { drag(tv.copy(brightness = it)) },
+            linkKey = "tv.brightness",
             onDone = commit,
         )
         if (shader == GlyphTvShader.CRT) {
@@ -209,6 +224,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
                 value = tv.scanlines,
                 default = TV_DEFAULTS.scanlines,
                 onChange = { drag(tv.copy(scanlines = it)) },
+                linkKey = "tv.scanlines",
                 onDone = commit,
             )
             CrtSlider(
@@ -217,6 +233,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
                 value = tv.mask,
                 default = TV_DEFAULTS.mask,
                 onChange = { drag(tv.copy(mask = it)) },
+                linkKey = "tv.mask",
                 onDone = commit,
             )
             CrtSlider(
@@ -225,6 +242,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
                 value = tv.glow,
                 default = TV_DEFAULTS.glow,
                 onChange = { drag(tv.copy(glow = it)) },
+                linkKey = "tv.glow",
                 onDone = commit,
             )
             CrtSlider(
@@ -233,6 +251,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
                 value = tv.sharpness,
                 default = TV_DEFAULTS.sharpness,
                 onChange = { drag(tv.copy(sharpness = it)) },
+                linkKey = "tv.sharpness",
                 onDone = commit,
             )
         }
@@ -242,6 +261,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             value = tv.chromatic,
             default = TV_DEFAULTS.chromatic,
             onChange = { drag(tv.copy(chromatic = it)) },
+            linkKey = "tv.chromatic",
             onDone = commit,
         )
         if (shader == GlyphTvShader.ROYALE) {
@@ -291,6 +311,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             value = tv.bezel,
             default = TV_DEFAULTS.bezel,
             onChange = { drag(tv.copy(bezel = it)) },
+            linkKey = "tv.bezel",
             onDone = commit,
         )
         CrtSlider(
@@ -299,6 +320,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             value = tv.corners,
             default = TV_DEFAULTS.corners,
             onChange = { drag(tv.copy(corners = it)) },
+            linkKey = "tv.corners",
             onDone = commit,
         )
         CrtSlider(
@@ -307,6 +329,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             value = tv.vignette,
             default = TV_DEFAULTS.vignette,
             onChange = { drag(tv.copy(vignette = it)) },
+            linkKey = "tv.vignette",
             onDone = commit,
         )
         CrtSlider(
@@ -315,6 +338,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             value = tv.glare,
             default = TV_DEFAULTS.glare,
             onChange = { drag(tv.copy(glare = it)) },
+            linkKey = "tv.glare",
             onDone = commit,
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -397,6 +421,7 @@ private fun RoyaleSliders(
         value = tv.royaleMaskStrength,
         default = TV_DEFAULTS.royaleMaskStrength,
         onChange = { drag(tv.copy(royaleMaskStrength = it)) },
+        linkKey = "tv.royaleMaskStrength",
         onDone = commit,
     )
     CrtSlider(
@@ -405,6 +430,7 @@ private fun RoyaleSliders(
         value = tv.royaleBeamWidth,
         default = TV_DEFAULTS.royaleBeamWidth,
         onChange = { drag(tv.copy(royaleBeamWidth = it)) },
+        linkKey = "tv.royaleBeamWidth",
         onDone = commit,
     )
     CrtSlider(
@@ -413,6 +439,7 @@ private fun RoyaleSliders(
         value = tv.royaleBeamShape,
         default = TV_DEFAULTS.royaleBeamShape,
         onChange = { drag(tv.copy(royaleBeamShape = it)) },
+        linkKey = "tv.royaleBeamShape",
         onDone = commit,
     )
     CrtSlider(
@@ -421,6 +448,7 @@ private fun RoyaleSliders(
         value = tv.royaleHalation,
         default = TV_DEFAULTS.royaleHalation,
         onChange = { drag(tv.copy(royaleHalation = it)) },
+        linkKey = "tv.royaleHalation",
         onDone = commit,
     )
     CrtSlider(
@@ -429,6 +457,7 @@ private fun RoyaleSliders(
         value = tv.royaleDiffusion,
         default = TV_DEFAULTS.royaleDiffusion,
         onChange = { drag(tv.copy(royaleDiffusion = it)) },
+        linkKey = "tv.royaleDiffusion",
         onDone = commit,
     )
     CrtSlider(
@@ -437,6 +466,7 @@ private fun RoyaleSliders(
         value = tv.royaleBloom,
         default = TV_DEFAULTS.royaleBloom,
         onChange = { drag(tv.copy(royaleBloom = it)) },
+        linkKey = "tv.royaleBloom",
         onDone = commit,
     )
     CrtSlider(
@@ -445,11 +475,13 @@ private fun RoyaleSliders(
         value = tv.royaleBorder,
         default = TV_DEFAULTS.royaleBorder,
         onChange = { drag(tv.copy(royaleBorder = it)) },
+        linkKey = "tv.royaleBorder",
         onDone = commit,
     )
 }
 
 /** One of [CrtSliders]: its label, a line on what it does, and the slider, moving the app as it is dragged. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CrtSlider(
     label: String,
@@ -461,20 +493,57 @@ private fun CrtSlider(
     steps: Int = 0,
     /** What the reset beside the label puts this slider back to. */
     default: Float? = null,
+    /**
+     * The music link key ("tv.strength"), as on the Studio's own sliders: a
+     * note beside the label, green while linked, and a press and hold on the
+     * label opens the link sheet. Only where a [LocalMusicLinkHost] is
+     * provided, which Settings does not.
+     */
+    linkKey: String? = null,
 ) {
+    val linkHost = if (linkKey != null) LocalMusicLinkHost.current else null
+    val linked = linkHost != null && linkKey != null && linkHost.isLinked(linkKey)
+    val moveLabel = stringResource(R.string.music_link_move_with_music)
     Spacer(modifier = Modifier.height(8.dp))
     androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Text(
             label,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .then(
+                    if (linkHost != null && linkKey != null) {
+                        Modifier
+                            .combinedClickable(
+                                onClick = {},
+                                onLongClickLabel = moveLabel,
+                                onLongClick = { linkHost.open(linkKey) },
+                            )
+                            .semantics {
+                                customActions = listOf(CustomAccessibilityAction(moveLabel) { linkHost.open(linkKey); true })
+                            }
+                    } else {
+                        Modifier
+                    },
+                ),
         )
         if (default != null) {
             tf.monochrome.android.ui.settings.crt.SliderReset(value, default, label) {
                 onChange(default)
                 onDone()
             }
+        }
+        if (linkHost != null && linkKey != null) {
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = moveLabel,
+                tint = if (linked) musicLinkColor() else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                modifier = Modifier
+                    .clickable(onClickLabel = moveLabel) { linkHost.open(linkKey) }
+                    .padding(6.dp)
+                    .size(18.dp),
+            )
         }
     }
     if (subtitle != null) {
@@ -488,6 +557,10 @@ private fun CrtSlider(
         steps = steps,
         modifier = Modifier.fillMaxWidth(),
     )
+    if (linked && linkHost != null && linkKey != null) {
+        // The link's reach along the track, and where the music has it now.
+        LinkedTrackMarker(linkKey, linkHost, range.start, range.endInclusive)
+    }
 }
 
 /** Every CRT slider's default, for its reset: the CRT effect's own default look. */

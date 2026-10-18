@@ -1,5 +1,10 @@
 package tf.monochrome.android.ui.player
 
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -110,12 +115,7 @@ fun PlayerTransportControls(
             // octagon on some GPUs; a blurred circle stays perfectly round.
             // Depth = darkness, softness = blur radius + offset, tint = black ->
             // accent glow (all tunable in the Studio).
-            GlassDropShadow(
-                color = androidx.compose.ui.graphics.lerp(Color.Black, tint, glass.shadowTint)
-                    .copy(alpha = 0.28f + 0.55f * glass.shadowDepth),
-                softness = glass.shadowSoftness,
-                depth = glass.shadowDepth,
-            )
+            GlassDropShadow(glass = glass, tint = tint)
             // Play triangle <-> pause bars as one shape that bends between them,
             // rather than two glyphs swapped on the frame the state flips. The
             // disc is the only control on the player that changes shape, and a
@@ -447,22 +447,39 @@ private const val COINCIDENT = 0.01f
  */
 @Composable
 internal fun BoxScope.GlassDropShadow(
-    color: Color,
-    softness: Float,
-    depth: Float,
+    glass: tf.monochrome.android.domain.model.PlayerGlassSettings,
+    tint: Color,
     shape: Shape = CircleShape,
 ) {
+    // Depth, softness and tint are read in the layer and draw blocks, from the
+    // glass as the music links have it this frame: a linked shadow breathes
+    // with the song and recomposes nothing.
+    val links = LocalVisualLinks.current
+    val area = LocalGlassArea.current
     Box(
         modifier = Modifier
             .matchParentSize()
-            .graphicsLayer { translationY = (2f + depth * 6f).dp.toPx() }
-            .blur(
-                radius = (5f + softness * 22f).dp,
-                edgeTreatment = BlurredEdgeTreatment.Unbounded,
-            )
-            .background(color, shape),
+            .graphicsLayer {
+                val g = links.glass(glass, area)
+                translationY = (2f + g.shadowDepth * 6f).dp.toPx()
+                // As Modifier.blur with an unbounded edge: a decal blur, unclipped.
+                val r = (5f + g.shadowSoftness * 22f).dp.toPx()
+                renderEffect = BlurEffect(r, r, TileMode.Decal)
+                clip = false
+            }
+            .drawBehind {
+                val g = links.glass(glass, area)
+                drawOutline(
+                    shape.createOutline(size, layoutDirection, this),
+                    shadowColour(g, tint),
+                )
+            },
     )
 }
+
+/** The glass's drop shadow colour: black toward [tint] by its Shadow tint, as dark as its depth. */
+internal fun shadowColour(g: tf.monochrome.android.domain.model.PlayerGlassSettings, tint: Color): Color =
+    androidx.compose.ui.graphics.lerp(Color.Black, tint, g.shadowTint).copy(alpha = 0.28f + 0.55f * g.shadowDepth)
 
 /**
  * The drop shadow under a glass bar — the mini player, the tab bar — from the
@@ -482,13 +499,7 @@ internal fun BoxScope.GlassBarShadow(
     shape: Shape,
 ) {
     if (glass.shadowDepth <= 0.01f) return
-    GlassDropShadow(
-        color = androidx.compose.ui.graphics.lerp(Color.Black, tint, glass.shadowTint)
-            .copy(alpha = 0.28f + 0.55f * glass.shadowDepth),
-        softness = glass.shadowSoftness,
-        depth = glass.shadowDepth,
-        shape = shape,
-    )
+    GlassDropShadow(glass = glass, tint = tint, shape = shape)
 }
 
 @Composable
@@ -543,19 +554,26 @@ internal fun TransportIcon(
         // (a circle shadow can't fit a triangle/arrow). Tracks the Studio's
         // shadow depth / softness / tint, matching the play button.
         if (glass.enabled) {
-            val shadowColor = androidx.compose.ui.graphics.lerp(Color.Black, tint, glass.shadowTint)
-                .copy(alpha = 0.30f + 0.5f * glass.shadowDepth)
-            Icon(
-                painter = painter,
-                contentDescription = null,
-                modifier = Modifier
+            // The glyph drawn here rather than by an Icon, so its colour, drop
+            // and blur can follow the music links in draw.
+            val links = LocalVisualLinks.current
+            val area = LocalGlassArea.current
+            Box(
+                Modifier
                     .requiredSize(size)
-                    .graphicsLayer { translationY = (1.5f + glass.shadowDepth * 4f).dp.toPx() }
-                    .blur(
-                        radius = (2f + glass.shadowSoftness * 12f).dp,
-                        edgeTreatment = BlurredEdgeTreatment.Unbounded,
-                    ),
-                tint = shadowColor,
+                    .graphicsLayer {
+                        val g = links.glass(glass, area)
+                        translationY = (1.5f + g.shadowDepth * 4f).dp.toPx()
+                        val r = (2f + g.shadowSoftness * 12f).dp.toPx()
+                        renderEffect = BlurEffect(r, r, TileMode.Decal)
+                        clip = false
+                    }
+                    .drawBehind {
+                        val g = links.glass(glass, area)
+                        val colour = androidx.compose.ui.graphics.lerp(Color.Black, tint, g.shadowTint)
+                            .copy(alpha = 0.30f + 0.5f * g.shadowDepth)
+                        with(painter) { draw(this@drawBehind.size, colorFilter = ColorFilter.tint(colour)) }
+                    },
             )
         }
         Icon(

@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.player
 
+import tf.monochrome.android.domain.model.LinkArea
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
@@ -743,6 +744,7 @@ fun MainPlayerScreen(
             // composed sheet is SKIPPED on every position tick during playback.
             androidx.compose.runtime.CompositionLocalProvider(
                 LocalPlayerGlass provides miniGlass,
+                LocalGlassArea provides LinkArea.PANELS,
             ) {
             StatusOverlayPanel(
                 accent = accent,
@@ -951,19 +953,10 @@ private fun StatusOverlayPanel(
         if (useGlass && hazeState != null && profile.allowHazeBlur && g.hazeBlurDp > 0f) {
             val frostBg = LocalPlayerGlassGround.current
             val isDark = frostBg.luminance() <= 0.5f
-            val frostTint = playerFrostTint(g, isDark)
             androidx.compose.foundation.layout.Box(
                 Modifier
                     .matchParentSize()
-                    .hazeEffect(
-                        state = hazeState,
-                        style = HazeStyle(
-                            backgroundColor = frostBg,
-                            blurRadius = g.hazeBlurDp.dp,
-                            tints = listOf(HazeTint(frostTint)),
-                            noiseFactor = 0f,
-                        ),
-                    )
+                    .glassFrost(state = hazeState, glass = g, ground = frostBg, isDark = isDark)
             )
         }
         if (useGlass) {

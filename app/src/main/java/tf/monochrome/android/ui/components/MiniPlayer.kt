@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.components
 
+import tf.monochrome.android.ui.player.glassFrost
 import android.os.Build
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
@@ -512,19 +513,10 @@ private fun BoxScope.MiniBarBackdrop(
     } else if (hazeState != null && profile.allowHazeBlur && glass.hazeBlurDp > 0f) {
         val frostBg = MaterialTheme.colorScheme.background
         val isDark = frostBg.luminance() <= 0.5f
-        val frostTint = playerFrostTint(glass, isDark)
         Box(
             Modifier
                 .matchParentSize()
-                .hazeEffect(
-                    state = hazeState,
-                    style = HazeStyle(
-                        backgroundColor = frostBg,
-                        blurRadius = glass.hazeBlurDp.dp,
-                        tints = listOf(HazeTint(frostTint)),
-                        noiseFactor = 0f,
-                    ),
-                )
+                .glassFrost(state = hazeState, glass = glass, ground = frostBg, isDark = isDark)
         )
     }
 }

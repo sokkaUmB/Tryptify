@@ -2207,6 +2207,32 @@ music_link_needs_bass	Turn up Bass reaction to see this move.	调高“低音反
 music_link_needs_glass	Turn on Liquid glass to see this move.	开启液态玻璃后才能看到它变化。	「リキッドグラス」をオンにすると動きが見えます。	Activez le verre liquide pour voir ce réglage bouger.	Activa el cristal líquido para verlo moverse.	Bunun hareket ettiğini görmek için sıvı camı açın.	Schalte „Liquid Glass“ ein, um die Bewegung zu sehen.
 music_link_needs_wave	Give the letters some tilt to see this move.	为文字设置一些倾斜后才能看到它变化。	文字に傾きを付けると動きが見えます。	Donnez de l’inclinaison aux lettres pour voir ce réglage bouger.	Dale algo de inclinación a las letras para verlo moverse.	Bunun hareket ettiğini görmek için harflere biraz eğim verin.	Gib den Buchstaben etwas Neigung, um die Bewegung zu sehen.
 music_link_needs_shadow	Give the lyrics some shadow depth to see this move.	为歌词设置一些阴影深度后才能看到它变化。	歌詞に影の深さを付けると動きが見えます。	Donnez de la profondeur d’ombre aux paroles pour voir ce réglage bouger.	Dale algo de profundidad de sombra a la letra para verla moverse.	Bunun hareket ettiğini görmek için şarkı sözlerine biraz gölge derinliği verin.	Gib dem Songtext etwas Schattentiefe, um die Bewegung zu sehen.
+music_link_needs_player_glass	Turn on Liquid glass on the Player tab to see this move.	在“播放器”标签页开启液态玻璃后才能看到它变化。	「プレーヤー」タブで「リキッドグラス」をオンにすると動きが見えます。	Activez le verre liquide dans l’onglet Lecteur pour voir ce réglage bouger.	Activa el cristal líquido en la pestaña Reproductor para verlo moverse.	Bunun hareket ettiğini görmek için Oynatıcı sekmesinde sıvı camı açın.	Schalte im Tab „Player“ „Liquid Glass“ ein, um die Bewegung zu sehen.
+music_link_needs_panels_glass	Turn on Liquid glass on the UI panels tab to see this move.	在“界面面板”标签页开启液态玻璃后才能看到它变化。	「UI パネル」タブで「リキッドグラス」をオンにすると動きが見えます。	Activez le verre liquide dans l’onglet Panneaux de l’interface pour voir ce réglage bouger.	Activa el cristal líquido en la pestaña Paneles de la interfaz para verlo moverse.	Bunun hareket ettiğini görmek için Arayüz panelleri sekmesinde sıvı camı açın.	Schalte im Tab „UI-Panels“ „Liquid Glass“ ein, um die Bewegung zu sehen.
+music_link_needs_backdrop	Give this glass some backdrop blur to see this move.	为这块玻璃设置一些背景模糊后才能看到它变化。	このガラスに背景のぼかしを付けると動きが見えます。	Donnez du flou d’arrière-plan à ce verre pour voir ce réglage bouger.	Dale algo de desenfoque del fondo a este cristal para verlo moverse.	Bunun hareket ettiğini görmek için bu cama biraz arka plan bulanıklığı verin.	Gib diesem Glas etwas Hintergrund-Unschärfe, um die Bewegung zu sehen.
+music_link_needs_glass_shadow	Give this glass some shadow depth to see this move.	为这块玻璃设置一些阴影深度后才能看到它变化。	このガラスに影の深さを付けると動きが見えます。	Donnez de la profondeur d’ombre à ce verre pour voir ce réglage bouger.	Dale algo de profundidad de sombra a este cristal para verlo moverse.	Bunun hareket ettiğini görmek için bu cama biraz gölge derinliği verin.	Gib diesem Glas etwas Schattentiefe, um die Bewegung zu sehen.
+music_link_needs_crt	Turn on the CRT effect to see this move.	开启 CRT 效果后才能看到它变化。	「CRT エフェクト」をオンにすると動きが見えます。	Activez l’effet CRT pour voir ce réglage bouger.	Activa el efecto CRT para verlo moverse.	Bunun hareket ettiğini görmek için CRT efektini açın.	Schalte den CRT-Effekt ein, um die Bewegung zu sehen.
+music_link_needs_crt_look	Only the CRT look has this. Choose it to see this move.	只有 CRT 外观有这项设置。选择它后才能看到它变化。	この設定は CRT の見た目だけにあります。選ぶと動きが見えます。	Seul le rendu CRT a ce réglage. Choisissez-le pour le voir bouger.	Solo el aspecto CRT tiene este ajuste. Elígelo para verlo moverse.	Bu ayar yalnızca CRT görünümünde var. Hareket ettiğini görmek için onu seçin.	Nur der CRT-Look hat diese Einstellung. Wähle ihn, um die Bewegung zu sehen.
+music_link_needs_royale_look	Only the CRT-Royale look has this. Choose it to see this move.	只有 CRT-Royale 外观有这项设置。选择它后才能看到它变化。	この設定は CRT-Royale の見た目だけにあります。選ぶと動きが見えます。	Seul le rendu CRT-Royale a ce réglage. Choisissez-le pour le voir bouger.	Solo el aspecto CRT-Royale tiene este ajuste. Elígelo para verlo moverse.	Bu ayar yalnızca CRT-Royale görünümünde var. Hareket ettiğini görmek için onu seçin.	Nur der CRT-Royale-Look hat diese Einstellung. Wähle ihn, um die Bewegung zu sehen.
+music_link_needs_ambient	Turn on the ambient visualizer to see this move.	开启氛围可视化后才能看到它变化。	「アンビエント ビジュアライザ」をオンにすると動きが見えます。	Activez le visualiseur d’ambiance pour voir ce réglage bouger.	Activa el visualizador ambiental para verlo moverse.	Bunun hareket ettiğini görmek için ortam görselleştiricisini açın.	Schalte den Ambient-Visualizer ein, um die Bewegung zu sehen.
+music_link_tv_strength	Strength	强度	強さ	Intensité	Intensidad	Güç	Stärke
+music_link_tv_brightness	Brightness	亮度	明るさ	Luminosité	Brillo	Parlaklık	Helligkeit
+music_link_tv_scanlines	Scanlines	扫描线	走査線	Lignes de balayage	Líneas de escaneo	Tarama çizgileri	Scanlines
+music_link_tv_mask	Mask	荫罩	マスク	Masque	Máscara	Maske	Maske
+music_link_tv_glow	Glow	辉光	グロー	Lueur	Resplandor	Parıltı	Leuchten
+music_link_tv_sharpness	Sharpness	锐度	シャープさ	Netteté	Nitidez	Keskinlik	Schärfe
+music_link_tv_chromatic	Chromatic shift	色偏	色ずれ	Décalage chromatique	Desfase cromático	Renk kayması	Farbversatz
+music_link_tv_bezel	Bezel	边框	ベゼル	Cadre	Marco	Çerçeve	Rahmen
+music_link_tv_corners	Rounded corners	圆角	角の丸み	Coins arrondis	Esquinas redondeadas	Yuvarlak köşeler	Runde Ecken
+music_link_tv_vignette	Vignette	暗角	ビネット	Vignettage	Viñeta	Vinyet	Vignette
+music_link_tv_glare	Glass glare	玻璃反光	ガラスの反射	Reflet sur le verre	Reflejo del cristal	Cam parlaması	Glasspiegelung
+music_link_tv_mask_strength	Mask strength	荫罩强度	マスクの強さ	Force du masque	Fuerza de máscara	Maske gücü	Maskenstärke
+music_link_tv_beam_width	Beam width	电子束宽度	ビーム幅	Largeur du faisceau	Ancho del haz	Işın genişliği	Strahlbreite
+music_link_tv_beam_shape	Beam shape	电子束形状	ビーム形状	Forme du faisceau	Forma del haz	Işın şekli	Strahlform
+music_link_tv_halation	Halation	光晕	ハレーション	Halo	Halación	Halasyon	Halation
+music_link_tv_diffusion	Diffusion	漫射	拡散	Diffusion	Difusión	Dağılım	Diffusion
+music_link_tv_bloom	Bloom	泛光	ブルーム	Bloom	Resplandor	Parlama	Bloom
+music_link_tv_edge	Edge shade	边缘阴影	縁の影	Ombre du bord	Sombra del borde	Kenar gölgesi	Randschatten
 music_link_removed	Removed the link for %1$s.	已移除“%1$s”的联动。	「%1$s」のリンクを削除しました。	Lien de « %1$s » retiré.	Se quitó el enlace de “%1$s”.	“%1$s” bağlantısı kaldırıldı.	Kopplung für „%1$s“ entfernt.
 music_link_undo	Undo	撤销	元に戻す	Annuler	Deshacer	Geri al	Rückgängig
 music_link_start	Start moving	开始联动	動かし始める	Lancer	Empezar	Başlat	Starten

@@ -13,12 +13,16 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.flow.first
 import tf.monochrome.android.audio.eq.SpectrumAnalyzerTap
+import tf.monochrome.android.domain.model.LinkArea
 import tf.monochrome.android.domain.model.LinkShape
 import tf.monochrome.android.domain.model.LyricsFxSettings
+import tf.monochrome.android.domain.model.PlayerGlassSettings
 import tf.monochrome.android.domain.model.MusicLinkFollower
 import tf.monochrome.android.domain.model.VisualLink
 import tf.monochrome.android.domain.model.VisualLinkTargets
+import tf.monochrome.android.glyph.engine.GlyphTvTuning
 import tf.monochrome.android.ui.theme.reduceMotion
+import tf.monochrome.android.visualizer.AmbientVisualizerSettings
 
 /**
  * This frame's values of every visual setting that follows the music.
@@ -34,9 +38,14 @@ import tf.monochrome.android.ui.theme.reduceMotion
  * The saved settings are never written. A link changes what is drawn, so a
  * preset, a theme pack and the Studio's sliders always hold the listener's own
  * values.
+ *
+ * A driver nested in another ([parent]) reads its parent's values for every
+ * setting it does not drive itself: the player's driver runs the lyrics and
+ * the player's controls, and the app's own (the UI panels and the CRT effect)
+ * keeps moving the panels inside the player as everywhere else.
  */
 @Stable
-class VisualLinkLive {
+class VisualLinkLive(private val parent: VisualLinkLive? = null) {
     /** Each linked setting's value this frame, keyed like [tf.monochrome.android.domain.model.VisualLinkTarget.key]. */
     var values: Map<String, Float> by mutableStateOf(emptyMap())
         internal set
@@ -49,23 +58,83 @@ class VisualLinkLive {
     var linkedKeys: Set<String> by mutableStateOf(emptySet())
         internal set
 
-    // One copy per frame, shared by every layer that asks: the per-letter
-    // wave alone asks once for every letter on the sung line.
-    private var cacheBase: LyricsFxSettings? = null
-    private var cacheValues: Map<String, Float>? = null
-    private var cacheOut: LyricsFxSettings? = null
+    private var mergedOwn: Map<String, Float>? = null
+    private var mergedUp: Map<String, Float>? = null
+    private var merged: Map<String, Float> = emptyMap()
+
+    /**
+     * This frame's values: this driver's own over its parent's. Snapshot
+     * state like [values]: read it only in a draw or layer block.
+     */
+    val current: Map<String, Float>
+        get() {
+            val own = values
+            val up = parent?.current ?: return own
+            if (up.isEmpty()) return own
+            if (own.isEmpty()) return up
+            if (mergedOwn === own && mergedUp === up) return merged
+            val out = HashMap<String, Float>(up.size + own.size)
+            out.putAll(up)
+            out.putAll(own)
+            mergedOwn = own
+            mergedUp = up
+            merged = out
+            return out
+        }
+
+    /** One copy per frame, shared by every layer that asks: the per-letter wave alone asks once a letter. */
+    private class FrameCache<T> {
+        var base: T? = null
+        var values: Map<String, Float>? = null
+        var out: T? = null
+
+        inline fun get(base: T, values: Map<String, Float>, make: () -> T): T {
+            val cached = out
+            if (cached != null && this.base === base && this.values === values) return cached
+            val made = make()
+            this.base = base
+            this.values = values
+            out = made
+            return made
+        }
+    }
+
+    private val lyricsCache = FrameCache<LyricsFxSettings>()
+    private val playerCache = FrameCache<PlayerGlassSettings>()
+    private val panelsCache = FrameCache<PlayerGlassSettings>()
+    private val tvCache = FrameCache<GlyphTvTuning>()
+    private val ambientCache = FrameCache<AmbientVisualizerSettings>()
 
     /** [base] with this frame's linked values in it. Call it from a draw or layer block. */
     fun lyrics(base: LyricsFxSettings): LyricsFxSettings {
-        val v = values
+        val v = current
         if (v.isEmpty()) return base
-        val cached = cacheOut
-        if (cached != null && cacheBase === base && cacheValues === v) return cached
-        val out = VisualLinkTargets.applyLyrics(base, v)
-        cacheBase = base
-        cacheValues = v
-        cacheOut = out
-        return out
+        return lyricsCache.get(base, v) { VisualLinkTargets.applyLyrics(base, v) }
+    }
+
+    /**
+     * [base] as [area]'s glass ([LinkArea.PLAYER] or [LinkArea.PANELS]) with
+     * this frame's linked values in it. Call it from a draw or layer block.
+     */
+    fun glass(base: PlayerGlassSettings, area: LinkArea): PlayerGlassSettings {
+        val v = current
+        if (v.isEmpty()) return base
+        val cache = if (area == LinkArea.PLAYER) playerCache else panelsCache
+        return cache.get(base, v) { VisualLinkTargets.applyGlass(base, area, v) }
+    }
+
+    /** The CRT effect's [base] tuning with this frame's linked values in it. Call it from a layer block. */
+    fun tv(base: GlyphTvTuning): GlyphTvTuning {
+        val v = current
+        if (v.isEmpty()) return base
+        return tvCache.get(base, v) { VisualLinkTargets.applyTv(base, v) }
+    }
+
+    /** [base] with the ambient visualizer's linked settings at this frame's values. */
+    fun ambient(base: AmbientVisualizerSettings): AmbientVisualizerSettings {
+        val v = current
+        if (v.isEmpty()) return base
+        return ambientCache.get(base, v) { VisualLinkTargets.applyAmbient(base, v) }
     }
 
     internal fun clear() {
@@ -81,6 +150,13 @@ class VisualLinkLive {
 
 /** The links driving what is drawn here; [VisualLinkLive.None] where nothing drives them. */
 val LocalVisualLinks = staticCompositionLocalOf { VisualLinkLive.None }
+
+/**
+ * Whose glass [LocalPlayerGlass] is here, for the links that move it: the
+ * player's own controls, or the UI panels' glass every other pane is made of.
+ * Provided beside every `LocalPlayerGlass provides`.
+ */
+val LocalGlassArea = staticCompositionLocalOf { LinkArea.PANELS }
 
 /**
  * A short history of a band's level, so the visuals can wait for the sound to
@@ -129,8 +205,10 @@ fun rememberVisualLinkDriver(
     links: List<VisualLink>,
     active: Boolean,
     delayMs: Float,
+    /** A wider driver whose values show through for every setting this one does not drive. */
+    parent: VisualLinkLive? = null,
 ): VisualLinkLive {
-    val live = remember { VisualLinkLive() }
+    val live = remember(parent) { VisualLinkLive(parent) }
     val running = remember(links) { links.filterNot { it.paused } }
     val on = active && tap != null && running.isNotEmpty() && !reduceMotion()
     val keys = remember(running, on) { if (on) running.map { it.target }.toSet() else emptySet() }

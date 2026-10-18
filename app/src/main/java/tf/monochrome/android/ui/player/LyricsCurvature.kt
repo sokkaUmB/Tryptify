@@ -44,6 +44,9 @@ import kotlin.math.cos
  *
  * Android 13 and later; flat below, and under [MIN_CURVATURE_DEG].
  *
+ * The angles are read in the layer block, each frame, so a music link on
+ * either bends the tube without recomposing anything.
+ *
  * The layer is there whatever the angles: flat, it draws with no effect.
  * It sits inside the letters' copy ([captureLetters]), and a layer put into
  * that chain while the lyrics are on screen (the slider leaving 0) made
@@ -54,8 +57,8 @@ import kotlin.math.cos
  * change while the app runs.
  */
 internal fun Modifier.lyricCurvature(
-    topDeg: Float,
-    sideDeg: Float,
+    topDeg: () -> Float,
+    sideDeg: () -> Float,
     focusInRoot: (() -> Rect?)? = null,
     wide: Boolean = false,
 ): Modifier =
@@ -78,14 +81,16 @@ internal fun Modifier.lyricCurvature(
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 private fun Modifier.curved(
     shader: RuntimeShader,
-    topDeg: Float,
-    sideDeg: Float,
+    topDeg: () -> Float,
+    sideDeg: () -> Float,
     focusInRoot: (() -> Rect?)?,
     origin: State<Offset>,
     wide: Boolean,
 ): Modifier =
     graphicsLayer {
-        if (size.width <= 0f || size.height <= 0f || maxOf(topDeg, sideDeg) < MIN_CURVATURE_DEG) {
+        val top = topDeg()
+        val side = sideDeg()
+        if (size.width <= 0f || size.height <= 0f || maxOf(top, side) < MIN_CURVATURE_DEG) {
             renderEffect = null
             return@graphicsLayer
         }
@@ -103,7 +108,7 @@ private fun Modifier.curved(
         shader.setFloatUniform("uCenter", dome.center.x, dome.center.y)
         shader.setFloatUniform("uRadii", dome.width / 2f, dome.height / 2f)
         shader.setFloatUniform("uLocal", if (focusInRoot == null) 0f else 1f)
-        shader.setFloatUniform("uWarp", crtWarp(sideDeg), crtWarp(topDeg))
+        shader.setFloatUniform("uWarp", crtWarp(side), crtWarp(top))
         renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
     }
 

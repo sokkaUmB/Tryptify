@@ -1,5 +1,8 @@
 package tf.monochrome.android.ui.components
 
+import tf.monochrome.android.ui.player.glassFrost
+import tf.monochrome.android.ui.player.LocalGlassArea
+import tf.monochrome.android.domain.model.LinkArea
 import android.os.Build
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -268,6 +271,12 @@ internal fun BoxScope.GlassMaterial(
     punchThrough: Boolean = false,
 ) {
     if (!shaderGlassFor(glass)) return
+    // Whose glass this pane is, for the music links that move it: the
+    // player's own when it is handed the player's glass inside the player
+    // (the status grid), the UI panels' everywhere else.
+    val area = if (
+        LocalGlassArea.current == LinkArea.PLAYER && glass == LocalPlayerGlass.current
+    ) LinkArea.PLAYER else LinkArea.PANELS
     val allowHaze = LocalPerformanceProfile.current.allowHazeBlur
     // Asked of this pane's own glass, not the screen's.
     val shaded = rememberLiquidGlassAvailable(glass)
@@ -286,42 +295,37 @@ internal fun BoxScope.GlassMaterial(
     if (liveLens && hazeState != null) {
         // The mini player's live lens, for the same reason this pane takes
         // its frost: one material, usually side by side. See LiveGlassLens.
-        Box(
-            Modifier
-                .matchParentSize()
-                .then(through)
-                .liveGlassLens(
-                    hazeState = hazeState,
-                    corner = corner,
-                    frost = playerFrostTint(glass, isDark),
-                    glass = glass,
-                ),
-        )
+        CompositionLocalProvider(LocalGlassArea provides area) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .then(through)
+                    .liveGlassLens(
+                        hazeState = hazeState,
+                        corner = corner,
+                        frost = playerFrostTint(glass, isDark),
+                        glass = glass,
+                    ),
+            )
+        }
     } else if (hazeState != null && allowHaze && glass.hazeBlurDp > 0f) {
         // The mini player's exact frost, from the one shared recipe —
         // this pane is the same material as that bar and is usually on
         // screen beside it.
-        val frostTint = playerFrostTint(glass, isDark)
-        Box(
-            Modifier
-                .matchParentSize()
-                .then(through)
-                .hazeEffect(
-                    state = hazeState,
-                    style = HazeStyle(
-                        backgroundColor = frostBg,
-                        blurRadius = glass.hazeBlurDp.dp,
-                        tints = listOf(HazeTint(frostTint)),
-                        noiseFactor = 0f,
-                    ),
-                ),
-        )
+        CompositionLocalProvider(LocalGlassArea provides area) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .then(through)
+                    .glassFrost(state = hazeState, glass = glass, ground = frostBg, isDark = isDark),
+            )
+        }
     }
     // The shader reads its bevel, refraction, rim and body opacity from
     // LocalPlayerGlass, so the settings this pane was *handed* have to
     // be published for it or half of them are quietly ignored — the
     // pane would frost with one material and relight with another.
-    CompositionLocalProvider(LocalPlayerGlass provides glass) {
+    CompositionLocalProvider(LocalPlayerGlass provides glass, LocalGlassArea provides area) {
         // Solid when the shader is really coming, faint when it is not.
         //
         // The mini player draws this slab at full opacity and lets the AGSL

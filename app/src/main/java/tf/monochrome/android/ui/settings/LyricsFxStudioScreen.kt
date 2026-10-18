@@ -1,5 +1,7 @@
 package tf.monochrome.android.ui.settings
 
+import tf.monochrome.android.ui.player.LocalGlassArea
+import tf.monochrome.android.domain.model.LinkArea
 import tf.monochrome.android.ui.player.lyricCurvature
 import kotlin.math.roundToInt
 import tf.monochrome.android.ui.navigation.popBackStackSafe
@@ -134,6 +136,7 @@ import tf.monochrome.android.domain.model.LyricsFxPreset
 import tf.monochrome.android.domain.model.LyricsFxSettings
 import tf.monochrome.android.domain.model.PlayerGlassPreset
 import tf.monochrome.android.domain.model.PlayerGlassSettings
+import tf.monochrome.android.domain.model.StudioLook
 import tf.monochrome.android.domain.model.Track
 import tf.monochrome.android.ui.components.MiniPlayer
 import tf.monochrome.android.visualizer.AmbientVisualizerSettings
@@ -542,13 +545,20 @@ fun LyricsFxStudioScreen(
     val linkLive = rememberVisualLinkDriver(
         tap = viewModel.spectrumAnalyzer,
         links = previewLinks,
-        active = selectedTab == 2,
+        active = true,
         delayMs = fx.bluetoothDelayMs,
     )
     val linkHost = rememberVisualLinkHost(savedLinks, linkLive) { linkUi.sheetFor = it }
+    // Every setting a link can move, as saved: where a new link rests, and
+    // what the setting needs before it shows.
+    val tvTuning by viewModel.appTvTuning.collectAsStateWithLifecycle()
+    val tvLook by viewModel.appTvShader.collectAsStateWithLifecycle()
+    val ambientLook by viewModel.ambient.collectAsStateWithLifecycle()
+    val linkLook = StudioLook(fx, playerGlass, miniPlayerGlass, tvTuning, tvLook, ambientLook)
     val density = LocalDensity.current
     var screenTopPx by remember { mutableFloatStateOf(0f) }
     var previewBottomPx by remember { mutableFloatStateOf(0f) }
+    var tabsBottomPx by remember { mutableFloatStateOf(0f) }
 
     // Preset save / import / share dialog state.
     var showSaveDialog by rememberSaveable { mutableStateOf(false) }
@@ -560,10 +570,16 @@ fun LyricsFxStudioScreen(
     LaunchedEffect(fx.customFont) { if (fx.customFont) viewModel.refreshFonts() }
 
     Box(Modifier.fillMaxSize().onGloballyPositioned { screenTopPx = it.boundsInRoot().top }) {
+    // Every tab's sliders can be linked, so the link host and the live values
+    // are over all of them: the previews draw with the links running.
+    CompositionLocalProvider(
+        LocalMusicLinkHost provides linkHost,
+        LocalVisualLinks provides linkLive,
+    ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .then(if (selectedTab == 2) Modifier.hazeSource(linkHaze) else Modifier),
+            .hazeSource(linkHaze),
     ) {
         TopAppBar(
             title = { Text(stringResource(R.string.fx_player_visuals_studio)) },
@@ -588,6 +604,7 @@ fun LyricsFxStudioScreen(
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,
+            modifier = Modifier.onGloballyPositioned { tabsBottomPx = it.boundsInRoot().bottom },
         ) {
             // Player chrome first, then the glass shared by every floating
             // panel, then lyrics. "UI panels" rather than "Mini Player"
@@ -679,6 +696,7 @@ fun LyricsFxStudioScreen(
                         value = opacity,
                         range = 0f..100f,
                         description = stringResource(R.string.fx_how_much_of_the_preset_reaches_the_screen_at_all),
+                        linkKey = "visualizer.opacity",
                         onChange = { opacity = it },
                         onChangeFinished = { viewModel.setAmbientOpacity(opacity.toInt()) },
                     )
@@ -688,6 +706,7 @@ fun LyricsFxStudioScreen(
                         value = blackPoint,
                         range = 0f..AmbientVisualizerSettings.MAX_BLACK_POINT.toFloat(),
                         description = stringResource(R.string.fx_how_much_of_the_dark_end_disappears_higher_hides),
+                        linkKey = "visualizer.blackPoint",
                         onChange = { blackPoint = it },
                         onChangeFinished = { viewModel.setAmbientBlackPoint(blackPoint.toInt()) },
                     )
@@ -794,6 +813,7 @@ fun LyricsFxStudioScreen(
                     onDeletePreset = { viewModel.deletePlayerGlassPreset(it) },
                     onExportPreset = { viewModel.exportPlayerGlassPreset(it) },
                     onImportPreset = { viewModel.importPlayerGlassPresetCode(it) },
+                    onPreviewBottom = { previewBottomPx = it },
                 )
             } else {
                 val previewTrack by viewModel.currentTrack.collectAsStateWithLifecycle()
@@ -808,15 +828,12 @@ fun LyricsFxStudioScreen(
                     onImportPreset = { viewModel.importPlayerGlassPresetCode(it) },
                     previewMini = true,
                     previewTrack = previewTrack,
+                    onPreviewBottom = { previewBottomPx = it },
                 )
             }
             return@Column
         }
 
-        CompositionLocalProvider(
-            LocalMusicLinkHost provides linkHost,
-            LocalVisualLinks provides linkLive,
-        ) {
         // Preview + presets are pinned above the scrolling sliders, so the
         // live example stays locked in view while you tune every parameter.
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -1096,6 +1113,7 @@ fun LyricsFxStudioScreen(
                     degreesReading(fx.curvatureDeg),
                     fx.curvatureDeg, 0f..75f,
                     description = stringResource(R.string.fx_curvature_desc),
+                    linkKey = "lyrics.curvatureDeg",
                 ) { viewModel.update { s -> s.copy(curvatureDeg = it, curvatureSideDeg = s.effectiveCurvatureSideDeg) } }
                 // The angle to a tenth of a degree, which a finger on the
                 // slider cannot place.
@@ -1109,6 +1127,7 @@ fun LyricsFxStudioScreen(
                     degreesReading(fx.effectiveCurvatureSideDeg),
                     fx.effectiveCurvatureSideDeg, 0f..75f,
                     description = stringResource(R.string.fx_curvature_sides_desc),
+                    linkKey = "lyrics.curvatureSideDeg",
                 ) { viewModel.update { s -> s.copy(curvatureSideDeg = it) } }
                 FxNudge(label = stringResource(R.string.fx_curvature_sides), step = 0.1f, unit = "°") { delta ->
                     viewModel.update { s -> s.copy(curvatureSideDeg = tenth(s.effectiveCurvatureSideDeg + delta)) }
@@ -1302,6 +1321,7 @@ fun LyricsFxStudioScreen(
                         stringResource(R.string.fx_aa_strength), "${(fx.fxaaStrength * 100).toInt()}%",
                         fx.fxaaStrength, 0f..1f,
                         description = stringResource(R.string.fx_how_hard_edges_are_smoothed_higher_softens_more),
+                        linkKey = "lyrics.fxaaStrength",
                     ) { viewModel.update { s -> s.copy(fxaaStrength = it) } }
                 }
             }
@@ -1320,19 +1340,19 @@ fun LyricsFxStudioScreen(
                 ) { Text(stringResource(R.string.fx_reset_to_defaults)) }
             }
         }
-        }
     }
-    if (selectedTab == 2) {
-        StudioLinkOverlay(
-            ui = linkUi,
-            editing = viewModel.musicLinks,
-            fx = fx,
-            live = linkLive,
-            tap = viewModel.spectrumAnalyzer,
-            hazeState = linkHaze,
-            editorTop = with(density) { (previewBottomPx - screenTopPx).coerceAtLeast(0f).toDp() } + 4.dp,
-        )
     }
+    // The Visualizer tab has no preview to keep in view: its editor opens under the tabs.
+    val editorTopPx = if (selectedTab == 3) tabsBottomPx else previewBottomPx
+    StudioLinkOverlay(
+        ui = linkUi,
+        editing = viewModel.musicLinks,
+        look = linkLook,
+        live = linkLive,
+        tap = viewModel.spectrumAnalyzer,
+        hazeState = linkHaze,
+        editorTop = with(density) { (editorTopPx - screenTopPx).coerceAtLeast(0f).toDp() } + 4.dp,
+    )
     }
 }
 
@@ -1354,6 +1374,10 @@ private fun PlayerGlassTab(
     previewMini: Boolean = false,
     /** The playing track, for the UI panels preview's mini player; null shows a sample. */
     previewTrack: Track? = null,
+    /** Whose glass this tab tunes, for its sliders' music links. */
+    linkArea: LinkArea = if (previewMini) LinkArea.PANELS else LinkArea.PLAYER,
+    /** Where the pinned preview ends, in root px: the link editor opens below it. */
+    onPreviewBottom: (Float) -> Unit = {},
 ) {
     val context = LocalContext.current
     val accent = MaterialTheme.colorScheme.primary
@@ -1388,6 +1412,7 @@ private fun PlayerGlassTab(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(if (previewMini) UiPanelsPreviewHeight else 288.dp)
+                .onGloballyPositioned { onPreviewBottom(it.boundsInRoot().bottom) }
                 .clip(RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center,
         ) {
@@ -1527,10 +1552,12 @@ private fun PlayerGlassTab(
         FxSlider(
             stringResource(R.string.fx_glass_opacity), "${(glass.bodyOpacity * 100).toInt()}%", glass.bodyOpacity, 0f..1f,
             description = stringResource(R.string.fx_lower_makes_the_buttons_more_see_through_0_body),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "bodyOpacity"),
         ) { onUpdate { g -> g.copy(bodyOpacity = it) } }
         FxSlider(
             stringResource(R.string.fx_frosted_blur), "${(glass.frost * 100).toInt()}%", glass.frost, 0f..1f,
             description = stringResource(R.string.fx_frosts_the_glass_from_clear_to_misted),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "frost"),
         ) { onUpdate { g -> g.copy(frost = it) } }
         // Haze backdrop frost. Each tab's copy drives its own surfaces: the UI
         // blob frosts the mini player bar, the audio-tools sheet, the speed
@@ -1549,10 +1576,12 @@ private fun PlayerGlassTab(
             } else {
                 stringResource(R.string.fx_backdrop_blur_player)
             },
+            linkKey = VisualLinkTargets.glassKey(linkArea, "hazeBlurDp"),
         ) { onUpdate { g -> g.copy(hazeBlurDp = it) } }
         FxSlider(
             stringResource(R.string.fx_backdrop_tint), "${(glass.hazeTint * 100).toInt()}%", glass.hazeTint, 0f..2f,
             description = stringResource(R.string.fx_strength_of_the_frost_layer_s_darkening),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "hazeTint"),
         ) { onUpdate { g -> g.copy(hazeTint = it) } }
         FxSlider(
             stringResource(R.string.fx_surface_motion), "${(glass.surfaceMotion * 100).toInt()}%", glass.surfaceMotion, 0f..1f,
@@ -1563,24 +1592,29 @@ private fun PlayerGlassTab(
         FxSlider(
             stringResource(R.string.fx_roundness), "%.2f".format(glass.roundness), glass.roundness, 0.5f..2f,
             description = stringResource(R.string.fx_rolls_the_glass_edge_from_a_sharp_bevel_to_a),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "roundness"),
         ) { onUpdate { g -> g.copy(roundness = it) } }
         FxSlider(
             stringResource(R.string.fx_depth_profondeur), "%.2f".format(glass.depth), glass.depth, 0.5f..2f,
             description = stringResource(R.string.fx_how_thick_and_deep_the_relief_reads_higher_pops),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "depth"),
         ) { onUpdate { g -> g.copy(depth = it) } }
         FxSlider(
             stringResource(R.string.fx_refraction), "%.2f".format(glass.refraction), glass.refraction, 0f..0.4f,
             description = stringResource(R.string.fx_how_hard_the_beveled_edges_lens_the_backdrop),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "refraction"),
         ) { onUpdate { g -> g.copy(refraction = it) } }
         FxSlider(
             stringResource(R.string.fx_chromatic_aberration), "${(glass.dispersion * 100).toInt()}%", glass.dispersion, 0f..2f,
             description = stringResource(R.string.fx_colour_fringing_at_the_refracting_edges),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "dispersion"),
         ) { onUpdate { g -> g.copy(dispersion = it) } }
 
         StudioSection(stringResource(R.string.fx_light_reflections))
         FxSlider(
             stringResource(R.string.fx_light_angle), "${glass.lightAngleDeg.toInt()}°", glass.lightAngleDeg, 0f..360f,
             description = stringResource(R.string.fx_direction_the_key_light_comes_from_and_where_the),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "lightAngleDeg"),
         ) { onUpdate { g -> g.copy(lightAngleDeg = it) } }
         FxSlider(
             stringResource(R.string.fx_tilt_reactivity), "${(glass.tiltReactivity * 100).toInt()}%", glass.tiltReactivity, 0f..1.5f,
@@ -1589,32 +1623,39 @@ private fun PlayerGlassTab(
         FxSlider(
             stringResource(R.string.fx_edge_highlight), "${(glass.rimBrightness * 100).toInt()}%", glass.rimBrightness, 0f..2f,
             description = stringResource(R.string.fx_brightness_of_the_specular_glass_rim),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "rimBrightness"),
         ) { onUpdate { g -> g.copy(rimBrightness = it) } }
         FxSlider(
             stringResource(R.string.fx_edge_width), "${(glass.edgeWidth * 100).toInt()}%", glass.edgeWidth, 0f..1f,
             description = stringResource(R.string.fx_reflective_rim_thin_crisp_edge_to_a_broad_glassy),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "edgeWidth"),
         ) { onUpdate { g -> g.copy(edgeWidth = it) } }
         FxSlider(
             stringResource(R.string.fx_reflection), "${(glass.reflection * 100).toInt()}%", glass.reflection, 0f..2f,
             description = stringResource(R.string.fx_how_much_of_the_room_environment_reflection),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "reflection"),
         ) { onUpdate { g -> g.copy(reflection = it) } }
         FxSlider(
             stringResource(R.string.fx_gloss), "${(glass.gloss * 100).toInt()}%", glass.gloss, 0f..1f,
             description = stringResource(R.string.fx_highlight_polish_soft_frosted_wide_glint_to_a),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "gloss"),
         ) { onUpdate { g -> g.copy(gloss = it) } }
 
         StudioSection(stringResource(R.string.fx_drop_shadow))
         FxSlider(
             stringResource(R.string.fx_shadow_depth), "${(glass.shadowDepth * 100).toInt()}%", glass.shadowDepth, 0f..1f,
             description = stringResource(R.string.fx_drop_shadow_under_the_glass_buttons_and_dock),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "shadowDepth"),
         ) { onUpdate { g -> g.copy(shadowDepth = it) } }
         FxSlider(
             stringResource(R.string.fx_shadow_softness), "${(glass.shadowSoftness * 100).toInt()}%", glass.shadowSoftness, 0f..1f,
             description = stringResource(R.string.fx_blur_spread_of_the_drop_shadow),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "shadowSoftness"),
         ) { onUpdate { g -> g.copy(shadowSoftness = it) } }
         FxSlider(
             stringResource(R.string.fx_shadow_tint), "${(glass.shadowTint * 100).toInt()}%", glass.shadowTint, 0f..1f,
             description = stringResource(R.string.fx_colour_of_the_drop_shadow_neutral_black_to),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "shadowTint"),
         ) { onUpdate { g -> g.copy(shadowTint = it) } }
 
         StudioSection(stringResource(R.string.fx_quality))
@@ -1929,7 +1970,7 @@ internal fun UiPanelsPreview(
         //
         // The mini player and the tab bar read their glass from LocalPlayerGlass;
         // the nav host provides the mini player's settings there the same way.
-        CompositionLocalProvider(LocalPlayerGlass provides glass) {
+        CompositionLocalProvider(LocalPlayerGlass provides glass, LocalGlassArea provides LinkArea.PANELS) {
             if (!picture) Column(Modifier.align(Alignment.TopCenter).fillMaxWidth()) {
                 Text(
                     text = stringResource(R.string.fx_preview_drag_hint),
@@ -2322,6 +2363,7 @@ internal fun StudioPreview(
                 // line, or the beat's word. None while the CRT effect bows the
                 // whole app, as in the player (appTubeCurved).
                 val appCurved = tf.monochrome.android.ui.glyph.appTubeCurved()
+                val curveLinks = LocalVisualLinks.current
                 val curveTarget = fx.curvatureTarget
                 val curveFocus: (() -> androidx.compose.ui.geometry.Rect?)? = when (curveTarget) {
                     LyricsFxSettings.CURVE_LINE -> { { blockBand } }
@@ -2343,8 +2385,8 @@ internal fun StudioPreview(
                             .captureLetters(letters)
                             // Bent inside the copy, as in the player.
                             .lyricCurvature(
-                                if (appCurved) 0f else fx.curvatureDeg,
-                                if (appCurved) 0f else fx.effectiveCurvatureSideDeg,
+                                { if (appCurved) 0f else curveLinks.lyrics(fx).curvatureDeg },
+                                { if (appCurved) 0f else curveLinks.lyrics(fx).effectiveCurvatureSideDeg },
                                 curveFocus,
                                 wide = curveTarget == LyricsFxSettings.CURVE_WORD,
                             )
@@ -2745,6 +2787,7 @@ internal fun BoxScope.PlayerChromePreview(
     // ancestor of it.
     CompositionLocalProvider(
         LocalPlayerGlass provides glass,
+        LocalGlassArea provides LinkArea.PLAYER,
         LocalPlayerHaze provides previewHaze,
         // Beside the haze it belongs to, so the dock's own frost
         // gets it too.
@@ -2778,12 +2821,7 @@ internal fun BoxScope.PlayerChromePreview(
                     Modifier.size(64.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    GlassDropShadow(
-                        color = lerp(Color.Black, previewTint, glass.shadowTint)
-                            .copy(alpha = 0.28f + 0.55f * glass.shadowDepth),
-                        softness = glass.shadowSoftness,
-                        depth = glass.shadowDepth,
-                    )
+                    GlassDropShadow(glass = glass, tint = previewTint)
                     // The same frost and live lens the real disc gets
                     // (PlayerTransportControls), so Backdrop blur, tint
                     // and the lens move something here too, and the

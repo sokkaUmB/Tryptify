@@ -62,7 +62,8 @@ import tf.monochrome.android.R
 import tf.monochrome.android.audio.eq.SpectrumAnalyzerTap
 import tf.monochrome.android.data.preferences.PreferencesManager
 import tf.monochrome.android.data.repository.MusicLinksRepository
-import tf.monochrome.android.domain.model.LyricsFxSettings
+import tf.monochrome.android.domain.model.LinkArea
+import tf.monochrome.android.domain.model.StudioLook
 import tf.monochrome.android.domain.model.VisualLink
 import tf.monochrome.android.domain.model.VisualLinkTargets
 import tf.monochrome.android.ui.components.GlassPanel
@@ -76,6 +77,7 @@ import tf.monochrome.android.ui.player.rememberVisualLinkDriver
 import tf.monochrome.android.ui.settings.StudioLinkUi
 import tf.monochrome.android.ui.settings.UndoBar
 import tf.monochrome.android.ui.settings.VisualLinkEditing
+import tf.monochrome.android.ui.settings.fullLabel
 import tf.monochrome.android.ui.settings.info
 import tf.monochrome.android.ui.settings.needsText
 import javax.inject.Inject
@@ -107,9 +109,19 @@ class MusicLinksViewModel @Inject constructor(
 
     fun restoreKnob(link: tf.monochrome.android.audio.dsp.model.KnobLink) = dsp.putKnobLink(link)
 
-    /** The listener's own lyric settings: where a new link rests, and what a setting needs to show. */
-    val lyricsFx: StateFlow<LyricsFxSettings> =
-        preferences.lyricsFx.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LyricsFxSettings.DEFAULT)
+    /** The listener's own look: where a new link rests, and what a setting needs to show. */
+    val look: StateFlow<StudioLook> =
+        kotlinx.coroutines.flow.combine(
+            kotlinx.coroutines.flow.combine(
+                preferences.lyricsFx,
+                preferences.playerGlass,
+                preferences.miniPlayerGlass,
+                preferences.appTvTuning,
+                preferences.appTvShader,
+            ) { lyrics, player, panels, tv, tvLook -> StudioLook(lyrics, player, panels, tv, tvLook) },
+            preferences.ambientVisualizer,
+        ) { look, ambient -> look.copy(ambient = ambient) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), StudioLook())
 }
 
 /** A knob link as the Music links page lists it. */
@@ -137,7 +149,7 @@ fun MusicLinksScreen(
     val links by editing.links.collectAsStateWithLifecycle()
     val allPaused by editing.allPaused.collectAsStateWithLifecycle()
     val draft by editing.draft.collectAsStateWithLifecycle()
-    val fx by viewModel.lyricsFx.collectAsStateWithLifecycle()
+    val look by viewModel.look.collectAsStateWithLifecycle()
     val knobs by viewModel.knobLinks.collectAsStateWithLifecycle()
     val ui = remember { StudioLinkUi() }
     // The knob link just removed and its name, while its undo is on offer.
@@ -233,16 +245,19 @@ fun MusicLinksScreen(
                             }
                         }
                     }
-                    if (links.isNotEmpty()) {
-                        item(key = "lyrics_header") {
+                    // One group per part of the app, in the Studio's order.
+                    for (area in LinkArea.entries) {
+                        val inArea = links.filter { VisualLinkTargets.byKey(it.target)?.area == area }
+                        if (inArea.isEmpty()) continue
+                        item(key = "header:" + area.prefix) {
                             Text(
-                                stringResource(R.string.music_links_group_lyrics),
+                                stringResource(if (area == LinkArea.LYRICS) R.string.music_links_group_lyrics else area.title),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 2.dp),
                             )
                         }
-                        items(links, key = { it.target }) { link ->
+                        items(inArea, key = { it.target }) { link ->
                             LinkRow(
                                 link = link,
                                 allPaused = allPaused,
@@ -250,7 +265,7 @@ fun MusicLinksScreen(
                                 onPause = { editing.setPaused(link.target, !link.paused) },
                                 onChange = {
                                     val target = VisualLinkTargets.byKey(link.target) ?: return@LinkRow
-                                    editing.start(link.target, target.read(fx))
+                                    editing.start(link.target, target.read(look))
                                 },
                                 onRemove = { ui.removed = editing.remove(link.target) },
                             )
@@ -300,7 +315,7 @@ fun MusicLinksScreen(
                 onShapeChange = editing::update,
                 spectrum = spectrum,
                 strength = { live.strengths[key] ?: 0f },
-                note = target.needsText(fx),
+                note = target.needsText(look),
                 isNew = d.isNew,
                 hazeState = overlay,
                 onDone = editing::commit,
@@ -332,7 +347,7 @@ fun MusicLinksScreen(
                 kotlinx.coroutines.delay(6000)
                 if (ui.removed == removed) ui.removed = null
             }
-            val label = VisualLinkTargets.byKey(removed.target)?.let { stringResource(it.label) } ?: removed.target
+            val label = VisualLinkTargets.byKey(removed.target)?.fullLabel() ?: removed.target
             UndoBar(
                 text = stringResource(R.string.music_link_removed, label),
                 hazeState = overlay,

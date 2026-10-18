@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.player
 
+import tf.monochrome.android.domain.model.LinkArea
 import tf.monochrome.android.ui.navigation.trackArtistAction
 import tf.monochrome.android.ui.navigation.trackAlbumAction
 import tf.monochrome.android.ui.navigation.popBackStackSafe
@@ -566,14 +567,26 @@ fun MainPlayerRoute(
     val beatOn = lyricsBeatOn || albumGlowOn
     val beatPulse: androidx.compose.runtime.State<Float>? =
         if (beatOn) rememberBassPulse(playerViewModel.spectrumAnalyzer, lyricsFx) else null
-    // The visual settings that follow the music. Like the beat engine, only
-    // while the lyrics are what the player shows: that is where every one of
-    // them is drawn, and nothing else would read the values.
+    // The visual settings that follow the music here: the lyrics' only while
+    // the lyrics are what the player shows (that is where they are drawn), the
+    // player's own controls' whenever the player is up, the ambient
+    // visualizer's while it is the background. The UI panels and the CRT
+    // effect follow the app's own driver, which shows through this one.
+    val appLive = LocalVisualLinks.current
+    val lyricsShown = viewMode == NowPlayingViewMode.LYRICS
+    val playerLinks = remember(visualLinks, lyricsShown, ambientActive) {
+        visualLinks.filter {
+            it.target.startsWith("player.") ||
+                (lyricsShown && it.target.startsWith("lyrics.")) ||
+                (ambientActive && it.target.startsWith("visualizer."))
+        }
+    }
     val visualLive = rememberVisualLinkDriver(
         tap = playerViewModel.spectrumAnalyzer,
-        links = visualLinks,
-        active = viewMode == NowPlayingViewMode.LYRICS,
+        links = playerLinks,
+        active = true,
         delayMs = lyricsFx.bluetoothDelayMs,
+        parent = appLive,
     )
     androidx.compose.runtime.LaunchedEffect(beatOn) {
         LyricsDebug.log("beat engine ${if (beatOn) "acquired (FFT analyzer staked)" else "released"}")
@@ -648,6 +661,7 @@ fun MainPlayerRoute(
         ),
         // The transport buttons' refractive glass parameters (Studio › Player Glass).
         LocalPlayerGlass provides playerGlass,
+        LocalGlassArea provides LinkArea.PLAYER,
         // What the player's glass stands over: its own dark background, not the
         // theme's. Every pane works its text colour out from this.
         tf.monochrome.android.ui.components.LocalGlassGround provides playerGlassGround(blendedColors.dominant),

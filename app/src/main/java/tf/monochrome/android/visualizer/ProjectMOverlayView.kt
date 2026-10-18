@@ -78,6 +78,10 @@ class ProjectMOverlayView(
     private val pass = AmbientCompositePass()
 
     @Volatile private var settings = AmbientVisualizerSettings()
+
+    // A music link's values for this frame, NaN for the setting as saved.
+    @Volatile private var liveOpacity = Float.NaN
+    @Volatile private var liveBlackPoint = Float.NaN
     @Volatile private var scrimTone = floatArrayOf(0f, 0f, 0f)
     @Volatile private var playing = true
     private var lastAlbum: Bitmap? = null
@@ -134,6 +138,21 @@ class ProjectMOverlayView(
         settings = next
         renderThread?.requestRender()
     }
+
+    /**
+     * The opacity and black point a music link has them at this frame (0–1
+     * each, as [AmbientVisualizerSettings.opacity] and `blackPoint` read), or
+     * NaN for the saved settings. Drawn on the next frame, paused or not.
+     */
+    fun updateLive(opacity: Float, blackPoint: Float) {
+        if (same(opacity, liveOpacity) && same(blackPoint, liveBlackPoint)) return
+        liveOpacity = opacity
+        liveBlackPoint = blackPoint
+        renderThread?.requestRender()
+    }
+
+    // NaN is "none", and NaN == NaN is false.
+    private fun same(a: Float, b: Float) = a == b || (a.isNaN() && b.isNaN())
 
     /** The mid-screen scrim colour, matching `PlayerBlurredArtBackground`. */
     fun updateScrimTone(red: Float, green: Float, blue: Float) {
@@ -344,9 +363,11 @@ class ProjectMOverlayView(
             val drew = repository.renderFrame(System.nanoTime())
 
             val current = settings
+            val opacity = liveOpacity
+            val blackPoint = liveBlackPoint
             val composited = pass.composite(
-                opacity = current.opacity,
-                blackPoint = current.blackPoint,
+                opacity = if (opacity.isNaN()) current.opacity else opacity,
+                blackPoint = if (blackPoint.isNaN()) current.blackPoint else blackPoint,
                 blend = current.blend,
                 scrim = scrimTone,
                 freshFrame = drew,

@@ -1107,6 +1107,7 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                     DynamicColorScope {
                         CompositionLocalProvider(
                             tf.monochrome.android.ui.player.LocalPlayerGlass provides miniPlayerGlass,
+                            tf.monochrome.android.ui.player.LocalGlassArea provides tf.monochrome.android.domain.model.LinkArea.PANELS,
                         ) {
                             MiniPlayer(
                                 track = currentTrack,
@@ -1146,6 +1147,7 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 // The bar is the app's chrome, so it is the mini player's
                 // material — see LocalMiniPlayerGlass.
                 tf.monochrome.android.ui.player.LocalPlayerGlass provides miniPlayerGlass,
+                tf.monochrome.android.ui.player.LocalGlassArea provides tf.monochrome.android.domain.model.LinkArea.PANELS,
             ) {
                 TabChrome(
                     tabs = pillTabs(pages, navBarSlots),

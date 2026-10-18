@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,8 +41,9 @@ import kotlinx.coroutines.launch
 import tf.monochrome.android.R
 import tf.monochrome.android.audio.eq.SpectrumAnalyzerTap
 import tf.monochrome.android.data.repository.MusicLinksRepository
+import tf.monochrome.android.domain.model.LinkArea
 import tf.monochrome.android.domain.model.LinkShape
-import tf.monochrome.android.domain.model.LyricsFxSettings
+import tf.monochrome.android.domain.model.StudioLook
 import tf.monochrome.android.domain.model.VisualLink
 import tf.monochrome.android.domain.model.VisualLinkTarget
 import tf.monochrome.android.domain.model.VisualLinkTargets
@@ -78,15 +80,24 @@ class VisualLinkEditing(
     private val _draft = MutableStateFlow<LinkDraft?>(null)
     val draft: StateFlow<LinkDraft?> = _draft.asStateFlow()
 
-    /**
-     * What a preview runs: the saved links — none while the master switch has
-     * them paused — with the draft in place of its saved version. The draft
-     * runs even then, or the editor would have nothing to show.
-     */
+    init {
+        // A screen closed with its editor open leaves nothing running.
+        scope.coroutineContext[Job]?.invokeOnCompletion {
+            val open = _draft.value?.link
+            if (open != null) repo.editing.compareAndSet(open, null)
+        }
+    }
+
+    /** The draft, here and in [MusicLinksRepository.editing], where the app runs it too. */
+    private fun setDraft(d: LinkDraft?) {
+        _draft.value = d
+        repo.editing.value = d?.link
+    }
+
+    /** What a preview runs: [MusicLinksRepository.withDraft] on this editor's draft. */
     val previewLinks: StateFlow<List<VisualLink>> =
         combine(links, allPaused, _draft) { saved, paused, draft ->
-            val base = if (paused) emptyList() else saved
-            if (draft == null) base else base.filterNot { it.target == draft.link.target } + draft.link.copy(paused = false)
+            MusicLinksRepository.withDraft(saved, paused, draft?.link)
         }.stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     fun linkFor(key: String): VisualLink? = links.value.firstOrNull { it.target == key }
@@ -98,35 +109,41 @@ class VisualLinkEditing(
     fun start(key: String, current: Float) {
         val target = VisualLinkTargets.byKey(key) ?: return
         val saved = linkFor(key)
-        _draft.value = if (saved != null) {
-            LinkDraft(saved, isNew = false)
-        } else {
-            val (lowest, highest) = LinkShape.startingRange(current, target.min, target.max)
-            LinkDraft(VisualLink(key, LinkShape(lowest = lowest, highest = highest)), isNew = true)
-        }
+        setDraft(
+            if (saved != null) {
+                LinkDraft(saved, isNew = false)
+            } else {
+                val (lowest, highest) = LinkShape.startingRange(current, target.min, target.max)
+                LinkDraft(VisualLink(key, LinkShape(lowest = lowest, highest = highest)), isNew = true)
+            },
+        )
     }
 
     fun update(shape: LinkShape) {
         val d = _draft.value ?: return
         val target = VisualLinkTargets.byKey(d.link.target) ?: return
-        _draft.value = d.copy(link = d.link.copy(shape = shape.clamped(target.min, target.max)))
+        setDraft(d.copy(link = d.link.copy(shape = shape.clamped(target.min, target.max))))
     }
 
     /** Saves the draft. A link that was paused stays paused. */
     fun commit() {
         val d = _draft.value ?: return
         _draft.value = null
-        scope.launch { repo.put(d.link) }
+        scope.launch {
+            repo.put(d.link)
+            // Held until the saved one is in place, so nothing snaps back for a frame.
+            repo.editing.compareAndSet(d.link, null)
+        }
     }
 
     fun cancel() {
-        _draft.value = null
+        setDraft(null)
     }
 
     /** Removes [key]'s link and hands it back, for an undo. */
     fun remove(key: String): VisualLink? {
         val saved = linkFor(key)
-        if (_draft.value?.link?.target == key) _draft.value = null
+        if (_draft.value?.link?.target == key) setDraft(null)
         if (saved != null) scope.launch { repo.remove(key) }
         return saved
     }
@@ -147,11 +164,11 @@ class VisualLinkEditing(
 /** The editor's view of a visual setting. */
 @Composable
 fun VisualLinkTarget.info(): LinkTargetInfo =
-    LinkTargetInfo(label = stringResource(label), min = min, max = max, format = format)
+    LinkTargetInfo(label = fullLabel(), min = min, max = max, format = format)
 
 /** "Turn on God rays to see this move", or null when nothing is missing. */
 @Composable
-fun VisualLinkTarget.needsText(fx: LyricsFxSettings): String? = when (unmet(fx)) {
+fun VisualLinkTarget.needsText(look: StudioLook): String? = when (unmet(look)) {
     null, VisualLinkTarget.Need.NOTHING -> null
     VisualLinkTarget.Need.GOD_RAYS -> stringResource(R.string.music_link_needs_god_rays)
     VisualLinkTarget.Need.BACKLIGHT -> stringResource(R.string.music_link_needs_backlight)
@@ -159,7 +176,26 @@ fun VisualLinkTarget.needsText(fx: LyricsFxSettings): String? = when (unmet(fx))
     VisualLinkTarget.Need.LIQUID_GLASS -> stringResource(R.string.music_link_needs_glass)
     VisualLinkTarget.Need.WAVE -> stringResource(R.string.music_link_needs_wave)
     VisualLinkTarget.Need.SHADOW -> stringResource(R.string.music_link_needs_shadow)
+    VisualLinkTarget.Need.GLASS_ON -> stringResource(
+        if (area == LinkArea.PLAYER) R.string.music_link_needs_player_glass else R.string.music_link_needs_panels_glass,
+    )
+    VisualLinkTarget.Need.BACKDROP -> stringResource(R.string.music_link_needs_backdrop)
+    VisualLinkTarget.Need.GLASS_SHADOW -> stringResource(R.string.music_link_needs_glass_shadow)
+    VisualLinkTarget.Need.TV -> stringResource(R.string.music_link_needs_crt)
+    VisualLinkTarget.Need.TV_CRT -> stringResource(R.string.music_link_needs_crt_look)
+    VisualLinkTarget.Need.TV_ROYALE -> stringResource(R.string.music_link_needs_royale_look)
+    VisualLinkTarget.Need.AMBIENT -> stringResource(R.string.music_link_needs_ambient)
 }
+
+/**
+ * The setting's name with its part of the app in front ("Player · Frost"), as
+ * the Player and UI panels tabs share every slider name. Lyrics settings, the
+ * first links there were, keep their bare names.
+ */
+@Composable
+fun VisualLinkTarget.fullLabel(): String =
+    if (area == LinkArea.LYRICS) stringResource(label)
+    else stringResource(area.title) + " · " + stringResource(label)
 
 /** What the Studio's overlay is showing: nothing, the options for a setting, or the editor. */
 @Stable
@@ -192,7 +228,7 @@ fun rememberVisualLinkHost(
 }
 
 /**
- * The Studio's link sheet, editor and undo bar, drawn over the Lyrics tab in
+ * The Studio's link sheet, editor and undo bar, drawn over whichever tab is up, in
  * the same window, as siblings of [hazeState]'s source, so their glass has the
  * tab behind it to frost.
  */
@@ -200,7 +236,7 @@ fun rememberVisualLinkHost(
 fun BoxScope.StudioLinkOverlay(
     ui: StudioLinkUi,
     editing: VisualLinkEditing,
-    fx: LyricsFxSettings,
+    look: StudioLook,
     live: VisualLinkLive,
     tap: SpectrumAnalyzerTap,
     hazeState: HazeState,
@@ -213,22 +249,22 @@ fun BoxScope.StudioLinkOverlay(
     val sheetTarget = sheetKey?.let { VisualLinkTargets.byKey(it) }
     if (sheetKey != null && sheetTarget != null && draft == null) {
         val saved = links.firstOrNull { it.target == sheetKey }
-        val need = sheetTarget.needsText(fx)
+        val need = sheetTarget.needsText(look)
         val follows = saved?.let { followsText(it.shape, it.paused) }
         MusicLinkOptionsSheet(
-            title = stringResource(sheetTarget.label),
-            valueText = sheetTarget.format(sheetTarget.read(fx)),
+            title = sheetTarget.fullLabel(),
+            valueText = sheetTarget.format(sheetTarget.read(look)),
             linked = saved != null,
             paused = saved?.paused == true,
             followsText = listOfNotNull(follows, need).joinToString("\n").ifEmpty { null },
             cannotReason = null,
             hazeState = hazeState,
             onMove = {
-                editing.start(sheetKey, sheetTarget.read(fx))
+                editing.start(sheetKey, sheetTarget.read(look))
                 ui.sheetFor = null
             },
             onChange = {
-                editing.start(sheetKey, sheetTarget.read(fx))
+                editing.start(sheetKey, sheetTarget.read(look))
                 ui.sheetFor = null
             },
             onTogglePause = {
@@ -256,7 +292,7 @@ fun BoxScope.StudioLinkOverlay(
             onShapeChange = editing::update,
             spectrum = spectrum,
             strength = { live.strengths[key] ?: 0f },
-            note = target.needsText(fx),
+            note = target.needsText(look),
             isNew = d.isNew,
             hazeState = hazeState,
             onDone = editing::commit,
@@ -273,7 +309,7 @@ fun BoxScope.StudioLinkOverlay(
             delay(UNDO_MS)
             if (ui.removed == removed) ui.removed = null
         }
-        val label = VisualLinkTargets.byKey(removed.target)?.let { stringResource(it.label) } ?: removed.target
+        val label = VisualLinkTargets.byKey(removed.target)?.fullLabel() ?: removed.target
         UndoBar(
             text = stringResource(R.string.music_link_removed, label),
             hazeState = hazeState,
