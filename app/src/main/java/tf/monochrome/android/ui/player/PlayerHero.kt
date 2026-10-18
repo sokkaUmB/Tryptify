@@ -484,7 +484,7 @@ private fun VisualizerHeroOverlay(
                     Text(
                         text = currentPreset?.displayName ?: stringResource(R.string.visualizer_bundled_presets),
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

@@ -54,7 +54,6 @@ fun AutoEqHelpSheet(onDismiss: () -> Unit) {
             Text(
                 text = stringResource(R.string.eq_precision_autoeq),
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
             )
             Spacer(Modifier.height(4.dp))
             Text(
@@ -68,7 +67,6 @@ fun AutoEqHelpSheet(onDismiss: () -> Unit) {
                 Text(
                     text = stringResource(section.heading),
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.height(4.dp))

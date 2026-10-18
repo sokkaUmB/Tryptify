@@ -384,7 +384,6 @@ private fun GlyphBpmMeter(
                     else -> shown.toInt().toString()
                 },
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
                 modifier = Modifier.semantics {
                     contentDescription = if (hidden) {
                         "Tempo hidden"

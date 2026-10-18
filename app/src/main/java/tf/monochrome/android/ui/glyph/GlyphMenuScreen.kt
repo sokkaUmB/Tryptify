@@ -248,7 +248,6 @@ private fun MenuPill(
                 Text(
                     text = title,
                     style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
                     color = scheme.onSurface,
                     maxLines = 1,
                 )

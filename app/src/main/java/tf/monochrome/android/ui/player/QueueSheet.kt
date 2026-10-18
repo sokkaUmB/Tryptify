@@ -153,8 +153,7 @@ fun QueueSheet(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.queue),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Medium
+                        style = MaterialTheme.typography.titleLarge
                     )
                     Text(
                         text = pluralStringResource(R.plurals.track_count, queue.size, queue.size),

@@ -81,7 +81,7 @@ import tf.monochrome.android.ui.theme.MonoDimens
 import tf.monochrome.android.ui.theme.loadAppFontFamily
 
 /** One entry in the browser: the default, a font that ships, or an import. */
-private data class FontChoice(
+internal data class FontChoice(
     val key: String,
     val name: String,
     val note: String?,
@@ -121,6 +121,7 @@ fun FontBrowserPage(
     val importing by viewModel.importing.collectAsStateWithLifecycle()
     val report by viewModel.report.collectAsStateWithLifecycle()
     val pendingDelete by viewModel.pendingDelete.collectAsStateWithLifecycle()
+    val typography by viewModel.typography.collectAsStateWithLifecycle()
 
     var filter by rememberSaveable { mutableStateOf(FontFilter.ALL) }
     var sample by rememberSaveable { mutableStateOf("") }
@@ -251,6 +252,23 @@ fun FontBrowserPage(
                         )
                     }
                 }
+                item(key = "typography", span = { GridItemSpan(maxLineSpan) }) {
+                    GlassPanel(
+                        hazeState = haze,
+                        glass = LocalMiniPlayerGlass.current,
+                        avoidNavigationBar = false,
+                        // In a scrolling grid: a swipe on the pane scrolls it.
+                        blockTouchesBelow = false,
+                    ) {
+                        TypographyTable(
+                            settings = typography,
+                            fonts = choices,
+                            mainFont = choices.firstOrNull { it.key == activeKey } ?: choices.first(),
+                            onChange = viewModel::setTypographyStyle,
+                            onResetAll = viewModel::resetTypography,
+                        )
+                    }
+                }
             }
         }
     }
@@ -261,7 +279,7 @@ fun FontBrowserPage(
  * the default rather than handed to the renderer, which would fail on it.
  */
 @Composable
-private fun rememberFontFamily(context: android.content.Context, choice: FontChoice): FontFamily =
+internal fun rememberFontFamily(context: android.content.Context, choice: FontChoice): FontFamily =
     remember(choice.key, choice.usable) {
         when {
             choice.origin == FontChoice.Origin.DEFAULT || !choice.usable -> InterFontFamily

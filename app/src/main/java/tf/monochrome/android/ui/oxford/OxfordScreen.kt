@@ -499,7 +499,6 @@ private fun TutorialSheet(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
             )
             Spacer(Modifier.height(4.dp))
             Text(
@@ -512,7 +511,6 @@ private fun TutorialSheet(
                 Text(
                     text = stringResource(section.heading),
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.height(4.dp))

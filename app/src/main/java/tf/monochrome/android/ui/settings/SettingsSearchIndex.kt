@@ -84,6 +84,7 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
     entry("Dynamic colours", R.string.settings_dynamic_colors, "Appearance", listOf("album", "art", "material you", "accent")),
     entry("Font scale", R.string.settings_font_size, "Fonts", listOf("text size", "bigger", "smaller", "accessibility")),
     entry("Custom font", R.string.settings_font_library, "Fonts", listOf("typeface", "import font", "fonts")),
+    entry("Typography", R.string.typo_title, "Fonts", listOf("weight", "bold", "letter spacing", "text style", "type scale", "font per style")),
     entry("Glow behind album art", R.string.settings_glow_behind_album_art, "Appearance", listOf("bloom", "halo", "cover", "kick", "bass", "pump")),
     entry("Glow radius", R.string.settings_glow_radius, "Appearance", listOf("bloom", "halo", "cover", "size", "reach", "spread")),
     entry("Glow brightness", R.string.settings_glow_brightness, "Appearance", listOf("bloom", "halo", "cover", "strength", "intensity")),

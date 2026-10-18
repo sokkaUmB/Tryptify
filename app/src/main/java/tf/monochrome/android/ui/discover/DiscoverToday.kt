@@ -285,7 +285,6 @@ internal fun TodayHero(
         Text(
             text = pick.genre.name,
             style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -418,7 +417,6 @@ internal fun SpotlightCard(
         Text(
             text = spotlight.genre.name,
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -486,7 +484,6 @@ internal fun WorldRadioCard() {
             Text(
                 text = stringResource(R.string.world_radio),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

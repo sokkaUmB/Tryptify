@@ -63,7 +63,6 @@ internal fun ReleaseRadarRow(
             Text(
                 text = stringResource(R.string.radar_title),
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             if (newCount > 0) {
@@ -127,7 +126,6 @@ private fun RadarCard(item: RadarItem, onClick: () -> Unit) {
         Text(
             text = release.title,
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

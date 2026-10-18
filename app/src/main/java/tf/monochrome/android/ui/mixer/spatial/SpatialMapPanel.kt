@@ -129,7 +129,6 @@ fun SpatialMapPanel(
                 Text(
                     text = stringResource(R.string.mixer_spatial_map),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
                 )
                 Text(
                     text = if (live != null) stringResource(R.string.mixer_playing_now, SpatialLayout.layoutName(count))

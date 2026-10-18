@@ -291,7 +291,6 @@ private fun ChartRow(entry: ChartEntry, onPlay: () -> Unit) {
             Text(
                 text = entry.title,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

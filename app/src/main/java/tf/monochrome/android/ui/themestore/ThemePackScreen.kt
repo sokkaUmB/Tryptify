@@ -361,7 +361,7 @@ fun ThemePackScreen(
                             item(key = "about") {
                                 PackCard(backdrop) {
                                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Text(info.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+                                        Text(info.name, style = MaterialTheme.typography.titleLarge)
                                         Text(
                                             stringResource(R.string.theme_store_by, info.authorName.ifBlank { stringResource(R.string.theme_store_someone) }),
                                             style = MaterialTheme.typography.bodyMedium,
@@ -415,7 +415,7 @@ fun ThemePackScreen(
                                 item(key = "mine") {
                                     PackCard(backdrop) {
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Text(stringResource(R.string.theme_pack_yours), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+                                            Text(stringResource(R.string.theme_pack_yours), style = MaterialTheme.typography.titleMedium)
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 StorePicture(
                                                     info,
@@ -482,7 +482,7 @@ fun ThemePackScreen(
                                             }
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Column(Modifier.weight(1f)) {
-                                                    Text(stringResource(R.string.theme_publish_listed), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                                                    Text(stringResource(R.string.theme_publish_listed), style = MaterialTheme.typography.bodyLarge)
                                                     Text(
                                                         stringResource(R.string.theme_publish_listed_desc),
                                                         style = MaterialTheme.typography.bodySmall,
@@ -578,7 +578,7 @@ private fun PartRow(part: ThemePart) {
         Icon(partIcon(part), contentDescription = null, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(12.dp))
         Column {
-            Text(partLabel(part), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(partLabel(part), style = MaterialTheme.typography.bodyLarge)
             Text(partDescription(part), style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = 0.8f))
         }
     }
@@ -598,7 +598,7 @@ private fun BoxScope.ImportSheet(
     var keep by remember(parts) { mutableStateOf(parts) }
     var busy by remember { mutableStateOf(false) }
     SheetFrame(hazeState, onDismiss) {
-        Text(stringResource(R.string.theme_import_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+        Text(stringResource(R.string.theme_import_title), style = MaterialTheme.typography.titleLarge)
         Text(
             stringResource(R.string.theme_import_desc),
             style = MaterialTheme.typography.bodySmall,
@@ -613,7 +613,7 @@ private fun BoxScope.ImportSheet(
                     Icon(partIcon(part), contentDescription = null, modifier = Modifier.size(22.dp))
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(partLabel(part), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                        Text(partLabel(part), style = MaterialTheme.typography.bodyLarge)
                         Text(partDescription(part), style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = 0.8f))
                     }
                     Switch(checked = part in keep, onCheckedChange = { on -> keep = if (on) keep + part else keep - part })
@@ -656,7 +656,7 @@ private fun BoxScope.ReportSheet(hazeState: HazeState, onDismiss: () -> Unit, on
         stringResource(R.string.theme_report_copy),
     )
     SheetFrame(hazeState, onDismiss) {
-        Text(stringResource(R.string.theme_pack_report), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+        Text(stringResource(R.string.theme_pack_report), style = MaterialTheme.typography.titleLarge)
         Text(stringResource(R.string.theme_report_desc), style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = 0.85f))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             reasons.forEach { r ->
@@ -690,7 +690,7 @@ internal fun BoxScope.ConfirmSheet(
     onConfirm: () -> Unit,
 ) {
     SheetFrame(hazeState, onDismiss) {
-        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+        Text(title, style = MaterialTheme.typography.titleLarge)
         Text(body, style = MaterialTheme.typography.bodyMedium, color = LocalContentColor.current.copy(alpha = 0.85f))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             GlassPill(onClick = onDismiss, hazeState = hazeState, height = 50.dp, modifier = Modifier.weight(1f)) {

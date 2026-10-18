@@ -261,6 +261,14 @@ class MainActivity : ComponentActivity() {
             val customFontFamily = remember(customFontPath, fontLoadContext) {
                 tf.monochrome.android.ui.theme.loadAppFontFamily(fontLoadContext, customFontPath)
             }
+            // The typography table, and the fonts its styles name besides the main one.
+            val typographySettings by preferences.typography
+                .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.domain.model.TypographySettings.DEFAULT)
+            val typographyFonts = remember(typographySettings.fontIds, fontLoadContext) {
+                typographySettings.fontIds
+                    .mapNotNull { id -> tf.monochrome.android.ui.theme.loadAppFontFamily(fontLoadContext, id)?.let { id to it } }
+                    .toMap()
+            }
 
             // "Remove liquid glass" is folded into the detected profile rather
             // than checked separately: allowHazeBlur is the flag every haze
@@ -287,6 +295,8 @@ class MainActivity : ComponentActivity() {
                     themeName = themeName,
                     fontScale = fontScale,
                     customFontFamily = customFontFamily,
+                    typographySettings = typographySettings,
+                    typographyFonts = typographyFonts,
                     dynamicPalette = dynamicPalette,
                     paper = if (themePaper == "warm") {
                         tf.monochrome.android.ui.theme.Paper.Warm

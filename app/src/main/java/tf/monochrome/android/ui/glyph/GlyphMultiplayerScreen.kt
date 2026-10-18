@@ -187,7 +187,7 @@ private fun Lobby(playerName: String, rooms: List<RoomSummary>, onEvent: (GlyphE
                     .padding(vertical = MonoDimens.spacingSm),
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text(summary.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text(summary.name, style = MaterialTheme.typography.bodyLarge)
                     Text(
                         listOfNotNull(summary.host, summary.chart, stateLabel(summary.state)).joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall,
@@ -213,12 +213,12 @@ private fun RoomPanel(state: GlyphUiState, room: RoomView, onEvent: (GlyphEvent)
     GlyphPanel(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(room.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+                Text(room.name, style = MaterialTheme.typography.titleMedium)
                 Text(stateLabel(room.state).orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(stringResource(R.string.tm_mp_code_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(room.code, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+                Text(room.code, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.titleLarge)
             }
         }
     }
@@ -232,7 +232,7 @@ private fun RoomPanel(state: GlyphUiState, room: RoomView, onEvent: (GlyphEvent)
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            Text(chart.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(chart.title, style = MaterialTheme.typography.bodyLarge)
             Text(
                 listOf(chart.artist, chart.difficulty, chart.bpm.takeIf { it > 0 }?.let { "${it.toInt()} BPM" }).filter { !it.isNullOrBlank() }.joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,

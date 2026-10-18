@@ -263,7 +263,6 @@ fun EqualizerScreen(
                             Text(
                                 stringResource(R.string.eq_precision_autoeq_caps),
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Medium,
                                 letterSpacing = 2.sp,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -1068,8 +1067,7 @@ fun EqualizerScreen(
                         Column {
                             Text(
                                 stringResource(R.string.eq_database),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium
+                                style = MaterialTheme.typography.titleMedium
                             )
                             Text(
                                 "AutoEq Repo",

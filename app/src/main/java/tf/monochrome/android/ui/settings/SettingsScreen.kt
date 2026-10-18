@@ -3260,7 +3260,6 @@ private fun LitGroupHeader(title: String, badge: String? = null) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium,
             color = primary,
             modifier = Modifier.weight(1f),
         )

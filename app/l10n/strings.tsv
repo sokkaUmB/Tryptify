@@ -2000,6 +2000,46 @@ fonts_skip_duplicate	%1$s is already in your fonts as %2$s	%1$s 已在你的字�
 fonts_skip_unreadable	%1$s couldn’t be read	无法读取 %1$s	%1$s を読み取れませんでした	Impossible de lire %1$s	No se pudo leer %1$s	%1$s okunamadı	%1$s konnte nicht gelesen werden
 fonts_unusable	This file can’t be read as a font. Delete it to tidy up.	无法将此文件读取为字体。删除它即可清理。	このファイルはフォントとして読み取れません。削除して整理できます。	Ce fichier ne peut pas être lu comme une police. Supprimez-le pour faire le ménage.	Este archivo no se puede leer como fuente. Bórralo para ordenar.	Bu dosya yazı tipi olarak okunamıyor. Temizlemek için silin.	Diese Datei lässt sich nicht als Schrift lesen. Lösch sie zum Aufräumen.
 fonts_imported_styles	Imported · %1$d styles, each at its own weight	已导入 · %1$d 种样式，各用其字重	インポート済み · %1$d スタイル、それぞれの太さで	Importée · %1$d styles, chacun à sa graisse	Importada · %1$d estilos, cada uno con su peso	İçe aktarıldı · %1$d stil, her biri kendi kalınlığında	Importiert · %1$d Schnitte, jeder in seiner Stärke
+typo_title	Typography	排版	タイポグラフィ	Typographie	Tipografía	Tipografi	Typografie
+typo_desc	Every kind of text in the app, each with its own font, weight, size and letter spacing. A style you leave alone follows the main font above.	应用中的每种文字，各有自己的字体、字重、字号和字距。未修改的样式沿用上方的主字体。	アプリ内のテキストの種類ごとに、フォント・太さ・サイズ・字間を設定できます。変更しないスタイルは上のメインフォントに従います。	Chaque type de texte de l’app, avec sa police, sa graisse, sa taille et son interlettrage. Un style que vous ne touchez pas suit la police principale ci-dessus.	Cada tipo de texto de la app, con su fuente, peso, tamaño y espaciado. Un estilo que no cambies sigue la fuente principal de arriba.	Uygulamadaki her metin türü; kendi yazı tipi, kalınlığı, boyutu ve harf aralığıyla. Dokunmadığınız bir stil yukarıdaki ana yazı tipini izler.	Jede Textart der App mit eigener Schrift, Stärke, Größe und Laufweite. Ein Stil, den du nicht änderst, folgt der Hauptschrift oben.
+typo_note	Some text keeps a weight of its own, such as numbers, buttons and the game.	部分文字保留自己的字重，例如数字、按钮和游戏。	数字、ボタン、ゲームなど、独自の太さを保つテキストもあります。	Certains textes gardent leur propre graisse, comme les chiffres, les boutons et le jeu.	Algunos textos conservan su propio peso, como los números, los botones y el juego.	Sayılar, düğmeler ve oyun gibi bazı metinler kendi kalınlığını korur.	Manche Texte behalten ihre eigene Stärke, etwa Zahlen, Schaltflächen und das Spiel.
+typo_reset_all	Reset all	全部重置	すべてリセット	Tout réinitialiser	Restablecer todo	Tümünü sıfırla	Alles zurücksetzen
+typo_reset	Reset this style	重置此样式	このスタイルをリセット	Réinitialiser ce style	Restablecer este estilo	Bu stili sıfırla	Diesen Stil zurücksetzen
+typo_font	Font	字体	フォント	Police	Fuente	Yazı tipi	Schrift
+typo_main_font	Main font (%1$s)	主字体（%1$s）	メインフォント（%1$s）	Police principale (%1$s)	Fuente principal (%1$s)	Ana yazı tipi (%1$s)	Hauptschrift (%1$s)
+typo_weight	Weight	字重	太さ	Graisse	Peso	Kalınlık	Stärke
+typo_size	Size	字号	サイズ	Taille	Tamaño	Boyut	Größe
+typo_spacing	Letter spacing	字距	字間	Interlettrage	Espaciado	Harf aralığı	Laufweite
+typo_sample	Night drive, 3 a.m. — 128 BPM	深夜驾车，凌晨三点 — 128 BPM	夜のドライブ、午前3時 — 128 BPM	Route de nuit, 3 h du matin — 128 BPM	Viaje nocturno, 3 a. m. — 128 BPM	Gece yolculuğu, saat 03.00 — 128 BPM	Nachtfahrt, 3 Uhr morgens — 128 BPM
+typo_display	Display	展示	ディスプレイ	Affichage	Display	Gösterim	Display
+typo_headline	Headline	标题大字	見出し	Gros titre	Encabezado	Başlık	Überschrift
+typo_title_group	Title	标题	タイトル	Titre	Título	Ana başlık	Titel
+typo_body	Body	正文	本文	Corps	Cuerpo	Gövde	Text
+typo_label	Label	标签	ラベル	Étiquette	Etiqueta	Etiket	Label
+typo_hint_display_large	Big numbers	大数字	大きな数字	Grands chiffres	Números grandes	Büyük sayılar	Große Zahlen
+typo_hint_display_medium	Stats and welcome screens	统计与欢迎页	統計とようこそ画面	Statistiques et écrans d’accueil	Estadísticas y pantallas de bienvenida	İstatistikler ve karşılama ekranları	Statistiken und Willkommensseiten
+typo_hint_display_small	Genre of the day, welcome	今日流派、欢迎	今日のジャンル、ようこそ	Genre du jour, accueil	Género del día, bienvenida	Günün türü, karşılama	Genre des Tages, Willkommen
+typo_hint_headline_large	Playlist and album names	歌单与专辑名	プレイリストとアルバム名	Noms de playlists et d’albums	Nombres de listas y álbumes	Çalma listesi ve albüm adları	Playlist- und Albumnamen
+typo_hint_headline_medium	Page headers	页面标题	ページ見出し	En-têtes de page	Encabezados de página	Sayfa başlıkları	Seitenüberschriften
+typo_hint_headline_small	Card and section headers	卡片与分区标题	カードとセクションの見出し	En-têtes de cartes et de sections	Encabezados de tarjetas y secciones	Kart ve bölüm başlıkları	Karten- und Abschnittsüberschriften
+typo_hint_title_large	Top bars and sheet titles	顶栏与面板标题	トップバーとシートのタイトル	Barres du haut et titres de panneaux	Barras superiores y títulos de paneles	Üst çubuklar ve sayfa başlıkları	Obere Leisten und Blatttitel
+typo_hint_title_medium	Section and card titles	分区与卡片标题	セクションとカードのタイトル	Titres de sections et de cartes	Títulos de secciones y tarjetas	Bölüm ve kart başlıkları	Abschnitts- und Kartentitel
+typo_hint_title_small	Tabs and small titles	标签页与小标题	タブと小さなタイトル	Onglets et petits titres	Pestañas y títulos pequeños	Sekmeler ve küçük başlıklar	Tabs und kleine Titel
+typo_hint_body_large	Row titles: settings, songs	行标题：设置、歌曲	行のタイトル：設定、曲	Titres de lignes : réglages, chansons	Títulos de filas: ajustes, canciones	Satır başlıkları: ayarlar, şarkılar	Zeilentitel: Einstellungen, Songs
+typo_hint_body_medium	Descriptions	描述	説明	Descriptions	Descripciones	Açıklamalar	Beschreibungen
+typo_hint_body_small	Small descriptions, artist lines	小描述、艺人行	小さな説明、アーティスト行	Petites descriptions, lignes d’artiste	Descripciones pequeñas, líneas de artista	Küçük açıklamalar, sanatçı satırları	Kleine Beschreibungen, Künstlerzeilen
+typo_hint_label_large	Buttons	按钮	ボタン	Boutons	Botones	Düğmeler	Schaltflächen
+typo_hint_label_medium	Chips and values	标签块与数值	チップと値	Puces et valeurs	Chips y valores	Çipler ve değerler	Chips und Werte
+typo_hint_label_small	Badges	徽标	バッジ	Badges	Insignias	Rozetler	Abzeichen
+typo_weight_100	Thin	极细	極細	Fin	Fina	İnce	Thin
+typo_weight_200	ExtraLight	特细	特細	Extra-léger	Extraligera	Ekstra hafif	ExtraLight
+typo_weight_300	Light	细	細	Léger	Ligera	Hafif	Light
+typo_weight_400	Regular	常规	標準	Normal	Normal	Normal	Regular
+typo_weight_500	Medium	中等	中	Moyen	Media	Orta	Medium
+typo_weight_600	SemiBold	半粗	やや太	Demi-gras	Seminegrita	Yarı kalın	SemiBold
+typo_weight_700	Bold	粗	太	Gras	Negrita	Kalın	Bold
+typo_weight_800	ExtraBold	特粗	極太	Extra-gras	Extranegrita	Ekstra kalın	ExtraBold
+typo_weight_900	Black	黑	超極太	Noir	Negra	Siyah	Black
 fonts_delete_title	Delete %1$s?	要删除 %1$s 吗？	%1$s を削除しますか？	Supprimer %1$s ?	¿Eliminar %1$s?	%1$s silinsin mi?	%1$s löschen?
 fonts_delete_body	It’s removed from this device. If it’s the font in use, the app goes back to Inter.	它将从此设备中移除。如果它是正在使用的字体，应用会改回 Inter。	この端末から削除されます。使用中のフォントの場合は Inter に戻ります。	Elle est supprimée de cet appareil. Si c’est la police utilisée, l’app revient à Inter.	Se elimina de este dispositivo. Si es la fuente en uso, la app vuelve a Inter.	Bu cihazdan kaldırılır. Kullanımdaki yazı tipiyse uygulama Inter’e döner.	Sie wird von diesem Gerät entfernt. Ist sie die aktive Schrift, kehrt die App zu Inter zurück.
 discover_today_title	Today’s discovery	今日发现	今日の発見	La découverte du jour	El descubrimiento de hoy	Bugünün keşfi	Entdeckung des Tages

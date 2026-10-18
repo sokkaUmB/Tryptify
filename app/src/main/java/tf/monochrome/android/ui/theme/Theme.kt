@@ -624,6 +624,11 @@ fun MonochromeTheme(
     themeName: String = "monochrome_dark",
     fontScale: Float = 1.0f,
     customFontFamily: FontFamily? = null,
+    /** Settings › Fonts › Typography: per style, a font, weight, size and spacing. */
+    typographySettings: tf.monochrome.android.domain.model.TypographySettings =
+        tf.monochrome.android.domain.model.TypographySettings.DEFAULT,
+    /** The fonts the table names, loaded, by font id. */
+    typographyFonts: Map<String, FontFamily> = emptyMap(),
     /**
      * The album palette as its *state*, not its value.
      *
@@ -684,8 +689,8 @@ fun MonochromeTheme(
         keepBackground = dynamicMenusKeepBackground,
     )
     val family = customFontFamily ?: InterFontFamily
-    val typography = remember(fontScale, family) {
-        buildTypography(family, fontScale)
+    val typography = remember(fontScale, family, typographySettings, typographyFonts) {
+        buildTypography(family, fontScale, typographySettings) { typographyFonts[it] }
     }
 
     // By default the album palette is NOT overlaid on the global scheme — doing

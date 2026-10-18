@@ -89,7 +89,7 @@ fun LyricsSheet(
                     ) {
                         Text(
                             text = stringResource(R.string.lyrics_none_short),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
@@ -272,7 +272,7 @@ private fun KaraokeLine(
 private fun UnsyncedLyrics(lines: List<LyricLine>) {
     val lyricFont = rememberLyricFontFamily(LocalLyricsFx.current)
     val fontSizeSp = LocalLyricsFx.current.fontSizeSp
-    val style = MaterialTheme.typography.bodyLarge.withLyricFont(lyricFont)
+    val style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal).withLyricFont(lyricFont)
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val rowWidth = maxWidth
         LazyColumn(

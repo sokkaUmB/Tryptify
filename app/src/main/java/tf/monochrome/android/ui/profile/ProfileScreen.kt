@@ -680,7 +680,6 @@ private fun SignedOutView(
             Text(
                 text = stringResource(R.string.sign_in_to_tryptify),
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onBackground
             )
 

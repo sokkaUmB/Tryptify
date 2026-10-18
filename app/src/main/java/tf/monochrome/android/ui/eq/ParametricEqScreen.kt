@@ -131,7 +131,6 @@ fun ParametricEqScreen(
                         Text(
                             stringResource(R.string.eq_parametric_eq_caps),
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Medium,
                             letterSpacing = 2.sp,
                             color = MaterialTheme.colorScheme.primary
                         )

@@ -372,7 +372,7 @@ private fun AlbumCard(
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = groupTitle,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

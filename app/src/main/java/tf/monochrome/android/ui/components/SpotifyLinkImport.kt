@@ -167,7 +167,6 @@ internal fun LinkPreviewCard(preview: LinkPreview) {
                 Text(
                     text = preview.name,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

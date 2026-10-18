@@ -176,7 +176,7 @@ internal fun LyricsHeroPanel(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
                             text = stringResource(R.string.lyrics_none),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
                             color = Color.White.copy(alpha = 0.7f),
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(horizontal = 24.dp),
@@ -1323,7 +1323,7 @@ internal fun UnsyncedLyricsView(lines: List<LyricLine>) {
     LaunchedEffect(lines) { LyricsDebug.log("unsynced lyrics loaded: ${lines.size} lines (no timing)") }
     val fx = LocalLyricsFx.current
     val curveLinks = LocalVisualLinks.current
-    val style = MaterialTheme.typography.bodyLarge.withLyricFont(rememberLyricFontFamily(fx))
+    val style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal).withLyricFont(rememberLyricFontFamily(fx))
     val sidePadding = 28.dp
     // Flat while the CRT effect bows the whole app (appTubeCurved).
     val appCurved = tf.monochrome.android.ui.glyph.appTubeCurved()

@@ -218,7 +218,7 @@ private fun LinkActionRow(
             Icon(icon, contentDescription = null, modifier = Modifier.size(26.dp))
             Spacer(Modifier.width(14.dp))
             Column {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+                Text(title, style = MaterialTheme.typography.titleMedium)
                 if (subtitle != null) {
                     Text(
                         subtitle,
@@ -268,7 +268,7 @@ fun BoxScope.MusicLinkOptionsSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)) {
-                    Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+                    Text(title, style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.width(8.dp))
                     Text(valueText, style = MaterialTheme.typography.bodyMedium, color = LocalContentColor.current.copy(alpha = 0.8f))
                 }
@@ -382,7 +382,7 @@ fun BoxScope.MusicLinkEditor(
                 .padding(top = 8.dp, bottom = LocalBottomChromeNow.current + 8.dp),
         ) {
             Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+                Text(title, style = MaterialTheme.typography.titleLarge)
                 Text(
                     stringResource(R.string.music_link_editor_subtitle),
                     style = MaterialTheme.typography.bodySmall,
@@ -796,7 +796,7 @@ fun WhatYouHearRow() {
         Icon(Icons.Default.MusicNote, contentDescription = null, tint = musicLinkColor(), modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(10.dp))
         Column {
-            Text(stringResource(R.string.music_link_what_you_hear), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.music_link_what_you_hear), style = MaterialTheme.typography.bodyLarge)
             Text(
                 stringResource(R.string.music_link_what_you_hear_desc),
                 style = MaterialTheme.typography.bodySmall,

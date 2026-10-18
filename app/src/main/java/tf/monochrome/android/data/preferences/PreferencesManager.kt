@@ -325,6 +325,9 @@ class PreferencesManager @Inject constructor(
         // used instead (Configuration.fontScale).
         private val FONT_SCALE_FOLLOW_SYSTEM = booleanPreferencesKey("font_scale_follow_system")
         private val CUSTOM_FONT_URI = stringPreferencesKey("custom_font_uri")
+        // The Fonts page's typography table. Device-local, like the font it
+        // names: an imported font is a path on this phone.
+        private val TYPOGRAPHY_JSON = stringPreferencesKey("typography_json")
 
         // Parity features
         private val VISUALIZER_SENSITIVITY = intPreferencesKey("visualizer_sensitivity")
@@ -1348,6 +1351,18 @@ class PreferencesManager @Inject constructor(
     }
     suspend fun setFontScale(scale: Float) {
         dataStore.edit { it[FONT_SCALE] = scale.coerceIn(0.5f, 2.0f) }
+    }
+
+    /** The typography table: each text style's font, weight, size and spacing. */
+    val typography: Flow<tf.monochrome.android.domain.model.TypographySettings> = dataStore.data.map { prefs ->
+        tf.monochrome.android.domain.model.TypographySettings.decode(prefs[TYPOGRAPHY_JSON])
+    }
+
+    suspend fun setTypography(settings: tf.monochrome.android.domain.model.TypographySettings) {
+        dataStore.edit { prefs ->
+            if (settings.styles.isEmpty()) prefs.remove(TYPOGRAPHY_JSON)
+            else prefs[TYPOGRAPHY_JSON] = tf.monochrome.android.domain.model.TypographySettings.encode(settings)
+        }
     }
 
     /** When true the app follows the OS font size and ignores [fontScale]. */

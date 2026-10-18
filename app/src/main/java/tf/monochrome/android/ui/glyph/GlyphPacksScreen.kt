@@ -372,7 +372,6 @@ private fun StepManiaOnlineBrowser(onDismiss: () -> Unit, onDownload: (String, S
                 Text(
                     text = "StepMania Online",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(top = 10.dp),
                 )

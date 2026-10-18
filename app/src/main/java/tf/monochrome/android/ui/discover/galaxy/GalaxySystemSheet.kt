@@ -125,7 +125,6 @@ internal fun GalaxySystemSheet(
                     Text(
                         title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -268,7 +267,6 @@ private fun PlanetRow(planet: PlanetSystem.Planet, description: String, imageDp:
             Text(
                 planet.label,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

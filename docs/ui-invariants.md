@@ -546,21 +546,30 @@ every ♪ to a target, and checks each one moves its own setting and no other.
 
 ### Titles over descriptions
 
-**A title above a description is at most `FontWeight.Medium`, a size under
-Material's, and two weights above its description.** The theme's row title
-(`bodyLarge`) is Medium and its descriptions (`bodyMedium`, `bodySmall`)
-Light: both at Regular, a Settings row's name and the line under it read as
-one weight, told apart only by size and colour. The theme's `titleLarge`, `titleMedium` and `bodyLarge` (the row
-title) are 17, 15 and 15 sp against Material's 18, 16 and 16, with Material's
-line heights, so no row changes height; descriptions keep their sizes. Titles
-forced Bold, ExtraBold or Black over a description (the link editor, the
-Theme Store, sheets, headers) are Medium now, and a headline over one steps
-down a size. The owner found bold titles a size up from their text heavy to
-read: the difference in size and colour already says which is the title.
+**A title is SemiBold and its description Regular, two weights apart.** The
+theme's titles (`titleLarge`, `titleMedium`, `titleSmall`) and row title
+(`bodyLarge`) are SemiBold; descriptions (`bodyMedium`, `bodySmall`) are
+Regular. At one weight a Settings row's name and the line under it read as
+one, told apart only by size and colour; Medium over Light was tried and read
+too thin. Titles and row titles sit a size under Material's (17, 15, 15
+against 18, 16, 16) with Material's line heights, so no row changes height.
+All of it lives in one table, `TypeDefaults`, which `buildTypography` reads.
 
-Not titles, and left as they were: numbers and readouts (Stats, the EQ's
-values), labels and button text, Car Mode (read at a glance while driving),
-and Trypt Mania's logo.
+**A title over a description takes its style's weight; it does not force
+one.** The titles that used to force Bold or Black (the link editor, the
+Theme Store, sheets, headers) now inherit their style, so the typography table
+reaches them. Text that is not a title keeps its own weight: numbers and
+readouts (Stats, the EQ's values), labels and buttons, Car Mode, Trypt Mania.
+Plain text drawn in `bodyLarge` (the lyrics' plain view, the search field,
+"no lyrics") pins Regular, since that style is the row title.
+
+**The typography table** (Settings › Fonts, under the fonts): Material's
+fifteen styles, each with its own font, weight (Thin to Black), size and
+letter spacing, stored as `TypographySettings` and applied in
+`buildTypography` over `TypeDefaults`. A style left alone follows the main
+font and the defaults; the text-size setting scales the table's sizes too;
+a bigger size takes a taller line in proportion. Every font loads at all nine
+weights (`loadAppFontFamily`), so a variable font draws each one.
 
 ### Text on glass
 

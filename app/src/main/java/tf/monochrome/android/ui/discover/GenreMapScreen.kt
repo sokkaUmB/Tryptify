@@ -808,7 +808,7 @@ private fun PanelChartRow(entry: ChartEntry, accent: Color, onPlay: () -> Unit) 
             Text(
                 text = entry.title,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

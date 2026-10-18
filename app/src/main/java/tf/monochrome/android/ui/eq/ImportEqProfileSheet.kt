@@ -89,7 +89,6 @@ fun ImportEqProfileSheet(
             Text(
                 stringResource(R.string.eq_import_eq_profile),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
             )
             Text(
                 if (perEar) {

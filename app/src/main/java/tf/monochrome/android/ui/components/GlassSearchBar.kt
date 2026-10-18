@@ -26,6 +26,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
@@ -119,8 +120,10 @@ fun GlassSearchBar(
                     onValueChange = onQueryChange,
                     enabled = enabled,
                     singleLine = true,
+                    // What is typed is text, not a title: Regular, whatever the row titles are.
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
                         color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Normal,
                     ),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -142,7 +145,7 @@ fun GlassSearchBar(
                         if (query.isEmpty()) {
                             Text(
                                 text = placeholder,
-                                style = MaterialTheme.typography.bodyLarge,
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                             )
