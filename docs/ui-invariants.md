@@ -490,6 +490,12 @@ haze source, never a dialog or a `ModalBottomSheet` (see Glass). The live
 reach and position on a slider or knob are drawn in the draw phase from
 `MusicLinkHost.liveValue`; they redraw the control and recompose nothing.
 
+The editor takes nearly the whole window: from under the status bar to just
+over the system bar, with `HideAppChrome` putting the tab bar and the mini
+player away while it is open. Fitted under a preview and over the bar, it had
+room for its title and its first row, and every choice was a scroll away. The
+meter in its band picture is what shows the link moving.
+
 Every Studio tab links, not only Lyrics. A key's prefix is the part of the app
 that draws it (`LinkArea`): `lyrics.`, `player.` (the play disc, chevrons and
 dock), `panels.` (the mini player, tab bar and every pane), `tv.` (the CRT

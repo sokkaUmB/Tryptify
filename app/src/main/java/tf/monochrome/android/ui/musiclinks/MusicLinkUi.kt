@@ -13,14 +13,16 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -58,7 +60,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import tf.monochrome.android.R
@@ -71,6 +72,7 @@ import tf.monochrome.android.domain.model.LinkWay
 import tf.monochrome.android.domain.model.MusicLinkFollower
 import tf.monochrome.android.ui.components.GlassPanel
 import tf.monochrome.android.ui.components.GlassPill
+import tf.monochrome.android.ui.components.HideAppChrome
 import tf.monochrome.android.ui.components.LocalGlassBackdrop
 import tf.monochrome.android.ui.components.PressableGlass
 import tf.monochrome.android.ui.mixer.GlassChoiceChip
@@ -342,6 +344,10 @@ fun BoxScope.MusicLinkOptionsSheet(
  * [listensTo] is the source picker: the mixer offers its buses, a visual link
  * shows the one thing it can hear. [spectrum] and [strength] feed the band
  * picker's live picture and meter; both are read in draw blocks.
+ *
+ * It takes nearly the whole window, the tab bar and the mini player stepping
+ * aside while it is open: squeezed under a preview and over the bar, it had
+ * room for its title and little else, and every choice was a scroll away.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -359,14 +365,9 @@ fun BoxScope.MusicLinkEditor(
     onCancel: () -> Unit,
     onRemove: (() -> Unit)?,
     listensTo: @Composable () -> Unit,
-    /**
-     * Where the editor's top edge sits, from the top of its box: just under a
-     * live preview, so the preview stays in sight and undimmed while the link
-     * is shaped. Unspecified, the editor takes two thirds of the height.
-     */
-    topClearance: Dp = Dp.Unspecified,
 ) {
-    MusicLinkScrim(onCancel, dim = if (topClearance != Dp.Unspecified) 0f else 0.32f, dismissOnTap = false)
+    HideAppChrome(true)
+    MusicLinkScrim(onCancel, dim = 0.32f, dismissOnTap = false)
     val accent = MaterialTheme.colorScheme.primary
     CompositionLocalProvider(LocalGlassBackdrop provides hazeState) {
         GlassPanel(
@@ -374,14 +375,11 @@ fun BoxScope.MusicLinkEditor(
             glass = LocalMiniPlayerGlass.current,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .then(
-                    if (topClearance != Dp.Unspecified) {
-                        Modifier.fillMaxSize().padding(top = topClearance)
-                    } else {
-                        Modifier.fillMaxHeight(0.66f)
-                    },
-                )
-                .padding(bottom = LocalBottomChromeNow.current),
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.statusBars)
+                // With the bar gone the screen runs to the bottom edge, and
+                // this is the system bar alone.
+                .padding(top = 8.dp, bottom = LocalBottomChromeNow.current + 8.dp),
         ) {
             Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
                 Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)

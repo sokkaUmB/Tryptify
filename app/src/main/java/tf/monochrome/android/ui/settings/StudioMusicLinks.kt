@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeState
@@ -240,7 +239,6 @@ fun BoxScope.StudioLinkOverlay(
     live: VisualLinkLive,
     tap: SpectrumAnalyzerTap,
     hazeState: HazeState,
-    editorTop: Dp,
 ) {
     val links by editing.links.collectAsStateWithLifecycle()
     val draft by editing.draft.collectAsStateWithLifecycle()
@@ -299,7 +297,6 @@ fun BoxScope.StudioLinkOverlay(
             onCancel = editing::cancel,
             onRemove = if (d.isNew) null else ({ ui.removed = editing.remove(key) }),
             listensTo = { WhatYouHearRow() },
-            topClearance = editorTop,
         )
     }
 

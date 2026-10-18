@@ -555,10 +555,6 @@ fun LyricsFxStudioScreen(
     val tvLook by viewModel.appTvShader.collectAsStateWithLifecycle()
     val ambientLook by viewModel.ambient.collectAsStateWithLifecycle()
     val linkLook = StudioLook(fx, playerGlass, miniPlayerGlass, tvTuning, tvLook, ambientLook)
-    val density = LocalDensity.current
-    var screenTopPx by remember { mutableFloatStateOf(0f) }
-    var previewBottomPx by remember { mutableFloatStateOf(0f) }
-    var tabsBottomPx by remember { mutableFloatStateOf(0f) }
 
     // Preset save / import / share dialog state.
     var showSaveDialog by rememberSaveable { mutableStateOf(false) }
@@ -569,7 +565,7 @@ fun LyricsFxStudioScreen(
     // imported in Settings › Appearance since this screen opened shows up.
     LaunchedEffect(fx.customFont) { if (fx.customFont) viewModel.refreshFonts() }
 
-    Box(Modifier.fillMaxSize().onGloballyPositioned { screenTopPx = it.boundsInRoot().top }) {
+    Box(Modifier.fillMaxSize()) {
     // Every tab's sliders can be linked, so the link host and the live values
     // are over all of them: the previews draw with the links running.
     CompositionLocalProvider(
@@ -604,7 +600,6 @@ fun LyricsFxStudioScreen(
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,
-            modifier = Modifier.onGloballyPositioned { tabsBottomPx = it.boundsInRoot().bottom },
         ) {
             // Player chrome first, then the glass shared by every floating
             // panel, then lyrics. "UI panels" rather than "Mini Player"
@@ -813,7 +808,6 @@ fun LyricsFxStudioScreen(
                     onDeletePreset = { viewModel.deletePlayerGlassPreset(it) },
                     onExportPreset = { viewModel.exportPlayerGlassPreset(it) },
                     onImportPreset = { viewModel.importPlayerGlassPresetCode(it) },
-                    onPreviewBottom = { previewBottomPx = it },
                 )
             } else {
                 val previewTrack by viewModel.currentTrack.collectAsStateWithLifecycle()
@@ -828,7 +822,6 @@ fun LyricsFxStudioScreen(
                     onImportPreset = { viewModel.importPlayerGlassPresetCode(it) },
                     previewMini = true,
                     previewTrack = previewTrack,
-                    onPreviewBottom = { previewBottomPx = it },
                 )
             }
             return@Column
@@ -837,7 +830,7 @@ fun LyricsFxStudioScreen(
         // Preview + presets are pinned above the scrolling sliders, so the
         // live example stays locked in view while you tune every parameter.
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Box(Modifier.onGloballyPositioned { previewBottomPx = it.boundsInRoot().bottom }) {
+            Box {
                 StudioPreview(fx, currentLyrics, viewModel.currentPositionMs, viewModel.spectrumAnalyzer)
             }
             Spacer(Modifier.height(12.dp))
@@ -1342,8 +1335,6 @@ fun LyricsFxStudioScreen(
         }
     }
     }
-    // The Visualizer tab has no preview to keep in view: its editor opens under the tabs.
-    val editorTopPx = if (selectedTab == 3) tabsBottomPx else previewBottomPx
     StudioLinkOverlay(
         ui = linkUi,
         editing = viewModel.musicLinks,
@@ -1351,7 +1342,6 @@ fun LyricsFxStudioScreen(
         live = linkLive,
         tap = viewModel.spectrumAnalyzer,
         hazeState = linkHaze,
-        editorTop = with(density) { (editorTopPx - screenTopPx).coerceAtLeast(0f).toDp() } + 4.dp,
     )
     }
 }
@@ -1376,8 +1366,6 @@ private fun PlayerGlassTab(
     previewTrack: Track? = null,
     /** Whose glass this tab tunes, for its sliders' music links. */
     linkArea: LinkArea = if (previewMini) LinkArea.PANELS else LinkArea.PLAYER,
-    /** Where the pinned preview ends, in root px: the link editor opens below it. */
-    onPreviewBottom: (Float) -> Unit = {},
 ) {
     val context = LocalContext.current
     val accent = MaterialTheme.colorScheme.primary
@@ -1412,7 +1400,6 @@ private fun PlayerGlassTab(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(if (previewMini) UiPanelsPreviewHeight else 288.dp)
-                .onGloballyPositioned { onPreviewBottom(it.boundsInRoot().bottom) }
                 .clip(RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center,
         ) {
