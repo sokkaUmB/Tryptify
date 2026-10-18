@@ -247,8 +247,8 @@ private fun MenuPill(
             Column {
                 Text(
                     text = title,
-                    style = if (large) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
                     color = scheme.onSurface,
                     maxLines = 1,
                 )

@@ -460,7 +460,7 @@ private fun FolderEntry(item: GlyphWheel.Item.Folder, centred: Boolean) {
             Text(
                 text = section.name,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = if (centred) FontWeight.Bold else FontWeight.SemiBold,
+                fontWeight = if (centred) FontWeight.Medium else FontWeight.SemiBold,
                 color = scheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -502,7 +502,7 @@ private fun SongEntry(item: GlyphWheel.Item.Song, centred: Boolean) {
             Text(
                 text = song.title,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (centred) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (centred) FontWeight.Medium else FontWeight.Normal,
                 color = scheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

@@ -595,7 +595,7 @@ private fun TapPad(caption: String, count: String, onTap: (Long) -> Unit) {
             Text(
                 text = caption,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
             )
             Text(
                 text = count,

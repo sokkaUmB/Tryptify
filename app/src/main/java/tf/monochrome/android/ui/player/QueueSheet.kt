@@ -154,7 +154,7 @@ fun QueueSheet(
                     Text(
                         text = stringResource(R.string.queue),
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = pluralStringResource(R.plurals.track_count, queue.size, queue.size),
@@ -496,7 +496,7 @@ private fun QueueTrackItem(
             Text(
                 text = track.title,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isCurrentTrack) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (isCurrentTrack) FontWeight.Medium else FontWeight.Normal,
                 color = if (isCurrentTrack) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

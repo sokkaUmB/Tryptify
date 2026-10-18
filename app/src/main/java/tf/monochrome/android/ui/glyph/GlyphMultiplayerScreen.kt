@@ -187,7 +187,7 @@ private fun Lobby(playerName: String, rooms: List<RoomSummary>, onEvent: (GlyphE
                     .padding(vertical = MonoDimens.spacingSm),
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text(summary.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                    Text(summary.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                     Text(
                         listOfNotNull(summary.host, summary.chart, stateLabel(summary.state)).joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall,
@@ -213,12 +213,12 @@ private fun RoomPanel(state: GlyphUiState, room: RoomView, onEvent: (GlyphEvent)
     GlyphPanel(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(room.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(room.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                 Text(stateLabel(room.state).orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(stringResource(R.string.tm_mp_code_label), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(room.code, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(room.code, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -232,7 +232,7 @@ private fun RoomPanel(state: GlyphUiState, room: RoomView, onEvent: (GlyphEvent)
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            Text(chart.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Text(chart.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
             Text(
                 listOf(chart.artist, chart.difficulty, chart.bpm.takeIf { it > 0 }?.let { "${it.toInt()} BPM" }).filter { !it.isNullOrBlank() }.joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
@@ -325,7 +325,7 @@ private fun PlayerRow(player: RoomPlayer, room: RoomView, isMe: Boolean, mayKick
                     if (player.id == room.hostId) append("  ★")
                 },
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isMe) FontWeight.SemiBold else FontWeight.Normal,
+                fontWeight = if (isMe) FontWeight.Medium else FontWeight.Normal,
                 color = if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             )
             val note = when {
@@ -351,7 +351,7 @@ private fun RankingRow(placing: RoomPlacing, isMe: Boolean) {
         Text("${placing.rank}.", style = MaterialTheme.typography.titleMedium, fontFamily = FontFamily.Monospace)
         Spacer(Modifier.width(MonoDimens.spacingSm))
         Column(Modifier.weight(1f)) {
-            Text(placing.name, style = MaterialTheme.typography.bodyLarge, fontWeight = if (isMe) FontWeight.SemiBold else FontWeight.Normal)
+            Text(placing.name, style = MaterialTheme.typography.bodyLarge, fontWeight = if (isMe) FontWeight.Medium else FontWeight.Normal)
             Text(
                 "${placing.result.score}  ·  ${"%.2f".format(placing.result.acc * 100)}%  ·  ${placing.result.maxCombo}x" +
                     (if (placing.result.failed) "  ·  FAILED" else ""),

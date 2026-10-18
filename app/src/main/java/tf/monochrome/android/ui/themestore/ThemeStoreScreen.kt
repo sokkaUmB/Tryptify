@@ -343,7 +343,7 @@ private fun SignedOutPanel(backdrop: HazeState, onSignIn: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Icon(Icons.Default.AccountCircle, contentDescription = null, modifier = Modifier.size(40.dp))
-            Text(stringResource(R.string.theme_store_sign_in_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+            Text(stringResource(R.string.theme_store_sign_in_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
             Text(
                 stringResource(R.string.theme_store_sign_in_desc),
                 style = MaterialTheme.typography.bodyMedium,
@@ -525,7 +525,7 @@ private fun StoreTile(
                 Text(
                     pack.name,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -591,7 +591,7 @@ private fun CodeSheet(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = LocalBottomChromeNow.current),
             ) {
                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(stringResource(R.string.theme_store_code_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                    Text(stringResource(R.string.theme_store_code_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
                     Text(
                         stringResource(R.string.theme_store_code_desc),
                         style = MaterialTheme.typography.bodySmall,

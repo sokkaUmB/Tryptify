@@ -544,6 +544,21 @@ What a link may not move, and why, is the list in `VisualLinkTarget`'s doc.
 `VisualLinkTargetsTest` holds every target to a ♪ in the Studio's source and
 every ♪ to a target, and checks each one moves its own setting and no other.
 
+### Titles over descriptions
+
+**A title above a description is at most `FontWeight.Medium`, a size under
+Material's.** The theme's `titleLarge`, `titleMedium` and `bodyLarge` (the row
+title) are 17, 15 and 15 sp against Material's 18, 16 and 16, with Material's
+line heights, so no row changes height; descriptions keep their sizes. Titles
+forced Bold, ExtraBold or Black over a description (the link editor, the
+Theme Store, sheets, headers) are Medium now, and a headline over one steps
+down a size. The owner found bold titles a size up from their text heavy to
+read: the difference in size and colour already says which is the title.
+
+Not titles, and left as they were: numbers and readouts (Stats, the EQ's
+values), labels and button text, Car Mode (read at a glance while driving),
+and Trypt Mania's logo.
+
 ### Text on glass
 
 **Text on glass follows the glass, not the theme** (`GlassInkScope`). Every pane

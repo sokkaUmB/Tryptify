@@ -523,7 +523,7 @@ private fun WaterfallSlider(
             Text(
                 format(value),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,
             )
         }

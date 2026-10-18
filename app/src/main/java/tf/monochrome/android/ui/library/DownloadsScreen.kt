@@ -302,7 +302,7 @@ fun DownloadsScreen(
                 tf.monochrome.android.devedit.DevEditable("downloads_tracks_header", Modifier.fillMaxWidth()) {
                 Text(
                     text = stringResource(R.string.filter_tracks),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 )
                 }
@@ -372,7 +372,7 @@ private fun AlbumCard(
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = groupTitle,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

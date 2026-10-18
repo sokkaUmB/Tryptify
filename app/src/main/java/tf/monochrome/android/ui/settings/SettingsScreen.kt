@@ -607,7 +607,7 @@ private fun EqualizerTab(
                             Text(
                                 preset.name,
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
                                 color = if (isActive) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
@@ -3260,7 +3260,7 @@ private fun LitGroupHeader(title: String, badge: String? = null) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             color = primary,
             modifier = Modifier.weight(1f),
         )

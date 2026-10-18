@@ -68,7 +68,7 @@ fun TrackInfoPane(track: Track, filePath: String?, onBack: () -> Unit) {
                 Text(
                     text = stringResource(R.string.action_track_info),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(

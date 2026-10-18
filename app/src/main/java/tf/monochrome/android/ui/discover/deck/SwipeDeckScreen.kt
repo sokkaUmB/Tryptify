@@ -396,7 +396,7 @@ private fun DeckBody(
                 Text(
                     text = card.track.title,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -506,8 +506,8 @@ private fun DeckDone(
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
                     text = stringResource(R.string.deck_done_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Medium,
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(

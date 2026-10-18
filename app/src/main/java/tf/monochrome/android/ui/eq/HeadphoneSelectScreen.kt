@@ -154,7 +154,7 @@ fun HeadphoneSelectScreen(
                 Text(
                     stringResource(R.string.eq_database),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                 )
                 Text(
                     text = selectedRig?.label ?: "All rigs",

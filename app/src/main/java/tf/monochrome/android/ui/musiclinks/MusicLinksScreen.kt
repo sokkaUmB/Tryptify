@@ -200,7 +200,7 @@ fun MusicLinksScreen(
                                     Text(
                                         stringResource(R.string.music_links_on),
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = FontWeight.Medium,
                                     )
                                     Text(
                                         stringResource(R.string.music_links_on_desc),
@@ -226,7 +226,7 @@ fun MusicLinksScreen(
                                     Text(
                                         stringResource(R.string.music_links_empty_title),
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = FontWeight.Medium,
                                     )
                                     Text(
                                         stringResource(R.string.music_links_empty_desc),
@@ -395,7 +395,7 @@ private fun LinkRow(
                 )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(stringResource(target.label), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(target.label), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                     Text(
                         followsText(link.shape, link.paused) + " · " + stringResource(
                             R.string.music_link_range_value,
@@ -470,7 +470,7 @@ private fun KnobRow(
                 )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(row.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(row.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                     Text(
                         row.busName + " · " + followsText(link.shape, link.paused) + " · " + stringResource(
                             R.string.music_link_range_value,

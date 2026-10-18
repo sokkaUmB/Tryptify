@@ -24,6 +24,11 @@ val InterFontFamily = FontFamily(
 fun buildTypography(fontFamily: FontFamily, scale: Float): Typography {
     fun Float.scaled(): TextUnit = (this * scale).sp
 
+    // Titles and row titles sit a size under Material's own (17, 15, 15 rather
+    // than 18, 16, 16) over unchanged descriptions, and a title above a
+    // description is at most Medium: the owner found bold titles a size up
+    // from their text heavy to read. Line heights are Material's, so rows keep
+    // their height (ListRowHeightTest).
     return Typography(
         displayLarge = TextStyle(
             fontFamily = fontFamily,
@@ -63,14 +68,14 @@ fun buildTypography(fontFamily: FontFamily, scale: Float): Typography {
         titleLarge = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.Medium,
-            fontSize = 18f.scaled(),
+            fontSize = 17f.scaled(),
             lineHeight = 24f.scaled(),
             letterSpacing = 0.sp
         ),
         titleMedium = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.Medium,
-            fontSize = 16f.scaled(),
+            fontSize = 15f.scaled(),
             lineHeight = 22f.scaled(),
             letterSpacing = 0.15.sp
         ),
@@ -84,7 +89,7 @@ fun buildTypography(fontFamily: FontFamily, scale: Float): Typography {
         bodyLarge = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.Normal,
-            fontSize = 16f.scaled(),
+            fontSize = 15f.scaled(),
             lineHeight = 24f.scaled(),
             letterSpacing = 0.5.sp
         ),

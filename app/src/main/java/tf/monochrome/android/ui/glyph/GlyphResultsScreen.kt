@@ -484,7 +484,7 @@ private fun RoomRankingPanel(room: GlyphMultiplayerUi) {
                     Text(
                         text = placing.name,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = if (placing.id == session.myId) FontWeight.SemiBold else FontWeight.Normal,
+                        fontWeight = if (placing.id == session.myId) FontWeight.Medium else FontWeight.Normal,
                         modifier = Modifier.weight(1f),
                     )
                     Text(

@@ -130,8 +130,8 @@ fun ParametricEqScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             stringResource(R.string.eq_parametric_eq_caps),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Black,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Medium,
                             letterSpacing = 2.sp,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -358,7 +358,7 @@ fun ParametricEqScreen(
                                 Text(
                                     preset.name,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                                    fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
                                     color = when {
                                         preset.isCorrupted -> MaterialTheme.colorScheme.error
                                         isActive -> MaterialTheme.colorScheme.primary

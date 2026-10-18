@@ -180,7 +180,7 @@ fun ThemePublishScreen(
                     PackCard(backdrop) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = accent, modifier = Modifier.size(40.dp))
-                            Text(stringResource(R.string.theme_publish_done), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                            Text(stringResource(R.string.theme_publish_done), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
                             Text(
                                 stringResource(if (published.listed) R.string.theme_publish_done_listed else R.string.theme_publish_done_unlisted),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -237,7 +237,7 @@ fun ThemePublishScreen(
                                 Text(
                                     stringResource(R.string.theme_publish_picture),
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    fontWeight = FontWeight.Medium,
                                 )
                                 Text(
                                     stringResource(R.string.theme_publish_picture_desc),
@@ -278,13 +278,13 @@ fun ThemePublishScreen(
                         item(key = "parts") {
                             PackCard(backdrop) {
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text(stringResource(R.string.theme_publish_include), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.theme_publish_include), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
                                     ThemePart.entries.filter { it in look.parts }.forEach { part ->
                                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
                                             Icon(partIcon(part), contentDescription = null, modifier = Modifier.size(22.dp))
                                             Spacer(Modifier.width(12.dp))
                                             Column(Modifier.weight(1f)) {
-                                                Text(partLabel(part), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                                Text(partLabel(part), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                                                 Text(partDescription(part), style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = 0.8f))
                                             }
                                             Switch(checked = part in state.keep, onCheckedChange = { viewModel.toggle(part, it) })
@@ -309,7 +309,7 @@ fun ThemePublishScreen(
                             PackCard(backdrop) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text(stringResource(R.string.theme_publish_listed), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                        Text(stringResource(R.string.theme_publish_listed), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                                         Text(
                                             stringResource(R.string.theme_publish_listed_desc),
                                             style = MaterialTheme.typography.bodySmall,

@@ -288,7 +288,7 @@ fun GlyphEditorScreen(
                 Text(
                     text = "Measure $measure · beat $beat",
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                 )
                 val bpm = editor.timing.bpmAt(playhead)
                 TextButton(

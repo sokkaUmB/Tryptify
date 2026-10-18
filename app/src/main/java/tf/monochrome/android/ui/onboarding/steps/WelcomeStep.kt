@@ -50,7 +50,7 @@ fun WelcomeStep(
             Text(
                 text = "Tryptify",
                 style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = MonoDimens.spacingLg)
             )
             Text(

@@ -361,8 +361,8 @@ fun PlaylistScreen(
                 ) {
                     Text(
                         text = title ?: stringResource(R.string.loading),
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     if (!description.isNullOrEmpty()) {

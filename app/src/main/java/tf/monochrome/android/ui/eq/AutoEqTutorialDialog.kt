@@ -154,7 +154,7 @@ fun AutoEqTutorialDialog(
                         Text(
                             text = stringResource(tutorialStep.title),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Black,
+                            fontWeight = FontWeight.Medium,
                             letterSpacing = 1.5.sp,
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center

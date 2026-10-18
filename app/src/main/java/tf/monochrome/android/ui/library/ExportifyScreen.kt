@@ -123,7 +123,7 @@ fun ExportifyScreen(
                 Text(
                     text = "Exportify",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
             }

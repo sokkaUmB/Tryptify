@@ -434,7 +434,7 @@ private fun LineRow(line: LyricLine, selected: Boolean, outOfOrder: Boolean, acc
             Text(
                 line.text,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
                 color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (outOfOrder) {

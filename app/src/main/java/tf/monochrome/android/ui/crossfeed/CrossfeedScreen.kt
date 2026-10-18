@@ -109,7 +109,7 @@ fun CrossfeedScreen(
                             Text(
                                 text = stringResource(R.string.speaker_simulation),
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Medium,
                             )
                             Text(
                                 text = stringResource(R.string.crossfeed_explainer),
