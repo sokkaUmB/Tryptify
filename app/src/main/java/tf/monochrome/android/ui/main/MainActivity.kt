@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.main
 
+import tf.monochrome.android.ui.glyph.tvShader
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -10,6 +11,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import android.media.AudioManager
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -27,6 +29,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.graphics.luminance
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,6 +72,15 @@ class MainActivity : ComponentActivity() {
      * ("library", "settings?tab=7"), null for the default start screen.
      */
     private var pendingPostRoute by mutableStateOf<String?>(null)
+
+    /**
+     * The app-wide CRT's sliders while its picture is drawn, for
+     * [dispatchTouchEvent] to bend taps through a curved tube; null when the
+     * effect is off. [appTubeBounds] is where its layer sits in the window.
+     */
+    private var appTube: (() -> tf.monochrome.android.glyph.engine.GlyphTvTuning)? = null
+    private var appTubeLook = tf.monochrome.android.glyph.engine.GlyphTvShader.OFF
+    private val appTubeBounds = android.graphics.RectF()
 
     // Registered-for-result launcher for POST_NOTIFICATIONS. Fires a one-shot
     // system prompt on Android 13+; the result doesn't block the UI either way
@@ -169,12 +182,29 @@ class MainActivity : ComponentActivity() {
             // composition local as well as applied here, so the visualiser's
             // own fullscreen mode knows not to show the bars again on its way
             // out — see SystemBarsHidden.
+            // Settings › Appearance › CRT effect: every screen through an old TV.
+            val appTvShader by preferences.appTvShader
+                .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.glyph.engine.GlyphTvShader.OFF)
+            val appTvOnLyrics by preferences.appTvOnLyrics.collectAsStateWithLifecycle(initialValue = false)
+            val appTvStored = preferences.appTvTuning
+                .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.glyph.engine.GlyphTvTuning())
+            // A slider being dragged wins until the store has its value.
+            androidx.compose.runtime.LaunchedEffect(appTvStored.value) {
+                if (tf.monochrome.android.ui.glyph.AppTvLive.tuning == appTvStored.value) {
+                    tf.monochrome.android.ui.glyph.AppTvLive.tuning = null
+                }
+            }
+            val appTvNow = remember(appTvStored) {
+                { tf.monochrome.android.ui.glyph.AppTvLive.tuning ?: appTvStored.value }
+            }
             val immersiveFullScreen by preferences.immersiveFullScreen
                 .collectAsStateWithLifecycle(initialValue = false)
             // The user's manual low-performance overrides, from Settings ›
             // System › Performance.
             val showExplicitBadges by preferences.showExplicitBadges
                 .collectAsStateWithLifecycle(initialValue = true)
+            val rowBadges by preferences.rowBadges
+                .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.data.preferences.RowBadges())
             val lowPerformance by preferences.lowPerformanceSettings
                 .collectAsStateWithLifecycle(
                     initialValue = tf.monochrome.android.performance.LowPerformanceSettings()
@@ -224,6 +254,7 @@ class MainActivity : ComponentActivity() {
                 LocalPerformanceProfile provides effectiveProfile,
                 tf.monochrome.android.performance.LocalLowPerformance provides lowPerformance,
                 tf.monochrome.android.ui.theme.LocalShowExplicitBadges provides showExplicitBadges,
+                tf.monochrome.android.ui.theme.LocalRowBadges provides rowBadges,
                 LocalImmersiveFullScreen provides immersiveFullScreen,
                 // Every list row's source tag reads its catalog from here.
                 tf.monochrome.android.ui.components.LocalTrackSource provides trackSourceResolver::of,
@@ -268,22 +299,51 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     SystemBarsHidden(immersiveFullScreen)
+                    // The CRT effect over the whole app, drawn on the one layer
+                    // every screen is in; a screen with its own (Trypt Mania's
+                    // playfield) leaves its own off under it.
+                    val tvRuns = tf.monochrome.android.ui.glyph.appTvShaderRuns(appTvShader)
+                    // Over every screen, or handed to the lyric view alone.
+                    val appTv = tvRuns && !appTvOnLyrics
+                    val lyricsTv = remember(tvRuns, appTvOnLyrics, appTvShader, appTvNow) {
+                        if (tvRuns && appTvOnLyrics) tf.monochrome.android.ui.glyph.LyricsTv(appTvShader, appTvNow) else null
+                    }
+                    SideEffect {
+                        appTube = if (appTv) appTvNow else null
+                        appTubeLook = appTvShader
+                        tf.monochrome.android.debug.CrashBreadcrumbs.note(
+                            "crt",
+                            if (!tvRuns) "off" else "${appTvShader.id} over ${if (appTvOnLyrics) "lyrics" else "app"}",
+                        )
+                    }
                     Surface(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onGloballyPositioned {
+                                val at = it.positionInWindow()
+                                appTubeBounds.set(at.x, at.y, at.x + it.size.width, at.y + it.size.height)
+                            }
+                            .then(if (appTv) Modifier.tvShader(appTvShader, tv = appTvNow) else Modifier),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        // First-run gate. null = flag not read yet (splash is
-                        // still covering); false = wizard; true = main app.
-                        // Collected (not read once) so Settings flipping the
-                        // flag back re-enters onboarding on the next frame.
-                        val onboardingComplete by preferences.onboardingComplete
-                            .collectAsStateWithLifecycle(initialValue = null)
-                        when (onboardingComplete) {
-                            null -> Unit
-                            false -> OnboardingScreen(
-                                onFinished = { pendingPostRoute = it }
-                            )
-                            true -> MonochromeNavHost(initialRoute = pendingPostRoute)
+                        CompositionLocalProvider(
+                            tf.monochrome.android.ui.glyph.LocalAppTvShader provides appTv,
+                            tf.monochrome.android.ui.glyph.LocalLyricsTv provides lyricsTv,
+                            tf.monochrome.android.ui.glyph.LocalAppTube provides (if (appTv) appTvNow else null),
+                        ) {
+                            // First-run gate. null = flag not read yet (splash is
+                            // still covering); false = wizard; true = main app.
+                            // Collected (not read once) so Settings flipping the
+                            // flag back re-enters onboarding on the next frame.
+                            val onboardingComplete by preferences.onboardingComplete
+                                .collectAsStateWithLifecycle(initialValue = null)
+                            when (onboardingComplete) {
+                                null -> Unit
+                                false -> OnboardingScreen(
+                                    onFinished = { pendingPostRoute = it }
+                                )
+                                true -> MonochromeNavHost(initialRoute = pendingPostRoute)
+                            }
                         }
                     }
                 }
@@ -337,6 +397,27 @@ class MainActivity : ComponentActivity() {
      * ACTION_DOWN only — ACTION_UP fires on every key release and would
      * double the step otherwise. A held key repeats ACTION_DOWN.
      */
+    /**
+     * Under the app-wide CRT's Curvature the picture is bowed but the screens
+     * under it are not: a tap goes to the spot on them that is seen under the
+     * finger, so a button near a corner is pressed where it shows.
+     */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val tuning = appTube?.invoke()
+        val bounds = appTubeBounds
+        if (tuning == null || !tuning.reshaped || bounds.isEmpty || !tf.monochrome.android.ui.glyph.tubeDrawable(appTubeLook)) {
+            return super.dispatchTouchEvent(ev)
+        }
+        val bent = tf.monochrome.android.ui.glyph.bentThroughTube(
+            ev, tuning, bounds.left, bounds.top, bounds.width(), bounds.height(),
+        )
+        return try {
+            super.dispatchTouchEvent(bent)
+        } finally {
+            bent.recycle()
+        }
+    }
+
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {

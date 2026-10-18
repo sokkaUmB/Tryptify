@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import tf.monochrome.android.data.downloads.DownloadStatus
 import tf.monochrome.android.data.downloads.TrackDownloadState
 import tf.monochrome.android.domain.model.Track
+import tf.monochrome.android.player.preview.SongPreview
 import tf.monochrome.android.domain.usecase.uiArtistRefs
 import tf.monochrome.android.ui.theme.ExplicitBadge
 import tf.monochrome.android.ui.navigation.LocalNowPlayingTrackId
@@ -70,6 +71,10 @@ fun TrackItem(
     // LocalNowPlayingTrackId. A track change recomposes the visible rows and
     // nothing else.
     val nowPlaying = track.id == LocalNowPlayingTrackId.current
+    // Holding a song plays its preview until the finger lifts (SongPreview);
+    // multi-select starts from the song menu's Select instead. The caller's
+    // long-press stays only where no preview is provided.
+    val holdToPreview = rememberHoldToPreview(track)
 
     Surface(
         modifier = modifier
@@ -77,9 +82,10 @@ fun TrackItem(
             .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
             .bounceCombinedClick(
                 onClick = onClick,
-                onLongClick = onLongClick
+                onLongClick = holdToPreview ?: onLongClick
             )
-            .liquidGlass(shape = MonoDimens.shapeMd),
+            .liquidGlass(shape = MonoDimens.shapeMd)
+            .songPreviewHold(SongPreview.keyOf(track), MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         // Selection wins over now-playing: while multi-selecting, whether a row
         // is ticked is the only thing the colour is being asked to say.
@@ -129,6 +135,7 @@ fun TrackItem(
             Spacer(modifier = Modifier.width(MonoDimens.spacingMd))
         }
 
+        val badges = tf.monochrome.android.ui.theme.rowBadges()
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -213,26 +220,28 @@ fun TrackItem(
                         )
                     }
                 }
+                // Each badge as Settings › Display › Song row badges says.
                 // Downloaded means the device, as in search.
-                val source = if (isDownloaded) tf.monochrome.android.domain.model.SourceType.LOCAL
+                val source = if (!badges.source) null
+                    else if (isDownloaded) tf.monochrome.android.domain.model.SourceType.LOCAL
                     else LocalTrackSource.current(track)
                 if (source != null) {
                     Spacer(modifier = Modifier.width(MonoDimens.spacingSm))
                     SourcePill(source)
                 }
-                if (track.isThxSpatialAudio) {
+                if (badges.format && track.isThxSpatialAudio) {
                     Spacer(modifier = Modifier.width(4.dp))
                     ThxBadgePill()
                 }
-                if (track.isDolbyAtmos) {
+                if (badges.format && track.isDolbyAtmos) {
                     Spacer(modifier = Modifier.width(4.dp))
                     DolbyAtmosBadgePill()
                 }
-                track.channelBadge?.let { badge ->
+                track.channelBadge?.takeIf { badges.format }?.let { badge ->
                     Spacer(modifier = Modifier.width(4.dp))
                     ChannelBadgePill(badge)
                 }
-                track.qualityBadge?.let { badge ->
+                track.qualityBadge?.takeIf { badges.quality }?.let { badge ->
                     Spacer(modifier = Modifier.width(MonoDimens.spacingSm))
                     Text(
                         badge,
@@ -246,7 +255,8 @@ fun TrackItem(
 
         // In-flight state wins while a download is running; once it settles the
         // row falls back to the persistent "on this device" badge, so the mark
-        // doesn't vanish the moment the transfer finishes.
+        // doesn't vanish the moment the transfer finishes. A running download
+        // shows whatever the setting says: it is the answer to a tap.
         val liveDownload = downloadState?.takeIf { it.status != DownloadStatus.IDLE }
         if (liveDownload != null) {
             Spacer(modifier = Modifier.width(4.dp))
@@ -254,12 +264,12 @@ fun TrackItem(
                 state = liveDownload,
                 size = 18f
             )
-        } else if (isDownloaded) {
+        } else if (isDownloaded && badges.download) {
             Spacer(modifier = Modifier.width(4.dp))
             DownloadedBadge(size = 18f)
         }
 
-        if (showDuration) {
+        if (showDuration && badges.duration) {
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = track.formattedDuration,

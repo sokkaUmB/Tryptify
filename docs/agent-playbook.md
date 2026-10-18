@@ -242,6 +242,16 @@ Replace broad package-wide keep rules with evidence-based rules. Confirm reflect
 
 Review every exported service/activity/receiver and all OAuth/playback deep links. Validate scheme, host, path, extras, and caller assumptions; use explicit intents where possible; apply permissions and `exported=false` where external invocation is not required. Reassess whether global cleartext traffic is necessary or can be scoped with network security configuration.
 
+### Stem separation is on servers, never the phone
+
+Charts are separated by [TryptMania Parser](https://github.com/tryptz/TryptMania-Parser) servers. A server under Settings › Connections is detected as `ApiService.STEMS` (its `/api/stems/info` answers `{success: true}`), and the probe records what it separates on, `cuda` or `cpu` (`ApiServer.stemDevice`); a server added before that learns it from its first song (`RemoteStemAnalysis.learnDevice`). Trypt Mania's **Fast** mode tries the GPU servers, then any that has not said, then the CPU ones; **Slow** goes to CPU servers only, since an unknown server may be a GPU and Slow must not bill one (`RemoteStemAnalysis.planFor`). The song file goes up; the drums' and each layer's envelope come back (`RemoteStemAnalysis.parse`), not stems. No server, or none that manages the song, and the chart fails with that said: there is no separator on the phone.
+
+The phone's separators were removed: ONNX Runtime with Qualcomm's QNN (the NPU and GPU backends, over 150 MB of native libraries), the model import and download code, and the built-in DSP separator. The server now runs those models. Do not bring a runtime back for a fallback; the fallback is the CPU server. `MonochromeApp` deletes the old model files (`stem-models`, `stem_npu_cache`) on start.
+
+Charting is a line, `ChartQueue`, kept on disk and drained by one `StepManiaGenerationWorker`, two songs in flight so the next uploads while the server separates the current one. Generate joins the line; a folder heading's pill and "Chart every song without one" put many in at once, after `GlyphBatchDialog` shows each mode's time and cost (`ChartPace`, learned from the servers' own timings and `pricePerHour`/`idleSeconds`, never by waking one to ask). A song's failure is counted and the batch goes on. `ChartQueueTest` holds the rule that a song added as the worker stops still gets a worker.
+
+The server's envelopes are a port of `TransientEnvelopeBuilder`, held to it by `stemsapi/envelope_parity.json`, which both repositories test against (`EnvelopeParityTest` here): change the builder and the server's port with it, regenerate the fixture there, and copy it here. `STEMS` is not a catalog: every `when` over `ApiService` gives it no search, no quality and a plain pill, which says GPU or CPU.
+
 ### Compose performance
 
 Use stable parameters, keyed lazy items, remembered derived values, and immutable collections where they materially reduce recomposition. Validate with tooling rather than mechanically adding annotations.

@@ -82,21 +82,21 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
         listOf("colour", "fade", "crossfade", "blend", "album", "speed", "duration"),
     ),
     entry("Dynamic colours", R.string.settings_dynamic_colors, "Appearance", listOf("album", "art", "material you", "accent")),
-    entry("Font scale", R.string.settings_font_size, "Appearance", listOf("text size", "bigger", "smaller", "accessibility")),
+    entry("Font scale", R.string.settings_font_size, "Fonts", listOf("text size", "bigger", "smaller", "accessibility")),
     entry("Custom font", R.string.settings_font_library, "Fonts", listOf("typeface", "import font", "fonts")),
-    entry("Now playing view", R.string.settings_view_mode, "Appearance", listOf("player", "layout", "lyrics")),
-    entry("Blurred background", R.string.settings_blurred_album_background, "Appearance", listOf("player", "artwork", "blur")),
     entry("Glow behind album art", R.string.settings_glow_behind_album_art, "Appearance", listOf("bloom", "halo", "cover", "kick", "bass", "pump")),
     entry("Glow radius", R.string.settings_glow_radius, "Appearance", listOf("bloom", "halo", "cover", "size", "reach", "spread")),
     entry("Glow brightness", R.string.settings_glow_brightness, "Appearance", listOf("bloom", "halo", "cover", "strength", "intensity")),
-    entry("Dynamic Player Color", R.string.settings_dynamic_player_color, "Appearance", listOf("album", "art", "tint", "accent", "player")),
     entry("Custom colors", R.string.settings_custom_colors, "Appearance", listOf("colour", "accent", "background", "pick", "override")),
-    entry("Use system font size", R.string.settings_use_system_font_size, "Appearance", listOf("text size", "accessibility", "os", "display")),
+    entry("Use system font size", R.string.settings_use_system_font_size, "Fonts", listOf("text size", "accessibility", "os", "display")),
     entry("Romaji Lyrics", R.string.settings_romaji_lyrics, "Appearance", listOf("japanese", "transliterate", "latin", "kana", "lyrics")),
+    entry("Server lyrics", R.string.settings_server_lyrics, "Appearance", listOf("whisper", "sync", "synced", "time", "timed", "karaoke", "word", "railway", "parser", "chart server", "lyrics")),
     entry("Show Explicit Badges", R.string.settings_show_explicit_badges, "Appearance", listOf("explicit", "badge", "parental", "e")),
+    entry("Song row badges", R.string.settings_row_badges, "Appearance", listOf("badge", "badges", "chip", "tag", "tags", "source", "local", "qobuz", "tidal", "quality", "lossless", "flac", "atmos", "download", "duration", "length", "list", "row")),
     entry("Legacy player", R.string.settings_legacy_player, "Appearance", listOf("old", "flat", "classic", "pre-glass", "design")),
     entry("Remove liquid glass", R.string.settings_remove_liquid_glass, "Appearance", listOf("flat", "opaque", "blur", "performance", "glass")),
     entry("Disable animations", R.string.settings_disable_animations, "Appearance", listOf("motion", "reduce", "still", "accessibility")),
+    entry("CRT effect", R.string.settings_crt_effect, "Appearance", listOf("tv", "television", "retro", "scanlines", "crt", "shader", "monitor", "vintage", "old", "curvature", "curve", "chromatic", "aberration", "rgb", "mask", "glow", "bloom", "royale", "crt-royale", "aperture", "grille", "slot", "halation", "diffusion", "beam")),
 
     // ── Visual Studio ───────────────────────────────────────────────────
     entry(
@@ -178,13 +178,25 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
         .at(SettingsDestination.Route("crossfeed")),
     entry("Mixer", R.string.status_mixer, "Audio", listOf("dsp", "bus", "plugin", "insert", "channel"))
         .at(SettingsDestination.Route("mixer")),
+    entry(
+        "Glyph", null,
+        "Audio",
+        listOf(
+            "stepmania", "rhythm", "chart", "ssc", "dance", "arrows",
+            "training ground", "practice", "simfile", "ddr", "itg",
+        ),
+    ).at(SettingsDestination.Route("glyph")),
     entry("Streaming quality", R.string.settings_streaming_quality, "Audio", listOf("bitrate", "wifi", "cellular", "data", "tidal", "qobuz", "deezer", "aac", "mp3", "flac", "hi-res", "dolby", "atmos")),
     // The switch itself, so "atmos" lands on it rather than on the header,
     // whose text reads "Download quality" while the tab shows downloads.
     entry("TIDAL Dolby Atmos", R.string.atmos_tidal_dolby_atmos, "Audio", listOf("atmos", "dolby", "spatial", "e-ac-3", "joc", "surround")),
     entry("Preserve Pitch", R.string.settings_preserve_pitch, "Audio", listOf("speed", "tempo", "key", "chipmunk", "semitone")),
     entry("Never Resample Between Tracks", R.string.settings_never_resample_between_tracks, "Audio", listOf("sample rate", "gap", "dac", "bit perfect")),
-    entry("USB DAC bit-perfect routing", R.string.settings_usb_dac_bit_perfect_routing, "Audio", listOf("usb", "dac", "exclusive", "bit perfect", "output")),
+    entry(
+        "Exclusive USB DAC (bypass Android audio)", R.string.settings_exclusive_usb_dac_bypass_android_audio,
+        "Audio",
+        listOf("usb", "dac", "exclusive", "bit perfect", "bitperfect", "libusb", "uapp", "output"),
+    ),
     entry(
         "Hi-res output (Bluetooth & speaker)", R.string.settings_hi_res_output_bluetooth_speaker,
         "Audio",
@@ -233,7 +245,9 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
     entry(
         "APIs", R.string.search_apis, "Connections",
         listOf("server", "instance", "url", "endpoint", "source", "catalogue", "catalog",
-            "tidal", "qobuz", "apple", "deezer", "hifi", "add"),
+            "tidal", "qobuz", "apple", "deezer", "hifi", "add",
+            // Trypt Mania's charts are separated on a server listed here.
+            "stem", "stems", "separation", "separate", "demucs", "gpu", "modal", "railway"),
     ),
     entry("Show what I'm playing", R.string.settings_show_what_i_m_playing, "Connections", listOf("discord", "presence", "rich", "status", "playing")),
     entry("Spotify", null, "Connections", listOf("import", "playlist", "account", "transfer")),

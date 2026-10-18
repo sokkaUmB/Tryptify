@@ -1,7 +1,7 @@
 # Tryptify — notes for agents
 
-`CLAUDE.md` is gitignored in this repo, so anything that has to survive a fresh
-clone lives here or under `docs/`.
+Project notes live here and under `docs/`. `CLAUDE.md` imports this file and
+adds the owner's standing rules (branch, secrets, how to report back).
 
 ## Read before changing the UI
 
@@ -64,13 +64,25 @@ files that nothing ever opened.
 The native DSP has host tests that build with the desktop compiler, no
 device or NDK needed — the multichannel mixer, the Oxford stages at Atmos
 widths, the WSOLA shifter, the EBU R128 loudness meter (against EBU Tech
-3341/3342's reference signals), the spectrum waterfall's geometry and the
-knobs' music links (`mod_route_test`, held to the same numbers as the Kotlin
-`MusicLinkFollowerTest`):
+3341/3342's reference signals), the dynamic range meter (against signals whose
+DR is known by hand), the spectrum waterfall's geometry and the knobs' music
+links (`mod_route_test`, held to the same numbers as the Kotlin
+`MusicLinkFollowerTest`). The same script runs the USB DAC bypass driver
+against stubbed libusb (`usb/tests/`), which needs the `third_party/libusb`
+submodule and is skipped without it:
 
 ```
 app/src/main/cpp/dsp/tests/run_host_tests.sh
 ```
+
+## Trypt Mania's StepMania art
+
+The retro noteskin (`assets/stepmania/skins/retro`) and the default theme's
+judgement, grade and full-combo art with its typefaces
+(`assets/stepmania/theme`) are cut from a StepMania checkout by
+`tools/stepmania_skin/build_retro_skin.py` and `build_theme.py`. Regenerate
+them with those scripts rather than editing the PNGs; each writes the licence
+StepMania's notice requires next to the art.
 
 ## projectM is patched, and its presets are scanned
 

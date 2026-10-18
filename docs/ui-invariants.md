@@ -39,9 +39,14 @@ and no edge — which is what made search bars look nothing like the mini player
 The reason it was ever faint: on a device where the shader silently no-ops
 (glass off, low-performance override, below API 33, or a driver that will not
 compile it), a solid fill is left on screen as an opaque rounded rectangle. Ask
-`rememberLiquidGlassAvailable()` rather than hedging with a low alpha.
+`rememberLiquidGlassAvailable()` rather than hedging with a low alpha. A pane
+asks it of its own glass, `rememberLiquidGlassAvailable(glass)`: the plain call
+reads `LocalPlayerGlass`, the screen's, which is another material or, where no
+screen provides one, the default, so a pane with its glass on could be told the
+shader would not run and draw its slab faint (`GlassMaterial`, `GlassInkScope`,
+`glassPunches`).
 
-**A rounded-rect slab passes its corner as `lensCorner`.** The alpha
+**A rounded-rect slab passes its corner as `lensCorner`.** And the slab itself is drawn rounded at that corner, never a square `drawRect`: the player's audio sheet drew one, the shader lit its square edges, the sheet's clip cut the corners off, and its rim stopped short of every corner (`GlassSlabCornerTest` reads every `.playerGlass(` for both). The alpha
 heightfield alone gives a solid fill a bevel 2–4px wide: the fill steps from 0
 to 1 across one anti-aliased pixel, so everything inside it is flat and
 `refract()` bends nothing. The pane then reads as a tinted sheet with a
@@ -142,6 +147,34 @@ window's haze source: `MainPlayerScreen`'s `overlay` slot exists for exactly
 this, and the speed panel goes through it. The cost is owning the scrim, the
 slide and Back by hand, and that is the cheaper half of the trade.
 
+**The song menu is a `GlassOverlay`, not a `ModalBottomSheet`.** `TrackContextMenu`
+(a row's ⋮ from every list; a long-press where a row has no preview) draws in the nav host's overlay slot
+at `Alignment.BottomCenter`, where the sheet was, so it blurs the list it was opened
+from. Its Track info turns the same pane into the song's tags and Back returns to
+the actions. Put back in a `ModalBottomSheet` it is a solid slab, for the reason
+above; outside the nav host it falls back to a plain dialog, never to nothing.
+
+**An overlay pane animates in its own layer, and a bottom one clears the bar.**
+`GlassOverlayLayer` fades the scrim and slides the pane up, and plays both
+backwards on the way out: it holds the withdrawn pane until it has left, and a
+leaving pane takes no presses (a second tap on a menu item would run it twice).
+Its transitions start hidden (`MutableTransitionState(false)`); given
+`visible = true` on its first composition `AnimatedVisibility` would just appear,
+and the first menu after launch would pop in. A pane at `Alignment.BottomCenter`
+sits `bottomClearance` (the nav host's `chromeHeightNow`) above the bottom edge,
+on top of the tab bar rather than over its buttons. In the song menu, Track info
+and the actions turn as pages (`AnimatedContent`, the pane's height following),
+not a cut.
+
+With low-performance mode these panes keep their fallback: "Disable
+animations" (`reduceMotion()`) makes the overlay, the page turn, Track info's
+growth and the DAC pop-up come and go at once, and stops the player title's
+back-and-forth loop (a tap jumps it to its end and back instead). With no
+shader and no blur a pane is plain surface colour, and a pane floating over a
+page of text — the overlay, the DAC pop-up — passes
+`fallbackMinAlpha = FLOATING_FALLBACK_MIN_ALPHA` so the rows behind do not read
+through its own; other panels keep the see-through 0.55 floor.
+
 **A `GlassPanel` inside a scrolling list passes `blockTouchesBelow = false`.**
 Its backstop consumes every touch its content does not handle, drags included.
 Over a map that is the point — a tap on the pane must not select the nearest
@@ -236,6 +269,14 @@ nor its shadow, and the preview shows a flat pill that is not what ships,
 which is what it did until this was fixed. The backdrop must have detail:
 over a smooth gradient, blur, refraction and dispersion move nothing visible.
 
+**Under the CRT effect over the whole app, the glass holds still.**
+`rememberFrameSeconds` runs no frame clock while `LocalAppTvShader` is on, as
+it runs none under "Disable animations": the app is one layer through two
+full-screen shader passes, and every frame of glass motion re-ran both over
+every pixel, so the library screen alone ran the phone hot (seen on device).
+The tube and the mask hide a breath of glass anyway. Turning the CRT off
+brings the motion back.
+
 ### Lyrics: letter glass and god rays
 
 **The lyric glass reads the same optics as the player's, and its defaults are
@@ -258,7 +299,14 @@ disc and the dock had none of the light under them (seen on device, in "Under"
 and then again in "On top", which was left behind in the surface). A render
 effect reads only its own layer, so the lyric view records its letters into a
 `GraphicsLayer` (`captureLetters`, innermost, before the glass, so the glass
-shader does not run twice) and the backdrop draws that copy as its input and
+shader does not run twice; only the tube's curvature, `lyricCurvature`, sits
+inside it, so the copy is bent with the letters and the shadow and the shafts
+follow the bent lines; it is a CRT tube's bow, `crtSource`, never a
+fish-eye: the middle keeps its size and lines bow outward toward rounded
+corners, the top and bottom (`curvatureDeg`) and the sides
+(`curvatureSideDeg`, unset on a curve saved with one angle, which keeps its
+shape) bowed apart, as the CRT effect's two curves; set to the sung line or word, its tube covers that box alone, read in
+the draw phase, flat outside it and in its own rounded-off corners) and the backdrop draws that copy as its input and
 hands back only the shadow and the shafts (`uRaysOnly`); the real letters draw
 over them. Where a pixel's march misses the sung line it hands back nothing,
 never the copy: returning the copy there drew plain letters under the glass
@@ -314,6 +362,12 @@ from the player's own analyzer, still when the song is paused. The synthetic
 kick under them pushed every shaft brighter and longer twice a second, so a
 paused song's preview showed shafts its player did not. The sample row, with no
 song behind it, keeps the kick: it is the only way to see the beat settings.
+
+**The cover in the player does not move with the music.** Wave Candy's kick
+swells its own lines and nothing else; the cover used to punch in on every
+kick (with a strength slider), and a cover bouncing to the bass was taken out.
+`WaveCandySettings` no longer has `kickZoom`; an older saved blob that has it
+still reads, since the settings JSON ignores unknown keys.
 
 **God rays drawn in the lyric surface (no backdrop) wrap the lyric list outside
 its side inset and outside the glass.**
@@ -378,6 +432,45 @@ The rays are off by default, and the 17 presets ahead of `Sunburst` set no
 glass optic and no ray field, so nobody's lyrics change on upgrade. The
 low-performance glass switch drops the rays with the glass.
 
+**The lyrics view's empty state carries the server's word, and one action.**
+Under "No lyrics available" the view says where a server timing stands
+(`ServerLyricsStatus`: timing on which host, failed and why, no file to send,
+no server) in the same dim white as the empty text, and offers one text
+button, "Time lyrics on the server", only while no job runs and a lyrics
+server is configured. The same action sits in the player's overflow menu, so a
+song that has plain or line-timed lyrics can still be sent. Nothing here is a
+pane, a chip or a card: it is text under text, as the empty state was. The
+timing itself never joins the lyrics race, which has fifteen seconds; it runs
+in `ServerLyricsEngine` after the race, outlives the track, and its answer is
+kept in `cached_lyrics` and read before any race from then on.
+
+**Timing lyrics is a Trypt Mania job, not a spinner.** Songs go in a line
+(`ServerLyricsEngine.request`) and `LyricsSyncWorker` drains it as
+`StepManiaGenerationWorker` drains the chart queue: an ongoing notification
+naming the song and its stage (downloading, sending, hearing), then a note
+that can be swiped away saying which songs got their words. A song with no
+file on the phone is downloaded through the app's own downloads first and
+kept, as Trypt Mania charts only what is on the phone. The lyrics view shows
+the same stage under the empty state, with "Cancel" while the line runs and
+"Time lyrics on the server" when it does not. By itself a song joins the line
+only after fifteen seconds of play (`SERVER_LYRICS_AFTER_MS`): on a phone
+skipping through a playlist, every song passed over was downloaded and timed
+for nobody. The worker runs up to eight songs at once, as many as the chart
+server said it has copies, like a chart batch's lanes.
+
+**The lyrics editor is built as the Player Visuals Studio is.** `StudioPreview`
+(the real renderer, condensed, with the listener's own Lyrics FX) pinned up
+top, the transport and the one big "Stamp now" button under it, the lines as
+plain rows (the selected one tinted with the accent at a seventh, never a
+pane), and every setting below in `StudioSection`s with `FxToggle` and
+`FxNudge`. It reaches the song through the shared `PlayerViewModel`, passed in
+from the nav host as the other tool screens get it, so a stamp is the song's
+own position and a tapped line seeks. Saving goes through
+`ServerLyricsEngine.publish`: the same `cached_lyrics` row a server would
+write, the player's lyrics replaced at once, and the download's `.lrc`
+rewritten with word times. The row list pads its bottom by
+`LocalBottomChromeInset`, like the Studio.
+
 ### Music links
 
 A setting that "moves with the music" never moves its saved value. The visual
@@ -410,6 +503,15 @@ answer on dark glass in a light theme, and the other way round. Nested glass
 tints its slab with the parent's original accent (`LocalGlassAccent`), not the
 readable one, so a chip on a sheet stays the sheet's material. `GlassInkTest`
 sweeps grounds, tints and opacities and asserts AA for the text everywhere.
+
+**The player says what its glass stands over** (`LocalGlassGround` provides
+`playerGlassGround`). The player paints its own dark background in every theme,
+so its panes — the Speed panel, the audio tools, the preset browser — work their
+ink out against that, never the theme's page. Against a light theme's page they
+decided they were light glass and drew dark text on dark red. `PlayerGlassGroundTest`
+sweeps covers from white to black. And a switch on glass takes its "off" colours
+from the ink too (`glassSwitchColors`): Material's own come from the theme's
+surface, which the ink does not move, and were a white pill on dark glass.
 
 **A selected chip's rim is `matchParentSize`, never `fillMaxSize`.** Filling made
 a selected chip as wide as the room offered: invisible in a scrolling row, but in
@@ -456,6 +558,12 @@ width) is for picking one icon out of a row, like the transport and dock.
 List rows keep the quieter scale squeeze; a full dome on a wide text row reads
 heavy.
 
+**Every button in the player's sheet is `PressableGlass`**: the four status
+cards and the Visualizer and Waveform buttons under them, one material and one
+corner. Those two stayed on the flat `liquidGlass` tint after the cards moved,
+and read as dark outlined tiles beside real glass. Their "on" is the accent
+and a ring, not a stronger tint: glass has none to switch to.
+
 **A press's swell is animated into `GlassPress.amount` by the animation
 itself** (`animate { press.amount = value }`). It must never be copied across
 in a `SideEffect`. The copy only runs on recomposition, and an animation read
@@ -486,6 +594,16 @@ recompose, recompose the screen, and be handed a new one forever. Swipe to
 discover uses it: while the deck is up, the bar shows ✕, undo and ♥ punched
 into its glass instead of the track, at the same height, and a swipe along the
 bar skips or keeps.
+
+**Settings has one home per setting.** The font size (the five steps and
+Use system font size) is on the Fonts page, under the preview, beside the
+fonts it scales; Appearance keeps only the Font Library row that leads
+there. There is no Now Playing group: the view mode is what a tap on the
+player's artwork changes, the player's tint is Appearance › Dynamic Colors,
+and the blurred album background is always on. The two removed switches
+read as on whatever was stored, so nobody is left with one off and no way
+back. A copy of a setting in a second place is not a convenience; it is two
+switches that can disagree.
 
 ### Pages and the tab bar
 
@@ -546,7 +664,21 @@ start pages folded: tab switching would become two taps.
 
 **The bar is on every screen but four**: the player, the mixer, Oxford and car
 mode, whose own controls run to the bottom edge (`chromeHiddenRoutes`). The
-download pill follows the same list.
+download pill follows the same list. A screen that needs the window for only
+part of its life asks for it with `HideAppChrome` instead of joining the list:
+the genre galaxy in full screen, and Trypt Mania only while a chart is being
+played or practised. Its song list, panels and results are menus and keep the
+bar like any other pushed screen; putting the whole route on the list hid the
+tab bar and the mini player from the menus too. While a screen holds
+`HideAppChrome` the nav host runs it full-bleed, so it pads the system bar
+itself; stopped above the bar, the black playfield had a strip of theme
+background under it, white on a light theme.
+
+**Trypt Mania never has the mini player**, on its menus, song list and results
+alike (`miniPlayerHiddenRoutes`, checked by route in the nav host, as well as
+`HideMiniPlayer` in GlyphRoute): it keeps the tab bar only. The route is known
+before the screen composes, so the bar cannot show there for a frame or after
+a run, whatever order the screens' effects run in.
 
 **Bottom padding comes from `LocalBottomChromeInset`, never a number.** It is
 measured from where the reading screen ends: pager pages and full-bleed routes
@@ -566,6 +698,13 @@ disables those eyes, the view model refuses the write, and `visiblePages()`
 restores them regardless — the third layer is not redundant: a hidden set can
 arrive from another device's settings sync without either of the first two ever
 running on this one. Hiding Discover or Radio removes its tab, nothing more.
+
+**The bottom bar's fold is two fades in turn, never a crossfade.** The row
+going fades out in the first two fifths of the fold, then the row coming
+fades in (`TabChrome`'s `AnimatedContent`). Crossfaded, the full-width bar's
+slab and its glass shadow sat at half opacity behind the folded pill and the
+mini player for a quarter of a second: a grey slab across the bottom of the
+screen with every scroll (seen on device).
 
 ### List rows
 
@@ -593,6 +732,41 @@ row, that test is where it surfaces.
 album segment is appended outside `ClickableArtists`, so capping only the inner
 row still let "artist • album" wrap. With a fixed row height a second line is
 clipped rather than shown, so the cap is what keeps the text intact.
+
+**Holding a song row plays it for 25 s, and lifting the finger stops it.**
+`SongPreview` (one app-wide player, separate from the main one) plays from the
+song's remembered drop, else a third in, and the row fills left to right behind
+its text, from the accent through amber to red as the time runs out
+(`Modifier.songPreviewHold`, `previewFillColour`). Rows take it through
+`LocalSongPreview`, given at the nav host the way `LocalPlayInTryptMania` is, so
+no screen wires it by hand.
+
+**A held song streams at 320 kbps.** `SongPreview` asks the resolver for
+`AudioQuality.HIGH` (AAC on TIDAL and Apple, MP3 on Qobuz and Deezer): a
+25 s preview of a song that may never be played should start in a moment
+and cost little, not fetch a Hi-Res FLAC that the Qobuz cache fills from
+the front. A song already in the Qobuz or Deezer cache whole, at any
+quality, plays from disk instead; a file on the phone needs no stream at
+all. The listener's quality setting is untouched for real plays.
+
+- **The lift is watched, never consumed.** The watcher reads every event at
+  `PointerEventPass.Initial` and leaves it for the row's tap and the list's
+  scroll. Consuming the up would leave the row pressed and a scroll that started
+  on a row dead. A held row that scrolls out of the list ends its preview, as
+  no lift will ever reach it.
+- **The main player is paused by audio focus, not by a call.** The preview asks
+  for `AUDIOFOCUS_GAIN_TRANSIENT`; Media3 pauses the main player for it and
+  resumes it when the preview gives the focus back. With "Play alongside other
+  apps" the main player ignores focus and keeps playing under the preview.
+- **The start is a `setMediaItem` position, not a clip.** A source that cannot
+  seek (Apple's fMP4 over HTTP) plays from the top with a clip, and the
+  front-filling Qobuz and Deezer caches start at 0:00 on purpose
+  (`SongPreview.startMs`).
+- **Hold no longer starts multi-select.** "Select" is in the ⋮ song menu of
+  every list that has a selection. Left out on purpose: the queue (hold there
+  drags), Trypt Mania's wheel (it previews by itself) and Discover's cards.
+
+`SongPreviewTest` holds the start point, the fade and the fill's colours.
 
 ### Themes
 
@@ -814,6 +988,17 @@ straight away from its star. The hole's shadow is *cleared*, not blacked out, or
 it casts a dark ring over its own disk. Do not add stripes or a starburst to fake
 rays: they come only from what is in the light's way.
 
+**A pinch zooms harder than the fingers move, and starts on the spread**
+(`GalaxyCamera.pinch`, `PINCH_GAIN`). Planets are a few hundredths of their
+star, and at one to one reaching one took pinch after pinch. The gesture
+starts when the fingers spread or close past the touch slop, not only when
+their middle moves: counted on the middle alone, a clean pinch did nothing.
+And a gesture that is mostly a pinch, while the camera follows a star or a
+planet, zooms without panning: a pan lets go of what is followed, so the planet
+you pinched toward orbited away. Arriving at a planet frames its third moon,
+not its last, so the world is big in the view; arriving at a star frames its
+planets, not the library's belt beyond them.
+
 **Every star is lit, always**, at full size and brightness; there is no "still
 dark" look for genres not listened to. **The star you are at is a sun** — the
 selected one, else the followed one, else the one whose system the camera sits
@@ -856,6 +1041,616 @@ released. Work on its own thread or timer elsewhere — the ambient projectM
 render thread, the FFT taps, the loudness meter, the tilt sensor, projectM's
 audio feed — is held with `LifecycleStartEffect` or `rememberOnScreen()`, never
 a bare `DisposableEffect`, which holds it in the background too.
+
+### The library galaxy
+
+The music on the device as a sky: artists as stars, albums as planets, tracks
+as moons. How it is built, and why, is `docs/local-galaxy-architecture.md`.
+Everything under "The genre galaxy" above holds for it too.
+
+**The two galaxies are one stage** (`GalaxyStage`). The camera, the clock, the
+glides, full screen, the glass and the look sheet are the stage's; each map
+brings only its stars (`StarField`), its system and its panels through slots.
+Do not fork the stage for one map: a fix to one is a fix to both, and the rules
+above were each paid for once.
+
+**The genre galaxy draws from its stream in the order it always has**
+(`GenreStarField`). Its stars and the scene's dust share one seeded `Random`.
+Move a `gauss()` call, or draw a new number before the layout, and every dust
+grain and nebula moves, which looks like nothing until you compare. The split
+of `GalaxyScene` was proven against a fingerprint of every number in the scene.
+
+**Every library star is placed from its own key, never from a shared stream**
+(`LibraryStarField`). A library grows; the genre dataset does not. Seeded down
+the list, one new artist reshuffled the whole sky after every scan.
+`LibraryStarFieldTest` adds artists and checks no other star moved. (The dust
+is dealt out again on a change: it is decoration, not a place.)
+
+**An artist whose genre is not recognised is in the halo, not guessed at.**
+`GenreGraph.resolve` returns null rather than guessing, and the galaxy keeps
+that honesty: such a star floats above or below the disc, and the caption says why.
+
+**Orbits are release order; plays are glow.** The debut orbits nearest. A play
+never moves a planet: it brightens its atmosphere (`Planet.glow`). A system that
+rearranged itself as you listened could not be learned. `LocalSystemsTest` pins
+both.
+
+**A library planet is its album's sound; a chart planet is untouched by it.**
+Its size is the album's running time (full at 80 minutes), its colour its key
+round the Camelot wheel, deeper for minor and paler for major, its haze how loud
+it was mastered, its cover's turn one per 32 beats of its tempo, and its night
+side as deep as the dynamic range the master kept. Every one has a default that
+is the old look exactly (tone 0, haze 0, no spin, shade 1), which is all a chart
+planet ever has: `PlanetSystemTest` pins chart planets at every size and
+`PlanetLookTest` pins each default to the old numbers. An album missing a value
+keeps the old look for that one thing; nothing is guessed. Only the cover turns:
+the light and shadow masks stay turned toward the star, or the planet's lit side
+would spin with it. All of it is drawn with what each body was already drawn
+with, and the atmosphere colours are made once a system (`SystemArt.atmosphere`),
+not per planet per frame.
+
+A library moon is its track the same way: it goes round once every 16 beats of
+the track's tempo (outer slots slower, as before), and its glow is the track's
+key. Without a tempo it keeps its slot's pace, without a key its star's light,
+which is all a chart moon has; `PlanetSystemTest` pins chart moons too.
+
+**Nothing in the library is unreachable on the map.** Albums past the eighth are
+the belt and tracks past an album's sixth are its ring, and both are listed in
+full in the system's sheet. Drawn as grains, never dropped.
+
+**A library system keeps its planets' moons wholly apart** (`SystemLimits.apartMoons`),
+and its reach includes the belt (`PlanetSystem.reachFor`), so the camera frames
+all of it before it arrives. The genre map's spacing is unchanged.
+
+**Past 800 stars, the rest are points until you come near**
+(`GalaxyScene.STAR_SPRITE_BUDGET`, `drawStars`). The genre map has 771 and is
+under it, so it draws as it always did. Past it, each extra star's sprite fades
+in over its point as it grows on screen. Do not make it a hard cut: a hard top-N
+pops as the camera moves.
+
+**Nothing on it comes off the network.** `LocalGalaxyRepository` reads the
+library and the play history only, so the map works in airplane mode. A lookup
+added for a nicer planet breaks that.
+
+**The data layer returns records, not stars.** The repository hands back
+`LibraryArtist`/`LibraryAlbum` (domain); the ViewModel lays them out. The
+`data` package imports nothing from `ui`.
+
+**Genres ⇄ Mine swaps the map, and keeps the view** (`switchSafe`,
+`GalaxyHandoff`). Both maps are laid out in one frame, so the camera and the
+layout are handed over and the other map opens on the same part of the sky.
+The map being left comes off the back stack; otherwise switching back and forth
+stacked maps up behind Back. The handoff is taken once, and a map opened any
+other way frames the whole galaxy.
+
+**The library map is full bleed**, like the genre map (`fullBleedRoute`). Its
+panels clear the bars themselves.
+
+**Both galaxies' controls are pills, not a panel** (`GalaxyControls.kt`, shared,
+so the two maps cannot drift apart). With nothing selected, the bottom is two
+glass pills, Galaxy and Timeline, the one showing lit; Surprise is in the title
+bar. A panel there covered a third of the sky to hold two choices. What it also
+said moved into the caption: on the genre map, how many genres are explored and,
+once any are kept, what the dashed ring means.
+
+**Both galaxies search with the app's search bar, under the title**
+(`GalaxySearchBar`, in `GalaxyStage`'s `underTitle`): `GlassSearchBar` over the
+map, frosting it, with the matching stars as a row of pills inside the same
+pane, the globe's arrangement, so the sky stays in view. Genres match on their
+other names too ("dnb"). It lives in the measured top chrome, so its height is
+in the camera's top reserve and no star's name is drawn under it. Back closes
+it first.
+
+**It opens from a tile under Folders** in the local Library tab
+(`LibraryIndexList`'s `onGalaxy`), drawn like the categories but not one of
+them: the categories open in place, this opens a screen.
+
+### Stats charts
+
+**Bars are glass, and the glass is flat colour.** `glassBar` in `StatsVisuals.kt`
+draws each bar as layers that are each one colour: a translucent tint of the
+theme's primary (0.38, or 0.82 when selected), a white rim, a bright inner top
+edge, and a highlight streak on bars at least 16dp wide. No gradients, anywhere
+on the stats pages: the owner asked for the theme or dynamic colour and nothing
+else. A gradient fill looks like an easy upgrade, and it is the thing that was
+asked to go.
+
+Bars are drawn on the canvas, not as a `GlassPanel` each. The clock grid is 168
+cells, and a shader pane per cell spends the frame on squares a few dp wide. The
+cards around the charts are real `GlassPanel`s over the page's own haze source,
+the same pattern as Discover.
+
+When `disableLiquidGlass` is on, the bars drop to plain solid tint (0.6, or 1
+when selected), the same switch that flattens the rest of the glass. A chart
+that keeps its rims with glass off is out of step with every pane next to it.
+
+Stats and Achievements are **two pages under one glass pill**, not two tabs of
+a Material `TabRow`; the pill is a pair of `GlassChoiceChip`s, as on the chart
+page's view and compare switches.
+
+### Trypt Mania
+
+**The playfield is the mode's own; the menus are the app's.** `GlyphTheme`'s
+near-black palette and the monospaced `GlyphTypography` belong to the lanes,
+the HUD over them, the beat and lane colours and the judgement accents, and to
+readouts that change while they are read. The music wheel, the selection,
+generation and pause panels, Training Ground's controls and the results follow
+the theme: a top bar with Back and `SearchAction`, `SearchOverlay`, wheel items
+of `liquidGlass` at `MonoDimens.listRowHeight`, `GlassPanel`s, and buttons and
+chips from `GlassPill` and `GlassChoiceChip`. Text on a pane takes the glass's
+ink from `MaterialTheme`, never `GlyphTheme.Paper`: a fixed dark menu was the
+only dark screen in a light theme, and fixed white text on the app's glass is
+the wrong ink wherever the glass is light. An accent written as text on the
+page goes through `menuAccent`, which keeps its hue and moves it until it reads.
+
+**The home panels' haze source is the page in every state**, the loading and
+empty messages included, not the list alone. While the list was the source,
+the generation panel over a library still loading had nothing drawn to frost
+and came out a solid slab. The selection pills sit on `LocalBottomChromeNow`
+and add no navigation-bar inset: the nav host already stops a pushed screen
+above the system bar, and counting it again floated them a bar's height above
+the tab bar.
+
+**The songs are on StepMania's music wheel, in folders, not in a list.**
+`GlyphMusicWheel` over `GlyphWheel`: the folders are what the sort makes them
+(Pack, the default, is a folder per imported pack and one for the library), one
+folder is open at a time with its songs after it, and the wheel wraps once it is
+longer than it is tall. A lone folder is open already, and a search is one open
+folder of its results, so neither costs a tap to get past a heading. The flat
+list it replaced was the navigation complaint: hundreds of pack songs in one
+column, with nothing to jump between.
+
+* The centred song's folder is open, always: that is where the song is. The
+  open folder is derived from the centred song, not only stored. Stored alone,
+  a song that changed folder — a chart made under the Mapped sort, a search
+  closed, a pack import landing beside a lone library — was left behind a
+  closed folder, with its panel and preview gone.
+* The centred song is chosen after the wheel rests on it for
+  `SAMPLE_MUSIC_DELAY_MS` (150 ms; StepMania's `SampleMusicDelay` is 250, which
+  with a half-second fade read as a preview slow to start), not as it passes; a
+  folder stops the preview on the same delay, and resting again on the chosen
+  song starts its preview again. The delayed choice is cancelled when the
+  screen or the app is left: run out behind the app, it started a looping
+  preview there.
+* A preview fades in over 120 ms, and the player is built when the song list
+  opens, not on the first song. A song's first preview waits 700 ms for its
+  drop (`DropFinder` reads the whole song's loudness), then starts a third of
+  the way in; the drop found after is the next visit's start.
+* The picture behind the wheel follows the preview (`GlyphSongBackdrop`, fed
+  `GlyphUiState.backdrop`): the song's chart background (`#BACKGROUND`), else
+  its artwork, else nothing: a song with no picture leaves the page plain, with
+  no scrim. (An orange and purple ranking grid stood in for one, and was not
+  liked.) A pack song's artwork is its own picture, else the cover inside its
+  music, taken out once and kept (`GlyphPackLibrary`, `SongArt`): a chart made
+  in the app names no picture, so a song charted here came back from the
+  player's own pack with none. The own pack now writes the cover beside each
+  chart as its jacket and names it (`#JACKET`). It comes up as the preview
+  starts, over `GlyphPreviewPlayer.FADE_IN_MILLIS`, and goes as a preview
+  stops, over `STOP_FADE_MILLIS`; a folder that stops the music takes it too.
+  With previews off it follows the choice instead. It waits for its decode
+  before fading up, so a slow picture never pops in after its fade.
+* The picture is inside the panels' haze source, under the wheel, with a scrim
+  of the page's own colour over it so the rows read in any theme. The grid is
+  still: anything moving under the frosted glass makes it re-blur every frame.
+* The centre is reported by the item, not by its place: a new list with a
+  different song at the same place is a new centre. Reported by place, the
+  panel kept offering Play for the song that used to be there.
+* A tap on the centre item opens it: a folder opens or closes, the chosen song
+  goes to its options. A tap on a song away from the centre chooses it now.
+* The selection panel is the centred song's and shows only once that song is
+  the chosen one. A panel left up while the wheel turned past offered Play for a
+  song no longer in the middle; a panel fading out takes no presses for the same
+  reason.
+* The wheel runs under the search bar and the panel's glass, and its centre
+  moves to the middle of what they leave. The panel's room is kept while a song
+  is chosen, whatever is centred: sized to the centred item, the wheel rose and
+  fell by half a panel at every folder heading.
+* It turns through `Modifier.scrollable`, like a list: presses wait while a
+  drag may be starting (no flash on every drag), and the tab bar folds as it
+  turns. A raw drag detector did neither, which left the mini player unreachable
+  with "Hide mini player when the nav bar shows" on. Items press with
+  `bounceClick`, never a ripple.
+* Up and Down turn it; Left and Right are left to focus, so a D-pad can reach
+  the panel and the top bar. The items are not keyboard stops: the wheel is.
+* The items move in `graphicsLayer` from one float position, and the glass's
+  insets are read there too; a frame of a turn recomposes nothing.
+* It swishes as the player turns it (`GlyphWheelSound`, Settings › More ›
+  Wheel sound), never when it is set to a new place by a sort, a search or a
+  folder. The swish and the metronome are `USAGE_GAME`, on the media volume:
+  as sonification they went with the system stream, which a phone on silent
+  mutes, and the wheel was silent for anyone with their ringer off.
+* The selection is free pills of glass over the wheel, with no pane around
+  them: the difficulties on a line of their own, Train and Play under them.
+  The card says the song's name, tempo, notes, best grade and why a song has
+  no chart; a panel that said them again took a third of the screen, a pane
+  around the pills read as a slab, and one row squeezed the difficulties until
+  one was cut in half. The pills frost the wheel's haze source, their sibling.
+* Trypt Mania keeps the tab bar and hides the mini player (`HideMiniPlayer`)
+  for the whole route; the bottom insets follow, so the wheel and the pills
+  take its place.
+
+**The card over the wheel reads the chart; it never grades it.**
+`GlyphSongInfoCard`: DDR's Groove Radar, the BPM meter, the meter in stars and a
+density graph, from `GlyphChartStats`. The radar is StepMania's own
+`CalculateRadarValues` over the song's length — rolls are not freeze, every
+off-grid row is chaos, voltage is a rolling eight beats — and `GlyphWheelTest`
+holds each axis to hand-worked charts. Divided by the wrong constants, Freeze and
+Chaos read four times high and filled their axes on almost every chart. The
+difficulty number is the chart's own meter; nothing predicts one, and as text it
+goes through `menuAccent`. Every value moves to the next as the wheel turns or the
+difficulty changes, and snaps under reduced motion. The beat light follows the
+playing preview's beat and is still when nothing plays. The tempo shown is the
+song's `#DISPLAYBPM` when it has one (`???` for `*`), as the list and the BPM
+sort use: the timing's range showed a gimmick's one beat at 1500 as the song's
+tempo. Play keeps the real timing.
+
+The card is a `GlassPanel` floating over the top of the wheel, with the chart
+progress and any error under it in one stack below the search bar: the wheel
+runs the full height, its rows travel up beneath the card and read through its
+glass, and its centre is the middle of what the stack leaves. Laid above the
+wheel as a plain card it had nothing behind it to be glass over. Opening the
+search puts the bar at the top and slides the stack below it; the wheel is
+never padded, only inset, so nothing clips at a line. The card is frosted as
+the player's sheet is (`GlassPanel(frosted = true)`: the whole of "Backdrop
+blur" and its tint, not the live lens's fifth and clear glass), so the rows and
+the song's picture under it are soft colour rather than text bent at its rim.
+The radar is drawn in a well sunk into the card (`glassWell`: darker than the
+glass, its far wall's shadow inside its top, its near lip lit), as one with
+it; it used to sit on a second slab of glass over the card, a pane on a pane.
+The density graph has a shallower well of its own. The meter is twelve stars
+cut through the card (`StarHoles`, the slab's `punch` with `punchThrough`):
+the cut goes through the frost as well as the slab, so an unlit star is a real
+hole with the page behind it sharp, the shader bevelling its edge. A lit star
+is light coming up through its hole, white at its heart and blooming onto the
+glass round it, and they light one after another as the meter changes. The
+holes are placed from the star row's position on the card, read when the slab
+draws; where the shader cannot run (`glassPunches` false) the stars are drawn
+as holes instead. The card takes the height the screen can spare:
+whole when it is 720 dp or taller, without the radar and graph from 600 dp, and
+gone below that (a phone on its side), where the wheel and the panel's Play
+need the room. Whole at any height, it pushed Play off a landscape screen.
+
+**The results lead with a ring, then DDR's evaluation, then timing.**
+`GlyphEvaluationPanel`: the run's judgements as one ring, each arc its share
+of the steps, around a glass disc with the grade and percent; then the
+judgement lines, sliding in and counting one after another. A tap while they
+count shows them all; after, a tap on a judgement lights its arc and puts its
+count in the middle. The timing card draws a normal curve from the run's mean
+and spread — two numbers, so it says it is a curve of them, not of the hits —
+and offers a correction only from the recent runs' agreed lateness
+(`ApplyRecentTiming`), never from one run. Every count keeps its spoken
+"Label: value", and everything lands at once under reduced motion.
+
+**The play has a stage behind it, and only the play.** `GlyphDanceStage`, under
+the playfield inside the TV shader: an arcade pad, a metal slab tilted 55°
+away, between two speaker cabinets turned toward it, under a spotlight and a
+veil. The pad is seen through a camera above it (`StageGeometry.project`): its
+face is drawn flat and laid onto the slab with a four-corner perspective matrix,
+so the near edge is wider than the far one and the lip under it shows its
+thickness (`GlyphDanceStageTest`). Its panels are raised and bolted, the four
+arrows sunk in black wells. The room is the song's album art (its chart
+background when it has none), decoded small, blurred and darkened so it reads
+as a room and never competes with the arrows; plain dark blue until it loads
+and for a song with no picture. The arrow panels light as the player steps,
+softly while a lane is held and brighter for a moment on a hit (`stageLight`),
+the light thrown onto the pad round them. The woofers pump on the chart's beat
+(`wooferPump`). Reduced motion keeps the held glow and drops the flash and the
+pump. The rig and the pad are drawn into their own layer and replayed: the
+playfield redraws every frame above it, and without the layer it was redrawn
+with it. Nothing else on the stage moves.
+
+**The lanes have no grounds.** The playfield draws its notes, its receptors and
+the receptor line over whatever is behind it, and no lane of its own: the
+grounds it shaded on every other lane cut the stage behind into strips. The
+game, Training Ground and the previews alike; the map editor's grid keeps its
+own, being a grid to place notes on.
+
+**A held hold is cut at the receptor, with its head on it.** Both engines pin a
+held body's top to the receptor for the whole hold, pressed early or late
+(`fillVisible`; `GlyphEngineWindowTest` and the native test hold the same
+case). The pin used to apply only before the head's moment, so after it the
+body slid on past the receptor. The playfield draws a hit hold's head at the
+body's top, on the receptor while held and carried on with the body once let
+go; hidden, the body's raw end showed under the receptor. The body's short last
+tile is its art cut to fit, never the whole tile squeezed into the gap.
+
+**The run moves at its edges: in, on each step, and out on a fail.** While
+READY shows, the HUD drops in from the top, the field rises into place and the
+life bar fills to its start (`INTRO_IN_MILLIS`); a restart, with no READY,
+starts in place. The percent rolls to each new value; its spoken label is the
+real one. The combo pops on each step it gains and harder at every fiftieth,
+and a broken combo falls away in red instead of blinking out. The judgement
+word itself stays still: it is read at a glance. When the life bar empties the
+whole game picture shakes, hardest first (`SHAKE_MILLIS`); on Immediate the
+music stops, the field sinks under a red veil, FAILED lands on it (held still,
+outside the shake, so it can be read) and the results follow
+(`FAIL_HOLD_MILLIS`). Pause does nothing then: Resume would only restart the
+music under FAILED. Nor do the lanes: a step under FAILED was still judged at
+the stopped music, and the results count the engine's judgements. Imm. Continue shakes and plays on. Leaving or restarting
+cancels the hold. Reduced motion keeps all of it still: the intro, roll, pop,
+fall and shake are skipped, and FAILED shows at once.
+
+**The TV shader is over the game, never over a menu.** `glyphTvShader`, off by
+default, goes on the gameplay picture (the playfield, the judgements and the
+HUD), Training Ground's playfield, the options' preview and the Graphics tab's
+preview of the demo chart, and nowhere else. The pause menu is drawn over it,
+outside it, in the app's own glass. Android 13 and later; off where the app
+turns its blur off (a low-end phone, or liquid glass removed), since it is a
+full-screen pass every frame, and the setting says so; a shader the driver will
+not compile leaves the screen plain.
+
+**Except when the player asks for it everywhere.** Settings › Appearance ›
+CRT effect, the tab's last setting and off by default, draws the whole app
+through one of the same looks (`Modifier.tvShader` on the activity's root
+surface, the CRT unless another look is picked), with the same limits, and
+says when this phone cannot run it. Pop-ups that open their own window (a
+dropdown, a system dialog) are outside it. Under it the game's own
+(`glyphTvShader`, `LocalAppTvShader`) is left off: two would draw every
+scanline twice. Under Look it has every one of the game's sliders, its own
+copy (`appTvTuning`, one line in the settings store, synced), and the app is
+their preview: a drag moves the whole app live (`AppTvLive`, read in the
+root layer's draw) and the store is written once, on release.
+
+**Chromatic shift and the two curves are the tube's glass, over any look.** A
+second pass chained after the pattern (`TUBE_SHADER`), so the scanlines and the
+mask bow with the picture, as on a tube; it runs only while one is above 0, and
+all start at 0. Each curve is an angle, 0 to 40°: "Curve, top & bottom" bows
+those edges and "Curve, sides" the left and right, each `1/cos θ − 1` of the CRT
+shader's warp (about 16° and 14° are its classic 1/24 and 1/32), so a flat-sided
+or a round tube can be had. The middle keeps its size, the edges bow outward,
+the corners go dark. A line saved with the one Curvature slider of before is
+read as the two angles that draw the same tube. Chromatic shift reads red and
+blue up to 3 dp either side of green.
+
+**CRT presets are one panel, in every place the CRT is set.**
+`CrtPresetsPanel` sits in Settings › Appearance › CRT effect, the Lyrics FX
+tab and Trypt Mania's Graphics, all reading one store (`CrtPresetStore`), so
+a look saved in one is offered in the others. The built-ins come first:
+Default, then Arcade, Trinitron, Living room and VHS; then the user's own. A chip is
+picked only when the look on screen is exactly it; a picked one of the
+user's can be deleted. Picking one sets the look and every slider together,
+and turns the effect on. Save names the look on screen; Export writes it to
+a `.crt.json` file (type `tryptify-crt-preset`, the sliders in
+`GlyphTvTuning.encode`'s line); Import keeps the file's look with the
+user's and applies it, every slider held to its range. The built-ins' line
+counts follow the screen's height, since a TV pixel is a whole number of
+the phone's own.
+
+**The CRT effect has a default look of its own** (`CrtPresets.DEFAULT`,
+the owner's tuning: the CRT look at a third of its strength, a full mask,
+bowed glass with round corners, a thin frame, a little glare). Until a
+slider is moved the app-wide effect is that look, and its Reset and every
+per-slider reset go back to it. The effect itself stays off until switched
+on. Trypt Mania's game TV keeps the shader's own numbers as its defaults;
+the Default chip is there too.
+
+**Every CRT slider has its own reset** (`SliderReset`): beside its label
+or reading, always there so the row never jumps, dimmed and inert while
+the slider is already at its default. It puts back that slider alone; the
+look's Reset button still puts back all of them.
+
+**The CRT effect draws over the whole app or the lyrics only** (Settings ›
+Appearance › CRT effect › Draw over, `app_tv_target`, the app by default). Over
+the lyrics it is handed down as `LocalLyricsTv` and put on the synced and the
+unsynced lyric surfaces (`lyricsTv`), with the same look and sliders; a bowed
+tube's corners are clear there rather than black, and taps are not bent.
+
+**The lyrics are bent once.** While the CRT effect draws over the whole app
+with a curve (`LocalAppTube`, `appTubeCurved`), the lyrics' own curve is left
+flat in the player and in the Studio's preview: the tube already bows them with
+every other screen, and both was a bowl inside a bowl. The angles are kept, and
+Lyrics FX says why they do nothing under them. The modifier stays in place at
+0° (see below), so nothing is inserted into the letters' copy when the CRT's
+curve comes and goes.
+
+**The Lyrics FX Studio's Lyrics tab ends with the CRT effect's controls**
+(`CrtEffectSetting`, `CrtEffectControls.kt`): the same switch, look, Draw over,
+sliders, Old TV look and Reset as Settings › Appearance, over the same three
+preferences (`CrtEffectPrefs`, which both view models implement), so either
+place sets the one effect.
+
+**Nothing appears or disappears inside the letters' copy while the lyrics are
+up.** `captureLetters` records the lyric surface into a layer that both the
+glass layer outward of it and the backdrop draw. When the curvature slider left
+0, the curve's graphicsLayer was inserted right inside the copy, and Compose
+handed it the glass layer (which already held the copy) without re-recording
+it: the copy and that layer each drew the other, and the render thread walked
+the loop until its stack ran out (four native crashes, nothing in the trace
+but `prepareTreeImpl`). So `lyricCurvature`'s layer is always there on Android
+13+ (flat, it sets no effect), and `captureLetters` ends with a pass-through
+layout node (`CopyBoundary`), so any layer toggled further in gets a fresh
+one. The Studio notes its tab and, while it is up, the preview's settings in
+the crash breadcrumbs.
+
+**A glass lens never reads a source it sits inside.** `liveGlassLens` draws
+every Haze source's recorded content into its backdrop; a pane inside one of
+those sources (the Stats screens put their panels inside the page they frost)
+would record itself into itself, and the render thread walked that loop until
+its stack ran out: a native crash with nothing in the trace but
+`prepareTreeImpl`, seen on device. It skips a source while Haze's
+`contentDrawing` says that source is recording, as Haze's own blur does
+(`HazeContentDrawing`, kept through R8 by name). A pane's own layer
+re-records apart from its source's, when the flag is down, so a source caught
+once is left out for good. A native crash's report names the screen and the
+CRT setting the app was on (`CrashBreadcrumbs`): a render-thread tombstone
+names neither.
+
+**The tube can be seen from an angle, in a frame: an old TV filmed from beside
+it.** Tilt, sideways and Tilt, up & down (±30°) turn the picture and look at it
+from 3.5 half-sides away, so the nearer side stands taller; the turned picture
+is fitted and centred on the screen (`GlyphTvTuning.tubeView`), and Bezel draws
+it smaller inside a dark grey-green frame (clear over the lyrics). Rounded
+corners, Vignette and Glass glare (a sheen and a streak on the frame) finish
+it. All start at 0, so a flat, square, unframed picture is unchanged, and taps
+under the app-wide effect go through the same view (`tubeSource`, which the
+tube shader's sum mirrors). Old TV look sets CRT-Royale and these, after the
+TRYPT CORE videos (`GlyphTvTuning.oldTv`).
+
+**CRT-Royale is its passes folded into one** (`ROYALE_SHADER`, its own program,
+from crt-royale, GPL-2.0-or-later). The beams are its sampled generalized
+Gaussians, three lines a pixel, widening and flattening as they brighten; the
+mask is drawn (aperture grille, slot mask, its default, or shadow mask) instead
+of read from its textures, and amplified by its mean so the light is kept; its
+"fake bloom" lets bright parts glow through the mask; halation and diffusion are
+a 13-tap blur; its border darkens the rim. Every slider's default is the
+original's value (`GlyphTvTuningTest`). Along a line it reads the phone's own
+pixels, not TV pixels: a CRT's line has none, and the app's letters stay sharp.
+Its lines start at the original's 480 down the screen, its triads at 2.5 dp.
+Its arithmetic was checked against a numpy copy on a player screenshot, and each
+program is compiled as GLSL before a build; neither replaces seeing it on a
+phone. It is the one look named after its shader: it is known by that name and
+was asked for by it. Under the app-wide effect a bowed picture would put every
+button somewhere other than where it shows, so `MainActivity.dispatchTouchEvent`
+sends each touch (and its history) through the same warp
+(`GlyphTvTuning.tubeSource`, `bentThroughTube`): a tap lands on what is seen
+under the finger.
+
+* Every pattern is counted in TV pixels of a whole number of phone pixels
+  (`GlyphTvTuning.pixelSize`), never a fraction. The old line grid was 640 x 480
+  stretched over the window, 5.775 rows a line on a 2772-row screen: lines of
+  five and six rows, beating over nine lines as moiré. A grid on whole pixels
+  repeats every line, and a smaller layer draws the same pixel as the game.
+* The CRT starts at the phone's own pixels, and its Pixel size slider lowers
+  the density from there. At one and two pixels its scanlines have no gap to
+  draw, and the slider's note says they show from three. The masks start at a
+  monitor's pixel (1.6 dp), where a one-pixel line is still visible; Wave at
+  the original's 480 lines, rounded to whole rows. Each look keeps its own size.
+* A TV pixel the layer's edge cuts is read inside the layer, never as black:
+  the screen has no dark rim, whatever the size.
+* The sliders are the shader's own constants, not effects laid over it.
+  Strength mixes the plain picture back in; Brightness gives back what the
+  pattern takes. Scanlines, Mask, Glow and Sharpness are the CRT's ScanBrightness,
+  mask levels, BloomAmount and FilterCRTAmount, and their defaults are the
+  original's values exactly (`GlyphTvTuningTest`).
+* The settings name each look by what it does, never by where its arithmetic
+  came from, CRT-Royale apart (below).
+
+**The mode opens on its menu.** `GlyphScreen.MENU`: Play and the map editor
+both lead to the song list, Settings to its own page, and Back from the song
+list returns to the menu rather than leaving the mode. The leaderboard returns
+to whichever of the two opened it.
+
+**Player options, Settings, the leaderboard and the results are menus, so they
+are the app's.** StepMania's options and scoring, never StepMania's page: a top
+bar with Back, the theme's page and ink, and Start on `LocalBottomChromeNow`.
+The first options screen was a fixed dark StepMania page with white text and
+underlined choices; in a light theme it was the one dark screen, and its Start
+button sat under the mini player and the tab bar where nothing could press it.
+StepMania's own art — the grade, the judgement and FULL COMBO sprites — is fine
+on a card; its colours as text go through `menuAccent`. Its typefaces belong to
+the playfield (the HUD, the judgement and the combo), not the menus.
+
+**A choice of a few is `GlyphSegmented`, and the chosen one is filled.** A
+`liquidGlass` pill track with a solid thumb in `onSurface` and the chosen label
+knocked out in `surface`; the options' and Settings' tabs are the same control.
+Start (`GlyphButton(filled = true)`) and the one action of a panel that must
+read as the action are filled the same way, and switches pass `onSurface` as
+their accent. Never a selection told apart by an accent-coloured label: where a
+theme's accent is grey, the chosen chip's label was the dimmest thing in the row
+and every selection, Start included, read as disabled.
+
+**The options' preview is the game's playfield, not a picture of one.**
+`GlyphPreviewField` draws a real engine played by `GlyphAutoplay` with the
+player's modifiers, following the song preview's own clock when it plays, and
+`GlyphPlayfield(preview = true)`: a preview never releases the game's rasters
+(it can share the screen with the game for a cross-fade), draws nothing rather
+than a fallback square for art that is not warm, and closes its engine on
+dispose. The menu's backdrop is the same field on `GlyphDemoChart`, whose loop
+is seamless, faded out before the buttons.
+
+**Keyboards play through `glyphKeyboard`.** The play and training screens hold
+focus themselves so a hardware keyboard needs nothing to tab to; a key is
+judged at its event's own time, its repeats are ignored, Escape pauses, and
+Back is never bindable. In the map editor the arrows only move the playhead,
+even where they play the lanes in a run. The editor is a work surface: like
+the playfield it runs without the tab bar and the mini player.
+
+**Held sideways, the lanes are a centred column.** Portrait gives the four
+lanes the whole width. Landscape gave them the whole width too, and each arrow
+grew to half the screen's height and ran over the HUD. In landscape the lanes
+take `landscapeFieldWidth` of the width (40% by default, 25% to 100% in
+Settings › Graphics), centred, on whole-pixel lanes (`GlyphFieldBounds`), and
+the receptors sit 64 dp from the bottom instead of 96. Gameplay and Training
+Ground both lay out through `glyphFieldColumn`. The touch zones follow the
+drawn lanes (`glyphLaneSpans`), and the screen either side belongs to the
+outer lanes, so a thumb at the edge still presses Left or Right; the hitbox
+setting makes gutters between lanes, never at the screen's edge. Scroll speed
+already measures the field's height, so a note's time on screen does not
+change with the width. Previews keep their own layout.
+
+**Tap to sync is heard, never seen.** The pad in Settings › Sync does not
+flash, pulse or count with the click track: a player who follows a flash
+measures the screen, and the offset it sets is for the sound. The track plays
+through the game's own transport and each tap goes through `touchNanos` and
+`positionAt`, as a lane press does, so the reading is exactly what a run would
+judge — never a separate timer. At 140 BPM a beat (428 ms) is shorter than
+Bluetooth's lateness can be, so a tap is never matched to its nearest click:
+the first tap anchors on the first click and the rest follow the running
+median (`GlyphTapSync`). The offset's limit is 500 ms for the same reason.
+
+**Charting is a line, and a batch is asked before it starts.** Generate puts
+the song in `ChartQueue` and never cancels the one being charted; while a song
+is in the line its button says Queued or Charting… and cannot be pressed
+twice. A folder heading centred on the wheel shows one pill, "Chart N songs",
+in the selection's place, and the ⋮ menu has "Chart every song without one".
+Both open `GlyphBatchDialog` first: how much music, and each mode's time and
+cost, Fast (GPU) and Slow (CPU), from what the servers have shown
+(`ChartPace`) — asking a sleeping GPU would wake it and bill its idle minutes.
+The wheel keeps the pill's room while any folder has a song to chart, not only
+while a heading is centred, so it does not rise and fall as it turns. The
+generation panel counts a batch ("3 of 12 charted") with the song in flight
+under it, and its button cancels all.
+
+**Every song menu offers Play in Trypt Mania.** `TrackContextMenu`, wherever
+it is opened, has the item with Trypt Mania's mark: the noteskin's own arrow,
+hollow, turned to point up and right (`TryptManiaArrow`), one colour so it
+takes the menu's tint. The action comes from the app's root
+(`LocalPlayInTryptMania`) and is read where the menu is asked for, not inside
+the overlay, whose host may sit outside what the root provides. Trypt Mania
+takes the request when it is up, finds the song by its file, its download or
+its name, centres and chooses it, and makes its chart when it has none; a song
+not on the phone, or not an MP3 or FLAC in the library, says so.
+
+**Back in a run pauses it; Back from the pause leaves.** The pause panel is
+where "Quit to songs" is, so Back walks the same two steps. Quitting on the
+first Back threw a run away to a stray edge swipe. On the home screen Back
+closes the search, then an open folder, before it leaves the mode.
+
+**Multiplayer is a room, and the room is where a song is picked and where
+it ends.** `GlyphMultiplayerScreen` is built as the Packs page: a top bar
+with Back, glass panels down a scrolling column, the tab bar kept. Before a
+room it is the open rooms, a code to join by and a room to make; in one it
+is the code (large, monospaced: it is read out and typed), the chart the
+host picked, every player with whether they have the song and are ready,
+Ready, the host's Start, Leave, and a line of chat.
+
+* Players are accounts. Signed out, the page is one panel saying so with
+  Sign in, which goes to the app's account page (`onSignIn` from the nav
+  host); there is no guest play, and the name other players see is the
+  account's. The server checks the token; a refused hello is shown once
+  and not retried.
+* The host picks from the song list in `GlyphSongListMode.ROOM`: the same
+  wheel, titled for the room, with the difficulty chips and one pill, Pick
+  for the room; no Train, no mods. The chart's text travels with the pick,
+  so every phone plays the host's notes and needs only the song: the same
+  chart by hash, else a song of that title and artist (or title) within two
+  seconds of its length. Each phone tells the room, and the lobby shows who
+  has it; Ready is enabled only with the song. Back from that list returns
+  to the room, not the menu.
+* The server names the moment; READY, GO! counts down to it, however long
+  that is. A room's song waits for nobody: the pause panel opens over the
+  running song, for Quit (to the room, as it says), and offers no Restart.
+  An empty bar is a fail in the ranking, never a stop.
+* The HUD carries one more line while a room plays: rank, name and score of
+  everyone, best first, this phone in the HUD's ink and the rest muted,
+  scrolling past eight.
+* The results page of a room's run has the room's panel (the ranking once
+  everyone has finished, the scores as they stand until then) and one way
+  on, Back to room. A run of a chart this phone does not have is sent to
+  the room and not saved against the local scores.
+* Back in a room leaves it; Back from the rooms screen closes the socket,
+  and with it any room this phone was in, as the server forgets a dropped
+  phone's seat.
 
 ### Discord presence
 
@@ -904,6 +1699,17 @@ shader has the artwork. It does: the overlay draws the blurred cover and the
 scrim itself and outputs opaque pixels, which is why it replaces
 `PlayerBlurredArtBackground` rather than layering over it. Two backdrops would
 be the artwork darkened twice.
+
+**A frame projectM did not draw is never presented.** `renderFrame` returns
+whether it drew: it does not when the Target FPS cap drops a frame (vsync off)
+or a paused frame is frozen. With vsync off the swap no longer waits for the
+display, so the render threads wait out the interval themselves
+(`nanosUntilNextFrame`) instead of drawing flat out and letting the cap drop;
+the dropped frames used to be presented anyway, the ambient overlay
+compositing its cleared, empty frame (the cover alone) and the hero swapping a
+buffer nothing drew into, and the visualizer flashed and vanished between real
+frames. When nothing new was drawn the overlay composites its last capture
+(`freshFrame = false`).
 
 **Alpha is inferred from the rendered image, never from the preset.** Presets
 assume an opaque, usually black framebuffer and many depend on feedback; making

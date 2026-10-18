@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
+import tf.monochrome.android.ui.glyph.LocalAppTvShader
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.luminance
@@ -144,7 +145,12 @@ internal fun rememberFrameSeconds(animated: Boolean = true): State<Float> {
     // most expensive thing the setting touches: while the player or the mini
     // player is on screen this pins the process at display refresh rate, and
     // the mini player is mounted by the nav host on every tab.
-    if (animated && !LocalLowPerformance.current.disableAnimations) {
+    // Under the CRT effect over the whole app the glass holds still too: the
+    // app is one layer through two full-screen shader passes, and every
+    // frame of glass motion re-ran both over every pixel — a phone running
+    // hot on the library screen (seen on device). The tube and the mask
+    // hide a breath of glass anyway.
+    if (animated && !LocalLowPerformance.current.disableAnimations && !LocalAppTvShader.current) {
         LaunchedEffect(Unit) {
             while (true) {
                 withFrameNanos { now ->
@@ -347,11 +353,20 @@ val LocalPlayerGlass = compositionLocalOf { tf.monochrome.android.domain.model.P
  * that can change, so this never alters the shape of a caller's composition.
  */
 @Composable
-fun rememberLiquidGlassAvailable(): Boolean {
+fun rememberLiquidGlassAvailable(): Boolean = rememberLiquidGlassAvailable(LocalPlayerGlass.current)
+
+/**
+ * The same, for a pane drawn with [glass] rather than the screen's
+ * [LocalPlayerGlass]. A pane asks of its own settings: the screen's can be
+ * another material, or the default where no screen provides one, and asked
+ * of those a pane with its glass on could be told the shader will not run
+ * and draw its slab as a faint smudge.
+ */
+@Composable
+fun rememberLiquidGlassAvailable(glass: tf.monochrome.android.domain.model.PlayerGlassSettings): Boolean {
     val compiles = remember { liquidGlassCompiles }
     val flat = LocalLowPerformance.current.disableLiquidGlass
-    val enabled = LocalPlayerGlass.current.enabled
-    return compiles && !flat && enabled
+    return compiles && !flat && glass.enabled
 }
 
 /**

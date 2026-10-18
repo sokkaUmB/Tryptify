@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -17,8 +18,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -93,6 +96,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import tf.monochrome.android.ui.navigation.Screen
+import tf.monochrome.android.ui.navigation.navigateTool
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
@@ -266,6 +271,7 @@ fun MixerScreen(
     val dragState = rememberDraggableState { delta ->
         if (heightPx > 0f) progress = (progress + delta / heightPx).coerceIn(0f, 1f)
     }
+
     val onDragStarted: suspend CoroutineScope.(Offset) -> Unit = {
         settleJob?.cancel()
         dragging = true
@@ -336,7 +342,9 @@ fun MixerScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .onSizeChanged { heightPx = it.height.toFloat() }
+            .onSizeChanged {
+                heightPx = it.height.toFloat()
+            }
     ) {
         // The whole backdrop — wash, artwork and glow — as one haze source, so a
         // strip blurs all three together instead of one of them.
@@ -431,7 +439,9 @@ fun MixerScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer { translationY = progress * heightPx }
+                    .graphicsLayer {
+                        translationY = progress * heightPx
+                    }
             ) {
             Column(modifier = Modifier.fillMaxSize()) {
 

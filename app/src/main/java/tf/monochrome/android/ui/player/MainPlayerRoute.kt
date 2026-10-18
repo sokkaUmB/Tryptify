@@ -148,6 +148,8 @@ fun MainPlayerRoute(
     val isDownloaded = isDownloadedRemote || isLocalTrack
     val lyrics by playerViewModel.currentLyrics.collectAsStateWithLifecycle()
     val isLyricsLoading by playerViewModel.isLyricsLoading.collectAsStateWithLifecycle()
+    val serverLyricsStatus by playerViewModel.serverLyricsStatus.collectAsStateWithLifecycle()
+    val hasLyricsServer by playerViewModel.hasLyricsServer.collectAsStateWithLifecycle()
     val viewMode by playerViewModel.nowPlayingViewMode.collectAsStateWithLifecycle()
     val blurredBackground by playerViewModel.playerBlurredBackground.collectAsStateWithLifecycle()
     val playbackSpeed by playerViewModel.playbackSpeed.collectAsStateWithLifecycle()
@@ -248,7 +250,6 @@ fun MainPlayerRoute(
     val visualLinks by playerViewModel.visualLinks.collectAsStateWithLifecycle()
     val liveSpeed by playerViewModel.liveSpeed.collectAsStateWithLifecycle()
     val playerGlass by playerViewModel.playerGlass.collectAsStateWithLifecycle()
-    val dacExclusive by playerViewModel.dacExclusive.collectAsStateWithLifecycle()
     val playerDynamicColor by playerViewModel.playerDynamicColor.collectAsStateWithLifecycle()
     val dynamicColors by playerViewModel.dynamicColors.collectAsStateWithLifecycle()
 
@@ -647,31 +648,14 @@ fun MainPlayerRoute(
         ),
         // The transport buttons' refractive glass parameters (Studio › Player Glass).
         LocalPlayerGlass provides playerGlass,
+        // What the player's glass stands over: its own dark background, not the
+        // theme's. Every pane works its text colour out from this.
+        tf.monochrome.android.ui.components.LocalGlassGround provides playerGlassGround(blendedColors.dominant),
     ) {
     // topBar and hero are content, not chrome — the artwork, lyrics, queue and
     // visualizer are the same whichever layout is drawing around them. Hoisted
     // into slots so both the current and the legacy screen are handed one copy
     // instead of the hero being forked along with the chrome.
-    // The DAC's volume, only while one is claimed for exclusive output: Android's
-    // own volume never reaches it then. The level is collected inside the slot,
-    // so a drag recomposes the bar and not the player around it.
-    val dacVolumeSlot: (@Composable () -> Unit)? = if (dacExclusive) {
-        {
-            val level by playerViewModel.dacLevelDb.collectAsStateWithLifecycle()
-            val glass = LocalPlayerGlass.current
-            DacVolumeBar(
-                levelDb = level,
-                onLevelDb = playerViewModel::setDacLevelDb,
-                onMute = playerViewModel::setDacMuted,
-                // The seek bar's tint, so the two tubes are one material.
-                tint = if (glass.tintColor != 0) Color(glass.tintColor) else state.albumColors.vibrant,
-                contentColor = Color.White,
-                glassTube = !legacyPlayer,
-            )
-        }
-    } else {
-        null
-    }
     val topBarSlot: @Composable () -> Unit = {
         PlayerTopBar(
             speedLabel = state.speedLabel,
@@ -689,6 +673,8 @@ fun MainPlayerRoute(
             onSendFile = { currentTrack?.let { playerViewModel.shareTrack(it) } },
             onOpenLyricsStudio = { navController.navigateTool(Screen.LyricsFxStudio) },
             onOpenSettings = { navController.navigateTool(Screen.Settings, Screen.Settings.createRoute()) },
+            onSyncLyricsOnServer = if (hasLyricsServer) playerViewModel::syncLyricsOnServer else null,
+            onEditLyrics = { navController.navigateTool(Screen.LyricsEditor) },
             onGoToArtist = navController.trackArtistAction(currentTrack, playerViewModel.unifiedFor(currentTrack)),
             onGoToAlbum = navController.trackAlbumAction(currentTrack, playerViewModel.unifiedFor(currentTrack)),
         )
@@ -933,6 +919,9 @@ fun MainPlayerRoute(
                     isLoading = isLyricsLoading,
                     albumColors = blendedColors,
                     positionMs = playerViewModel.positionMs,
+                    serverStatus = serverLyricsStatus,
+                    onSyncOnServer = if (hasLyricsServer) playerViewModel::syncLyricsOnServer else null,
+                    onCancelServer = playerViewModel::cancelServerLyrics,
                     // One element, two states: compact taps expand
                     // (synced lyrics only); expanded line taps seek and
                     // gap taps collapse.
@@ -1089,7 +1078,6 @@ fun MainPlayerRoute(
                 },
                 topBar = topBarSlot,
                 hero = heroSlot,
-                dacVolume = dacVolumeSlot,
                 lyricsMode = lyricsSlotWide,
             )
         } else {
@@ -1182,7 +1170,6 @@ fun MainPlayerRoute(
                     null
                 },
                 overlay = playerPanels,
-                dacVolume = dacVolumeSlot,
             )
         }
     }
@@ -1592,6 +1579,7 @@ private fun BoxScope.SpeedPanel(
                 Switch(
                     checked = preservePitch,
                     onCheckedChange = onPreservePitchChange,
+                    colors = tf.monochrome.android.ui.components.glassSwitchColors(),
                 )
             }
 

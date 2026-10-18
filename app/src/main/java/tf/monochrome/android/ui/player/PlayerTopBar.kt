@@ -1,14 +1,11 @@
 package tf.monochrome.android.ui.player
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DownloadDone
@@ -21,6 +18,8 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Share
@@ -30,7 +29,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import tf.monochrome.android.data.downloads.DownloadStatus
 import tf.monochrome.android.data.downloads.TrackDownloadState
 import tf.monochrome.android.domain.model.RepeatMode
-import tf.monochrome.android.ui.components.liquidGlass
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
 
@@ -71,6 +68,9 @@ fun PlayerTopBar(
     onSendFile: () -> Unit,
     onOpenLyricsStudio: () -> Unit,
     onOpenSettings: () -> Unit,
+    /** Null when no server under Settings › Connections times lyrics: the item is not shown. */
+    onSyncLyricsOnServer: (() -> Unit)? = null,
+    onEditLyrics: (() -> Unit)? = null,
     onGoToArtist: (() -> Unit)? = null,
     onGoToAlbum: (() -> Unit)? = null,
 ) {
@@ -103,26 +103,21 @@ fun PlayerTopBar(
                 )
             }
 
-            Surface(
-                modifier = Modifier
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onSpeedClick,
-                    )
-                    .liquidGlass(
-                        shape = RoundedCornerShape(999.dp),
-                        tintAlpha = PlayerDesignTokens.GlassTintMedium,
-                        borderAlpha = PlayerDesignTokens.GlassTintSoft,
-                    ),
-                shape = RoundedCornerShape(999.dp),
-                color = Color.Transparent,
-                contentColor = Color.White,
+            // The speed (or BPM) pill: the same glass button as the transport,
+            // the dock and the status cards, in the player's own material —
+            // real backdrop, the dome under a finger, the squeeze on press. It
+            // was a flat liquidGlass tint, glass in name only. Pill-shaped by
+            // PressableGlass's default.
+            tf.monochrome.android.ui.components.PressableGlass(
+                onClick = onSpeedClick,
+                onClickLabel = stringResource(R.string.speed),
+                glass = LocalPlayerGlass.current,
             ) {
                 Text(
                     text = speedLabel,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                     style = MaterialTheme.typography.labelLarge,
+                    color = Color.White,
                 )
             }
 
@@ -208,6 +203,20 @@ fun PlayerTopBar(
                         onClick = { onSendFile(); menuExpanded = false },
                         leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
                     )
+                    if (onSyncLyricsOnServer != null) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.lyrics_server_sync)) },
+                            onClick = { onSyncLyricsOnServer(); menuExpanded = false },
+                            leadingIcon = { Icon(Icons.Default.Lyrics, contentDescription = null) },
+                        )
+                    }
+                    if (onEditLyrics != null) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_edit_lyrics)) },
+                            onClick = { onEditLyrics(); menuExpanded = false },
+                            leadingIcon = { Icon(Icons.Default.EditNote, contentDescription = null) },
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.player_visuals_studio)) },
                         onClick = { onOpenLyricsStudio(); menuExpanded = false },

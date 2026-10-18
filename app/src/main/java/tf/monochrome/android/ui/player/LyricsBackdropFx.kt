@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.layer.CompositingStrategy as LayerCompositin
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.Density
@@ -83,6 +84,14 @@ internal class LyricLetterCapture {
 
     /** What is being sung, in root px. Set by the lyric view; read in the draw phase. */
     var bandInRoot: () -> Rect? = { null }
+
+    /**
+     * True while [captureLetters] records [layer]. Anything that would draw
+     * the copy then is inside the letters, and drawing it would put the layer
+     * inside itself: a loop the render thread walks until its stack runs out.
+     * Not state: read and written in the draw pass only.
+     */
+    var recording = false
 }
 
 /** What the player hands the lyric view: where to send its letters, and the light. */
@@ -105,7 +114,7 @@ internal const val LYRIC_COPY_EMISSION = 0.75f
  */
 @Composable
 internal fun Modifier.captureLetters(capture: LyricLetterCapture?, edgeFade: Boolean = false): Modifier {
-    if (capture == null) return this
+    if (capture == null) return this.then(CopyBoundary)
     val layer = rememberGraphicsLayer()
     DisposableEffect(capture, layer) {
         capture.layer = layer
@@ -118,10 +127,36 @@ internal fun Modifier.captureLetters(capture: LyricLetterCapture?, edgeFade: Boo
             capture.size = Size(it.size.width.toFloat(), it.size.height.toFloat())
         }
         .drawWithContent {
+            // A second capture of the same letters inside the first (a lyric
+            // view drawn within its own copy) draws plainly instead.
+            if (capture.recording) {
+                drawContent()
+                return@drawWithContent
+            }
             RaysProbe.copiesRecorded++
-            layer.record { this@drawWithContent.drawContent() }
+            capture.recording = true
+            try {
+                layer.record { this@drawWithContent.drawContent() }
+            } finally {
+                capture.recording = false
+            }
             drawLayer(layer)
         }
+        .then(CopyBoundary)
+}
+
+/**
+ * A layout node that only passes its child through, right inside the
+ * letters' copy, so the copy's draw always belongs to this node and the
+ * layer that holds it stays the one outward of it. Without it, a layer
+ * added inward later (the curve, the beat's scale) took over the copy's draw
+ * and was handed the old layer that already drew the copy: a loop on the
+ * render thread. Anything added inward now gets a fresh layer of its own.
+ * There whether or not the copy is taken, so taking it changes nothing here.
+ */
+private val CopyBoundary: Modifier = Modifier.layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, placeable.height) { placeable.place(0, 0) }
 }
 
 /**
@@ -168,7 +203,7 @@ internal fun LyricBackdropFx(backdrop: LyricBackdrop, modifier: Modifier = Modif
                     RaysProbe.hit(RaysProbe.Backdrop.NO_ORIGIN)
                     return@drawBehind
                 }
-                if (letters.isReleased || size.minDimension <= 0f) {
+                if (letters.isReleased || size.minDimension <= 0f || capture.recording) {
                     RaysProbe.hit(RaysProbe.Backdrop.LETTERS_RELEASED)
                     return@drawBehind
                 }

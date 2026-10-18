@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -74,6 +75,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import tf.monochrome.android.R
 import androidx.compose.ui.platform.LocalContext
+import tf.monochrome.android.player.preview.SongPreview
+import tf.monochrome.android.ui.components.rememberHoldToPreview
+import tf.monochrome.android.ui.components.songPreviewHold
+import tf.monochrome.android.ui.theme.MonoDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,7 +162,8 @@ fun ArtistDetailScreen(
             onDownloadTrack = { playerViewModel.downloadTrack(track) },
             onShareFile = { playerViewModel.shareTrack(track) },
             onGoToAlbum = navController.trackAlbumAction(track, playerViewModel.unifiedFor(track)),
-            onGoToArtist = null // Already here
+            onGoToArtist = null, // Already here
+            onSelect = { selection.toggle(track.id) }
         )
     }
 
@@ -488,10 +494,13 @@ private fun ArtistGridTrackItem(
     track: tf.monochrome.android.domain.model.Track,
     onClick: () -> Unit
 ) {
+    // Holding plays the song's preview until the finger lifts.
+    val holdToPreview = rememberHoldToPreview(track)
     Column(
         modifier = Modifier
             .width(140.dp)
-            .clickable(onClick = onClick),
+            .combinedClickable(onClick = onClick, onLongClick = holdToPreview)
+            .songPreviewHold(SongPreview.keyOf(track), MonoDimens.shapeMd),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         CoverImage(

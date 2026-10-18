@@ -65,6 +65,8 @@ add_library(monochrome_dsp SHARED
     dsp/scope/spectrum_waterfall_jni.cpp
     # EBU R128 loudness for the Audio Pipeline panel and the master strip.
     dsp/meter/loudness_jni.cpp
+    # Each local track's dynamic range, measured as it plays, for the library galaxy.
+    dsp/meter/dynamic_range_jni.cpp
 )
 
 target_include_directories(monochrome_dsp PRIVATE
@@ -87,6 +89,37 @@ set_target_properties(monochrome_dsp PROPERTIES DEBUG_POSTFIX "")
 set_target_properties(monochrome_visualizer PROPERTIES DEBUG_POSTFIX "")
 
 target_link_libraries(monochrome_dsp
+    android
+    log
+)
+
+# ── Trypt Mania (Glyph) game engine ──────────────────────────────────────
+# Judgement, scoring, the beat map and the playfield's per-frame note query.
+# Its own .so, rather than part of monochrome_dsp which every launch loads: it
+# is loaded the first time someone opens Trypt Mania, never at launch. The engine sources carry no Android
+# headers so glyph/tests builds them on a desktop; only glyph_jni.cpp does.
+add_library(monochrome_glyph SHARED
+    glyph/glyph_timing.cpp
+    glyph/glyph_engine.cpp
+    glyph/glyph_jni.cpp
+)
+
+target_include_directories(monochrome_glyph PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/glyph
+)
+
+target_compile_features(monochrome_glyph PRIVATE cxx_std_17)
+
+# No -ffast-math: the engine compares against window edges exactly and keeps
+# NaN as "no offset", both of which fast-math is free to break.
+target_compile_options(monochrome_glyph PRIVATE
+    -O3 -fno-exceptions -fno-rtti
+    $<$<STREQUAL:${ANDROID_ABI},arm64-v8a>:-march=armv8-a+simd>
+)
+
+set_target_properties(monochrome_glyph PROPERTIES DEBUG_POSTFIX "")
+
+target_link_libraries(monochrome_glyph
     android
     log
 )

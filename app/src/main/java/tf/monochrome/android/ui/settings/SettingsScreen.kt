@@ -97,7 +97,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Button
 import android.content.Context
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import tf.monochrome.android.domain.model.NowPlayingViewMode
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -236,6 +235,9 @@ internal fun settingsLinkRoute(label: String): String? = settingsLinkTabs[label]
 /** The tabs that are pages of the pager, in chip order. */
 private val settingsPages: List<String> = settingsTabs.filter { it !in settingsLinkTabs }
 
+/** The page ids, for the Every Corner achievement to count against. */
+internal val settingsPageIds: List<String> get() = settingsPages
+
 /**
  * Index of the About tab, where the What's New panel lives. Derived from
  * [settingsTabs] rather than written down, so reordering the tabs can't leave a
@@ -278,6 +280,10 @@ fun SettingsScreen(
     // Tab changes slide normally; with "Disable animations" on they jump.
     val animateTabs = !tf.monochrome.android.ui.theme.reduceMotion()
     val selectedTab = settingsPager.currentPage
+    // Every Corner counts the pages seen. Keyed on the page, so a chip tap, a
+    // swipe, a search jump and a deep link landing all count alike.
+    val achievements = tf.monochrome.android.ui.stats.rememberAchievementStore()
+    LaunchedEffect(selectedTab) { achievements?.settingsTabOpened(settingsPages[selectedTab]) }
 
     // Toast one-shot ViewModel messages (font import, backup import, …) from
     // one always-composed collector, regardless of which tab is showing.
@@ -452,7 +458,9 @@ fun SettingsScreen(
                                     settingsScope.launch { settingsPager.goToPage(settingsTabIndex("Fonts"), animateTabs) }
                                 },
                             )
-                            "Fonts" -> tf.monochrome.android.ui.settings.fonts.FontBrowserPage()
+                            "Fonts" -> tf.monochrome.android.ui.settings.fonts.FontBrowserPage(
+                                fontSize = { FontSizeSection(viewModel) },
+                            )
                             "Audio" -> AudioTab(viewModel, navController)
                             "Equalizer" -> EqualizerTab(navController, viewModel)
                             "Library" -> LibrarySettingsTab(viewModel)
@@ -716,6 +724,9 @@ private fun AppearanceTab(viewModel: SettingsViewModel, navController: NavContro
         )
         Spacer(modifier = Modifier.height(16.dp))
         InterfaceControls(viewModel, navController)
+        Spacer(modifier = Modifier.height(16.dp))
+        // Last of all: the whole app through an old TV.
+        CrtEffectSetting(viewModel)
     }
 }
 
@@ -732,9 +743,7 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
     // Only to show what "Match blend" currently works out to; the slider does
     // not change it.
     val themePaper by viewModel.themePaper.collectAsStateWithLifecycle()
-    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     val customFontUri by viewModel.customFontUri.collectAsStateWithLifecycle()
-    val followSystemFontScale by viewModel.fontScaleFollowSystem.collectAsStateWithLifecycle()
     val glowBehindArt by viewModel.glowBehindArt.collectAsStateWithLifecycle()
     val artGlowRadius by viewModel.artGlowRadius.collectAsStateWithLifecycle()
     val artGlowBrightness by viewModel.artGlowBrightnessPct.collectAsStateWithLifecycle()
@@ -886,57 +895,7 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
         Spacer(modifier = Modifier.height(16.dp))
         SettingsGroupHeader(stringResource(R.string.settings_typography))
 
-        // Font size: five fixed steps, or hand over to the OS setting.
-        SettingSwitchItem(
-            title = stringResource(R.string.settings_use_system_font_size),
-            subtitle = stringResource(R.string.settings_follow_the_size_set_in_android_settings_display),
-            checked = followSystemFontScale,
-            onCheckedChange = { viewModel.setFontScaleFollowSystem(it) }
-        )
-
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Text(
-                stringResource(R.string.settings_font_size),
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (followSystemFontScale) MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onSurface
-            )
-
-            // A legacy value from the old free-form slider (e.g. 1.37) won't equal
-            // any step, so select the closest one instead of leaving nothing
-            // highlighted. Picking a chip then writes the exact step back.
-            val selectedPreset = remember(fontScale) {
-                FONT_SCALE_PRESETS.minByOrNull { kotlin.math.abs(it.scale - fontScale) }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FONT_SCALE_PRESETS.forEach { preset ->
-                    tf.monochrome.android.ui.mixer.GlassChoiceChip(
-                        label = stringResource(preset.label),
-                        selected = !followSystemFontScale && preset == selectedPreset,
-                        accent = MaterialTheme.colorScheme.primary,
-                        enabled = !followSystemFontScale,
-                        onClick = { viewModel.setFontScale(preset.scale) },
-                    )
-                }
-            }
-
-            Text(
-                stringResource(R.string.settings_preview_the_quick_brown_fox_jumps_over_the_lazy),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 12.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
+        // The font size moved to the Fonts page, beside the fonts it scales.
         // Font Library: one row over to the Fonts chip, whose page previews
         // every font in its own letters before it is chosen. The row carries
         // the active font's name so it still answers "what am I using?", and
@@ -953,8 +912,6 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
 @Composable
 private fun InterfaceControls(viewModel: SettingsViewModel, navController: NavController) {
     val explicit by viewModel.showExplicitBadges.collectAsStateWithLifecycle()
-    val playerDynamicColor by viewModel.playerDynamicColor.collectAsStateWithLifecycle()
-    val playerBlurredBackground by viewModel.playerBlurredBackground.collectAsStateWithLifecycle()
 
     SettingsGroupHeader(stringResource(R.string.settings_display))
     SettingSwitchItem(
@@ -963,6 +920,36 @@ private fun InterfaceControls(viewModel: SettingsViewModel, navController: NavCo
         checked = explicit,
         onCheckedChange = { viewModel.setShowExplicitBadges(it) }
     )
+    // Song row badges: all of them at once, then each. Every one takes line
+    // width from the artist and album beside it.
+    val rowBadges by viewModel.rowBadges.collectAsStateWithLifecycle()
+    SettingSwitchItem(
+        title = stringResource(R.string.settings_row_badges),
+        subtitle = stringResource(R.string.settings_row_badges_summary),
+        checked = rowBadges.any,
+        onCheckedChange = {
+            viewModel.setRowBadges(
+                if (it) tf.monochrome.android.data.preferences.RowBadges()
+                else tf.monochrome.android.data.preferences.RowBadges.NONE
+            )
+        }
+    )
+    for ((badge, title, subtitle) in listOf(
+        Triple(tf.monochrome.android.data.preferences.RowBadge.SOURCE, R.string.settings_row_badge_source, R.string.settings_row_badge_source_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.QUALITY, R.string.settings_row_badge_quality, R.string.settings_row_badge_quality_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.FORMAT, R.string.settings_row_badge_format, R.string.settings_row_badge_format_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.DOWNLOAD, R.string.settings_row_badge_download, R.string.settings_row_badge_download_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.DURATION, R.string.settings_row_badge_duration, R.string.settings_row_badge_duration_summary),
+    )) {
+        Box(modifier = Modifier.padding(start = 16.dp)) {
+            SettingSwitchItem(
+                title = stringResource(title),
+                subtitle = stringResource(subtitle),
+                checked = rowBadges.shows(badge),
+                onCheckedChange = { viewModel.setRowBadges(rowBadges.with(badge, it)) }
+            )
+        }
+    }
     val romaji by viewModel.romajiLyrics.collectAsStateWithLifecycle()
     SettingSwitchItem(
         title = stringResource(R.string.settings_romaji_lyrics),
@@ -1004,35 +991,16 @@ private fun InterfaceControls(viewModel: SettingsViewModel, navController: NavCo
         }
     }
 
-    Spacer(modifier = Modifier.height(16.dp))
-    SettingsGroupHeader(stringResource(R.string.settings_now_playing))
-    val viewMode by viewModel.nowPlayingViewMode.collectAsStateWithLifecycle()
-    var showModeDropdown by remember { mutableStateOf(false) }
-    SettingItem(
-        title = stringResource(R.string.settings_view_mode), 
-        subtitle = stringResource(R.string.settings_view_mode_summary, viewModeLabel(viewMode)), 
-        onClick = { showModeDropdown = true }
-    )
-    DropdownMenu(expanded = showModeDropdown, onDismissRequest = { showModeDropdown = false }) {
-        NowPlayingViewMode.entries.forEach { mode ->
-            DropdownMenuItem(
-                text = { Text(viewModeLabel(mode)) },
-                onClick = { viewModel.setNowPlayingViewMode(mode); showModeDropdown = false }
-            )
-        }
-    }
+    // Server lyrics — a song the race leaves without word timing goes to the
+    // chart server, which hears the vocals and times every word (ServerLyricsEngine).
+    val serverLyrics by viewModel.serverLyrics.collectAsStateWithLifecycle()
     SettingSwitchItem(
-        title = stringResource(R.string.settings_dynamic_player_color),
-        subtitle = stringResource(R.string.settings_tint_the_player_from_album_art_needs_dynamic),
-        checked = playerDynamicColor,
-        onCheckedChange = { viewModel.setPlayerDynamicColor(it) }
+        title = stringResource(R.string.settings_server_lyrics),
+        subtitle = stringResource(R.string.settings_server_lyrics_subtitle),
+        checked = serverLyrics,
+        onCheckedChange = { viewModel.setServerLyrics(it) }
     )
-    SettingSwitchItem(
-        title = stringResource(R.string.settings_blurred_album_background),
-        subtitle = stringResource(R.string.settings_behind_the_player_and_the_mixer_the_album_art),
-        checked = playerBlurredBackground,
-        onCheckedChange = { viewModel.setPlayerBlurredBackground(it) }
-    )
+
 
     Spacer(modifier = Modifier.height(16.dp))
 }
@@ -1565,6 +1533,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
     // owned them.
     val gapless by viewModel.gaplessPlayback.collectAsStateWithLifecycle()
     val crossfade by viewModel.crossfadeDuration.collectAsStateWithLifecycle()
+    val exclusiveUsb by viewModel.usbExclusiveBitPerfectEnabled.collectAsStateWithLifecycle()
     val gaplessNoResample by viewModel.gaplessNoResample.collectAsStateWithLifecycle()
     val qualities by viewModel.qualities.collectAsStateWithLifecycle()
     val tidalAtmos by viewModel.tidalAtmosPreferred.collectAsStateWithLifecycle()
@@ -1609,17 +1578,25 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         )
 
         // Sits under the gapless toggle because the two decide the same thing:
-        // what happens between one track and the next. They're also mutually
-        // exclusive in effect — any blend above 0s overlaps the tracks, so the
-        // gapless hand-off steps aside for it.
+        // what happens between one track and the next. A blend above 0s
+        // overlaps the tracks, so the gapless hand-off steps aside for it; and
+        // a blend needs gapless on (CrossfadeRamp.blends), so with it off the
+        // slider is greyed and says why, rather than look set and do nothing.
+        // The same with the exclusive USB DAC on (CrossfadeRamp.blendMs): no
+        // blend and no second player then, and the value set waits for it.
+        val blendAvailable = gapless && !exclusiveUsb
         Text(
             text = if (crossfade == 0) stringResource(R.string.settings_blend_gapless) else stringResource(R.string.settings_blend_seconds, crossfade),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (blendAvailable) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.settingsAnchor(stringResource(R.string.search_crossfade)),
         )
         Text(
-            text = if (crossfade == 0) {
+            text = if (exclusiveUsb) {
+                stringResource(R.string.settings_blend_off_exclusive)
+            } else if (!gapless) {
+                stringResource(R.string.settings_blend_needs_gapless)
+            } else if (crossfade == 0) {
                 stringResource(R.string.settings_blend_zero_desc)
             } else {
                 stringResource(R.string.settings_blend_desc, crossfade)
@@ -1630,6 +1607,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         Slider(
             value = crossfade.toFloat(),
             onValueChange = { viewModel.setCrossfadeDuration(it.toInt()) },
+            enabled = blendAvailable,
             valueRange = 0f..12f,
             steps = 11,
             modifier = Modifier.fillMaxWidth()
@@ -1730,6 +1708,15 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+        SettingsGroupHeader("Trypt Mania")
+        OutlinedButton(
+            onClick = { navController.navigateTool(Screen.Glyph) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Trypt Mania")
+        }
+
         // One group, not two. "Spatial Audio" held nothing but the Atmos row,
         // and that row is the multichannel renderer's own settings — channel
         // map, downmix coefficients, binaural render. It belongs against the
@@ -1740,7 +1727,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         DspBlockSizeSelector(viewModel)
 
         Spacer(modifier = Modifier.height(8.dp))
-        UsbBitPerfectToggle(viewModel)
+        OutputToggles(viewModel)
 
         Spacer(modifier = Modifier.height(8.dp))
         SettingItem(
@@ -1827,8 +1814,6 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         )
     }
 }
-
-
 
 // User-facing DSP buffer (block) size selector. Smaller = lower latency
 // + more JNI / native overhead per second; larger = lower CPU at the
@@ -2043,25 +2028,12 @@ private fun ChannelDetectorCard(viewModel: SettingsViewModel) {
 }
 
 /**
- * Settings switch that pins the player's output to an attached USB Audio
- * Class DAC via setPreferredAudioDevice. The device-name line below the
- * switch updates live as the DAC plugs / unplugs.
+ * Where the audio goes: hi-res on Android's own output, and the exclusive USB
+ * DAC path that bypasses it. (A third switch pinned Android's output to a USB
+ * DAC; exclusive mode is the bit-perfect path, so it went.)
  */
 @Composable
-private fun UsbBitPerfectToggle(viewModel: SettingsViewModel) {
-    val enabled by viewModel.usbBitPerfectEnabled.collectAsStateWithLifecycle()
-    val deviceName by viewModel.usbOutputDeviceName.collectAsStateWithLifecycle()
-    SettingSwitchItem(
-        title = stringResource(R.string.settings_usb_dac_bit_perfect_routing),
-        subtitle = when {
-            !enabled -> stringResource(R.string.settings_usb_off)
-            deviceName != null -> stringResource(R.string.settings_usb_on_device, deviceName!!)
-            else -> stringResource(R.string.settings_usb_on_waiting)
-        },
-        checked = enabled,
-        onCheckedChange = { viewModel.setUsbBitPerfectEnabled(it) },
-    )
-
+private fun OutputToggles(viewModel: SettingsViewModel) {
     val hiResHal by viewModel.hiResHalOutputEnabled.collectAsStateWithLifecycle()
     SettingSwitchItem(
         title = stringResource(R.string.settings_hi_res_output_bluetooth_speaker),
@@ -2210,6 +2182,10 @@ private fun BypassDiagnosticsCard(
                                 "async feedback ✓"
                             else "no feedback EP (open-loop)"
                         )
+                        diagnostics.hardwareVolumeLabel()?.let {
+                            append(" · ")
+                            append(it)
+                        }
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -4256,13 +4232,60 @@ private fun PaperSwatch(
     }
 }
 
-/** What the player's view-mode picker calls each mode, in the reader's language. */
+
+/**
+ * The font size: five fixed steps, or the size set in Android. On the Fonts
+ * page, beside the fonts it scales.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun viewModeLabel(mode: NowPlayingViewMode): String = stringResource(
-    when (mode) {
-        NowPlayingViewMode.COVER_ART -> R.string.settings_view_cover_art
-        NowPlayingViewMode.LYRICS -> R.string.mode_lyrics
-        NowPlayingViewMode.QUEUE -> R.string.queue
-        NowPlayingViewMode.VISUALIZER -> R.string.visualizer
+internal fun FontSizeSection(viewModel: SettingsViewModel) {
+    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
+    val followSystemFontScale by viewModel.fontScaleFollowSystem.collectAsStateWithLifecycle()
+    // Padded as the preview pane above it is: this sits inside a glass panel,
+    // not on the settings page, so nothing gives it a margin but itself.
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // One heading: the chips below are the size, and need no second label.
+        SettingsGroupHeader(stringResource(R.string.settings_font_size))
+        SettingSwitchItem(
+            title = stringResource(R.string.settings_use_system_font_size),
+            subtitle = stringResource(R.string.settings_follow_the_size_set_in_android_settings_display),
+            checked = followSystemFontScale,
+            onCheckedChange = { viewModel.setFontScaleFollowSystem(it) }
+        )
+
+        // A legacy value from the old free-form slider (e.g. 1.37) won't equal
+        // any step, so select the closest one instead of leaving nothing
+        // highlighted. Picking a chip then writes the exact step back.
+        val selectedPreset = remember(fontScale) {
+            FONT_SCALE_PRESETS.minByOrNull { kotlin.math.abs(it.scale - fontScale) }
+        }
+        // Wrapped, not scrolled: all five steps in view, none cut at the
+        // panel's edge.
+        androidx.compose.foundation.layout.FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FONT_SCALE_PRESETS.forEach { preset ->
+                tf.monochrome.android.ui.mixer.GlassChoiceChip(
+                    label = stringResource(preset.label),
+                    selected = !followSystemFontScale && preset == selectedPreset,
+                    accent = MaterialTheme.colorScheme.primary,
+                    enabled = !followSystemFontScale,
+                    onClick = { viewModel.setFontScale(preset.scale) },
+                )
+            }
+        }
+
+        Text(
+            stringResource(R.string.settings_preview_the_quick_brown_fox_jumps_over_the_lazy),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp)
+        )
     }
-)
+}

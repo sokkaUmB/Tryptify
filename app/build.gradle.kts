@@ -53,8 +53,8 @@ android {
         applicationId = "tf.monotrypt.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 193
-        versionName = "1.9.3"
+        versionCode = 194
+        versionName = "1.9.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -96,6 +96,26 @@ android {
             "String",
             "LASTFM_API_KEY",
             "\"${localProperties.getProperty("lastfm.apiKey") ?: "153452aaeaa3e666645274b3a9e5bb0a"}\"",
+        )
+
+        // The Trypt Mania chart server every install starts with (Slow, a
+        // CPU server on Railway), its secret path and all. From
+        // local.properties (`tryptmania.cpuServer`) or the
+        // TRYPTMANIA_CPU_SERVER environment variable, never the repository:
+        // a build without either ships no server, and charting waits for one
+        // under Settings › Connections. Anyone with the APK can read it.
+        buildConfigField(
+            "String",
+            "BUILT_IN_CPU_SERVER",
+            "\"${(localProperties.getProperty("tryptmania.cpuServer") ?: System.getenv("TRYPTMANIA_CPU_SERVER") ?: "").trim()}\"",
+        )
+        // The rooms server for Trypt Mania's multiplayer (TryptMania-Parser's
+        // multiplayer/ service on Railway), the same way: local.properties
+        // `tryptmania.roomsServer` or TRYPTMANIA_ROOMS_SERVER.
+        buildConfigField(
+            "String",
+            "BUILT_IN_ROOMS_SERVER",
+            "\"${(localProperties.getProperty("tryptmania.roomsServer") ?: System.getenv("TRYPTMANIA_ROOMS_SERVER") ?: "").trim()}\"",
         )
 
         externalNativeBuild {
@@ -180,6 +200,15 @@ android {
         }
     }
 
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources and the manifest to
+            // inflate anything; without this a Compose test fails on the first
+            // theme lookup rather than on an assertion.
+            isIncludeAndroidResources = true
+        }
+    }
+
     androidResources {
         // Lists the app's languages for the system, from the values-* folders,
         // so Android 13+ offers it under Settings › App languages. Needs
@@ -188,6 +217,25 @@ android {
         // Stored as-is in the APK; the zip's entries are already deflated, so
         // letting AAPT re-compress it would only slow down runtime extraction.
         noCompress += "presets.zip"
+    }
+
+    testOptions {
+        unitTests.all {
+            // Name the failures in the log.
+            //
+            // By default Gradle prints "There were failing tests. See the
+            // report at ..." and nothing else, which on CI means the one thing
+            // needed to fix the build is the one thing not in the build output
+            // — it is inside an HTML artifact you have to download and unzip.
+            // Printing the test name and the assertion turns a ten-minute
+            // round trip into reading the log.
+            it.testLogging {
+                events("failed")
+                exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+                showStackTraces = true
+                showCauses = true
+            }
+        }
     }
 }
 
@@ -357,6 +405,8 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.core.splashscreen)
     implementation(libs.browser)
+    // Exportify inside the app: a web message listener only exportify.net can post to.
+    implementation(libs.webkit)
 
     // Media (Android Auto)
     implementation(libs.media)
@@ -390,4 +440,12 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    // Compose tests run on the JVM under Robolectric so `testDebugUnitTest`
+    // covers them. A separate instrumented suite would need a device and would
+    // therefore not run on most changes.
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

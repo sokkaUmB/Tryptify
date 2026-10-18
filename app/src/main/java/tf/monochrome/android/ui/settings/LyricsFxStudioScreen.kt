@@ -1,5 +1,7 @@
 package tf.monochrome.android.ui.settings
 
+import tf.monochrome.android.ui.player.lyricCurvature
+import kotlin.math.roundToInt
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import tf.monochrome.android.ui.navigation.navigateTool
 import androidx.compose.material3.LocalContentColor
@@ -72,6 +74,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -205,7 +208,8 @@ class LyricsFxStudioViewModel @Inject constructor(
     /** The player's own beat analyzer, so the preview of the playing song pulses with it. */
     val spectrumAnalyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap,
     musicLinksRepository: MusicLinksRepository,
-) : ViewModel() {
+    private val achievements: tf.monochrome.android.data.achievements.AchievementStore,
+) : ViewModel(), CrtEffectPrefs {
     /** The visual music links: the Lyrics tab's sliders make and change them, and its preview runs them. */
     val musicLinks = VisualLinkEditing(viewModelScope, musicLinksRepository)
 
@@ -272,6 +276,27 @@ class LyricsFxStudioViewModel @Inject constructor(
 
     fun setAmbientHideCover(hide: Boolean) {
         viewModelScope.launch { preferences.setAmbientVisualizerHideCover(hide) }
+    }
+
+    // Settings › Appearance › CRT effect, which the Lyrics tab ends with: the
+    // same preferences, so the two places never disagree.
+    override val appTvShader: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvShader> = preferences.appTvShader
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.glyph.engine.GlyphTvShader.OFF)
+    override val appTvTuning: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvTuning> = preferences.appTvTuning
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.glyph.engine.GlyphTvTuning())
+    override val appTvOnLyrics: StateFlow<Boolean> = preferences.appTvOnLyrics
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    override fun setAppTvShader(shader: tf.monochrome.android.glyph.engine.GlyphTvShader) {
+        viewModelScope.launch { preferences.setAppTvShader(shader) }
+    }
+
+    override fun setAppTvTuning(tuning: tf.monochrome.android.glyph.engine.GlyphTvTuning) {
+        viewModelScope.launch { preferences.setAppTvTuning(tuning) }
+    }
+
+    override fun setAppTvOnLyrics(lyrics: Boolean) {
+        viewModelScope.launch { preferences.setAppTvOnLyrics(lyrics) }
     }
 
     /** Fonts the user has imported (Settings › Appearance copies them here). */
@@ -417,8 +442,10 @@ class LyricsFxStudioViewModel @Inject constructor(
         update { it.withGlassOpticsFrom(_playerGlass.value) }
     }
 
-    fun applyPreset(preset: LyricsFxSettings) {
+    /** [name] is the preset's, for Lyric Stylist; null for a reset, which tries nothing new. */
+    fun applyPreset(preset: LyricsFxSettings, name: String? = null) {
         userTouched = true
+        name?.let(achievements::lyricsPresetApplied)
         // A theme changes only the look — keep the user's font, Bluetooth delay,
         // and glass sample count (personal/device settings) across the switch.
         val next = preset.withPersonalFrom(_fx.value).clamped()
@@ -501,6 +528,8 @@ fun LyricsFxStudioScreen(
     // rememberSaveable so it doesn't snap back to Lyrics after background
     // process death.
     var selectedTab by rememberSaveable { mutableStateOf(0) }
+    // Which tab is up, for a native crash's report.
+    SideEffect { tf.monochrome.android.debug.CrashBreadcrumbs.note("studiotab", selectedTab.toString()) }
 
     // Music links. The preview runs the saved links with the one being edited
     // in place of its saved version; the sliders mark which settings move and
@@ -832,7 +861,7 @@ fun LyricsFxStudioScreen(
                         label = name,
                         selected = fx.matchesPreset(preset),
                         accent = MaterialTheme.colorScheme.primary,
-                        onClick = { viewModel.applyPreset(preset) },
+                        onClick = { viewModel.applyPreset(preset, name) },
                     )
                 }
                 // The user's own saved presets. Tapping applies; the trailing
@@ -842,7 +871,7 @@ fun LyricsFxStudioScreen(
                         label = saved.name,
                         selected = fx.matchesPreset(saved.settings),
                         accent = MaterialTheme.colorScheme.primary,
-                        onClick = { viewModel.applyPreset(saved.settings) },
+                        onClick = { viewModel.applyPreset(saved.settings, saved.name) },
                         trailingContent = {
                             Icon(
                                 Icons.Default.Share,
@@ -1057,6 +1086,67 @@ fun LyricsFxStudioScreen(
                     description = stringResource(R.string.fx_lyric_shadow_desc),
                     linkKey = "lyrics.shadowDepth",
                 ) { viewModel.update { s -> s.copy(shadowDepth = it) } }
+                // Two angles, as the CRT effect's: the top and bottom edges'
+                // bow, and the sides'. Moving one pins the other where it is
+                // drawn, so a curve saved with one angle keeps its sides.
+                fun degreesReading(deg: Float) = "%.1f°".format(deg) + if (deg < 0.05f) " (off)" else ""
+                fun tenth(deg: Float) = (deg * 10f).roundToInt().div(10f).coerceIn(0f, 75f)
+                FxSlider(
+                    stringResource(R.string.fx_curvature),
+                    degreesReading(fx.curvatureDeg),
+                    fx.curvatureDeg, 0f..75f,
+                    description = stringResource(R.string.fx_curvature_desc),
+                ) { viewModel.update { s -> s.copy(curvatureDeg = it, curvatureSideDeg = s.effectiveCurvatureSideDeg) } }
+                // The angle to a tenth of a degree, which a finger on the
+                // slider cannot place.
+                FxNudge(label = stringResource(R.string.fx_curvature), step = 0.1f, unit = "°") { delta ->
+                    viewModel.update { s ->
+                        s.copy(curvatureDeg = tenth(s.curvatureDeg + delta), curvatureSideDeg = s.effectiveCurvatureSideDeg)
+                    }
+                }
+                FxSlider(
+                    stringResource(R.string.fx_curvature_sides),
+                    degreesReading(fx.effectiveCurvatureSideDeg),
+                    fx.effectiveCurvatureSideDeg, 0f..75f,
+                    description = stringResource(R.string.fx_curvature_sides_desc),
+                ) { viewModel.update { s -> s.copy(curvatureSideDeg = it) } }
+                FxNudge(label = stringResource(R.string.fx_curvature_sides), step = 0.1f, unit = "°") { delta ->
+                    viewModel.update { s -> s.copy(curvatureSideDeg = tenth(s.effectiveCurvatureSideDeg + delta)) }
+                }
+                // Said under the angles rather than greying them: they are kept,
+                // and come back when the CRT stops bowing every screen.
+                if (tf.monochrome.android.ui.glyph.appTubeCurved()) {
+                    Text(
+                        stringResource(R.string.fx_curvature_crt_app),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                // What the curve bends: every lyric as one tube, or a dome
+                // over the sung line or the sung word alone.
+                Text(
+                    stringResource(R.string.fx_curve_target),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    listOf(
+                        LyricsFxSettings.CURVE_ALL to R.string.fx_curve_all,
+                        LyricsFxSettings.CURVE_LINE to R.string.fx_curve_line,
+                        LyricsFxSettings.CURVE_WORD to R.string.fx_curve_word,
+                    ).forEach { (target, label) ->
+                        tf.monochrome.android.ui.mixer.GlassChoiceChip(
+                            label = stringResource(label),
+                            selected = fx.curvatureTarget == target,
+                            accent = MaterialTheme.colorScheme.primary,
+                            onClick = { viewModel.update { s -> s.copy(curvatureTarget = target) } },
+                        )
+                    }
+                }
             }
 
             item {
@@ -1214,6 +1304,12 @@ fun LyricsFxStudioScreen(
                         description = stringResource(R.string.fx_how_hard_edges_are_smoothed_higher_softens_more),
                     ) { viewModel.update { s -> s.copy(fxaaStrength = it) } }
                 }
+            }
+
+            // Last: the CRT effect (Settings › Appearance's own controls),
+            // so the lyrics can be set up for it without leaving the Studio.
+            item {
+                CrtEffectSetting(viewModel, header = { StudioSection(it) }, indent = 0.dp)
             }
 
             item {
@@ -2042,6 +2138,19 @@ internal fun StudioPreview(
 ) {
     val anchors = remember { LyricGlyphAnchors() }
     val accent = MaterialTheme.colorScheme.primary
+    // What the preview draws, for a native crash's report, and nothing once
+    // it is gone, so the note never outlives the preview it describes.
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { tf.monochrome.android.debug.CrashBreadcrumbs.note("lyricsfx", "-") }
+    }
+    SideEffect {
+        tf.monochrome.android.debug.CrashBreadcrumbs.note(
+            "lyricsfx",
+            "curve=${fx.curvatureDeg}/${fx.effectiveCurvatureSideDeg} target=${fx.curvatureTarget} " +
+                "rays=${fx.godRays}${if (fx.godRaysOnTop) " on top" else ""} shadow=${fx.shadowDepth} " +
+                "lyrics=${if (lyrics?.isSynced == true) "song" else "sample"}",
+        )
+    }
     // Show the real currently-playing lyrics when there are synced lines; else a
     // synthetic sample so the preview is never empty.
     val playing = lyrics?.takeIf { it.isSynced && it.lines.isNotEmpty() }
@@ -2184,25 +2293,36 @@ internal fun StudioPreview(
                 val followWord = fx.godRaysFollowWord
                 var blockBand by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
                 val rowBands = remember { mutableStateMapOf<Int, androidx.compose.ui.geometry.Rect>() }
+                // The word being "sung", one per beat, in root px; null until laid out.
+                val sampleWord: () -> androidx.compose.ui.geometry.Rect? = {
+                    if (wordSpans.isEmpty()) {
+                        null
+                    } else {
+                        val (row, from, to) = wordSpans[(clock.value * 2f).toInt().mod(wordSpans.size)]
+                        rowBands[row]?.let { band ->
+                            // The row is measured inside the pump's scale, the
+                            // spans outside it: scale them to the row as drawn.
+                            val advance = rowSpans.getOrNull(row)?.advance ?: 0f
+                            val k = if (advance > 0f) band.width / advance else 1f
+                            androidx.compose.ui.geometry.Rect(band.left + from * k, band.top, band.left + to * k, band.bottom)
+                        }
+                    }
+                }
                 androidx.compose.runtime.SideEffect {
                     letters.bandInRoot = {
                         val block = blockBand
-                        if (block == null || !followWord || wordSpans.isEmpty()) {
-                            block
-                        } else {
-                            val (row, from, to) = wordSpans[(clock.value * 2f).toInt().mod(wordSpans.size)]
-                            val band = rowBands[row]
-                            if (band == null) {
-                                block
-                            } else {
-                                // The row is measured inside the pump's scale, the
-                                // spans outside it: scale them to the row as drawn.
-                                val advance = rowSpans.getOrNull(row)?.advance ?: 0f
-                                val k = if (advance > 0f) band.width / advance else 1f
-                                androidx.compose.ui.geometry.Rect(band.left + from * k, band.top, band.left + to * k, band.bottom)
-                            }
-                        }
+                        if (block == null || !followWord) block else sampleWord() ?: block
                     }
+                }
+                // The curve over the sample: all of it, the block as the sung
+                // line, or the beat's word. None while the CRT effect bows the
+                // whole app, as in the player (appTubeCurved).
+                val appCurved = tf.monochrome.android.ui.glyph.appTubeCurved()
+                val curveTarget = fx.curvatureTarget
+                val curveFocus: (() -> androidx.compose.ui.geometry.Rect?)? = when (curveTarget) {
+                    LyricsFxSettings.CURVE_LINE -> { { blockBand } }
+                    LyricsFxSettings.CURVE_WORD -> { { sampleWord() ?: blockBand } }
+                    else -> null
                 }
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -2217,6 +2337,13 @@ internal fun StudioPreview(
                             .liquidGlass(tint = accent, rayLight = rayLight)
                             // Before the pump, so the copy pumps with the letters.
                             .captureLetters(letters)
+                            // Bent inside the copy, as in the player.
+                            .lyricCurvature(
+                                if (appCurved) 0f else fx.curvatureDeg,
+                                if (appCurved) 0f else fx.effectiveCurvatureSideDeg,
+                                curveFocus,
+                                wide = curveTarget == LyricsFxSettings.CURVE_WORD,
+                            )
                             .bassBeat(pulse, fx, anchors, LocalVisualLinks.current),
                     ) {
                         // The ripple runs on across rows, as in the player.
@@ -2729,4 +2856,28 @@ private fun blendLabel(mode: VisualizerBlendMode): Int = when (mode) {
     VisualizerBlendMode.SCREEN -> R.string.blend_screen
     VisualizerBlendMode.ADDITIVE -> R.string.blend_additive
     VisualizerBlendMode.SOFT_LIGHT -> R.string.blend_soft_light
+}
+
+/**
+ * Two buttons that move a setting by [step] at a time, under the slider that
+ * sets it roughly: for a value a finger on a slider cannot place exactly.
+ */
+@Composable
+internal fun FxNudge(label: String, step: Float, unit: String, onNudge: (Float) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val amount = "%.1f".format(step) + unit
+        androidx.compose.material3.OutlinedButton(
+            onClick = { onNudge(-step) },
+            modifier = Modifier.semantics { contentDescription = "$label, less by $amount" },
+        ) { Text("− $amount") }
+        Spacer(Modifier.width(8.dp))
+        androidx.compose.material3.OutlinedButton(
+            onClick = { onNudge(step) },
+            modifier = Modifier.semantics { contentDescription = "$label, more by $amount" },
+        ) { Text("+ $amount") }
+    }
 }

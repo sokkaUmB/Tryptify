@@ -53,6 +53,8 @@ fun UnifiedTrackContextMenuHost(
     playerViewModel: PlayerViewModel,
     onRemove: (() -> Unit)? = null,
     removeLabel: String = stringResource(R.string.action_remove_from_playlist),
+    /** Starts multi-select on the song, where the list has it. */
+    onSelect: (() -> Unit)? = null,
 ) {
     val favoriteTrackIds by playerViewModel.favoriteTrackIds.collectAsStateWithLifecycle()
     val playlists by playerViewModel.playlists.collectAsStateWithLifecycle()
@@ -85,6 +87,9 @@ fun UnifiedTrackContextMenuHost(
             onGoToArtist = track.artistId?.let { artistId ->
                 { navController.openArtist(track.sourceType, artistId) }
             },
+            // A library file's own path: Track info reads its tags from it.
+            filePath = (track.source as? tf.monochrome.android.domain.model.PlaybackSource.LocalFile)?.filePath,
+            onSelect = onSelect,
         )
     }
 

@@ -100,6 +100,9 @@ import tf.monochrome.android.ui.components.bounceClick
 import tf.monochrome.android.ui.components.bounceCombinedClick
 import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.navigation.openAlbum
+import tf.monochrome.android.ui.navigation.Screen
+import tf.monochrome.android.ui.navigation.navigateSafe
+import tf.monochrome.android.ui.navigation.navigateTool
 import tf.monochrome.android.ui.navigation.openArtist
 import tf.monochrome.android.ui.player.PlayerViewModel
 import androidx.compose.material3.Surface
@@ -112,6 +115,9 @@ import tf.monochrome.android.ui.detail.LocalFacet
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.player.preview.SongPreview
+import tf.monochrome.android.ui.components.rememberHoldToPreview
+import tf.monochrome.android.ui.components.songPreviewHold
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -374,7 +380,13 @@ fun LocalLibraryTab(
         // so browsing one category runs one query: the other three are not
         // subscribed while their row sits unopened on the index.
         when (openCategory) {
-            null -> LibraryIndexList(onSelect = { openCategoryId = it.id })
+            null -> LibraryIndexList(
+                onSelect = { openCategoryId = it.id },
+                // The library as a galaxy: every artist a star, beside their genre.
+                onGalaxy = { navController.navigateSafe(Screen.LibraryGalaxy.route) },
+                // Trypt Mania: charts generated from the library's own songs.
+                onTryptMania = { navController.navigateTool(Screen.Glyph) },
+            )
 
             LibraryCategory.SONGS -> SongList(
                 tracks = pagedTracks,
@@ -765,12 +777,15 @@ private fun SongRow(
     // legacyId, not id: the queue holds legacy Tracks, so that is what
     // `currentTrack.id` — and therefore LocalNowPlayingTrackId — is.
     val nowPlaying = track.legacyId == LocalNowPlayingTrackId.current
+    // Holding plays the song's preview until the finger lifts.
+    val holdToPreview = rememberHoldToPreview(track)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
-            .bounceClick(onClick = onClick)
-            .liquidGlass(shape = MonoDimens.shapeMd),
+            .bounceCombinedClick(onClick = onClick, onLongClick = holdToPreview)
+            .liquidGlass(shape = MonoDimens.shapeMd)
+            .songPreviewHold(SongPreview.keyOf(track), MonoDimens.shapeMd),
         shape = MonoDimens.shapeMd,
         color = if (nowPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                 else Color.Transparent,
@@ -823,13 +838,16 @@ private fun SongRow(
                         onAlbumClick = { navController.openAlbum(track.albumId) },
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    Spacer(modifier = Modifier.width(MonoDimens.spacingSm))
-                    tf.monochrome.android.ui.components.SourcePill(track.sourceType)
-                    if (track.isDolbyAtmos) {
+                    val badges = tf.monochrome.android.ui.theme.rowBadges()
+                    if (badges.source) {
+                        Spacer(modifier = Modifier.width(MonoDimens.spacingSm))
+                        tf.monochrome.android.ui.components.SourcePill(track.sourceType)
+                    }
+                    if (badges.format && track.isDolbyAtmos) {
                         Spacer(modifier = Modifier.width(4.dp))
                         tf.monochrome.android.ui.components.DolbyAtmosBadgePill()
                     }
-                    track.qualityBadge?.let { badge ->
+                    track.qualityBadge?.takeIf { badges.quality }?.let { badge ->
                         Spacer(modifier = Modifier.width(MonoDimens.spacingSm))
                         Text(
                             badge,
@@ -839,11 +857,13 @@ private fun SongRow(
                     }
                 }
             }
-            Text(
-                track.formattedDuration,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (tf.monochrome.android.ui.theme.rowBadges().duration) {
+                Text(
+                    track.formattedDuration,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             IconButton(
                 onClick = { onMoreClick(track) },
                 modifier = Modifier.size(32.dp)
