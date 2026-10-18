@@ -75,6 +75,16 @@ submodule and is skipped without it:
 app/src/main/cpp/dsp/tests/run_host_tests.sh
 ```
 
+## Strings
+
+Every user-facing string is a row of `app/l10n/strings.tsv`, one column per
+language. The seven `strings.xml` files are generated from it by
+`python3 app/l10n/generate_strings.py` and are never edited by hand: the next
+run rewrites them from the table, so a string added only to the XML vanishes
+and a rewording made only there reverts. `StringResourcesTest` fails when the
+XML and the table disagree. Names that are never translated (`app_name`,
+`trypt_mania`) are listed in the script's `NON_TRANSLATABLE`.
+
 ## Trypt Mania's StepMania art
 
 The retro noteskin (`assets/stepmania/skins/retro`) and the default theme's

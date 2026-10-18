@@ -2381,8 +2381,6 @@
         <item quantity="one">%1$d Titel</item>
         <item quantity="other">%1$d Titel</item>
     </plurals>
-
-    <!-- Stats and achievements -->
     <string name="stats_tab_stats">Statistik</string>
     <string name="stats_tab_achievements">Erfolge</string>
     <string name="stats_achievements_count">%1$d/%2$d</string>
@@ -2705,8 +2703,6 @@
     <string name="fx_curve_all">Alle Zeilen</string>
     <string name="fx_curve_line">Gesungene Zeile</string>
     <string name="fx_curve_word">Gesungenes Wort</string>
-
-    <!-- Trypt Mania: multiplayer rooms -->
     <string name="tm_multiplayer">Mehrspieler</string>
     <string name="tm_mp_menu_subtitle">Räume: dieselbe Chart, gemeinsam</string>
     <string name="tm_mp_latency">%1$d ms</string>
@@ -2753,8 +2749,6 @@
     <string name="tm_mp_pick_for_room">Für den Raum wählen</string>
     <string name="tm_mp_room_title">Raum</string>
     <string name="tm_mp_quit_to_room">Zurück in den Raum</string>
-
-    <!-- CRT presets -->
     <string name="crt_reset_slider">%1$s zurücksetzen</string>
     <string name="crt_presets">Voreinstellungen</string>
     <string name="crt_presets_hint">Tippe eine an, um sie zu nutzen. Speichern behält den aktuellen Look; Exportieren und Importieren geben ihn als Datei weiter.</string>

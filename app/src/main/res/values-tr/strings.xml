@@ -2381,8 +2381,6 @@
         <item quantity="one">%1$d parça</item>
         <item quantity="other">%1$d parça</item>
     </plurals>
-
-    <!-- Stats and achievements -->
     <string name="stats_tab_stats">İstatistik</string>
     <string name="stats_tab_achievements">Başarılar</string>
     <string name="stats_achievements_count">%1$d/%2$d</string>
@@ -2705,8 +2703,6 @@
     <string name="fx_curve_all">Tüm sözler</string>
     <string name="fx_curve_line">Söylenen satır</string>
     <string name="fx_curve_word">Söylenen kelime</string>
-
-    <!-- Trypt Mania: multiplayer rooms -->
     <string name="tm_multiplayer">Çok oyunculu</string>
     <string name="tm_mp_menu_subtitle">Odalar: aynı chart, birlikte</string>
     <string name="tm_mp_latency">%1$d ms</string>
@@ -2753,8 +2749,6 @@
     <string name="tm_mp_pick_for_room">Oda için seç</string>
     <string name="tm_mp_room_title">Oda</string>
     <string name="tm_mp_quit_to_room">Odaya dön</string>
-
-    <!-- CRT presets -->
     <string name="crt_reset_slider">%1$s sıfırla</string>
     <string name="crt_presets">Hazır ayarlar</string>
     <string name="crt_presets_hint">Kullanmak için birine dokun. Kaydet ekrandaki görünümü saklar; Dışa aktar ve İçe aktar onu dosya olarak paylaşır.</string>

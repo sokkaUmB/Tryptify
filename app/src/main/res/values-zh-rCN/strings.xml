@@ -2321,8 +2321,6 @@
     <plurals name="library_galaxy_tracks">
         <item quantity="other">%1$d 首曲目</item>
     </plurals>
-
-    <!-- Stats and achievements -->
     <string name="stats_tab_stats">统计</string>
     <string name="stats_tab_achievements">成就</string>
     <string name="stats_achievements_count">%1$d/%2$d</string>
@@ -2637,8 +2635,6 @@
     <string name="fx_curve_all">全部歌词</string>
     <string name="fx_curve_line">正在唱的行</string>
     <string name="fx_curve_word">正在唱的词</string>
-
-    <!-- Trypt Mania: multiplayer rooms -->
     <string name="tm_multiplayer">多人游戏</string>
     <string name="tm_mp_menu_subtitle">房间：同一张谱面，一起玩</string>
     <string name="tm_mp_latency">%1$d 毫秒</string>
@@ -2685,8 +2681,6 @@
     <string name="tm_mp_pick_for_room">为房间选择</string>
     <string name="tm_mp_room_title">房间</string>
     <string name="tm_mp_quit_to_room">返回房间</string>
-
-    <!-- CRT presets -->
     <string name="crt_reset_slider">重置 %1$s</string>
     <string name="crt_presets">预设</string>
     <string name="crt_presets_hint">轻点即可使用。“保存”保留当前效果；“导出”和“导入”以文件形式分享。</string>

@@ -19,6 +19,7 @@ action_pause	Pause	暂停	一時停止	Pause	Pausa	Duraklat	Pause
 action_skip_next	Skip next	下一首	次の曲へ	Titre suivant	Siguiente	Sonraki	Nächster Titel
 action_play_next	Play next	下一首播放	次に再生	Lire ensuite	Reproducir a continuación	Sıradaki olarak çal	Als Nächstes spielen
 action_add_to_queue	Add to queue	添加到播放队列	キューに追加	Ajouter à la file d’attente	Añadir a la cola	Sıraya ekle	Zur Warteschlange hinzufügen
+action_play_in_trypt_mania	Play in Trypt Mania	在 Trypt Mania 中游玩	Trypt Mania でプレイ	Jouer dans Trypt Mania	Jugar en Trypt Mania	Trypt Mania'da oyna	In Trypt Mania spielen
 action_like	Like	喜欢	お気に入りに追加	J’aime	Me gusta	Beğen	Gefällt mir
 action_unlike	Unlike	取消喜欢	お気に入りから削除	Je n’aime plus	Ya no me gusta	Beğenmekten vazgeç	Gefällt mir nicht mehr
 action_add_to_playlist	Add to playlist	添加到歌单	プレイリストに追加	Ajouter à une playlist	Añadir a una playlist	Çalma listesine ekle	Zu Playlist hinzufügen
@@ -28,6 +29,28 @@ action_share_file	Share file	分享文件	ファイルを共有	Partager le fich
 action_go_to_album	Go to album	查看专辑	アルバムへ移動	Voir l’album	Ir al álbum	Albüme git	Zum Album
 action_go_to_artist	Go to artist	查看艺人	アーティストへ移動	Voir l’artiste	Ir al artista	Sanatçıya git	Zum Künstler
 action_track_info	Track info	歌曲信息	曲の情報	Infos sur le titre	Información de la canción	Parça bilgisi	Titelinfo
+track_info_file	File	文件	ファイル	Fichier	Archivo	Dosya	Datei
+track_info_tags	Tags	标签	タグ	Tags	Etiquetas	Etiketler	Tags
+track_info_details	Details	详细信息	詳細	Détails	Detalles	Ayrıntılar	Details
+track_info_no_tags	This file has no tags.	此文件没有标签。	このファイルにはタグがありません。	Ce fichier n'a pas de tags.	Este archivo no tiene etiquetas.	Bu dosyada etiket yok.	Diese Datei hat keine Tags.
+track_info_no_file	This song has no file on this device, so these are the details the app has for it.	这首歌在本机上没有文件，以下是应用所知道的信息。	この曲のファイルはこの端末にないため、アプリが持っている情報を表示しています。	Ce titre n'a pas de fichier sur cet appareil : voici les informations que l'app possède.	Esta canción no tiene un archivo en este dispositivo, así que estos son los datos que la app tiene de ella.	Bu şarkının bu cihazda dosyası yok; bunlar uygulamanın şarkı hakkında bildikleri.	Von diesem Titel gibt es keine Datei auf diesem Gerät, daher sind dies die Angaben, die die App zu ihm hat.
+track_info_format	Format	格式	フォーマット	Format	Formato	Biçim	Format
+track_info_sample_rate	Sample rate	采样率	サンプルレート	Fréquence d'échantillonnage	Frecuencia de muestreo	Örnekleme hızı	Abtastrate
+track_info_bit_depth	Bit depth	位深	ビット深度	Profondeur de bits	Profundidad de bits	Bit derinliği	Bittiefe
+track_info_bitrate	Bitrate	比特率	ビットレート	Débit	Tasa de bits	Bit hızı	Bitrate
+track_info_channels	Channels	声道	チャンネル	Canaux	Canales	Kanallar	Kanäle
+track_info_length	Length	时长	長さ	Durée	Duración	Süre	Länge
+track_info_size	Size	大小	サイズ	Taille	Tamaño	Boyut	Größe
+track_info_pictures	Embedded pictures	内嵌图片	埋め込み画像	Images intégrées	Imágenes incrustadas	Gömülü resimler	Eingebettete Bilder
+track_info_location	Location	位置	場所	Emplacement	Ubicación	Konum	Speicherort
+track_info_title	Title	标题	タイトル	Titre	Título	Başlık	Titel
+track_info_artist	Artist	艺人	アーティスト	Artiste	Artista	Sanatçı	Künstler
+track_info_album	Album	专辑	アルバム	Album	Álbum	Albüm	Album
+track_info_version	Version	版本	バージョン	Version	Versión	Sürüm	Version
+track_info_track	Track	曲目	トラック	Piste	Pista	Parça	Titelnummer
+track_info_disc	Disc	碟片	ディスク	Disque	Disco	Disk	CD
+track_info_quality	Quality	音质	音質	Qualité	Calidad	Kalite	Qualität
+track_info_catalog_id	Catalog ID	目录 ID	カタログID	ID de catalogue	ID de catálogo	Katalog kimliği	Katalog-ID
 action_close_search	Close search	关闭搜索	検索を閉じる	Fermer la recherche	Cerrar búsqueda	Aramayı kapat	Suche schließen
 action_clear	Clear	清除	クリア	Effacer	Borrar	Temizle	Löschen
 action_delete	Delete	删除	削除	Supprimer	Eliminar	Sil	Löschen
@@ -53,7 +76,27 @@ action_more_options	More options	更多选项	その他のオプション	Plus d
 badge_thx	THX Spatial Audio	THX 空间音频	THX 空間オーディオ	THX Spatial Audio	THX Spatial Audio	THX Uzamsal Ses	THX Spatial Audio
 action_see_all	See all	查看全部	すべて表示	Tout afficher	Ver todo	Tümünü gör	Alle anzeigen
 action_retry	Retry	重试	再試行	Réessayer	Reintentar	Tekrar dene	Erneut versuchen
-import_spotify_instructions	Open exportify.net, sign in, and export the playlist as CSV. Or connect Spotify in Settings › System to import without a file at all.	打开 exportify.net，登录后将歌单导出为 CSV。也可以在“设置 › 系统”中连接 Spotify，无需文件即可导入。	exportify.net を開いてサインインし、プレイリストを CSV で書き出してください。または「設定 › システム」で Spotify に接続すれば、ファイルなしで読み込めます。	Ouvrez exportify.net, connectez-vous et exportez la playlist au format CSV. Vous pouvez aussi connecter Spotify dans Paramètres › Système pour importer sans fichier.	Abre exportify.net, inicia sesión y exporta la playlist en CSV. También puedes conectar Spotify en Ajustes › Sistema para importarla sin ningún archivo.	exportify.net’i açın, oturum açın ve çalma listesini CSV olarak dışa aktarın. Ya da hiç dosya kullanmadan içe aktarmak için Spotify’ı Ayarlar › Sistem’den bağlayın.	Öffne exportify.net, melde dich an und exportiere die Playlist als CSV. Oder verbinde Spotify unter Einstellungen › System, dann geht der Import ganz ohne Datei.
+import_spotify_instructions	Open exportify.net, sign in, and export the playlist as CSV. Or skip the file: the Spotify link tab opens Exportify right inside the app.	打开 exportify.net，登录后将歌单导出为 CSV。也可以不用文件：在“Spotify 链接”标签页中直接在应用内打开 Exportify。	exportify.net を開いてサインインし、プレイリストを CSV で書き出してください。ファイルを使わない場合は、「Spotify のリンク」タブからアプリ内で Exportify を開けます。	Ouvrez exportify.net, connectez-vous et exportez la playlist au format CSV. Ou passez-vous de fichier : l’onglet Lien Spotify ouvre Exportify directement dans l’app.	Abre exportify.net, inicia sesión y exporta la playlist en CSV. O sáltate el archivo: la pestaña Enlace de Spotify abre Exportify dentro de la app.	exportify.net’i açın, oturum açın ve çalma listesini CSV olarak dışa aktarın. Ya da dosyayla uğraşmayın: Spotify bağlantısı sekmesi Exportify’ı doğrudan uygulamada açar.	Öffne exportify.net, melde dich an und exportiere die Playlist als CSV. Oder ganz ohne Datei: Im Tab „Spotify-Link“ öffnet sich Exportify direkt in der App.
+action_paste	Paste	粘贴	貼り付け	Coller	Pegar	Yapıştır	Einfügen
+import_spotify_link_hint	Paste a Spotify playlist link	粘贴 Spotify 歌单链接	Spotify のプレイリストのリンクを貼り付け	Collez le lien d’une playlist Spotify	Pega el enlace de una playlist de Spotify	Bir Spotify çalma listesi bağlantısı yapıştırın	Spotify-Playlist-Link einfügen
+import_spotify_link_detail	Any public playlist imports straight from its link, no file needed. Without signing in, Spotify shares only a playlist's first 100 songs; Exportify, below, brings in the whole playlist, private ones too.	任何公开歌单都能直接通过链接导入，无需文件。未登录时，Spotify 只提供歌单的前 100 首歌曲；下方的 Exportify 可以导入完整歌单，私密歌单也可以。	公開プレイリストはリンクからそのまま取り込めます。ファイルは不要です。サインインしない場合、Spotify が共有するのはプレイリストの最初の 100 曲だけです。下の Exportify なら、非公開のものも含めてプレイリスト全体を取り込めます。	Toute playlist publique s’importe directement depuis son lien, sans fichier. Sans connexion, Spotify ne partage que les 100 premiers titres d’une playlist ; Exportify, ci-dessous, importe la playlist entière, même privée.	Cualquier playlist pública se importa directamente desde su enlace, sin archivos. Sin iniciar sesión, Spotify solo comparte las primeras 100 canciones de una playlist; Exportify, abajo, trae la playlist completa, también las privadas.	Herkese açık her çalma listesi, dosyaya gerek kalmadan doğrudan bağlantısından içe aktarılır. Oturum açmadan Spotify bir listenin yalnızca ilk 100 şarkısını paylaşır; aşağıdaki Exportify listenin tamamını, gizli listeleri de getirir.	Jede öffentliche Playlist lässt sich direkt über ihren Link importieren, ohne Datei. Ohne Anmeldung teilt Spotify nur die ersten 100 Titel einer Playlist; Exportify (unten) holt die ganze Playlist, auch private.
+import_tab_link	Spotify link	Spotify 链接	Spotify のリンク	Lien Spotify	Enlace de Spotify	Spotify bağlantısı	Spotify-Link
+import_tab_file	File	文件	ファイル	Fichier	Archivo	Dosya	Datei
+import_spotify_looking_up	Looking up the playlist…	正在查找歌单…	プレイリストを確認しています…	Recherche de la playlist…	Buscando la playlist…	Çalma listesi aranıyor…	Playlist wird gesucht …
+import_open_exportify	Private playlist, Liked Songs or over 100 songs? Open Exportify	私密歌单、已点赞的歌曲或超过 100 首？打开 Exportify	非公開プレイリスト、お気に入りの曲、100 曲以上の場合は Exportify を開く	Playlist privée, Titres likés ou plus de 100 titres ? Ouvrir Exportify	¿Playlist privada, Canciones que te gustan o más de 100 canciones? Abre Exportify	Gizli liste, Beğenilen Şarkılar ya da 100'den fazla şarkı mı? Exportify'ı açın	Private Playlist, Lieblingssongs oder über 100 Titel? Exportify öffnen
+exportify_hint	Log in with Spotify, then tap Export beside a playlist (or Export All): it comes straight into your library. Inside apps, Spotify's Google and Apple sign-in may not work; use your Spotify email and password.	用 Spotify 登录，然后点歌单旁边的 Export（或 Export All）：歌单会直接进入你的音乐库。在应用内，Spotify 的 Google 和 Apple 登录可能无法使用；请使用 Spotify 邮箱和密码。	Spotify でログインし、プレイリストの横の Export（または Export All）をタップすると、そのままライブラリに取り込まれます。アプリ内では Spotify の Google・Apple ログインが使えない場合があります。Spotify のメールアドレスとパスワードを使ってください。	Connectez-vous avec Spotify, puis touchez Export à côté d’une playlist (ou Export All) : elle arrive directement dans votre bibliothèque. Dans les applis, la connexion Spotify via Google ou Apple peut ne pas fonctionner ; utilisez votre e-mail et mot de passe Spotify.	Inicia sesión con Spotify y toca Export junto a una playlist (o Export All): entra directamente en tu biblioteca. Dentro de las apps, el inicio de sesión de Spotify con Google o Apple puede no funcionar; usa tu correo y contraseña de Spotify.	Spotify ile giriş yapın, ardından bir çalma listesinin yanındaki Export'a (veya Export All'a) dokunun: doğrudan kitaplığınıza gelir. Uygulamaların içinde Spotify'ın Google ve Apple ile girişi çalışmayabilir; Spotify e-postanızı ve şifrenizi kullanın.	Melde dich mit Spotify an und tippe neben einer Playlist auf „Export“ (oder „Export All“): Sie landet direkt in deiner Mediathek. In Apps funktioniert die Anmeldung über Google oder Apple bei Spotify eventuell nicht; nutze deine Spotify-E-Mail und dein Passwort.
+exportify_webview_too_old	Exportify needs a newer Android System WebView. Update it from the Play Store, or export from exportify.net in a browser and use the File tab.	Exportify 需要更新版本的 Android System WebView。请在 Play 商店更新，或在浏览器中从 exportify.net 导出后使用“文件”标签页。	Exportify には新しい Android System WebView が必要です。Play ストアで更新するか、ブラウザで exportify.net からエクスポートして「ファイル」タブを使ってください。	Exportify nécessite une version plus récente d’Android System WebView. Mettez-la à jour depuis le Play Store, ou exportez sur exportify.net dans un navigateur et utilisez l’onglet Fichier.	Exportify necesita una versión más reciente de Android System WebView. Actualízala desde Play Store, o exporta en exportify.net desde un navegador y usa la pestaña Archivo.	Exportify daha yeni bir Android System WebView gerektiriyor. Play Store'dan güncelleyin ya da bir tarayıcıda exportify.net'ten dışa aktarıp Dosya sekmesini kullanın.	Exportify braucht ein neueres Android System WebView. Aktualisiere es im Play Store oder exportiere auf exportify.net im Browser und nutze den Tab „Datei“.
+exportify_failed	Exportify didn’t load (%1$s).	Exportify 未能加载（%1$s）。	Exportify を読み込めませんでした（%1$s）。	Exportify ne s’est pas chargé (%1$s).	Exportify no se cargó (%1$s).	Exportify yüklenemedi (%1$s).	Exportify wurde nicht geladen (%1$s).
+exportify_stalled	Exportify hasn’t appeared. Check your connection, and any ad blocker or private DNS, then try again. Or export from exportify.net in a browser and use the File tab.	Exportify 没有显示。请检查网络连接，以及广告拦截器或私人 DNS，然后重试。或在浏览器中从 exportify.net 导出后使用“文件”标签页。	Exportify が表示されません。接続や、広告ブロッカー・プライベート DNS を確認してから再試行してください。または、ブラウザで exportify.net からエクスポートして「ファイル」タブを使ってください。	Exportify ne s’affiche pas. Vérifiez votre connexion ainsi que tout bloqueur de publicité ou DNS privé, puis réessayez. Ou exportez sur exportify.net dans un navigateur et utilisez l’onglet Fichier.	Exportify no aparece. Revisa tu conexión y cualquier bloqueador de anuncios o DNS privado, y vuelve a intentarlo. O exporta en exportify.net desde un navegador y usa la pestaña Archivo.	Exportify görünmüyor. Bağlantınızı ve varsa reklam engelleyiciyi ya da özel DNS’i kontrol edip tekrar deneyin. Ya da bir tarayıcıda exportify.net’ten dışa aktarıp Dosya sekmesini kullanın.	Exportify wird nicht angezeigt. Prüfe deine Verbindung sowie Werbeblocker oder privates DNS und versuche es erneut. Oder exportiere auf exportify.net im Browser und nutze den Tab „Datei“.
+exportify_stopped	Exportify’s page stopped. Try again.	Exportify 页面已停止。请重试。	Exportify のページが停止しました。再試行してください。	La page d’Exportify s’est arrêtée. Réessayez.	La página de Exportify se detuvo. Vuelve a intentarlo.	Exportify sayfası durdu. Tekrar deneyin.	Die Seite von Exportify wurde beendet. Versuche es erneut.
+exportify_open_browser	Open in browser	在浏览器中打开	ブラウザで開く	Ouvrir dans le navigateur	Abrir en el navegador	Tarayıcıda aç	Im Browser öffnen
+import_spotify_preview_partial	Spotify shares the first %1$d without signing in.	未登录时，Spotify 只提供前 %1$d 首。	サインインしていないため、Spotify が共有するのは最初の %1$d 曲です。	Sans connexion, Spotify partage les %1$d premiers.	Sin iniciar sesión, Spotify comparte las primeras %1$d.	Oturum açmadan Spotify ilk %1$d şarkıyı paylaşır.	Ohne Anmeldung teilt Spotify die ersten %1$d.
+import_spotify_preview_songs#one	%d song	%d 首歌曲	%d 曲	%d titre	%d canción	%d şarkı	%d Titel
+import_spotify_preview_songs#many	%d songs	%d 首歌曲	%d 曲	%d titres	%d canciones	%d şarkı	%d Titel
+import_spotify_preview_songs#other	%d songs	%d 首歌曲	%d 曲	%d titres	%d canciones	%d şarkı	%d Titel
+import_spotify_partial	Spotify shares %1$d of this playlist's %2$d songs without signing in.	未登录时，Spotify 只提供了此歌单 %2$d 首歌曲中的 %1$d 首。	サインインしていないため、Spotify はこのプレイリストの %2$d 曲のうち %1$d 曲だけを共有しています。	Sans connexion, Spotify partage %1$d des %2$d titres de cette playlist.	Sin iniciar sesión, Spotify comparte %1$d de las %2$d canciones de esta playlist.	Oturum açmadan Spotify bu listenin %2$d şarkısından %1$d tanesini paylaşıyor.	Ohne Anmeldung teilt Spotify %1$d der %2$d Titel dieser Playlist.
+import_spotify_not_found	Spotify couldn't find this playlist. It may be private or deleted.	Spotify 找不到这个歌单，它可能是私密的或已被删除。	Spotify でこのプレイリストが見つかりません。非公開か削除された可能性があります。	Spotify n’a pas trouvé cette playlist. Elle est peut-être privée ou supprimée.	Spotify no encontró esta playlist. Puede ser privada o haberse eliminado.	Spotify bu çalma listesini bulamadı. Gizli ya da silinmiş olabilir.	Spotify hat diese Playlist nicht gefunden. Sie ist vielleicht privat oder gelöscht.
+import_spotify_unreachable	Couldn't reach Spotify. Check your connection and try again.	无法连接 Spotify。请检查网络连接后重试。	Spotify に接続できません。接続を確認してもう一度お試しください。	Impossible de joindre Spotify. Vérifiez votre connexion et réessayez.	No se pudo conectar con Spotify. Revisa tu conexión e inténtalo de nuevo.	Spotify'a ulaşılamadı. Bağlantınızı kontrol edip yeniden deneyin.	Spotify ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.
 import_apple_music_instructions	In the Music app on a Mac: File › Library › Export Playlist, with Format set to Text. The .txt it writes is read here as-is.	在 Mac 上的“音乐”App 中：选择“文件 › 资料库 › 导出播放列表”，格式选“文本”。导出的 .txt 文件可直接在此读取。	Mac の「ミュージック」App で「ファイル › ライブラリ › プレイリストを書き出す」を選び、フォーマットを「テキスト」にします。書き出された .txt はそのまま読み込めます。	Dans l’app Musique sur Mac : Fichier › Bibliothèque › Exporter la playlist, avec le format Texte. Le fichier .txt obtenu est lu ici tel quel.	En la app Música del Mac: Archivo › Biblioteca › Exportar playlist, con el formato Texto. El .txt resultante se lee aquí tal cual.	Mac’teki Müzik uygulamasında: Dosya › Arşiv › Çalma Listesini Dışa Aktar’ı seçin ve biçimi Metin olarak ayarlayın. Oluşan .txt dosyası burada olduğu gibi okunur.	In der Musik-App auf dem Mac: Ablage › Mediathek › Playlist exportieren, mit dem Format „Text“. Die erzeugte .txt-Datei wird hier unverändert gelesen.
 import_youtube_music_instructions	Export the playlist with Google Takeout, or a converter like TuneMyMusic, and pick the .csv it produces.	使用 Google Takeout 或 TuneMyMusic 等转换工具导出歌单，然后选择生成的 .csv 文件。	Google データエクスポート（Takeout）や TuneMyMusic などの変換ツールでプレイリストを書き出し、作成された .csv を選んでください。	Exportez la playlist avec Google Takeout ou un convertisseur comme TuneMyMusic, puis choisissez le fichier .csv obtenu.	Exporta la playlist con Google Takeout o con un conversor como TuneMyMusic y elige el .csv que genere.	Çalma listesini Google Takeout veya TuneMyMusic gibi bir dönüştürücüyle dışa aktarın ve oluşan .csv dosyasını seçin.	Exportiere die Playlist mit Google Takeout oder einem Konverter wie TuneMyMusic und wähle die erzeugte .csv-Datei.
 create_playlist_title	Create playlist	创建歌单	プレイリストを作成	Créer une playlist	Crear playlist	Çalma listesi oluştur	Playlist erstellen
@@ -192,6 +235,48 @@ action_set	Set	设置	設定	Définir	Establecer	Ayarla	Festlegen
 unknown_artist	Unknown artist	未知艺人	不明なアーティスト	Artiste inconnu	Artista desconocido	Bilinmeyen sanatçı	Unbekannter Künstler
 dock_mixer_fx	Mixer/FX	混音/效果	ミキサー/FX	Mixeur/FX	Mezclador/FX	Mikser/FX	Mixer/FX
 lyrics_none_short	No lyrics available for this track	这首歌暂无歌词	この曲の歌詞はありません	Aucunes paroles disponibles pour ce titre	No hay letra disponible para esta canción	Bu parça için şarkı sözü yok	Für diesen Titel ist kein Songtext verfügbar
+lyrics_server_sync	Time lyrics on the server	在服务器上同步歌词	サーバーで歌詞を同期	Synchroniser les paroles sur le serveur	Sincronizar la letra en el servidor	Şarkı sözünü sunucuda zamanla	Songtext auf dem Server timen
+lyrics_server_failed	The server could not time the lyrics: %1$s	服务器无法同步歌词：%1$s	サーバーで歌詞を同期できませんでした: %1$s	Le serveur n’a pas pu synchroniser les paroles : %1$s	El servidor no pudo sincronizar la letra: %1$s	Sunucu şarkı sözünü zamanlayamadı: %1$s	Der Server konnte den Songtext nicht timen: %1$s
+lyrics_server_no_file	The server needs the song’s file: download it first.	服务器需要这首歌的文件：请先下载。	サーバーには曲のファイルが必要です。先にダウンロードしてください。	Le serveur a besoin du fichier du titre : téléchargez-le d’abord.	El servidor necesita el archivo de la canción: descárgala primero.	Sunucunun parçanın dosyasına ihtiyacı var: önce indirin.	Der Server braucht die Datei des Titels: lade ihn zuerst herunter.
+lyrics_server_no_server	No server under Settings › Connections times lyrics.	设置 › 连接 中没有能同步歌词的服务器。	設定 › 接続 に歌詞を同期するサーバーがありません。	Aucun serveur dans Réglages › Connexions ne synchronise les paroles.	Ningún servidor en Ajustes › Conexiones sincroniza letras.	Ayarlar › Bağlantılar altında şarkı sözü zamanlayan sunucu yok.	Kein Server unter Einstellungen › Verbindungen timt Songtexte.
+lyrics_server_waiting	In line to be timed	排队等待同步	同期待ち	En attente de synchronisation	En cola para sincronizar	Zamanlama sırasında	Wartet aufs Timen
+lyrics_server_downloading	Downloading the song first…	正在先下载歌曲…	先に曲をダウンロード中…	Téléchargement du titre d’abord…	Descargando la canción primero…	Önce parça indiriliyor…	Titel wird zuerst heruntergeladen…
+lyrics_server_sending	Sending the song to %1$s…	正在把歌曲发送到 %1$s…	%1$s に曲を送信中…	Envoi du titre à %1$s…	Enviando la canción a %1$s…	Parça %1$s sunucusuna gönderiliyor…	Titel wird an %1$s gesendet…
+lyrics_server_hearing	%1$s is hearing every word… a few minutes on a CPU server	%1$s 正在逐字听取… CPU 服务器需要几分钟	%1$s が一語ずつ聞き取り中… CPU サーバーでは数分かかります	%1$s écoute chaque mot… quelques minutes sur un serveur CPU	%1$s está escuchando cada palabra… unos minutos en un servidor de CPU	%1$s her kelimeyi dinliyor… CPU sunucusunda birkaç dakika sürer	%1$s hört jedes Wort… auf einem CPU-Server ein paar Minuten
+lyrics_server_cancel	Cancel	取消	キャンセル	Annuler	Cancelar	İptal	Abbrechen
+action_edit_lyrics	Edit lyrics	编辑歌词	歌詞を編集	Modifier les paroles	Editar letra	Şarkı sözünü düzenle	Songtext bearbeiten
+lyrics_editor_title	Lyrics editor	歌词编辑器	歌詞エディター	Éditeur de paroles	Editor de letras	Şarkı sözü düzenleyici	Songtext-Editor
+lyrics_editor_no_song	Play a song to edit its lyrics	播放一首歌以编辑它的歌词	歌詞を編集するには曲を再生してください	Lancez un titre pour modifier ses paroles	Reproduce una canción para editar su letra	Sözlerini düzenlemek için bir parça çal	Spiel einen Titel ab, um seinen Songtext zu bearbeiten
+lyrics_editor_empty	No lyrics yet: paste the words, or have the server time them	还没有歌词：粘贴歌词，或让服务器来定时	まだ歌詞がありません。歌詞を貼り付けるか、サーバーに同期させてください	Pas encore de paroles : collez les mots, ou laissez le serveur les minuter	Aún no hay letra: pega las palabras o deja que el servidor las sincronice	Henüz söz yok: kelimeleri yapıştır ya da sunucu zamanlasın	Noch kein Songtext: füge die Wörter ein oder lass den Server sie timen
+lyrics_editor_stamp	Stamp now	打点	今の位置を打つ	Marquer maintenant	Marcar ahora	Şimdi damgala	Jetzt stempeln
+lyrics_editor_line_mode	Lines	逐行	行	Lignes	Líneas	Satırlar	Zeilen
+lyrics_editor_word_mode	Words	逐字	単語	Mots	Palabras	Kelimeler	Wörter
+lyrics_editor_word_mode_hint	A stamp times the selected word and moves to the next; off, it times the whole line.	开启时，打点给选中的词定时并移到下一个；关闭时给整行定时。	オンなら選択中の単語に時間を打って次へ進みます。オフなら行全体に打ちます。	Une marque minute le mot choisi et passe au suivant ; désactivé, elle minute toute la ligne.	Una marca sincroniza la palabra elegida y pasa a la siguiente; apagado, sincroniza toda la línea.	Damga seçili kelimeyi zamanlar ve sonrakine geçer; kapalıyken tüm satırı zamanlar.	Ein Stempel timt das gewählte Wort und springt zum nächsten; aus, timt er die ganze Zeile.
+lyrics_editor_shift_all	Shift everything	整体平移	全体をずらす	Tout décaler	Desplazar todo	Hepsini kaydır	Alles verschieben
+lyrics_editor_edit_text	Edit text	编辑文本	テキストを編集	Modifier le texte	Editar texto	Metni düzenle	Text bearbeiten
+lyrics_editor_insert_line	Insert line after	在后面插入一行	後ろに行を挿入	Insérer une ligne après	Insertar línea después	Sonrasına satır ekle	Zeile danach einfügen
+lyrics_editor_add_line	Add a line	添加一行	行を追加	Ajouter une ligne	Añadir línea	Satır ekle	Zeile hinzufügen
+lyrics_editor_delete_line	Delete line	删除此行	行を削除	Supprimer la ligne	Eliminar línea	Satırı sil	Zeile löschen
+lyrics_editor_split_words	Split into words	拆成词	単語に分割	Découper en mots	Dividir en palabras	Kelimelere böl	In Wörter teilen
+lyrics_editor_clear_words	Line timing only	仅保留行时间	行の時間のみ	Minutage par ligne seulement	Solo tiempo por línea	Yalnızca satır zamanı	Nur Zeilen-Timing
+lyrics_editor_paste	Paste lyrics or LRC	粘贴歌词或 LRC	歌詞か LRC を貼り付け	Coller des paroles ou un LRC	Pegar letra o LRC	Söz veya LRC yapıştır	Songtext oder LRC einfügen
+lyrics_editor_paste_hint	Plain words, one line each, or an LRC with times	每行一句的纯文本，或带时间的 LRC	1 行ずつの歌詞、または時間付きの LRC	Des mots simples, une ligne par ligne, ou un LRC avec ses temps	Palabras sin más, una línea por línea, o un LRC con tiempos	Her satıra bir satır düz söz ya da zamanlı bir LRC	Reine Wörter, eine Zeile je Zeile, oder eine LRC mit Zeiten
+lyrics_editor_export	Share as LRC	以 LRC 分享	LRC として共有	Partager en LRC	Compartir como LRC	LRC olarak paylaş	Als LRC teilen
+lyrics_editor_save	Save	保存	保存	Enregistrer	Guardar	Kaydet	Speichern
+lyrics_editor_saved	Saved. The player uses these lyrics now, and the download has its .lrc.	已保存。播放器现在使用这份歌词，下载也有了 .lrc。	保存しました。プレイヤーはこの歌詞を使い、ダウンロードに .lrc が付きます。	Enregistré. Le lecteur utilise ces paroles, et le téléchargement a son .lrc.	Guardado. El reproductor ya usa esta letra y la descarga tiene su .lrc.	Kaydedildi. Oynatıcı artık bu sözleri kullanıyor ve indirmenin .lrc dosyası var.	Gespeichert. Der Player nutzt jetzt diesen Songtext, und der Download hat seine .lrc.
+lyrics_editor_nothing_to_save	Nothing to save yet	还没有可保存的内容	まだ保存するものがありません	Rien à enregistrer pour l’instant	Nada que guardar todavía	Henüz kaydedilecek bir şey yok	Noch nichts zu speichern
+lyrics_editor_forget	Forget saved lyrics	忘记已保存的歌词	保存した歌詞を忘れる	Oublier les paroles enregistrées	Olvidar la letra guardada	Kayıtlı sözleri unut	Gespeicherten Songtext vergessen
+lyrics_editor_forgotten	Forgotten. The next play looks the lyrics up again.	已忘记。下次播放会重新查找歌词。	忘れました。次回の再生で歌詞を再検索します。	Oubliées. La prochaine lecture recherche les paroles à nouveau.	Olvidada. La próxima reproducción busca la letra de nuevo.	Unutuldu. Sonraki çalmada sözler yeniden aranır.	Vergessen. Beim nächsten Abspielen wird der Songtext neu gesucht.
+lyrics_editor_undo	Undo	撤销	元に戻す	Annuler	Deshacer	Geri al	Rückgängig
+lyrics_editor_redo	Redo	重做	やり直す	Rétablir	Rehacer	Yinele	Wiederholen
+lyrics_editor_out_of_order	Earlier than the line before	早于上一行	前の行より早い時間です	Plus tôt que la ligne précédente	Antes que la línea anterior	Önceki satırdan daha erken	Früher als die Zeile davor
+lyrics_editor_words_timed	words timed	个词已定时	語に時間あり	mots minutés	palabras sincronizadas	kelime zamanlandı	Wörter getimt
+lyrics_editor_timing	Timing	时间	タイミング	Minutage	Tiempos	Zamanlama	Timing
+lyrics_editor_text	Text	文本	テキスト	Texte	Texto	Metin	Text
+lyrics_editor_file	File and server	文件与服务器	ファイルとサーバー	Fichier et serveur	Archivo y servidor	Dosya ve sunucu	Datei und Server
+lyrics_editor_discard_title	Leave without saving?	不保存就离开？	保存せずに戻りますか？	Quitter sans enregistrer ?	¿Salir sin guardar?	Kaydetmeden çıkılsın mı?	Ohne Speichern verlassen?
+lyrics_editor_discard	Discard	放弃	破棄	Abandonner	Descartar	Vazgeç	Verwerfen
+lyrics_editor_keep_editing	Keep editing	继续编辑	編集を続ける	Continuer	Seguir editando	Düzenlemeye devam	Weiter bearbeiten
 action_seek	Seek	调整播放进度	再生位置	Position de lecture	Posición de reproducción	Konum	Position
 audio_pipeline	Audio pipeline	音频处理链	オーディオパイプライン	Chaîne audio	Cadena de audio	Ses işlem hattı	Audio-Pipeline
 error_play_track	Couldn’t play this track.	无法播放这首歌。	この曲を再生できませんでした。	Impossible de lire ce titre.	No se ha podido reproducir esta canción.	Bu parça çalınamadı.	Dieser Titel konnte nicht abgespielt werden.
@@ -274,6 +359,7 @@ library_empty	Start playing music to build your library.	开始播放音乐，�
 playlists_empty	Create a playlist to organize your music.	创建歌单来整理你的音乐。	プレイリストを作成して音楽を整理しましょう。	Créez une playlist pour organiser votre musique.	Crea una playlist para organizar tu música.	Müziğinizi düzenlemek için bir çalma listesi oluşturun.	Erstelle eine Playlist, um deine Musik zu ordnen.
 download_all	Download all	全部下载	すべてダウンロード	Tout télécharger	Descargar todo	Tümünü indir	Alle herunterladen
 search_liked_songs	Search liked songs	搜索喜欢的歌曲	お気に入りの曲を検索	Rechercher dans les titres aimés	Buscar en canciones que te gustan	Beğenilen şarkılarda ara	Lieblingssongs durchsuchen
+search_downloads	Search downloads	搜索下载	ダウンロードを検索	Rechercher dans les téléchargements	Buscar en descargas	İndirilenlerde ara	Downloads durchsuchen
 liked_albums	Liked albums	喜欢的专辑	お気に入りのアルバム	Albums aimés	Álbumes que te gustan	Beğenilen albümler	Lieblingsalben
 liked_artists	Liked artists	喜欢的艺人	お気に入りのアーティスト	Artistes aimés	Artistas que te gustan	Beğenilen sanatçılar	Lieblingskünstler
 favorites_empty	Like tracks, albums, and artists to see them here.	喜欢歌曲、专辑和艺人后，它们会显示在这里。	曲、アルバム、アーティストをお気に入りに追加すると、ここに表示されます。	Aimez des titres, des albums et des artistes pour les retrouver ici.	Marca canciones, álbumes y artistas con Me gusta para verlos aquí.	Burada görmek için parçaları, albümleri ve sanatçıları beğenin.	Markiere Titel, Alben und Künstler mit „Gefällt mir“, um sie hier zu sehen.
@@ -591,7 +677,7 @@ bitperfect_title	Bit-perfect out	比特级精确输出	ビットパーフェク�
 bitperfect_subtitle	Send audio to a USB DAC untouched — no resampling, no system mixer.	将音频原样发送到 USB DAC——不重采样，不经过系统混音器。	オーディオを USB DAC へそのまま送ります。リサンプリングもシステムミキサーもありません。	Envoyez l’audio intact à un DAC USB — sans rééchantillonnage ni mixeur système.	Envía el audio intacto a un DAC USB: sin remuestreo ni mezclador del sistema.	Sesi bir USB DAC’a olduğu gibi gönderin — yeniden örnekleme yok, sistem mikseri yok.	Schick Audio unverändert an einen USB-DAC – ohne Resampling, ohne System-Mixer.
 maybe_later	Maybe later	以后再说	あとで	Plus tard	Quizá más tarde	Belki sonra	Vielleicht später
 dac_detected	Detected: %1$s	已检测到：%1$s	検出：%1$s	Détecté : %1$s	Detectado: %1$s	Algılandı: %1$s	Erkannt: %1$s
-enable_bitperfect_question	Enable bit-perfect output?	启用比特级精确输出吗？	ビットパーフェクト出力を有効にしますか？	Activer la sortie bit-perfect ?	¿Activar la salida bit-perfect?	Bit-perfect çıkış etkinleştirilsin mi?	Bit-perfekte Ausgabe aktivieren?
+dac_exclusive_hint	For bit-perfect output, turn on Exclusive USB DAC in Settings → Audio.	要获得比特级精确输出，请在“设置 → 音频”中打开独占 USB DAC。	ビットパーフェクトで出力するには、「設定 → オーディオ」で USB DAC の排他使用をオンにしてください。	Pour une sortie bit-perfect, activez DAC USB exclusif dans Paramètres → Audio.	Para una salida bit-perfect, activa DAC USB exclusivo en Ajustes → Audio.	Bit-perfect çıkış için Ayarlar → Ses’te Özel USB DAC’ı açın.	Für bit-perfekte Ausgabe schalte unter Einstellungen → Audio den exklusiven USB-DAC ein.
 no_dac	No DAC connected	未连接 DAC	DAC が接続されていません	Aucun DAC connecté	No hay ningún DAC conectado	Bağlı DAC yok	Kein DAC verbunden
 no_dac_detail	Plug one in any time — Tryptify picks it up automatically, and bit-perfect mode lives in Settings → Audio.	随时都可以插入——Tryptify 会自动识别，比特级精确模式在“设置 → 音频”中。	いつでも接続できます。Tryptify が自動で認識し、ビットパーフェクトモードは「設定 → オーディオ」にあります。	Branchez-en un quand vous voulez — Tryptify le détecte automatiquement, et le mode bit-perfect se trouve dans Paramètres → Audio.	Conecta uno cuando quieras: Tryptify lo detecta solo, y el modo bit-perfect está en Ajustes → Audio.	İstediğiniz zaman takın — Tryptify otomatik olarak algılar; bit-perfect modu Ayarlar → Ses’te.	Steck jederzeit einen an – Tryptify erkennt ihn automatisch, und der bit-perfekte Modus liegt unter Einstellungen → Audio.
 streaming	Streaming	流媒体	ストリーミング	Streaming	Streaming	Akış	Streaming
@@ -616,7 +702,6 @@ no_folders_picked	No library folders picked yet	尚未选择音乐库文件夹	�
 downloads_to_app_storage	Downloads → app storage	下载 → 应用存储空间	ダウンロード → アプリのストレージ	Téléchargements → stockage de l’app	Descargas → almacenamiento de la app	İndirilenler → uygulama depolaması	Downloads → App-Speicher
 downloads_to_custom_folder	Downloads → custom folder	下载 → 自定义文件夹	ダウンロード → カスタムフォルダ	Téléchargements → dossier personnalisé	Descargas → carpeta personalizada	İndirilenler → özel klasör	Downloads → eigener Ordner
 spotify_connected	Spotify connected	已连接 Spotify	Spotify に接続済み	Spotify connecté	Spotify conectado	Spotify bağlandı	Spotify verbunden
-usb_bitperfect_enabled	USB bit-perfect output enabled	已启用 USB 比特级精确输出	USB ビットパーフェクト出力が有効	Sortie USB bit-perfect activée	Salida USB bit-perfect activada	USB bit-perfect çıkış etkin	Bit-perfekte USB-Ausgabe aktiviert
 found_tracks_in_folder#one	Found %1$s track in this folder	在此文件夹中找到 %1$s 首歌曲	このフォルダで %1$s 曲見つかりました	%1$s titre trouvé dans ce dossier	%1$s canción encontrada en esta carpeta	Bu klasörde %1$s parça bulundu	%1$s Titel in diesem Ordner gefunden
 found_tracks_in_folder#many	Found %1$s tracks in this folder	在此文件夹中找到 %1$s 首歌曲	このフォルダで %1$s 曲見つかりました	%1$s titres trouvés dans ce dossier	%1$s canciones encontradas en esta carpeta	Bu klasörde %1$s parça bulundu	%1$s Titel in diesem Ordner gefunden
 found_tracks_in_folder#other	Found %1$s tracks in this folder	在此文件夹中找到 %1$s 首歌曲	このフォルダで %1$s 曲見つかりました	%1$s titres trouvés dans ce dossier	%1$s canciones encontradas en esta carpeta	Bu klasörde %1$s parça bulundu	%1$s Titel in diesem Ordner gefunden
@@ -636,6 +721,18 @@ syncing	Syncing…	正在同步…	同期中…	Synchronisation…	Sincronizando
 sync_now	Sync now	立即同步	今すぐ同期	Synchroniser	Sincronizar ahora	Şimdi eşitle	Jetzt synchronisieren
 listening_stats	Listening stats	收听统计	再生の統計	Statistiques d’écoute	Estadísticas de escucha	Dinleme istatistikleri	Hörstatistik
 sign_out	Sign out	退出登录	サインアウト	Se déconnecter	Cerrar sesión	Oturumu kapat	Abmelden
+sign_in	Sign in	登录	ログイン	Se connecter	Iniciar sesión	Giriş yap	Anmelden
+profile_choose_photo	Choose photo	选择照片	写真を選ぶ	Choisir une photo	Elegir foto	Fotoğraf seç	Foto auswählen
+profile_use_google_photo	Use Google photo	使用 Google 照片	Google の写真を使う	Utiliser la photo Google	Usar foto de Google	Google fotoğrafını kullan	Google-Foto verwenden
+profile_remove_photo	Remove photo	移除照片	写真を削除	Supprimer la photo	Quitar foto	Fotoğrafı kaldır	Foto entfernen
+profile_change_picture	Change profile picture	更换头像	プロフィール写真を変更	Changer la photo de profil	Cambiar foto de perfil	Profil fotoğrafını değiştir	Profilbild ändern
+profile_edit_username	Edit username	编辑用户名	ユーザー名を編集	Modifier le nom d'utilisateur	Editar nombre de usuario	Kullanıcı adını düzenle	Benutzernamen bearbeiten
+profile_username	Username	用户名	ユーザー名	Nom d'utilisateur	Nombre de usuario	Kullanıcı adı	Benutzername
+profile_choose_username	Choose a username	设置用户名	ユーザー名を決める	Choisir un nom d'utilisateur	Elige un nombre de usuario	Kullanıcı adı seç	Benutzernamen wählen
+profile_sync_subtitle	Favorites, playlists and settings	收藏、歌单和设置	お気に入り、プレイリスト、設定	Favoris, playlists et réglages	Favoritos, listas y ajustes	Favoriler, çalma listeleri ve ayarlar	Favoriten, Playlists und Einstellungen
+profile_picture_failed	Couldn't use that picture.	无法使用该图片。	この画像は使用できません。	Impossible d'utiliser cette image.	No se pudo usar esa imagen.	Bu resim kullanılamadı.	Dieses Bild konnte nicht verwendet werden.
+username_invalid	Use 1 to %1$d characters.	请使用 1 到 %1$d 个字符。	1〜%1$d 文字で入力してください。	Utilisez de 1 à %1$d caractères.	Usa entre 1 y %1$d caracteres.	1 ile %1$d arasında karakter kullanın.	Verwende 1 bis %1$d Zeichen.
+username_update_failed	Couldn't update your username: %1$s	无法更新用户名：%1$s	ユーザー名を変更できませんでした: %1$s	Impossible de modifier le nom d'utilisateur : %1$s	No se pudo cambiar el nombre de usuario: %1$s	Kullanıcı adı güncellenemedi: %1$s	Benutzername konnte nicht geändert werden: %1$s
 sign_in_to_tryptify	Sign in to Tryptify	登录 Tryptify	Tryptify にサインイン	Se connecter à Tryptify	Inicia sesión en Tryptify	Tryptify’da oturum açın	Bei Tryptify anmelden
 sign_in_benefit	Sync your favorites and playlists across devices	在多台设备间同步你的收藏和歌单	お気に入りとプレイリストをデバイス間で同期	Synchronisez vos favoris et playlists sur tous vos appareils	Sincroniza tus favoritos y playlists entre dispositivos	Favorilerinizi ve çalma listelerinizi cihazlar arasında eşitleyin	Synchronisiere Favoriten und Playlists auf all deinen Geräten
 continue_with_google	Continue with Google	使用 Google 继续	Google で続ける	Continuer avec Google	Continuar con Google	Google ile devam et	Mit Google fortfahren
@@ -743,10 +840,24 @@ settings_follow_the_size_set_in_android_settings_display	Follow the size set in 
 settings_the_default_neutral_ui_grotesque	The default. Neutral UI grotesque.	默认字体。中性的界面无衬线体。	既定のフォント。ニュートラルな UI 用ゴシック体です。	La police par défaut. Une linéale neutre pour l’interface.	La fuente predeterminada. Una sans serif neutra para la interfaz.	Varsayılan. Nötr bir arayüz grotesk yazı tipi.	Der Standard. Neutrale UI-Grotesk.
 settings_show_explicit_badges	Show Explicit Badges	显示不雅内容标记	露骨な表現のバッジを表示	Afficher les badges Explicite	Mostrar etiquetas de contenido explícito	Müstehcen rozetlerini göster	Explizit-Hinweise anzeigen
 settings_display_e_badge_on_explicit_tracks	Display 'E' badge on explicit tracks	在含不雅内容的歌曲上显示“E”标记	露骨な表現を含む曲に「E」バッジを表示	Afficher le badge « E » sur les titres explicites	Mostrar la etiqueta «E» en las canciones explícitas	Müstehcen parçalarda “E” rozetini göster	„E“-Hinweis bei expliziten Titeln anzeigen
+settings_row_badges	Song row badges	歌曲行标签	曲の行のバッジ	Badges des lignes de titres	Etiquetas en las filas de canciones	Şarkı satırı rozetleri	Markierungen in Titelzeilen
+settings_row_badges_summary	Marks beside a song's artist and album. Turn them off to give the names the whole line.	显示在歌曲的歌手和专辑名旁边的标记。关闭后名称可占满整行。	曲のアーティスト名とアルバム名の横に表示する印。オフにすると名前を行いっぱいに表示します。	Marques à côté de l'artiste et de l'album d'un titre. Désactivez-les pour laisser toute la ligne aux noms.	Marcas junto al artista y el álbum de una canción. Desactívalas para que los nombres ocupen toda la línea.	Şarkının sanatçı ve albüm adının yanındaki işaretler. Kapatırsanız adlar tüm satırı kullanır.	Markierungen neben Künstler und Album eines Titels. Aus, damit die Namen die ganze Zeile haben.
+settings_row_badge_source	Source	来源	配信元	Source	Origen	Kaynak	Quelle
+settings_row_badge_source_summary	Local, Qobuz, TIDAL	本地、Qobuz、TIDAL	ローカル、Qobuz、TIDAL	Local, Qobuz, TIDAL	Local, Qobuz, TIDAL	Yerel, Qobuz, TIDAL	Lokal, Qobuz, TIDAL
+settings_row_badge_quality	Quality	音质	音質	Qualité	Calidad	Kalite	Qualität
+settings_row_badge_quality_summary	Lossless, FLAC, Hi-Res	Lossless、FLAC、Hi-Res	Lossless、FLAC、Hi-Res	Lossless, FLAC, Hi-Res	Lossless, FLAC, Hi-Res	Lossless, FLAC, Hi-Res	Lossless, FLAC, Hi-Res
+settings_row_badge_format	Format	格式	フォーマット	Format	Formato	Biçim	Format
+settings_row_badge_format_summary	Dolby Atmos, THX, 5.1	Dolby Atmos、THX、5.1	Dolby Atmos、THX、5.1	Dolby Atmos, THX, 5.1	Dolby Atmos, THX, 5.1	Dolby Atmos, THX, 5.1	Dolby Atmos, THX, 5.1
+settings_row_badge_download	Download	下载	ダウンロード	Téléchargement	Descarga	İndirme	Download
+settings_row_badge_download_summary	On this device	已保存在本机	この端末に保存済み	Sur cet appareil	En este dispositivo	Bu cihazda	Auf diesem Gerät
+settings_row_badge_duration	Duration	时长	再生時間	Durée	Duración	Süre	Dauer
+settings_row_badge_duration_summary	The song's length	歌曲的长度	曲の長さ	La durée du titre	La duración de la canción	Şarkının uzunluğu	Die Länge des Titels
 settings_romaji_lyrics	Romaji Lyrics	罗马字歌词	ローマ字の歌詞	Paroles en rōmaji	Letras en romaji	Romaji şarkı sözleri	Romaji-Songtexte
 settings_transliterate_japanese_lyrics_to_latin	Transliterate Japanese lyrics to Latin characters	将日语歌词转写为拉丁字母	日本語の歌詞をローマ字に変換	Translittérer les paroles japonaises en caractères latins	Transliterar las letras japonesas al alfabeto latino	Japonca şarkı sözlerini Latin harflerine çevir	Japanische Songtexte in lateinische Schrift umschreiben
 settings_word_level_lyrics_provider	Word-level lyrics provider	逐字歌词来源	単語単位の歌詞の提供元	Source des paroles mot à mot	Proveedor de letras palabra a palabra	Kelime düzeyinde şarkı sözü sağlayıcısı	Anbieter für wortgenaue Songtexte
 settings_karaoke_timing_source_when_your_instance_has_no	Karaoke-timing sources for songs your instance has no word-timed lyrics for. All = every source at once; the best timing wins.	当你的实例没有逐字同步歌词时使用的卡拉 OK 时间来源。“全部”= 同时查询所有来源，采用最精确的时间。	インスタンスに単語単位の同期歌詞がないときのカラオケタイミングの取得元。「すべて」= すべての取得元を同時に検索し、最も精密なタイミングを採用します。	Sources du minutage karaoké quand votre instance n’a pas de paroles synchronisées mot à mot. Toutes = toutes les sources à la fois ; le meilleur minutage l’emporte.	Fuentes de sincronización karaoke cuando tu instancia no tiene letras sincronizadas por palabra. Todas = todas las fuentes a la vez; gana la mejor sincronización.	Örneğinizde kelime bazlı senkronize şarkı sözü yoksa karaoke zamanlamasının kaynakları. Tümü = tüm kaynaklar aynı anda; en iyi zamanlama kazanır.	Quellen für Karaoke-Timing, wenn deine Instanz keine wortgenauen Songtexte hat. Alle = alle Quellen gleichzeitig; das beste Timing gewinnt.
+settings_server_lyrics	Server lyrics	服务器歌词	サーバー歌詞	Paroles du serveur	Letras del servidor	Sunucu şarkı sözleri	Server-Songtexte
+settings_server_lyrics_subtitle	Songs with no word-timed lyrics are sent to your chart server, which hears the vocals and times every word. Downloaded and local songs only.	没有逐字同步歌词的歌曲会发送到你的谱面服务器，由它听取人声并为每个词定时。仅限已下载和本地歌曲。	単語単位の同期歌詞がない曲をチャートサーバーへ送り、ボーカルを聞き取って各単語のタイミングを付けます。ダウンロード済みとローカルの曲のみ。	Les titres sans paroles synchronisées mot à mot sont envoyés à votre serveur de charts, qui écoute la voix et minute chaque mot. Titres téléchargés et locaux seulement.	Las canciones sin letra sincronizada por palabra se envían a tu servidor de charts, que escucha la voz y sincroniza cada palabra. Solo canciones descargadas y locales.	Kelime bazlı senkronize sözü olmayan parçalar chart sunucunuza gönderilir; sunucu vokali dinler ve her kelimeyi zamanlar. Yalnızca indirilmiş ve yerel parçalar.	Titel ohne wortgenauen Songtext werden an deinen Chart-Server geschickt, der den Gesang hört und jedes Wort timt. Nur heruntergeladene und lokale Titel.
 settings_view_mode	View Mode	视图模式	表示モード	Mode d’affichage	Modo de vista	Görünüm modu	Ansicht
 settings_dynamic_player_color	Dynamic Player Color	播放器动态颜色	プレーヤーのダイナミックカラー	Couleur dynamique du lecteur	Color dinámico del reproductor	Dinamik oynatıcı rengi	Dynamische Player-Farbe
 settings_tint_the_player_from_album_art_needs_dynamic	Tint the player from album art (needs Dynamic Colors on); off keeps the player on the theme color	根据专辑封面为播放器着色（需开启动态颜色）；关闭后播放器使用主题颜色	アルバムアートでプレーヤーを染めます（ダイナミックカラーがオンの場合）。オフにするとテーマの色のままです	Teinte le lecteur d’après la pochette (nécessite Couleurs dynamiques) ; désactivé, le lecteur garde la couleur du thème	Tiñe el reproductor con la portada (requiere Colores dinámicos); desactivado, el reproductor mantiene el color del tema	Oynatıcıyı albüm kapağına göre renklendirir (Dinamik renkler açık olmalı); kapalıyken oynatıcı tema renginde kalır	Färbt den Player nach dem Albumcover (Dynamische Farben müssen an sein); aus: Player bleibt in der Farbe des Schemas
@@ -788,7 +899,6 @@ settings_smaller_lower_latency_more_cpu_default_1024	Smaller = lower latency, mo
 settings_downmix_multichannel_to_stereo	Downmix multichannel to stereo	将多声道缩混为立体声	マルチチャンネルをステレオにダウンミックス	Downmixer le multicanal en stéréo	Hacer downmix del multicanal a estéreo	Çok kanallıyı stereoya indir	Mehrkanal auf Stereo heruntermischen
 settings_channel_detector	Channel detector	声道检测	チャンネル検出	Détecteur de canaux	Detector de canales	Kanal algılayıcı	Kanalerkennung
 settings_idle_play_a_track_to_detect_its_channel_layout	Idle. Play a track to detect its channel layout.	空闲。播放一首歌以检测其声道布局。	待機中です。曲を再生するとチャンネル構成を検出します。	En attente. Lancez un titre pour détecter sa disposition de canaux.	Inactivo. Reproduce una canción para detectar su disposición de canales.	Boşta. Kanal düzenini algılamak için bir parça çalın.	Leerlauf. Spiel einen Titel ab, um seine Kanalanordnung zu erkennen.
-settings_usb_dac_bit_perfect_routing	USB DAC bit-perfect routing	USB DAC 比特级精确路由	USB DAC ビットパーフェクト出力	Routage bit-perfect vers le DAC USB	Enrutamiento bit-perfect al DAC USB	USB DAC bit-perfect yönlendirme	Bit-perfektes Routing zum USB-DAC
 settings_hi_res_output_bluetooth_speaker	Hi-res output (Bluetooth & speaker)	高解析度输出（蓝牙和扬声器）	ハイレゾ出力（Bluetooth とスピーカー）	Sortie haute résolution (Bluetooth et haut-parleur)	Salida de alta resolución (Bluetooth y altavoz)	Yüksek çözünürlüklü çıkış (Bluetooth ve hoparlör)	Hi-Res-Ausgabe (Bluetooth & Lautsprecher)
 settings_exclusive_usb_dac_bypass_android_audio	Exclusive USB DAC (bypass Android audio)	独占 USB DAC（绕过 Android 音频系统）	USB DAC の排他使用（Android のオーディオを経由しない）	DAC USB exclusif (contourne l’audio d’Android)	DAC USB exclusivo (sin pasar por el audio de Android)	Özel USB DAC (Android sesini atla)	Exklusiver USB-DAC (Android-Audio umgehen)
 settings_active_stream	Active stream	当前音频流	アクティブなストリーム	Flux actif	Flujo activo	Etkin akış	Aktiver Stream
@@ -988,6 +1098,8 @@ settings_blend_gapless	Blend Between Tracks: Gapless	歌曲间过渡：无缝	�
 settings_blend_seconds	Blend Between Tracks: %1$d s	歌曲间过渡：%1$d 秒	曲間のブレンド：%1$d 秒	Fondu entre les titres : %1$d s	Mezcla entre canciones: %1$d s	Parçalar arası geçiş: %1$d sn	Übergang zwischen Titeln: %1$d s
 settings_blend_zero_desc	At zero, tracks run straight into each other with no gap. Add time to overlap them instead.	为零时，歌曲之间直接衔接，没有间隙。增加时长可让它们相互重叠。	ゼロでは曲が間を置かずにそのままつながります。時間を加えると重ねて切り替わります。	À zéro, les titres s’enchaînent directement, sans blanc. Ajoutez du temps pour les faire se chevaucher.	En cero, las canciones se suceden sin pausa. Añade tiempo para que se solapen.	Sıfırda parçalar arada boşluk olmadan doğrudan birbirine bağlanır. Üst üste binmeleri için süre ekleyin.	Bei null gehen die Titel ohne Lücke direkt ineinander über. Füge Zeit hinzu, damit sie sich überlappen.
 settings_blend_desc	The outgoing track fades out while the next fades in over %1$d s.	当前歌曲淡出的同时，下一首在 %1$d 秒内淡入。	前の曲がフェードアウトし、次の曲が %1$d 秒かけてフェードインします。	Le titre sortant s’estompe pendant que le suivant monte en %1$d s.	La canción saliente se desvanece mientras la siguiente entra en %1$d s.	Çıkan parça kısılırken sonraki %1$d sn içinde yükselir.	Der auslaufende Titel blendet aus, während der nächste über %1$d s einblendet.
+settings_blend_needs_gapless	Needs gapless playback. With it off, each song plays on its own from start to end.	需要开启无缝播放。关闭时，每首歌从头到尾单独播放。	ギャップレス再生が必要です。オフのときは、各曲が最初から最後まで単独で再生されます。	Nécessite la lecture sans blanc. Sans elle, chaque titre est lu seul, du début à la fin.	Necesita la reproducción sin pausas. Sin ella, cada canción suena sola de principio a fin.	Kesintisiz çalma gerekir. Kapalıyken her parça baştan sona tek başına çalar.	Benötigt lückenlose Wiedergabe. Ohne sie wird jeder Titel für sich von Anfang bis Ende abgespielt.
+settings_blend_off_exclusive	Off while Exclusive USB DAC is on. A blend mixes two songs together, so it can't be bit-perfect.	独占 USB DAC 开启时不可用。过渡会把两首歌混在一起，因此无法做到比特级精确。	USB DAC の排他使用がオンの間はオフです。ブレンドは 2 曲を混ぜるため、ビットパーフェクトにはなりません。	Désactivé tant que le DAC USB exclusif est activé. Un fondu mélange deux titres, il ne peut donc pas être bit-perfect.	Desactivado mientras el DAC USB exclusivo está activado. Una mezcla combina dos canciones, así que no puede ser bit-perfect.	Özel USB DAC açıkken kapalı. Geçiş iki parçayı birbirine karıştırır, bu yüzden bit-perfect olamaz.	Aus, solange der exklusive USB-DAC an ist. Ein Übergang mischt zwei Titel, deshalb kann er nicht bit-perfekt sein.
 settings_pitch_fraction	Pitch: %1$+.2f semitones	音高：%1$+.2f 个半音	ピッチ：%1$+.2f 半音	Hauteur : %1$+.2f demi-tons	Tono: %1$+.2f semitonos	Perde: %1$+.2f yarım ton	Tonhöhe: %1$+.2f Halbtöne
 settings_downmix_on	Multichannel tracks fold into stereo (fixed matrix) and run through DSP/EQ.	多声道歌曲会缩混为立体声（固定矩阵），并经过 DSP/EQ 处理。	マルチチャンネルの曲はステレオに畳み込まれ（固定マトリクス）、DSP/EQ を通ります。	Les titres multicanaux sont réduits en stéréo (matrice fixe) et passent par le DSP/l’égaliseur.	Las canciones multicanal se reducen a estéreo (matriz fija) y pasan por DSP/EQ.	Çok kanallı parçalar stereoya indirilir (sabit matris) ve DSP/EQ’dan geçer.	Mehrkanaltitel werden auf Stereo gefaltet (feste Matrix) und laufen durch DSP/EQ.
 settings_downmix_off	Off. Multichannel passes to the device untouched; DSP/EQ bypassed for those tracks.	关闭。多声道原样传给设备；这些歌曲将绕过 DSP/EQ。	オフ。マルチチャンネルはそのまま端末に渡され、それらの曲では DSP/EQ を通りません。	Désactivé. Le multicanal est transmis tel quel à l’appareil ; DSP/égaliseur contournés pour ces titres.	Desactivado. El multicanal pasa intacto al dispositivo; DSP/EQ omitidos en esas canciones.	Kapalı. Çok kanallı ses cihaza olduğu gibi gider; bu parçalarda DSP/EQ atlanır.	Aus. Mehrkanal geht unverändert ans Gerät; DSP/EQ wird für diese Titel umgangen.
@@ -996,9 +1108,6 @@ settings_debug_recording	Debug screen recording	调试录屏	デバッグ画面�
 settings_debug_recording_active	Recording… native resolution/fps, stereo media audio. Tap to stop.	正在录制…原生分辨率/帧率，立体声媒体音频。点按即可停止。	録画中…ネイティブの解像度/fps、ステレオのメディア音声。タップで停止します。	Enregistrement… résolution et FPS natifs, audio multimédia stéréo. Touchez pour arrêter.	Grabando… resolución y FPS nativos, audio multimedia estéreo. Toca para detener.	Kaydediliyor… yerel çözünürlük/fps, stereo medya sesi. Durdurmak için dokunun.	Aufnahme läuft … native Auflösung/FPS, Stereo-Medienaudio. Zum Beenden tippen.
 settings_debug_recording_saved	Saved: %1$s. Tap to record again.	已保存：%1$s。点按可再次录制。	保存しました：%1$s。タップでもう一度録画します。	Enregistré : %1$s. Touchez pour enregistrer à nouveau.	Guardado: %1$s. Toca para volver a grabar.	Kaydedildi: %1$s. Yeniden kaydetmek için dokunun.	Gespeichert: %1$s. Tippen, um erneut aufzunehmen.
 settings_debug_recording_idle	Native resolution & fps, stereo internal audio (no mic) → Movies/Tryptify.	原生分辨率和帧率，立体声内部音频（不含麦克风）→ Movies/Tryptify。	ネイティブの解像度と fps、ステレオの内部音声（マイクなし）→ Movies/Tryptify。	Résolution et FPS natifs, audio interne stéréo (sans micro) → Movies/Tryptify.	Resolución y FPS nativos, audio interno estéreo (sin micrófono) → Movies/Tryptify.	Yerel çözünürlük ve fps, stereo dahili ses (mikrofonsuz) → Movies/Tryptify.	Native Auflösung & FPS, internes Stereo-Audio (ohne Mikro) → Movies/Tryptify.
-settings_usb_off	Off. Uses system audio output.	关闭。使用系统音频输出。	オフ。システムの音声出力を使います。	Désactivé. Utilise la sortie audio du système.	Desactivado. Usa la salida de audio del sistema.	Kapalı. Sistem ses çıkışını kullanır.	Aus. Nutzt die System-Audioausgabe.
-settings_usb_on_device	On → %1$s	开 → %1$s	オン → %1$s	Activé → %1$s	Activado → %1$s	Açık → %1$s	An → %1$s
-settings_usb_on_waiting	On. Plug in a USB DAC to start routing.	开启。插入 USB DAC 即可开始路由。	オン。USB DAC を接続すると出力が始まります。	Activé. Branchez un DAC USB pour lancer le routage.	Activado. Conecta un DAC USB para empezar el enrutamiento.	Açık. Yönlendirmeyi başlatmak için bir USB DAC takın.	An. Schließe einen USB-DAC an, um das Routing zu starten.
 settings_hires_on	On. 24-bit and float files keep full resolution through the DSP to Android's output, so LDAC/aptX HD get 24-bit. Changing speed falls back to 16-bit.	开启。24 位和浮点文件经 DSP 到 Android 输出全程保持完整分辨率，因此 LDAC/aptX HD 能获得 24 位。更改速度时会回退到 16 位。	オン。24 ビットと浮動小数点のファイルは DSP から Android の出力まで解像度を保つため、LDAC/aptX HD は 24 ビットになります。速度を変えると 16 ビットに戻ります。	Activé. Les fichiers 24 bits et flottants gardent leur pleine résolution du DSP jusqu’à la sortie d’Android : LDAC/aptX HD reçoivent du 24 bits. Changer la vitesse repasse en 16 bits.	Activado. Los archivos de 24 bits y coma flotante conservan toda su resolución del DSP a la salida de Android, así que LDAC/aptX HD reciben 24 bits. Cambiar la velocidad vuelve a 16 bits.	Açık. 24 bit ve kayan noktalı dosyalar DSP’den Android çıkışına kadar tam çözünürlüğünü korur; böylece LDAC/aptX HD 24 bit alır. Hızı değiştirmek 16 bite döner.	An. 24-Bit- und Float-Dateien behalten ihre volle Auflösung vom DSP bis zur Android-Ausgabe, LDAC/aptX HD bekommen also 24 Bit. Eine Geschwindigkeitsänderung fällt auf 16 Bit zurück.
 settings_hires_off	Off. Hi-res files are cut to 16-bit before the DSP on Bluetooth and the speaker.	关闭。在蓝牙和扬声器上，高解析度文件在进入 DSP 前会被截为 16 位。	オフ。Bluetooth とスピーカーでは、ハイレゾファイルは DSP の前に 16 ビットに切り詰められます。	Désactivé. En Bluetooth et sur le haut-parleur, les fichiers haute résolution sont ramenés à 16 bits avant le DSP.	Desactivado. En Bluetooth y altavoz, los archivos de alta resolución se recortan a 16 bits antes del DSP.	Kapalı. Bluetooth’ta ve hoparlörde yüksek çözünürlüklü dosyalar DSP’den önce 16 bite düşürülür.	Aus. Bei Bluetooth und Lautsprecher werden Hi-Res-Dateien vor dem DSP auf 16 Bit gekürzt.
 settings_play_alongside_other_apps	Play alongside other apps	与其他应用同时播放	他のアプリと同時に再生	Lire en même temps que d’autres apps	Reproducir junto con otras apps	Diğer uygulamalarla birlikte çal	Gleichzeitig mit anderen Apps abspielen
@@ -1227,6 +1336,7 @@ api_no_apis_yet_add_one_to_search_and_play	No APIs yet. Add one to search and pl
 api_move_up	Move up	上移	上へ移動	Monter	Subir	Yukarı taşı	Nach oben
 api_check_again	Check again	重新检查	再確認	Vérifier à nouveau	Volver a comprobar	Yeniden denetle	Erneut prüfen
 api_remove	Remove	移除	削除	Retirer	Quitar	Kaldır	Entfernen
+api_built_in	Built in	内置	組み込み	Intégré	Integrado	Yerleşik	Integriert
 api_add_api	Add API	添加 API	API を追加	Ajouter une API	Añadir API	API ekle	API hinzufügen
 api_remove_this_api	Remove this API?	要移除此 API 吗？	この API を削除しますか？	Retirer cette API ?	¿Quitar esta API?	Bu API kaldırılsın mı?	Diese API entfernen?
 api_checking	Checking…	正在检查…	確認中…	Vérification…	Comprobando…	Denetleniyor…	Wird geprüft …
@@ -1257,12 +1367,11 @@ wavecandy_stereo_waveform	Stereo waveform	立体声波形	ステレオ波形	For
 wavecandy_album_colour	Album colour	专辑颜色	アルバムの色	Couleur de l’album	Color del álbum	Albüm rengi	Albumfarbe
 wavecandy_draw_the_waveform_in_the_album_s_accent_instead	Draw the waveform in the album's accent instead of white	用专辑的强调色而不是白色绘制波形	波形を白ではなくアルバムのアクセントカラーで描きます	Dessiner la forme d’onde dans la couleur d’accent de l’album plutôt qu’en blanc	Dibujar la forma de onda con el color de acento del álbum en lugar de blanco	Dalga formunu beyaz yerine albümün vurgu rengiyle çiz	Die Wellenform im Akzent des Albums statt in Weiß zeichnen
 wavecandy_kick_punch	Kick punch	底鼓冲击	キックのパンチ	Impact de la grosse caisse	Golpe del bombo	Davul vuruşu darbesi	Kick-Punch
-wavecandy_the_cover_punches_in_on_each_kick_drum	The cover punches in on each kick drum	每次底鼓时封面都会向内一震	キックドラムのたびにカバーが弾みます	La pochette donne un coup à chaque grosse caisse	La portada da un golpe con cada bombo	Kapak her davul vuruşunda içeri çöker	Das Cover zuckt bei jeder Bassdrum
-wavecandy_the_oscilloscope_on_the_album_art_and_the_cover	The oscilloscope on the album art, and the cover punching in on the kick. Switch to it with the waveform button on the art.	专辑封面上的示波器，以及随底鼓震动的封面。点按封面上的波形按钮即可切换。	アルバムアート上のオシロスコープと、キックに合わせて弾むカバーです。アート上の波形ボタンで切り替えます。	L’oscilloscope sur la pochette, et la pochette qui frappe avec la grosse caisse. Basculez-y avec le bouton forme d’onde sur la pochette.	El osciloscopio sobre la portada, y la portada golpeando con el bombo. Cambia a él con el botón de forma de onda de la portada.	Albüm kapağındaki osiloskop ve davul vuruşuyla çöken kapak. Kapaktaki dalga formu düğmesiyle ona geçin.	Das Oszilloskop auf dem Albumcover und das Cover, das bei der Kick zuckt. Wechsle mit der Wellenform-Taste auf dem Cover dorthin.
+wavecandy_the_lines_swell_on_each_kick_drum	The scope's lines swell on each kick drum	每次底鼓时线条都会变粗	キックドラムのたびに線が太くなります	Les lignes enflent à chaque grosse caisse	Las líneas se ensanchan con cada bombo	Çizgiler her davul vuruşunda kalınlaşır	Die Linien schwellen bei jeder Bassdrum an
+wavecandy_the_oscilloscope_on_the_album_art_and_the_cover	The oscilloscope on the album art, its lines swelling on the kick. Switch to it with the waveform button on the art.	专辑封面上的示波器，线条随底鼓膨胀。点按封面上的波形按钮即可切换。	アルバムアート上のオシロスコープ。キックに合わせて線が膨らみます。アート上の波形ボタンで切り替えます。	L’oscilloscope sur la pochette, ses lignes qui gonflent avec la grosse caisse. Basculez-y avec le bouton forme d’onde sur la pochette.	El osciloscopio sobre la portada, con sus líneas que se hinchan con el bombo. Cambia a él con el botón de forma de onda de la portada.	Albüm kapağındaki osiloskop; çizgileri davul vuruşuyla kabarır. Kapaktaki dalga formu düğmesiyle ona geçin.	Das Oszilloskop auf dem Albumcover, dessen Linien bei der Kick anschwellen. Wechsle mit der Wellenform-Taste auf dem Cover dorthin.
 wavecandy_time_window	Time window	时间窗口	時間幅	Fenêtre temporelle	Ventana de tiempo	Zaman penceresi	Zeitfenster
 wavecandy_height	Height	高度	高さ	Hauteur	Altura	Yükseklik	Höhe
 wavecandy_thickness	Thickness	粗细	太さ	Épaisseur	Grosor	Kalınlık	Dicke
-wavecandy_punch_strength	Punch strength	冲击强度	パンチの強さ	Force de l’impact	Fuerza del golpe	Darbe gücü	Punch-Stärke
 wavecandy_kick_sensitivity	Kick sensitivity	底鼓灵敏度	キックの感度	Sensibilité à la grosse caisse	Sensibilidad al bombo	Davul vuruşu hassasiyeti	Kick-Empfindlichkeit
 hrtf_hrtf_database	HRTF Database	HRTF 数据库	HRTF データベース	Base de données HRTF	Base de datos HRTF	HRTF veritabanı	HRTF-Datenbank
 hrtf_filter	Filter	筛选	フィルタ	Filtrer	Filtrar	Filtrele	Filtern
@@ -2211,3 +2320,402 @@ music_link_listens_song	The song	歌曲	曲	Le titre	La canción	Şarkı	Der Tit
 music_link_listens_song_desc	The song as it comes into the mixer.	进入混音器时的歌曲。	ミキサーに入ってくる曲です。	Le titre tel qu’il entre dans la table de mixage.	La canción tal como entra en el mezclador.	Miksere girdiği hâliyle şarkı.	Der Titel, so wie er in den Mixer kommt.
 music_link_listens_bus	This bus	此总线	このバス	Ce bus	Este bus	Bu bus	Dieser Bus
 music_link_listens_bus_desc	What reaches this bus, before its effects.	到达此总线、尚未经过其效果的声音。	このバスに届く音（エフェクトの前）です。	Ce qui arrive sur ce bus, avant ses effets.	Lo que llega a este bus, antes de sus efectos.	Bu bus’a ulaşan ses, efektlerinden önce.	Was diesen Bus erreicht, vor seinen Effekten.
+library_galaxy	Library galaxy	音乐库星系	ライブラリ銀河	Galaxie de la bibliothèque	Galaxia de la biblioteca	Kitaplık galaksisi	Bibliotheks-Galaxie
+library_galaxy_caption	Your artists, each beside their genre · Bigger stars, more of their music	每位艺人都位于其流派旁 · 星越大，音乐越多	アーティストはそれぞれのジャンルのそばに · 星が大きいほど曲が多い	Vos artistes, chacun près de son genre · Plus l’étoile est grande, plus vous avez de leur musique	Tus artistas, cada uno junto a su género · Estrellas más grandes, más de su música	Sanatçıların, her biri kendi türünün yanında · Daha büyük yıldız, daha çok müzik	Deine Künstler, jeweils neben ihrem Genre · Größere Sterne, mehr von ihrer Musik
+library_galaxy_planets_caption	Planets: their albums, the first nearest · Moons: the tracks · Tap a moon to play	行星：专辑，最早的离得最近 · 卫星：曲目 · 轻触卫星即可播放	惑星：アルバム（最初の作品が最も内側）· 衛星：収録曲 · 衛星をタップして再生	Planètes : leurs albums, le premier au plus près · Lunes : les titres · Touchez une lune pour la lire	Planetas: sus álbumes, el primero más cerca · Lunas: las canciones · Toca una luna para reproducirla	Gezegenler: albümleri, ilki en yakında · Uydular: parçalar · Çalmak için bir uyduya dokun	Planeten: ihre Alben, das erste am nächsten · Monde: die Titel · Tippe auf einen Mond zum Abspielen
+library_galaxy_loading	Mapping your library…	正在绘制你的音乐库…	ライブラリをマッピング中…	Cartographie de votre bibliothèque…	Cartografiando tu biblioteca…	Kitaplığın haritalanıyor…	Deine Bibliothek wird kartiert…
+library_galaxy_empty	Nothing in your library yet. Scan a music folder in Library to fill the sky.	音乐库还是空的。在“音乐库”中扫描音乐文件夹来点亮星空。	ライブラリはまだ空です。ライブラリで音楽フォルダをスキャンして空を満たしましょう。	Votre bibliothèque est encore vide. Analysez un dossier de musique dans Bibliothèque pour remplir le ciel.	Tu biblioteca aún está vacía. Escanea una carpeta de música en Biblioteca para llenar el cielo.	Kitaplığın henüz boş. Gökyüzünü doldurmak için Kitaplık’ta bir müzik klasörünü tara.	Deine Bibliothek ist noch leer. Scanne in der Bibliothek einen Musikordner, um den Himmel zu füllen.
+library_galaxy_open_artist	Open artist	打开艺人	アーティストを開く	Ouvrir l’artiste	Abrir artista	Sanatçıyı aç	Künstler öffnen
+library_galaxy_shuffle_artist	Shuffle this artist	随机播放该艺人	このアーティストをシャッフル再生	Lecture aléatoire de cet artiste	Reproducir este artista en aleatorio	Bu sanatçıyı karışık çal	Diesen Künstler zufällig abspielen
+library_galaxy_play_album	Play album	播放专辑	アルバムを再生	Lire l’album	Reproducir álbum	Albümü çal	Album abspielen
+library_galaxy_open_album	Open album	打开专辑	アルバムを開く	Ouvrir l’album	Abrir álbum	Albümü aç	Album öffnen
+library_galaxy_legend_halo	Above and below the disc: genre not recognised	星盘上下方：未识别的流派	円盤の上下：ジャンル不明	Au-dessus et au-dessous du disque : genre non reconnu	Por encima y por debajo del disco: género no reconocido	Diskin üstünde ve altında: tür tanınmadı	Über und unter der Scheibe: Genre nicht erkannt
+library_galaxy_uncharted	Genre not recognised	未识别的流派	ジャンル不明	Genre non reconnu	Género no reconocido	Tür tanınmadı	Genre nicht erkannt
+library_galaxy_search_hint	Find an artist in your galaxy	在星系中查找艺人	銀河のアーティストを探す	Trouver un artiste dans votre galaxie	Busca un artista en tu galaxia	Galaksinde bir sanatçı bul	Künstler in deiner Galaxie finden
+library_galaxy_search_none	No artist by that name	没有这个名字的艺人	その名前のアーティストはいません	Aucun artiste de ce nom	Ningún artista con ese nombre	Bu adda sanatçı yok	Kein Künstler mit diesem Namen
+trypt_mania	Trypt Mania						
+galaxy_legend_hearted_ring	Dashed ring: a genre kept in your genres	虚线环：保留在你的流派中的流派	破線の輪：マイジャンルに残したジャンル	Anneau en pointillés : un genre gardé dans vos genres	Anillo discontinuo: un género guardado en tus géneros	Kesikli halka: türlerinizde tuttuğunuz bir tür	Gestrichelter Ring: ein Genre aus deinen Genres
+galaxy_switch_to_library	Your library galaxy	你的音乐库星系	ライブラリ銀河へ	Votre galaxie de la bibliothèque	Tu galaxia de la biblioteca	Kitaplık galaksin	Deine Bibliotheks-Galaxie
+library_galaxy_albums#one	%1$d album	%1$d 张专辑	アルバム %1$d 枚	%1$d album	%1$d álbum	%1$d albüm	%1$d Album
+library_galaxy_albums#many	%1$d albums	%1$d 张专辑	アルバム %1$d 枚	%1$d albums	%1$d álbumes	%1$d albüm	%1$d Alben
+library_galaxy_albums#other	%1$d albums	%1$d 张专辑	アルバム %1$d 枚	%1$d albums	%1$d álbumes	%1$d albüm	%1$d Alben
+library_galaxy_tracks#one	%1$d track	%1$d 首曲目	%1$d 曲	%1$d titre	%1$d canción	%1$d parça	%1$d Titel
+library_galaxy_tracks#many	%1$d tracks	%1$d 首曲目	%1$d 曲	%1$d titres	%1$d canciones	%1$d parça	%1$d Titel
+library_galaxy_tracks#other	%1$d tracks	%1$d 首曲目	%1$d 曲	%1$d titres	%1$d canciones	%1$d parça	%1$d Titel
+stats_tab_stats	Stats	统计	統計	Stats	Estadísticas	İstatistik	Statistik
+stats_tab_achievements	Achievements	成就	実績	Succès	Logros	Başarılar	Erfolge
+stats_achievements_count	%1$d/%2$d	%1$d/%2$d	%1$d/%2$d	%1$d/%2$d	%1$d/%2$d	%1$d/%2$d	%1$d/%2$d
+stats_title_week	Your week in music	你的一周音乐	今週の音楽	Votre semaine en musique	Tu semana en música	Müzikle geçen haftan	Deine Woche in Musik
+stats_title_month	Your month in music	你的一月音乐	今月の音楽	Votre mois en musique	Tu mes en música	Müzikle geçen ayın	Dein Monat in Musik
+stats_title_quarter	Your season in music	你的一季音乐	この季節の音楽	Votre saison en musique	Tu temporada en música	Müzikle geçen mevsimin	Deine Saison in Musik
+stats_title_year	Your year in music	你的一年音乐	今年の音楽	Votre année en musique	Tu año en música	Müzikle geçen yılın	Dein Jahr in Musik
+stats_title_all	Your music, all time	你的全部音乐	これまでの音楽	Votre musique, depuis toujours	Tu música, desde siempre	Tüm zamanların müziğin	Deine Musik, alle Zeit
+stats_title_trophies	Your trophies	你的奖杯	トロフィー	Vos trophées	Tus trofeos	Kupaların	Deine Trophäen
+stats_share	Share stats	分享统计	統計を共有	Partager les stats	Compartir estadísticas	İstatistikleri paylaş	Statistik teilen
+stats_share_stats	Share your stats	分享你的统计	統計をシェア	Partager vos stats	Comparte tus estadísticas	İstatistiklerini paylaş	Deine Statistik teilen
+stats_share_text	%1$s of music on Tryptify. Top artist: %2$s. Top track: %3$s.	在 Tryptify 上听了 %1$s 音乐。最常听的艺人：%2$s。最常听的曲目：%3$s。	Tryptifyで%1$sの音楽。トップアーティスト：%2$s。トップトラック：%3$s。	%1$s de musique sur Tryptify. Artiste n° 1 : %2$s. Titre n° 1 : %3$s.	%1$s de música en Tryptify. Artista principal: %2$s. Canción principal: %3$s.	Tryptify’da %1$s müzik. En çok dinlenen sanatçı: %2$s. En çok dinlenen parça: %3$s.	%1$s Musik auf Tryptify. Top-Künstler: %2$s. Top-Titel: %3$s.
+stats_analyze	Analyze %1$s	分析%1$s	%1$sを分析	Analyser %1$s	Analizar %1$s	%1$s analiz et	%1$s analysieren
+stats_duration_hm	%1$dh %2$dm	%1$d小时%2$d分	%1$d時間%2$d分	%1$d h %2$d min	%1$d h %2$d min	%1$d sa %2$d dk	%1$d Std. %2$d Min.
+stats_duration_m	%1$d min	%1$d分钟	%1$d分	%1$d min	%1$d min	%1$d dk	%1$d Min.
+stats_time_listened	Time listened	收听时长	再生時間	Temps d’écoute	Tiempo escuchado	Dinleme süresi	Hörzeit
+stats_hero_more	%1$s more than the period before.	比上一时段多 %1$s。	前の期間より%1$s多く再生。	%1$s de plus que la période précédente.	%1$s más que el periodo anterior.	Önceki döneme göre %1$s daha fazla.	%1$s mehr als im Zeitraum davor.
+stats_hero_less	%1$s less than the period before.	比上一时段少 %1$s。	前の期間より%1$s少なく再生。	%1$s de moins que la période précédente.	%1$s menos que el periodo anterior.	Önceki döneme göre %1$s daha az.	%1$s weniger als im Zeitraum davor.
+stats_hero_busiest	Busiest: %1$s, with %2$s.	最多的是%1$s，共 %2$s。	最も多かったのは%1$s（%2$s）。	Le plus chargé : %1$s, avec %2$s.	Lo más intenso: %1$s, con %2$s.	En yoğun: %1$s, %2$s ile.	Am meisten: %1$s, mit %2$s.
+stats_legend_this_period	This period	本时段	この期間	Cette période	Este periodo	Bu dönem	Dieser Zeitraum
+stats_legend_previous	The period before	上一时段	前の期間	Période précédente	Periodo anterior	Önceki dönem	Zeitraum davor
+stats_listening_type	Your listening type	你的收听类型	あなたのリスニングタイプ	Votre profil d’écoute	Tu tipo de oyente	Dinleme tipin	Dein Hörtyp
+stats_persona_night_owl	Night owl	夜猫子	夜型リスナー	Oiseau de nuit	Ave nocturna	Gece kuşu	Nachteule
+stats_persona_evening	Evening regular	傍晚常客	夕方リスナー	Habitué du soir	Oyente de tarde-noche	Akşam müdavimi	Abendhörer
+stats_persona_afternoon	Afternoon drifter	午后漫游者	午後リスナー	Rêveur d’après-midi	Soñador de la tarde	Öğleden sonra gezgini	Nachmittagsträumer
+stats_persona_early_bird	Early bird	早起鸟	朝型リスナー	Lève-tôt	Madrugador	Erken kuş	Frühaufsteher
+stats_peak_headline	%1$s at %2$s is your busiest hour	%1$s %2$s 是你最常听的时段	%1$sの%2$sが一番聴く時間	Le %1$s à %2$s est votre heure de pointe	El %1$s a las %2$s es tu hora punta	En yoğun saatin: %1$s, %2$s	%1$s um %2$s ist deine Spitzenstunde
+stats_night_share	%1$s of your listening starts after 9 pm.	你有 %1$s 的收听开始于晚上 9 点之后。	再生の%1$sが21時以降に始まります。	%1$s de votre écoute commence après 21 h.	El %1$s de lo que escuchas empieza después de las 21:00.	Dinlemenin %1$s kadarı 21.00’den sonra başlıyor.	%1$s deines Hörens beginnt nach 21 Uhr.
+stats_number_one_artist	Number one artist	头号艺人	No.1アーティスト	Artiste n° 1	Artista número uno	Bir numaralı sanatçı	Top-Künstler
+stats_artist_line	%1$s, %2$s of everything you played.	%1$s，占你全部播放的 %2$s。	%1$s、全再生の%2$s。	%1$s, soit %2$s de tout ce que vous avez écouté.	%1$s, el %2$s de todo lo que escuchaste.	%1$s, dinlediğin her şeyin %2$s kadarı.	%1$s, %2$s von allem, was du gehört hast.
+stats_top5_share	Your top 5 are %1$s of it	你的前 5 名占 %1$s	トップ5が%1$sを占めています	Votre top 5 en représente %1$s	Tu top 5 es el %1$s	İlk 5 sanatçın bunun %1$s kadarı	Deine Top 5 machen %1$s aus
+stats_on_repeat	On repeat	单曲循环	リピート中	En boucle	En bucle	Tekrar tekrar	In Dauerschleife
+stats_discovery	Discovery	发现	ディスカバリー	Découverte	Descubrimiento	Keşif	Entdecken
+stats_new_count	%1$d new.	其中 %1$d 位是新的。	うち新規%1$d。	%1$d nouveaux.	%1$d nuevos.	%1$d yeni.	%1$d neu.
+stats_discovery_one_in	About 1 in %1$d plays was an artist new to you.	大约每 %1$d 次播放中就有 1 次是你从未听过的艺人。	約%1$d回に1回は初めて聴くアーティストでした。	Environ 1 écoute sur %1$d était un artiste nouveau pour vous.	Aproximadamente 1 de cada %1$d reproducciones fue de un artista nuevo para ti.	Yaklaşık her %1$d dinlemeden biri senin için yeni bir sanatçıydı.	Etwa jede %1$d. Wiedergabe war ein neuer Künstler für dich.
+stats_discovery_none	No new artists in this range yet.	此时段还没有新艺人。	この期間に新しいアーティストはまだいません。	Pas encore de nouvel artiste sur cette période.	Aún no hay artistas nuevos en este periodo.	Bu aralıkta henüz yeni sanatçı yok.	Noch keine neuen Künstler in diesem Zeitraum.
+stats_new_to_you	New to you	新发现	初めて	Nouveau pour vous	Nuevo para ti	Senin için yeni	Neu für dich
+stats_already_knew	Already knew	已熟悉	既に知っていた	Déjà connu	Ya conocido	Zaten biliniyordu	Schon bekannt
+stats_on_a_roll	On a roll	连续收听	連続記録	Sur sa lancée	En racha	Seri hâlinde	Am Laufen
+stats_streak_sub	You listened on %1$d of %2$d days. Longest run: %3$s.	你在 %2$d 天中有 %1$d 天在听。最长连续：%3$s。	%2$d日中%1$d日再生しました。最長連続：%3$s。	Vous avez écouté %1$d jours sur %2$d. Plus longue série : %3$s.	Escuchaste %1$d de %2$d días. Racha más larga: %3$s.	%2$d günün %1$d gününde dinledin. En uzun seri: %3$s.	Du hast an %1$d von %2$d Tagen gehört. Längste Serie: %3$s.
+stats_lossless_or_better	%1$s lossless or better	%1$s 为无损或更高	%1$sがロスレス以上	%1$s sans perte ou mieux	%1$s sin pérdidas o mejor	%1$s kayıpsız veya daha iyi	%1$s verlustfrei oder besser
+stats_quality_sub	Share of your listening time by quality.	按音质划分的收听时长占比。	品質ごとの再生時間の割合。	Part de votre temps d’écoute par qualité.	Parte de tu tiempo de escucha por calidad.	Kaliteye göre dinleme süren.	Anteil deiner Hörzeit nach Qualität.
+stats_tier_hi_res	Hi-Res	高解析	ハイレゾ	Hi-Res	Hi-Res	Hi-Res	Hi-Res
+stats_tier_lossless	Lossless	无损	ロスレス	Sans perte	Sin pérdidas	Kayıpsız	Verlustfrei
+stats_tier_lossy	Lossy	有损	非可逆	Avec perte	Con pérdidas	Kayıplı	Verlustbehaftet
+stats_source_streamed	Streamed	在线播放	ストリーミング	En streaming	En streaming	Akışla	Gestreamt
+stats_source_local	On this phone	本机	この端末	Sur ce téléphone	En este teléfono	Bu telefonda	Auf diesem Handy
+stats_more_stats	More stats	更多统计	その他の統計	Plus de stats	Más estadísticas	Daha fazla istatistik	Mehr Statistik
+stats_dig_deeper	Dig deeper	深入了解	もっと深く	Creuser	Profundiza	Daha derine in	Tiefer graben
+stats_dig_deeper_hint	Tap any stat to open its chart and look closer.	点按任意统计，打开图表细看。	統計をタップするとグラフを詳しく見られます。	Touchez une stat pour ouvrir son graphique et l’examiner.	Toca cualquier dato para abrir su gráfico y verlo de cerca.	Grafiğini açıp yakından bakmak için bir istatistiğe dokun.	Tippe auf eine Zahl, um ihr Diagramm genauer anzusehen.
+stats_sessions	Sessions	收听时段	セッション	Sessions	Sesiones	Oturumlar	Sitzungen
+stats_avg_each	about %1$s each	每次约 %1$s	1回あたり約%1$s	environ %1$s chacune	unos %1$s cada una	her biri yaklaşık %1$s	je etwa %1$s
+stats_months_trend	12-month trend	12 个月趋势	12か月の推移	Tendance sur 12 mois	Tendencia de 12 meses	12 aylık eğilim	12-Monats-Verlauf
+stats_on_pace	on pace for %1$s	预计 %1$s	このペースで%1$s	en route pour %1$s	camino de %1$s	%1$s hedefine doğru	auf Kurs für %1$s
+stats_repeat_plays	Repeat plays	重复播放	リピート再生	Réécoutes	Repeticiones	Tekrar dinlemeler	Wiederholungen
+stats_avg_length	Average track length	平均曲目时长	平均トラック長	Durée moyenne des titres	Duración media de canción	Ortalama parça süresi	Durchschnittliche Titellänge
+stats_per_play	per play	每次播放	1再生あたり	par écoute	por reproducción	dinleme başına	pro Wiedergabe
+stats_best_weekday	Best weekday	最常听的星期	一番聴く曜日	Meilleur jour	Mejor día	En iyi gün	Bester Wochentag
+stats_on_average	%1$s on average	平均 %1$s	平均%1$s	%1$s en moyenne	%1$s de media	ortalama %1$s	%1$s im Schnitt
+stats_top_album	Top album	最常听的专辑	トップアルバム	Album n° 1	Álbum principal	En iyi albüm	Top-Album
+stats_top_track	Top track	最常听的曲目	トップトラック	Titre n° 1	Canción principal	En iyi parça	Top-Titel
+stats_next_up	Next up	下一个	次の目標	Prochain	El siguiente	Sıradaki	Als Nächstes
+stats_in_progress	In progress	进行中	進行中	En cours	En curso	Devam ediyor	In Arbeit
+stats_to_go	%1$d to go	还剩 %1$d 个	残り%1$d	encore %1$d	faltan %1$d	%1$d kaldı	noch %1$d
+stats_tap_for_details	Tap one to see what it is and where to find it.	点按查看说明和位置。	タップすると内容と場所がわかります。	Touchez-en un pour voir ce que c’est et où le trouver.	Toca uno para ver qué es y dónde encontrarlo.	Ne olduğunu ve nerede bulunduğunu görmek için birine dokun.	Tippe auf einen, um zu sehen, was er ist und wo du ihn findest.
+stats_completed	Completed	已完成	達成済み	Obtenus	Completados	Tamamlananlar	Erreicht
+stats_earned	%1$d earned	已获得 %1$d 个	%1$d個獲得	%1$d obtenus	%1$d conseguidos	%1$d kazanıldı	%1$d erreicht
+stats_none_completed	Nothing yet. Your first one is close.	还没有。第一个就快了。	まだありません。最初の実績はもうすぐです。	Rien pour l’instant. Le premier est proche.	Todavía ninguno. El primero está cerca.	Henüz yok. İlki çok yakın.	Noch keiner. Dein erster ist nah.
+stats_all_done	Every achievement unlocked.	所有成就均已解锁。	すべての実績を解除しました。	Tous les succès sont débloqués.	Todos los logros desbloqueados.	Tüm başarıların kilidi açıldı.	Alle Erfolge freigeschaltet.
+stats_what_it_is	What it is	说明	内容	De quoi s’agit-il	Qué es	Nedir	Was es ist
+stats_where_to_find	Where to find it	在哪里	場所	Où le trouver	Dónde encontrarlo	Nerede bulunur	Wo du es findest
+stats_still_to_do	Still to do	尚未完成	残り	Reste à faire	Por hacer	Yapılacaklar	Noch offen
+stats_heard_so_far	Heard so far	已收听	これまでに聴いた	Écoutés jusqu’ici	Escuchados hasta ahora	Şimdiye kadar dinlenen	Bisher gehört
+stats_tried_so_far	Tried so far	已尝试	これまでに試した	Essayés jusqu’ici	Probados hasta ahora	Şimdiye kadar denenen	Bisher ausprobiert
+stats_good_places	Good places to look	推荐看看	探すのにおすすめ	Bons endroits où chercher	Buenos sitios para buscar	Bakmak için iyi yerler	Gute Stellen zum Suchen
+stats_progress	%1$d of %2$d	%1$d / %2$d	%2$d中%1$d	%1$d sur %2$d	%1$d de %2$d	%2$d / %1$d	%1$d von %2$d
+stats_open_place	Open %1$s	打开%1$s	%1$sを開く	Ouvrir %1$s	Abrir %1$s	%1$s aç	%1$s öffnen
+stats_path_tap_city	Tap a city dot	点按城市圆点	都市の点をタップ	Touchez un point de ville	Toca el punto de una ciudad	Bir şehir noktasına dokun	Auf einen Stadtpunkt tippen
+stats_path_autoeq	AutoEq	AutoEq	AutoEq	AutoEq	AutoEq	AutoEq	AutoEq
+stats_ach_explorer	Explorer	探索者	探検家	Explorateur	Explorador	Kâşif	Entdecker
+stats_ach_explorer_goal	Play %1$d artists new to you in 30 days	30 天内收听 %1$d 位新艺人	30日間で初めてのアーティストを%1$d組再生	Écoutez %1$d artistes nouveaux pour vous en 30 jours	Escucha %1$d artistas nuevos para ti en 30 días	30 günde senin için yeni %1$d sanatçı dinle	Höre %1$d neue Künstler in 30 Tagen
+stats_ach_explorer_what	Play a song by an artist you have never played in Tryptify before. The last 30 days count.	播放一首你从未在 Tryptify 里听过的艺人的歌。统计最近 30 天。	Tryptifyで一度も再生したことのないアーティストの曲を再生しましょう。直近30日間が対象です。	Écoutez un titre d’un artiste jamais écouté dans Tryptify. Les 30 derniers jours comptent.	Escucha una canción de un artista que nunca hayas puesto en Tryptify. Cuentan los últimos 30 días.	Tryptify’da daha önce hiç dinlemediğin bir sanatçının şarkısını çal. Son 30 gün sayılır.	Spiele einen Song von einem Künstler, den du in Tryptify noch nie gehört hast. Es zählen die letzten 30 Tage.
+stats_ach_corner	Every Corner	每个角落	隅々まで	Chaque recoin	Cada rincón	Her köşe	Jede Ecke
+stats_ach_corner_goal	Open every page of Settings	打开设置的每一页	設定のすべてのページを開く	Ouvrez chaque page des réglages	Abre todas las páginas de Ajustes	Ayarların her sayfasını aç	Öffne jede Seite der Einstellungen
+stats_ach_corner_what	Open each page of Settings once. Each holds a part of Tryptify you may not have seen.	把设置的每一页都打开一次。每一页都藏着你可能还没见过的 Tryptify 功能。	設定の各ページを一度ずつ開きましょう。まだ見ていないTryptifyの機能があるかもしれません。	Ouvrez chaque page des réglages une fois. Chacune cache une partie de Tryptify que vous n’avez peut-être pas vue.	Abre cada página de Ajustes una vez. Cada una guarda una parte de Tryptify que quizá no has visto.	Ayarların her sayfasını bir kez aç. Her biri Tryptify’ın belki görmediğin bir yanını barındırıyor.	Öffne jede Seite der Einstellungen einmal. Jede enthält einen Teil von Tryptify, den du vielleicht noch nicht kennst.
+stats_ach_plugins	Plugin Collector	插件收藏家	プラグインコレクター	Collectionneur de plugins	Coleccionista de plugins	Eklenti koleksiyoncusu	Plugin-Sammler
+stats_ach_plugins_goal	Add every mixer plugin to a chain	把每个混音器插件都加入效果链	ミキサーのプラグインをすべてチェーンに追加	Ajoutez chaque plugin du mixeur à une chaîne	Añade cada plugin del mezclador a una cadena	Her mikser eklentisini bir zincire ekle	Füge jedes Mixer-Plugin einer Kette hinzu
+stats_ach_plugins_what	Add each mixer plugin to an effect chain at least once. Hearing what each one does is the point.	把每个混音器插件至少加入一次效果链。重点是听听每个插件的效果。	ミキサーの各プラグインを少なくとも一度エフェクトチェーンに追加しましょう。それぞれの効果を聴くのが目的です。	Ajoutez chaque plugin du mixeur à une chaîne d’effets au moins une fois. Le but est d’entendre ce que fait chacun.	Añade cada plugin del mezclador a una cadena de efectos al menos una vez. Se trata de oír lo que hace cada uno.	Her mikser eklentisini en az bir kez bir efekt zincirine ekle. Amaç her birinin ne yaptığını duymak.	Füge jedes Mixer-Plugin mindestens einmal einer Effektkette hinzu. Es geht darum zu hören, was jedes tut.
+stats_ach_globe	Globetrotter	环球旅行者	世界旅行者	Globe-trotteur	Trotamundos	Dünya gezgini	Weltenbummler
+stats_ach_globe_goal	Tune in to radio from %1$d countries	收听来自 %1$d 个国家的电台	%1$dか国のラジオを聴く	Écoutez la radio de %1$d pays	Escucha radio de %1$d países	%1$d ülkeden radyo dinle	Höre Radio aus %1$d Ländern
+stats_ach_globe_what	Listen to live stations from different countries. Spin the globe and tap a city dot.	收听来自不同国家的直播电台。转动地球仪，点按城市圆点。	さまざまな国のライブ局を聴きましょう。地球儀を回して都市の点をタップします。	Écoutez des stations en direct de différents pays. Faites tourner le globe et touchez un point de ville.	Escucha emisoras en directo de distintos países. Gira el globo y toca el punto de una ciudad.	Farklı ülkelerden canlı istasyonlar dinle. Küreyi çevir ve bir şehir noktasına dokun.	Höre Live-Sender aus verschiedenen Ländern. Dreh den Globus und tippe auf einen Stadtpunkt.
+stats_ach_lyrics	Lyric Stylist	歌词造型师	歌詞スタイリスト	Styliste des paroles	Estilista de letras	Söz stilisti	Lyrics-Stylist
+stats_ach_lyrics_goal	Try %1$d Lyrics FX presets	尝试 %1$d 个 Lyrics FX 预设	Lyrics FXのプリセットを%1$d個試す	Essayez %1$d préréglages Lyrics FX	Prueba %1$d ajustes de Lyrics FX	%1$d Lyrics FX ön ayarını dene	Probiere %1$d Lyrics-FX-Vorlagen aus
+stats_ach_lyrics_what	Apply different presets to the lyrics view in the Player Visuals Studio.	在 Player Visuals Studio 中给歌词视图套用不同的预设。	Player Visuals Studioで歌詞表示にさまざまなプリセットを適用しましょう。	Appliquez différents préréglages à l’affichage des paroles dans le Player Visuals Studio.	Aplica distintos ajustes a la vista de letras en el Player Visuals Studio.	Player Visuals Studio’da şarkı sözü görünümüne farklı ön ayarlar uygula.	Wende im Player Visuals Studio verschiedene Vorlagen auf die Songtextansicht an.
+stats_ach_streak	30-Day Streak	连续 30 天	30日連続	Série de 30 jours	Racha de 30 días	30 günlük seri	30-Tage-Serie
+stats_ach_streak_goal	Listen %1$d days in a row	连续 %1$d 天收听	%1$d日連続で聴く	Écoutez %1$d jours d’affilée	Escucha %1$d días seguidos	Art arda %1$d gün dinle	Höre %1$d Tage am Stück
+stats_ach_streak_what	Play at least one song every day. Today counts as soon as something plays.	每天至少播放一首歌。今天只要播放了就算。	毎日少なくとも1曲再生しましょう。何か再生すれば今日がカウントされます。	Écoutez au moins un titre chaque jour. Aujourd’hui compte dès qu’un titre est lu.	Escucha al menos una canción cada día. Hoy cuenta en cuanto suene algo.	Her gün en az bir şarkı çal. Bir şey çalar çalmaz bugün sayılır.	Spiele jeden Tag mindestens einen Song. Heute zählt, sobald etwas läuft.
+stats_ach_golden	Golden Ears	金耳朵	ゴールデンイヤー	Oreilles d’or	Oídos de oro	Altın kulaklar	Goldene Ohren
+stats_ach_golden_goal	Listen to %1$d hours of Hi-Res	收听 %1$d 小时高解析音频	ハイレゾを%1$d時間聴く	Écoutez %1$d heures en Hi-Res	Escucha %1$d horas en Hi-Res	%1$d saat Hi-Res dinle	Höre %1$d Stunden Hi-Res
+stats_ach_golden_what	Hi-Res tracks are 24-bit. Choose Hi-Res as your streaming quality where your service offers it.	高解析曲目为 24 位。服务支持时，把串流音质设为高解析。	ハイレゾは24ビットの音源です。サービスが対応していれば、ストリーミング品質をハイレゾにしましょう。	Les titres Hi-Res sont en 24 bits. Choisissez la qualité Hi-Res lorsque votre service la propose.	Las canciones Hi-Res son de 24 bits. Elige Hi-Res como calidad de streaming si tu servicio la ofrece.	Hi-Res parçalar 24 bittir. Hizmetin sunuyorsa akış kalitesi olarak Hi-Res’i seç.	Hi-Res-Titel haben 24 Bit. Wähle Hi-Res als Streaming-Qualität, wo dein Dienst es anbietet.
+stats_ach_night	Night Owl	夜猫子	夜ふかし	Oiseau de nuit	Ave nocturna	Gece kuşu	Nachteule
+stats_ach_night_goal	%1$d plays after midnight	午夜后播放 %1$d 次	深夜0時以降に%1$d回再生	%1$d écoutes après minuit	%1$d reproducciones después de medianoche	Gece yarısından sonra %1$d dinleme	%1$d Wiedergaben nach Mitternacht
+stats_ach_night_what	Plays that start between midnight and 4 am count.	午夜到凌晨 4 点之间开始的播放都算。	0時から4時の間に始まった再生がカウントされます。	Les écoutes qui commencent entre minuit et 4 h comptent.	Cuentan las reproducciones que empiezan entre la medianoche y las 4:00.	Gece yarısı ile 04.00 arasında başlayan dinlemeler sayılır.	Es zählen Wiedergaben, die zwischen Mitternacht und 4 Uhr beginnen.
+stats_ach_chain	Signal Chain	信号链	シグナルチェーン	Chaîne de signal	Cadena de señal	Sinyal zinciri	Signalkette
+stats_ach_chain_goal	Put %1$d plugins in one effect chain	在一条效果链中放入 %1$d 个插件	1つのエフェクトチェーンに%1$d個のプラグイン	Placez %1$d plugins dans une chaîne d’effets	Pon %1$d plugins en una cadena de efectos	Bir efekt zincirine %1$d eklenti koy	Setze %1$d Plugins in eine Effektkette
+stats_ach_chain_what	Build a chain of plugins on one mixer bus. A bus holds up to 16.	在一条混音器总线上搭建插件链。每条总线最多 16 个。	ミキサーの1つのバスにプラグインのチェーンを組みましょう。1バスに最大16個です。	Construisez une chaîne de plugins sur un bus du mixeur. Un bus en accepte jusqu’à 16.	Crea una cadena de plugins en un bus del mezclador. Un bus admite hasta 16.	Bir mikser veriyolunda eklenti zinciri kur. Bir veriyolu en fazla 16 alır.	Baue auf einem Mixer-Bus eine Kette aus Plugins. Ein Bus fasst bis zu 16.
+stats_ach_room	Room Tuned	调音完成	チューニング完了	Pièce accordée	Sala afinada	Oda ayarlandı	Raum gestimmt
+stats_ach_room_goal	Tune your headphones with AutoEq	用 AutoEq 调校耳机	AutoEqでヘッドホンを調整	Réglez votre casque avec AutoEq	Ajusta tus auriculares con AutoEq	Kulaklığını AutoEq ile ayarla	Stimme deine Kopfhörer mit AutoEq ab
+stats_ach_room_what	AutoEq fits an equalizer to your headphones’ measured response.	AutoEq 会根据耳机的实测响应拟合均衡器。	AutoEqは、測定されたヘッドホンの特性に合わせてイコライザーを調整します。	AutoEq ajuste un égaliseur à la réponse mesurée de votre casque.	AutoEq ajusta un ecualizador a la respuesta medida de tus auriculares.	AutoEq, kulaklığının ölçülen tepkisine bir ekolayzer uydurur.	AutoEq passt einen Equalizer an den gemessenen Frequenzgang deiner Kopfhörer an.
+stats_chart_hint	Tap a bar, square or row to look closer, or step through with the arrows.	点按柱、方格或行可细看，也可用箭头逐个浏览。	棒・マス・行をタップして詳しく見るか、矢印で順に移動します。	Touchez une barre, une case ou une ligne pour la détailler, ou parcourez avec les flèches.	Toca una barra, un cuadro o una fila para verlo de cerca, o recorre con las flechas.	Yakından bakmak için bir çubuğa, kareye veya satıra dokun ya da oklarla gez.	Tippe auf einen Balken, ein Feld oder eine Zeile, um genauer hinzusehen, oder blättere mit den Pfeilen.
+stats_position	%1$d of %2$d	%1$d / %2$d	%2$d中%1$d	%1$d sur %2$d	%1$d de %2$d	%2$d / %1$d	%1$d von %2$d
+stats_compare_previous	Compare with the period before	与上一时段比较	前の期間と比較	Comparer à la période précédente	Comparar con el periodo anterior	Önceki dönemle karşılaştır	Mit dem Zeitraum davor vergleichen
+stats_what_stands_out	What stands out	亮点	注目ポイント	Ce qui ressort	Lo que destaca	Öne çıkanlar	Was auffällt
+stats_vs_average	%1$s against your average	比平均 %1$s	平均と比べて%1$s	%1$s par rapport à votre moyenne	%1$s frente a tu media	Ortalamana göre %1$s	%1$s gegenüber deinem Schnitt
+stats_vs_previous	The period before: %1$s	上一时段：%1$s	前の期間：%1$s	Période précédente : %1$s	Periodo anterior: %1$s	Önceki dönem: %1$s	Zeitraum davor: %1$s
+stats_vs_previous_pct	%1$s on the period before	较上一时段 %1$s	前の期間比%1$s	%1$s par rapport à la période précédente	%1$s respecto al periodo anterior	önceki döneme göre %1$s	%1$s gegenüber dem Zeitraum davor
+stats_vs_previous_plays	%1$s plays on the period before	较上一时段 %1$s 次	前の期間比%1$s回	%1$s écoutes par rapport à la période précédente	%1$s reproducciones respecto al periodo anterior	önceki döneme göre %1$s dinleme	%1$s Wiedergaben gegenüber dem Zeitraum davor
+stats_average_line	average %1$s	平均 %1$s	平均%1$s	moyenne %1$s	media %1$s	ortalama %1$s	Schnitt %1$s
+stats_total	Total	总计	合計	Total	Total	Toplam	Gesamt
+stats_daily_average	Daily average	日均	1日平均	Moyenne par jour	Media diaria	Günlük ortalama	Täglicher Schnitt
+stats_best	Best	最多	最多	Le plus	El mejor	En iyi	Am meisten
+stats_days_listened	Days listened	收听天数	再生した日数	Jours d’écoute	Días escuchados	Dinlenen günler	Tage gehört
+stats_insight_weekend	Weekends average %1$s a day; weekdays %2$s.	周末平均每天 %1$s，工作日 %2$s。	週末は1日平均%1$s、平日は%2$s。	Le week-end, %1$s par jour en moyenne ; en semaine, %2$s.	Los fines de semana, %1$s al día de media; entre semana, %2$s.	Hafta sonları günde ortalama %1$s, hafta içi %2$s.	Am Wochenende im Schnitt %1$s pro Tag, unter der Woche %2$s.
+stats_insight_days_off	Days with no listening: %1$d.	没有收听的天数：%1$d。	再生しなかった日：%1$d日。	Jours sans écoute : %1$d.	Días sin escuchar: %1$d.	Hiç dinlenmeyen günler: %1$d.	Tage ohne Hören: %1$d.
+stats_by_week	By week	按周	週ごと	Par semaine	Por semana	Haftaya göre	Nach Woche
+stats_week_of	Week of %1$s	%1$s 那一周	%1$sの週	Semaine du %1$s	Semana del %1$s	%1$s haftası	Woche ab %1$s
+stats_per_day	%1$s a day	每天 %1$s	1日%1$s	%1$s par jour	%1$s al día	günde %1$s	%1$s pro Tag
+stats_view_day	Day	日	日	Jour	Día	Gün	Tag
+stats_view_week	Week	周	週	Semaine	Semana	Hafta	Woche
+stats_view_grid	Grid	网格	グリッド	Grille	Cuadrícula	Izgara	Raster
+stats_view_by_hour	By hour	按小时	時間ごと	Par heure	Por hora	Saate göre	Nach Stunde
+stats_view_average	Average	平均	平均	Moyenne	Media	Ortalama	Schnitt
+stats_view_total	Total	总计	合計	Total	Total	Toplam	Gesamt
+stats_view_plays	Plays	播放次数	再生回数	Écoutes	Reproducciones	Dinlemeler	Wiedergaben
+stats_view_time	Time	时长	時間	Temps	Tiempo	Süre	Zeit
+stats_view_tracks	Tracks	曲目	トラック	Titres	Canciones	Parçalar	Titel
+stats_of_listening	of your listening	的收听	の再生	de votre écoute	de lo que escuchas	dinlemenin	deines Hörens
+stats_about_time	About %1$s in this range	此时段约 %1$s	この期間で約%1$s	Environ %1$s sur cette période	Unos %1$s en este periodo	Bu aralıkta yaklaşık %1$s	Etwa %1$s in diesem Zeitraum
+stats_hour_rank	Number %1$d of the %2$d hours in your week	一周 %2$d 个小时中的第 %1$d 名	1週間%2$d時間のうち%1$d番目	N° %1$d des %2$d heures de votre semaine	Número %1$d de las %2$d horas de tu semana	Haftandaki %2$d saatin %1$d. sırada olanı	Platz %1$d der %2$d Stunden deiner Woche
+stats_after_nine	After 9 pm	晚上 9 点后	21時以降	Après 21 h	Después de las 21:00	21.00’den sonra	Nach 21 Uhr
+stats_quietest_hour	Quietest hour	最安静的时段	最も静かな時間	Heure la plus calme	Hora más tranquila	En sessiz saat	Ruhigste Stunde
+stats_busiest_day	Busiest day	最忙的一天	一番聴く曜日	Jour le plus chargé	Día más intenso	En yoğun gün	Aktivster Tag
+stats_morning	Morning	早上	朝	Matin	Mañana	Sabah	Morgen
+stats_afternoon	Afternoon	下午	午後	Après-midi	Tarde	Öğleden sonra	Nachmittag
+stats_evening	Evening	傍晚	夕方	Soir	Atardecer	Akşam	Abend
+stats_night	Night	夜晚	夜	Nuit	Noche	Gece	Nacht
+stats_weekday_headline	%1$s is your biggest listening day, %2$s the quietest.	%1$s 是你听得最多的日子，%2$s 最少。	一番聴くのは%1$s、一番静かなのは%2$s。	Le %1$s est votre plus grand jour d’écoute, le %2$s le plus calme.	El %1$s es tu día de más escucha y el %2$s el más tranquilo.	En çok dinlediğin gün %1$s, en sessizi %2$s.	%1$s ist dein stärkster Hörtag, %2$s der ruhigste.
+stats_weekday_total	%1$s in total over %2$s	%2$s 共 %1$s	%2$sで合計%1$s	%1$s au total sur %2$s	%1$s en total en %2$s	%2$s boyunca toplam %1$s	%1$s insgesamt an %2$s
+stats_on_average_unit	on average	平均	平均	en moyenne	de media	ortalama	im Schnitt
+stats_in_total_unit	in total	总计	合計	au total	en total	toplam	insgesamt
+stats_quietest	Quietest	最少	最も静か	Le plus calme	El más tranquilo	En sessiz	Am ruhigsten
+stats_weekend_share	Weekend share	周末占比	週末の割合	Part du week-end	Parte del fin de semana	Hafta sonu payı	Anteil Wochenende
+stats_share_of_plays	%1$s of your plays	占你播放的 %1$s	全再生の%1$s	%1$s de vos écoutes	El %1$s de tus reproducciones	Dinlemelerinin %1$s kadarı	%1$s deiner Wiedergaben
+stats_top_track_line	Top track: %1$s (%2$d)	最常听：%1$s（%2$d）	トップトラック：%1$s（%2$d）	Titre n° 1 : %1$s (%2$d)	Canción principal: %1$s (%2$d)	En iyi parça: %1$s (%2$d)	Top-Titel: %1$s (%2$d)
+stats_new_this_period	New to you this period	本时段新发现	この期間に初めて	Nouveau pour vous sur cette période	Nuevo para ti en este periodo	Bu dönem senin için yeni	Neu für dich in diesem Zeitraum
+stats_artists	Artists	艺人	アーティスト	Artistes	Artistas	Sanatçılar	Künstler
+stats_top5_label	Top 5 share	前 5 名占比	トップ5の割合	Part du top 5	Parte del top 5	İlk 5 payı	Anteil Top 5
+stats_one_play_only	Played once	只听过一次	1回だけ再生	Écoutés une fois	Escuchados una vez	Bir kez dinlenen	Einmal gehört
+stats_insight_lead	%1$s leads by %2$d plays.	%1$s 以 %2$d 次领先。	%1$sが%2$d回差でトップ。	%1$s mène de %2$d écoutes.	%1$s va en cabeza por %2$d reproducciones.	%1$s, %2$d dinleme farkla önde.	%1$s führt mit %2$d Wiedergaben Vorsprung.
+stats_insight_new_in_top	New in your top list: %1$s.	榜单新面孔：%1$s。	トップリストに初登場：%1$s。	Nouveaux dans votre classement : %1$s.	Nuevos en tu lista: %1$s.	Listende yeni: %1$s.	Neu in deiner Topliste: %1$s.
+stats_not_played_before	Not played the period before	上一时段未播放	前の期間は未再生	Pas écouté la période précédente	No se escuchó el periodo anterior	Önceki dönemde dinlenmedi	Im Zeitraum davor nicht gehört
+stats_same_place	Same place as the period before	排名与上一时段相同	前の期間と同じ順位	Même place que la période précédente	Mismo puesto que el periodo anterior	Önceki dönemle aynı sırada	Gleicher Platz wie davor
+stats_up_places	Up %1$d from the period before	比上一时段上升 %1$d 位	前の期間から%1$d位アップ	En hausse de %1$d places	Sube %1$d puestos	Önceki döneme göre %1$d sıra yukarı	%1$d Plätze hoch gegenüber davor
+stats_down_places	Down %1$d from the period before	比上一时段下降 %1$d 位	前の期間から%1$d位ダウン	En baisse de %1$d places	Baja %1$d puestos	Önceki döneme göre %1$d sıra aşağı	%1$d Plätze runter gegenüber davor
+stats_tracks_headline	%1$s leads with %2$s.	%1$s 以 %2$s 领先。	%1$sが%2$sでトップ。	%1$s est en tête avec %2$s.	%1$s encabeza con %2$s.	%1$s, %2$s ile önde.	%1$s führt mit %2$s.
+stats_time_spent	Time spent: %1$s	收听时长：%1$s	再生時間：%1$s	Temps passé : %1$s	Tiempo dedicado: %1$s	Harcanan süre: %1$s	Hörzeit: %1$s
+stats_different_tracks	Different tracks	不同曲目	異なるトラック	Titres différents	Canciones distintas	Farklı parçalar	Verschiedene Titel
+stats_played_once	Played once	只听过一次	1回だけ再生	Écouté une fois	Escuchada una vez	Bir kez dinlenen	Einmal gehört
+stats_albums_headline	%1$s by %2$s leads your albums.	专辑榜首：%2$s 的%1$s。	アルバムのトップは%2$sの%1$s。	%1$s de %2$s est votre album n° 1.	%1$s de %2$s encabeza tus álbumes.	Albümlerinde önde: %2$s – %1$s.	%1$s von %2$s führt deine Alben an.
+stats_most_played	Most played: %1$s	最常播放：%1$s	最多再生：%1$s	Le plus écouté : %1$s	Más escuchada: %1$s	En çok dinlenen: %1$s	Am meisten gehört: %1$s
+stats_albums_played	Albums played	收听过的专辑	再生したアルバム	Albums écoutés	Álbumes escuchados	Dinlenen albümler	Gehörte Alben
+stats_top3_share	Top 3 share	前 3 名占比	トップ3の割合	Part du top 3	Parte del top 3	İlk 3 payı	Anteil Top 3
+stats_new_vs_familiar	New vs familiar	新与旧	新しい曲となじみの曲	Nouveau et familier	Nuevo y conocido	Yeni ve tanıdık	Neu und vertraut
+stats_new_plays_line	Plays of artists new to you: %1$d	新艺人的播放：%1$d	初めてのアーティストの再生：%1$d	Écoutes d’artistes nouveaux : %1$d	Reproducciones de artistas nuevos: %1$d	Yeni sanatçı dinlemeleri: %1$d	Wiedergaben neuer Künstler: %1$d
+stats_known_plays_line	Plays of artists you knew: %1$d	熟悉艺人的播放：%1$d	知っているアーティストの再生：%1$d	Écoutes d’artistes connus : %1$d	Reproducciones de artistas conocidos: %1$d	Tanıdık sanatçı dinlemeleri: %1$d	Wiedergaben bekannter Künstler: %1$d
+stats_and_more	+%1$d more	另有 %1$d 位	ほか%1$d	+%1$d autres	+%1$d más	+%1$d tane daha	+%1$d weitere
+stats_new_artists	New artists	新艺人	新しいアーティスト	Nouveaux artistes	Artistas nuevos	Yeni sanatçılar	Neue Künstler
+stats_new_plays	New plays	新播放	新規の再生	Écoutes nouvelles	Reproducciones nuevas	Yeni dinlemeler	Neue Wiedergaben
+stats_most_curious	Most curious	最爱探索	最も冒険した時期	Le plus curieux	Lo más curioso	En meraklı	Am neugierigsten
+stats_how_it_played	How it played	播放方式	再生のされ方	Comment c’était lu	Cómo sonó	Nasıl çalındı	Wie es lief
+stats_local_share	%1$s of your listening is files on this phone.	你有 %1$s 的收听来自本机文件。	再生の%1$sはこの端末のファイルです。	%1$s de votre écoute sont des fichiers de ce téléphone.	El %1$s de lo que escuchas son archivos de este teléfono.	Dinlemenin %1$s kadarı bu telefondaki dosyalar.	%1$s deines Hörens sind Dateien auf diesem Handy.
+stats_share_of_listening	%1$s of your listening	占你收听的 %1$s	再生時間の%1$s	%1$s de votre écoute	El %1$s de lo que escuchas	Dinlemenin %1$s kadarı	%1$s deines Hörens
+stats_lossless_label	Lossless or better	无损或更高	ロスレス以上	Sans perte ou mieux	Sin pérdidas o mejor	Kayıpsız veya daha iyi	Verlustfrei oder besser
+stats_today	today	今天	今日	aujourd’hui	hoy	bugün	heute
+stats_no_listening_day	No listening this day	这天没有收听	この日は再生なし	Aucune écoute ce jour-là	Sin escuchas este día	Bu gün dinleme yok	An diesem Tag nichts gehört
+stats_current_streak	Current streak	当前连续	現在の連続記録	Série en cours	Racha actual	Mevcut seri	Aktuelle Serie
+stats_days_off	Days off	未收听天数	休んだ日	Jours sans écoute	Días sin escuchar	Dinlenmeyen günler	Freie Tage
+stats_under_minutes	Under %1$d min	少于 %1$d 分钟	%1$d分未満	Moins de %1$d min	Menos de %1$d min	%1$d dk altı	Unter %1$d Min.
+stats_over_minutes	Over %1$d min	超过 %1$d 分钟	%1$d分以上	Plus de %1$d min	Más de %1$d min	%1$d dk üstü	Über %1$d Min.
+stats_range_minutes	%1$d to %2$d min	%1$d 到 %2$d 分钟	%1$d〜%2$d分	De %1$d à %2$d min	De %1$d a %2$d min	%1$d–%2$d dk	%1$d bis %2$d Min.
+stats_over_hours	Over %1$d hours	超过 %1$d 小时	%1$d時間以上	Plus de %1$d heures	Más de %1$d horas	%1$d saatten fazla	Über %1$d Stunden
+stats_range_hours	%1$d to %2$d hours	%1$d 到 %2$d 小时	%1$d〜%2$d時間	De %1$d à %2$d heures	De %1$d a %2$d horas	%1$d–%2$d saat	%1$d bis %2$d Stunden
+stats_session_length	Session length	收听时段长度	セッションの長さ	Durée des sessions	Duración de las sesiones	Oturum süresi	Sitzungslänge
+stats_share_of_sessions	%1$s of your sessions	占你收听时段的 %1$s	セッションの%1$s	%1$s de vos sessions	El %1$s de tus sesiones	Oturumlarının %1$s kadarı	%1$s deiner Sitzungen
+stats_per_day_count	%1$s a day	每天 %1$s	1日%1$s	%1$s par jour	%1$s al día	günde %1$s	%1$s pro Tag
+stats_average	Average	平均	平均	Moyenne	Media	Ortalama	Schnitt
+stats_longest	Longest	最长	最長	La plus longue	La más larga	En uzun	Am längsten
+stats_quick_plays	Quick plays	短时收听	短いセッション	Écoutes rapides	Escuchas rápidas	Kısa dinlemeler	Kurze Sitzungen
+stats_insight_longest_session	Your longest session ran %1$s, on %2$s.	你最长的一次收听在 %2$s，持续 %1$s。	最長のセッションは%2$sの%1$s。	Votre plus longue session a duré %1$s, le %2$s.	Tu sesión más larga duró %1$s, el %2$s.	En uzun oturumun %2$s tarihinde %1$s sürdü.	Deine längste Sitzung dauerte %1$s, am %2$s.
+stats_long_view	The long view	长期趋势	長期の推移	Vue d’ensemble	La visión de conjunto	Uzun vadeli bakış	Der Gesamtblick
+stats_on_pace_sentence	%1$s is on pace for %2$s.	按目前进度，%1$s 预计 %2$s。	%1$sはこのペースで%2$sになりそうです。	%1$s est en route pour %2$s.	%1$s va camino de %2$s.	%1$s, %2$s hedefine doğru gidiyor.	%1$s ist auf Kurs für %2$s.
+stats_top_artist_line	Top artist: %1$s	最常听的艺人：%1$s	トップアーティスト：%1$s	Artiste n° 1 : %1$s	Artista principal: %1$s	En çok dinlenen sanatçı: %1$s	Top-Künstler: %1$s
+stats_show_pace	Show this month’s pace	显示本月进度	今月のペースを表示	Afficher le rythme du mois	Mostrar el ritmo de este mes	Bu ayın gidişatını göster	Kurs dieses Monats zeigen
+stats_projected	Projected	预计	予測	Projection	Proyección	Tahmini	Hochgerechnet
+stats_monthly_average	Monthly average	月均	月平均	Moyenne mensuelle	Media mensual	Aylık ortalama	Monatlicher Schnitt
+stats_this_month_pace	This month’s pace	本月进度	今月のペース	Rythme du mois	Ritmo de este mes	Bu ayın gidişatı	Kurs dieses Monats
+stats_insight_best_month	Your best month was %1$s, with %2$s.	你最多的月份是%1$s，共 %2$s。	一番聴いた月は%1$s（%2$s）。	Votre meilleur mois a été %1$s, avec %2$s.	Tu mejor mes fue %1$s, con %2$s.	En iyi ayın %1$s oldu, %2$s ile.	Dein bester Monat war %1$s, mit %2$s.
+stats_insight_record_pace	This month is on pace for a record.	本月有望创下纪录。	今月は記録更新のペースです。	Ce mois-ci est en route pour un record.	Este mes va camino de un récord.	Bu ay rekor gidişatta.	Dieser Monat ist auf Rekordkurs.
+stats_variety	Variety	多样性	バラエティ	Variété	Variedad	Çeşitlilik	Vielfalt
+stats_variety_headline	%1$s of your plays were repeats.	你有 %1$s 的播放是重复播放。	再生の%1$sがリピートでした。	%1$s de vos écoutes étaient des réécoutes.	El %1$s de tus reproducciones fueron repeticiones.	Dinlemelerinin %1$s kadarı tekrardı.	%1$s deiner Wiedergaben waren Wiederholungen.
+stats_played_or_more	Played %1$d times or more	播放 %1$d 次或更多	%1$d回以上再生	Écouté %1$d fois ou plus	Escuchada %1$d veces o más	%1$d kez veya daha fazla dinlenen	%1$d-mal oder öfter gehört
+stats_played_range	Played %1$d to %2$d times	播放 %1$d 到 %2$d 次	%1$d〜%2$d回再生	Écouté %1$d à %2$d fois	Escuchada de %1$d a %2$d veces	%1$d–%2$d kez dinlenen	%1$d- bis %2$d-mal gehört
+stats_share_of_tracks	%1$s of the tracks you played	占你播放曲目的 %1$s	再生したトラックの%1$s	%1$s des titres écoutés	El %1$s de las canciones que escuchaste	Dinlediğin parçaların %1$s kadarı	%1$s der gehörten Titel
+stats_most_replayed	Most replayed	重复最多	最多リピート	Le plus réécouté	La más repetida	En çok tekrar edilen	Am häufigsten wiederholt
+stats_insight_few_tracks	Just %1$d tracks make up %2$s of your plays.	仅 %1$d 首曲目就占了你播放的 %2$s。	わずか%1$d曲で再生の%2$sを占めています。	Seulement %1$d titres représentent %2$s de vos écoutes.	Solo %1$d canciones suman el %2$s de tus reproducciones.	Sadece %1$d parça dinlemelerinin %2$s kadarını oluşturuyor.	Nur %1$d Titel machen %2$s deiner Wiedergaben aus.
+stats_insight_once	%1$d tracks got a single play, %2$s of everything you tried.	有 %1$d 首曲目只播放过一次，占你尝试过的 %2$s。	%1$d曲は1回だけ再生（試した曲の%2$s）。	%1$d titres n’ont été écoutés qu’une fois, soit %2$s de ce que vous avez essayé.	%1$d canciones sonaron una sola vez, el %2$s de lo que probaste.	%1$d parça yalnızca bir kez çalındı; denediğin her şeyin %2$s kadarı.	%1$d Titel liefen nur einmal, %2$s von allem, was du probiert hast.
+stats_track_length	Track length	曲目时长	トラックの長さ	Durée des titres	Duración de las canciones	Parça süresi	Titellänge
+stats_length_headline	Your average play is %1$s. Your sweet spot: %2$s.	你的平均播放时长为 %1$s，最爱区间：%2$s。	平均再生時間は%1$s。好みの長さは%2$s。	Votre écoute moyenne dure %1$s. Votre zone idéale : %2$s.	Tu reproducción media dura %1$s. Tu punto ideal: %2$s.	Ortalama dinlemen %1$s. En sevdiğin aralık: %2$s.	Deine durchschnittliche Wiedergabe dauert %1$s. Dein Sweet Spot: %2$s.
+stats_sweet_spot	Sweet spot	最爱区间	好みの長さ	Zone idéale	Punto ideal	En sevdiğin aralık	Sweet Spot
+stats_hours_unit#one	hour	小时	時間	heure	hora	saat	Stunde
+stats_hours_unit#many	hours	小时	時間	heures	horas	saat	Stunden
+stats_hours_unit#other	hours	小时	時間	heures	horas	saat	Stunden
+stats_minutes_unit#one	minute	分钟	分	minute	minuto	dakika	Minute
+stats_minutes_unit#many	minutes	分钟	分	minutes	minutos	dakika	Minuten
+stats_minutes_unit#other	minutes	分钟	分	minutes	minutos	dakika	Minuten
+stats_artists_count#one	%1$d artist.	%1$d 位艺人。	%1$d組のアーティスト。	%1$d artiste.	%1$d artista.	%1$d sanatçı.	%1$d Künstler.
+stats_artists_count#many	%1$d artists.	%1$d 位艺人。	%1$d組のアーティスト。	%1$d artistes.	%1$d artistas.	%1$d sanatçı.	%1$d Künstler.
+stats_artists_count#other	%1$d artists.	%1$d 位艺人。	%1$d組のアーティスト。	%1$d artistes.	%1$d artistas.	%1$d sanatçı.	%1$d Künstler.
+stats_days_straight#one	day straight	天连续	日連続	jour d’affilée	día seguido	gün üst üste	Tag am Stück
+stats_days_straight#many	days straight	天连续	日連続	jours d’affilée	días seguidos	gün üst üste	Tage am Stück
+stats_days_straight#other	days straight	天连续	日連続	jours d’affilée	días seguidos	gün üst üste	Tage am Stück
+stats_new_artists_unit#one	new artist	位新艺人	組の新しいアーティスト	nouvel artiste	artista nuevo	yeni sanatçı	neuer Künstler
+stats_new_artists_unit#many	new artists	位新艺人	組の新しいアーティスト	nouveaux artistes	artistas nuevos	yeni sanatçı	neue Künstler
+stats_new_artists_unit#other	new artists	位新艺人	組の新しいアーティスト	nouveaux artistes	artistas nuevos	yeni sanatçı	neue Künstler
+stats_plays_unit#one	play	次播放	回再生	écoute	reproducción	dinleme	Wiedergabe
+stats_plays_unit#many	plays	次播放	回再生	écoutes	reproducciones	dinleme	Wiedergaben
+stats_plays_unit#other	plays	次播放	回再生	écoutes	reproducciones	dinleme	Wiedergaben
+stats_sessions_unit#one	session	个时段	セッション	session	sesión	oturum	Sitzung
+stats_sessions_unit#many	sessions	个时段	セッション	sessions	sesiones	oturum	Sitzungen
+stats_sessions_unit#other	sessions	个时段	セッション	sessions	sesiones	oturum	Sitzungen
+stats_tracks_unit#one	track	首曲目	曲	titre	canción	parça	Titel
+stats_tracks_unit#many	tracks	首曲目	曲	titres	canciones	parça	Titel
+stats_tracks_unit#other	tracks	首曲目	曲	titres	canciones	parça	Titel
+settings_crt_effect	CRT effect	CRT 效果	CRT エフェクト	Effet CRT	Efecto CRT	CRT efekti	CRT-Effekt
+settings_crt_effect_subtitle	Every screen through an old TV. Android 13 and later.	所有界面呈现老式电视效果。需要 Android 13 或更高版本。	すべての画面を古いテレビのように表示します。Android 13 以降。	Chaque écran comme sur un vieux téléviseur. Android 13 et plus.	Todas las pantallas como en un televisor antiguo. Android 13 o posterior.	Her ekran eski bir televizyondaki gibi. Android 13 ve sonrası.	Jeder Bildschirm wie auf einem alten Fernseher. Ab Android 13.
+settings_crt_look	Look	样式	スタイル	Style	Estilo	Görünüm	Stil
+settings_crt_target	Draw over	应用于	適用先	Appliquer à	Aplicar a	Uygulanacak yer	Darüber zeichnen
+settings_crt_target_app	The whole app	整个应用	アプリ全体	Toute l'app	Toda la app	Tüm uygulama	Die ganze App
+settings_crt_target_lyrics	The lyrics only	仅歌词	歌詞のみ	Les paroles seulement	Solo la letra	Yalnızca şarkı sözleri	Nur die Liedtexte
+settings_crt_unavailable	Off on this phone: it needs Android 13 and the glass effects on.	此手机上不可用：需要 Android 13 并开启玻璃效果。	この端末では無効です。Android 13 以降とガラス効果の有効化が必要です。	Désactivé sur ce téléphone : il faut Android 13 et les effets de verre activés.	Desactivado en este teléfono: necesita Android 13 y los efectos de cristal activados.	Bu telefonda kapalı: Android 13 ve cam efektlerinin açık olması gerekir.	Auf diesem Telefon aus: Es braucht Android 13 und eingeschaltete Glaseffekte.
+settings_crt_pixel_size	Pixel size: %1$d px	像素大小：%1$d px	ピクセルサイズ: %1$d px	Taille des pixels : %1$d px	Tamaño de píxel: %1$d px	Piksel boyutu: %1$d px	Pixelgröße: %1$d px
+settings_crt_line_height	Line height: %1$d px	行高：%1$d px	ラインの高さ: %1$d px	Hauteur de ligne : %1$d px	Altura de línea: %1$d px	Satır yüksekliği: %1$d px	Zeilenhöhe: %1$d px
+settings_crt_tv_pixels	%1$d × %2$d TV pixels	%1$d × %2$d 个电视像素	%1$d × %2$d TV ピクセル	%1$d × %2$d pixels TV	%1$d × %2$d píxeles de TV	%1$d × %2$d TV pikseli	%1$d × %2$d TV-Pixel
+settings_crt_lines_down	%1$d lines down the screen	屏幕纵向 %1$d 行	画面の縦 %1$d ライン	%1$d lignes sur la hauteur de l'écran	%1$d líneas de alto en la pantalla	Ekran boyunca %1$d satır	%1$d Zeilen über den Bildschirm
+settings_crt_strength	Strength: %1$d%%	强度：%1$d%%	強さ: %1$d%%	Intensité : %1$d %%	Intensidad: %1$d %%	Güç: %%%1$d	Stärke: %1$d %%
+settings_crt_strength_desc	How much of the effect over the plain picture	效果叠加在原画面上的程度	元の画面に効果をどれだけ重ねるか	La part de l'effet sur l'image normale	Cuánto efecto hay sobre la imagen normal	Efektin düz görüntünün üzerinde ne kadar olduğu	Wie viel vom Effekt über dem normalen Bild liegt
+settings_crt_brightness	Brightness: %1$d%%	亮度：%1$d%%	明るさ: %1$d%%	Luminosité : %1$d %%	Brillo: %1$d %%	Parlaklık: %%%1$d	Helligkeit: %1$d %%
+settings_crt_brightness_desc	Gives back the light the pattern takes	补回图案带走的光	パターンで暗くなった分の光を戻します	Rend la lumière que le motif retire	Devuelve la luz que quita el patrón	Desenin aldığı ışığı geri verir	Gibt das Licht zurück, das das Muster nimmt
+settings_crt_scanlines	Scanlines: %1$d%%	扫描线：%1$d%%	走査線: %1$d%%	Lignes de balayage : %1$d %%	Líneas de escaneo: %1$d %%	Tarama çizgileri: %%%1$d	Scanlines: %1$d %%
+settings_crt_scanlines_desc	How dark the gaps between lines are	行与行之间缝隙的暗度	ライン間の隙間の暗さ	À quel point les espaces entre les lignes sont sombres	Lo oscuros que son los huecos entre líneas	Satırlar arasındaki boşlukların ne kadar karanlık olduğu	Wie dunkel die Lücken zwischen den Zeilen sind
+settings_crt_mask	Mask: %1$d%%	荫罩：%1$d%%	マスク: %1$d%%	Masque : %1$d %%	Máscara: %1$d %%	Maske: %%%1$d	Maske: %1$d %%
+settings_crt_mask_desc	The red, green and blue stripes of the tube	显像管的红、绿、蓝条纹	ブラウン管の赤・緑・青のストライプ	Les bandes rouges, vertes et bleues du tube	Las franjas rojas, verdes y azules del tubo	Tüpün kırmızı, yeşil ve mavi şeritleri	Die roten, grünen und blauen Streifen der Röhre
+settings_crt_glow	Glow: %1$d%%	辉光：%1$d%%	グロー: %1$d%%	Lueur : %1$d %%	Resplandor: %1$d %%	Parıltı: %%%1$d	Leuchten: %1$d %%
+settings_crt_glow_desc	Light bleeding out of bright parts	从明亮处溢出的光	明るい部分からにじみ出る光	La lumière qui déborde des zones claires	Luz que se escapa de las zonas brillantes	Parlak yerlerden taşan ışık	Licht, das aus hellen Stellen ausblutet
+settings_crt_sharpness	Sharpness: %1$d%%	锐度：%1$d%%	シャープさ: %1$d%%	Netteté : %1$d %%	Nitidez: %1$d %%	Keskinlik: %%%1$d	Schärfe: %1$d %%
+settings_crt_sharpness_desc	How hard each pixel's edges are	每个像素边缘的硬度	各ピクセルの輪郭の硬さ	La dureté des bords de chaque pixel	Lo duros que son los bordes de cada píxel	Her pikselin kenarlarının ne kadar sert olduğu	Wie hart die Kanten jedes Pixels sind
+settings_crt_chromatic	Chromatic shift: %1$d%%	色偏：%1$d%%	色ずれ: %1$d%%	Décalage chromatique : %1$d %%	Desfase cromático: %1$d %%	Renk kayması: %%%1$d	Farbversatz: %1$d %%
+settings_crt_chromatic_desc	Red and blue drift apart, as on a tube with its beams out of line	红色和蓝色向两侧分开，就像电子束没对齐的显像管	ビームがずれたブラウン管のように、赤と青が左右に離れます	Le rouge et le bleu s'écartent, comme sur un tube aux faisceaux mal alignés	El rojo y el azul se separan, como en un tubo con los haces desalineados	Kırmızı ve mavi birbirinden ayrılır, ışınları kaymış bir tüpteki gibi	Rot und Blau driften auseinander, wie bei einer Röhre mit verstellten Strahlen
+settings_crt_reset	Reset %1$s	重置%1$s	%1$s をリセット	Réinitialiser %1$s	Restablecer %1$s	%1$s sıfırla	%1$s zurücksetzen
+settings_crt_curve_top	Curve, top & bottom: %1$.1f°	弧度（上下）：%1$.1f°	湾曲（上下）: %1$.1f°	Courbure haut et bas : %1$.1f°	Curva arriba y abajo: %1$.1f°	Eğrilik, üst ve alt: %1$.1f°	Wölbung oben & unten: %1$.1f°
+settings_crt_curve_top_desc	How far the glass bows toward the top and bottom edges. About 16° is the classic tube, and taps follow the bow.	玻璃朝上下边缘弯曲的程度。约 16° 是经典显像管，点按也会跟随弧面。	上下の端に向かってガラスがどれだけ反るか。約 16° が定番のブラウン管で、タップも曲がりに合わせて届きます。	De combien le verre se bombe vers les bords haut et bas. Environ 16° donne le tube classique, et les appuis suivent la courbe.	Cuánto se curva el cristal hacia los bordes de arriba y abajo. Unos 16° es el tubo clásico, y los toques siguen la curva.	Camın üst ve alt kenarlara doğru ne kadar kavislendiği. Yaklaşık 16° klasik tüptür ve dokunuşlar da eğriyi izler.	Wie stark sich das Glas zum oberen und unteren Rand wölbt. Etwa 16° ist die klassische Röhre, und Tippen folgt der Wölbung.
+settings_crt_curve_side	Curve, sides: %1$.1f°	弧度（左右）：%1$.1f°	湾曲（左右）: %1$.1f°	Courbure côtés : %1$.1f°	Curva a los lados: %1$.1f°	Eğrilik, yanlar: %1$.1f°	Wölbung seitlich: %1$.1f°
+settings_crt_curve_side_desc	How far it bows toward the left and right edges. About 14° is the classic tube.	朝左右边缘弯曲的程度。约 14° 是经典显像管。	左右の端に向かってどれだけ反るか。約 14° が定番のブラウン管です。	De combien il se bombe vers les bords gauche et droit. Environ 14° donne le tube classique.	Cuánto se curva hacia los bordes izquierdo y derecho. Unos 14° es el tubo clásico.	Sol ve sağ kenarlara doğru ne kadar kavislendiği. Yaklaşık 14° klasik tüptür.	Wie stark es sich zum linken und rechten Rand wölbt. Etwa 14° ist die klassische Röhre.
+settings_crt_tilt_side	Tilt, sideways: %1$.1f°	左右倾斜：%1$.1f°	左右の傾き: %1$.1f°	Inclinaison latérale : %1$.1f°	Inclinación lateral: %1$.1f°	Yana eğim: %1$.1f°	Neigung seitlich: %1$.1f°
+settings_crt_tilt_side_desc	The TV seen from one side: that side comes nearer and stands taller	从侧面看电视：靠近的一侧更近、更高	テレビを横から見た角度。手前の側が近く、高く見えます	La télé vue de côté : ce côté se rapproche et paraît plus haut	La tele vista de lado: ese lado se acerca y se ve más alto	Televizyon yandan görülür: o taraf yaklaşır ve daha uzun görünür	Der Fernseher von der Seite gesehen: diese Seite kommt näher und wird höher
+settings_crt_tilt_top	Tilt, up & down: %1$.1f°	上下倾斜：%1$.1f°	上下の傾き: %1$.1f°	Inclinaison haut et bas : %1$.1f°	Inclinación arriba y abajo: %1$.1f°	Yukarı ve aşağı eğim: %1$.1f°	Neigung oben & unten: %1$.1f°
+settings_crt_tilt_top_desc	The same from above or below	从上方或下方看	上または下から見た角度	La même chose vue d'en haut ou d'en bas	Lo mismo desde arriba o desde abajo	Aynısı yukarıdan ya da aşağıdan	Dasselbe von oben oder unten
+settings_crt_bezel	Bezel: %1$d%%	边框：%1$d%%	ベゼル: %1$d%%	Cadre : %1$d %%	Marco: %1$d %%	Çerçeve: %%%1$d	Rahmen: %1$d %%
+settings_crt_bezel_desc	A dark frame around the picture	画面四周的深色边框	画面の周りの暗い枠	Un cadre sombre autour de l'image	Un marco oscuro alrededor de la imagen	Görüntünün çevresinde koyu bir çerçeve	Ein dunkler Rahmen um das Bild
+settings_crt_corners	Rounded corners: %1$d%%	圆角：%1$d%%	角の丸み: %1$d%%	Coins arrondis : %1$d %%	Esquinas redondeadas: %1$d %%	Yuvarlak köşeler: %%%1$d	Runde Ecken: %1$d %%
+settings_crt_vignette	Vignette: %1$d%%	暗角：%1$d%%	ビネット: %1$d%%	Vignettage : %1$d %%	Viñeta: %1$d %%	Vinyet: %%%1$d	Vignette: %1$d %%
+settings_crt_vignette_desc	The picture darker toward its edges	画面越靠边越暗	端に向かって暗くなる画面	L'image plus sombre vers les bords	La imagen más oscura hacia los bordes	Görüntü kenarlara doğru kararır	Das Bild wird zu den Rändern dunkler
+settings_crt_glare	Glass glare: %1$d%%	玻璃反光：%1$d%%	ガラスの反射: %1$d%%	Reflet sur le verre : %1$d %%	Reflejo del cristal: %1$d %%	Cam parlaması: %%%1$d	Glasspiegelung: %1$d %%
+settings_crt_glare_desc	A sheen across the glass and a streak of light on the frame	玻璃上的光泽和边框上的一道光	ガラスの光沢と枠に入る光の筋	Un reflet sur le verre et un trait de lumière sur le cadre	Un brillo sobre el cristal y una raya de luz en el marco	Camın üzerinde bir parıltı ve çerçevede bir ışık çizgisi	Ein Schimmer über dem Glas und ein Lichtstreif am Rahmen
+settings_crt_old_tv	Old TV look	老电视效果	昔のテレビ風	Look vieille télé	Aspecto de tele antigua	Eski TV görünümü	Alter-Fernseher-Look
+settings_crt_mask_type	Mask	荫罩	マスク	Masque	Máscara	Maske	Maske
+settings_crt_mask_grille	Aperture grille	栅状荫罩	アパーチャーグリル	Grille d'ouverture	Rejilla de apertura	Açıklık ızgarası	Streifenmaske
+settings_crt_mask_slot	Slot mask	槽状荫罩	スロットマスク	Masque à fentes	Máscara de ranuras	Yarık maske	Schlitzmaske
+settings_crt_mask_shadow	Shadow mask	点状荫罩	シャドウマスク	Masque perforé	Máscara de sombra	Gölge maske	Lochmaske
+settings_crt_mask_size	Mask size: %1$d px	荫罩大小：%1$d px	マスクサイズ: %1$d px	Taille du masque : %1$d px	Tamaño de máscara: %1$d px	Maske boyutu: %1$d px	Maskengröße: %1$d px
+settings_crt_mask_size_desc	One red, green and blue group of the mask	荫罩中一组红、绿、蓝的大小	マスクの赤・緑・青 1 組の大きさ	Un groupe rouge, vert et bleu du masque	Un grupo rojo, verde y azul de la máscara	Maskenin bir kırmızı, yeşil ve mavi grubu	Eine rot-grün-blaue Gruppe der Maske
+settings_crt_mask_strength	Mask strength: %1$d%%	荫罩强度：%1$d%%	マスクの強さ: %1$d%%	Force du masque : %1$d %%	Fuerza de máscara: %1$d %%	Maske gücü: %%%1$d	Maskenstärke: %1$d %%
+settings_crt_mask_strength_desc	How much of the mask shows; the light it takes is given back	荫罩显示的程度；它挡住的光会被补回	マスクの見え方の強さ。マスクで失われた光は戻されます	La part du masque visible ; la lumière qu'il retire est rendue	Cuánto se ve la máscara; la luz que quita se devuelve	Maskenin ne kadar göründüğü; aldığı ışık geri verilir	Wie viel von der Maske zu sehen ist; das Licht, das sie nimmt, wird zurückgegeben
+settings_crt_beam_width	Beam width: %1$d%%	电子束宽度：%1$d%%	ビーム幅: %1$d%%	Largeur du faisceau : %1$d %%	Ancho del haz: %1$d %%	Işın genişliği: %%%1$d	Strahlbreite: %1$d %%
+settings_crt_beam_width_desc	How far a bright line spreads into the gap between lines	明亮的行向行间缝隙扩散的程度	明るい行がライン間の隙間へどれだけ広がるか	Jusqu'où une ligne claire s'étale dans l'espace entre les lignes	Cuánto se extiende una línea brillante hacia el hueco entre líneas	Parlak bir satırın satırlar arasındaki boşluğa ne kadar yayıldığı	Wie weit eine helle Zeile in die Lücke zwischen den Zeilen reicht
+settings_crt_beam_shape	Beam shape: %1$d%%	电子束形状：%1$d%%	ビーム形状: %1$d%%	Forme du faisceau : %1$d %%	Forma del haz: %1$d %%	Işın şekli: %%%1$d	Strahlform: %1$d %%
+settings_crt_beam_shape_desc	Soft and round, or flat on top with hard edges, as a line brightens	行变亮时，是柔和圆润，还是顶部平直、边缘锐利	行が明るくなるにつれ、柔らかく丸いか、上が平らで輪郭が硬いか	Doux et rond, ou plat en haut aux bords nets, quand une ligne s'éclaircit	Suave y redondo, o plano arriba con bordes duros, al brillar una línea	Satır parladıkça yumuşak ve yuvarlak ya da üstü düz ve kenarları sert	Weich und rund oder oben flach mit harten Kanten, je heller eine Zeile wird
+settings_crt_halation	Halation: %1$d%%	光晕：%1$d%%	ハレーション: %1$d%%	Halo : %1$d %%	Halación: %1$d %%	Halasyon: %%%1$d	Halation: %1$d %%
+settings_crt_halation_desc	Light scattered inside the tube, spilling onto the lines	在显像管内散射并落到行上的光	管の中で散乱し、ラインに降りかかる光	La lumière diffusée dans le tube qui retombe sur les lignes	Luz dispersa dentro del tubo que cae sobre las líneas	Tüpün içinde saçılıp satırlara düşen ışık	In der Röhre gestreutes Licht, das auf die Zeilen fällt
+settings_crt_diffusion	Diffusion: %1$d%%	漫射：%1$d%%	拡散: %1$d%%	Diffusion : %1$d %%	Difusión: %1$d %%	Dağılım: %%%1$d	Diffusion: %1$d %%
+settings_crt_diffusion_desc	A soft haze from the glass over the whole picture	玻璃在整个画面上带来的柔和薄雾	画面全体にかかるガラスの柔らかなもや	Un voile doux du verre sur toute l'image	Una neblina suave del cristal sobre toda la imagen	Tüm görüntünün üzerinde camdan gelen yumuşak bir pus	Ein weicher Schleier vom Glas über dem ganzen Bild
+settings_crt_bloom	Bloom: %1$d%%	泛光：%1$d%%	ブルーム: %1$d%%	Bloom : %1$d %%	Resplandor: %1$d %%	Parlama: %%%1$d	Bloom: %1$d %%
+settings_crt_bloom_desc	How much bright parts glow past the mask	明亮部分越过荫罩发光的程度	明るい部分がマスクを越えてどれだけ光るか	À quel point les zones claires brillent au-delà du masque	Cuánto brillan las zonas claras más allá de la máscara	Parlak yerlerin maskenin ötesine ne kadar parladığı	Wie stark helle Stellen über die Maske hinaus leuchten
+settings_crt_edge	Edge shade: %1$d%%	边缘阴影：%1$d%%	縁の影: %1$d%%	Ombre du bord : %1$d %%	Sombra del borde: %1$d %%	Kenar gölgesi: %%%1$d	Randschatten: %1$d %%
+settings_crt_edge_desc	The dark rim around the picture	画面四周的暗边	画面を囲む暗い縁	Le bord sombre autour de l'image	El borde oscuro alrededor de la imagen	Görüntünün çevresindeki karanlık kenar	Der dunkle Rand um das Bild
+fx_curvature	Curve: top & bottom	弧度：上下	湾曲：上下	Courbure : haut et bas	Curva: arriba y abajo	Eğrilik: üst ve alt	Wölbung: oben & unten
+fx_curvature_desc	How far the glass bows toward the top and bottom edges, like an old CRT screen. The middle stays as it is, the edges bow outward and the corners round off. About 16° is the classic tube; the buttons move it a tenth of a degree. Android 13 and later.	像老式 CRT 屏幕一样，玻璃朝上下边缘弯曲的程度。中央保持原样，边缘向外弯，四角变圆。约 16° 是经典显像管；按钮每次调整 0.1 度。需要 Android 13 或更高版本。	昔のブラウン管のように、上下の端に向かってガラスがどれだけ反るか。中央はそのままで、端が外へ反り、角が丸くなります。約 16° が定番のブラウン管です。ボタンで 0.1 度ずつ調整できます。Android 13 以降。	De combien le verre se bombe vers les bords haut et bas, comme un vieil écran cathodique. Le centre reste tel quel, les bords s'arrondissent vers l'extérieur et les coins s'arrondissent. Environ 16° donne le tube classique ; les boutons le règlent au dixième de degré. Android 13 et plus.	Cuánto se curva el cristal hacia los bordes de arriba y abajo, como una vieja pantalla CRT. El centro queda igual, los bordes se arquean y las esquinas se redondean. Unos 16° es el tubo clásico; los botones lo mueven una décima de grado. Android 13 o posterior.	Camın üst ve alt kenarlara doğru ne kadar kavislendiği, eski bir CRT ekran gibi. Orta olduğu gibi kalır, kenarlar dışa kıvrılır ve köşeler yuvarlanır. Yaklaşık 16° klasik tüptür; düğmeler onda bir derece oynatır. Android 13 ve sonrası.	Wie stark sich das Glas zum oberen und unteren Rand wölbt, wie bei einem alten Röhrenbildschirm. Die Mitte bleibt, wie sie ist, die Ränder biegen sich nach außen, die Ecken runden sich. Etwa 16° ist die klassische Röhre; die Tasten verstellen um ein Zehntelgrad. Ab Android 13.
+fx_curvature_sides	Curve: sides	弧度：左右	湾曲：左右	Courbure : côtés	Curva: lados	Eğrilik: yanlar	Wölbung: seitlich
+fx_curvature_sides_desc	How far it bows toward the left and right edges. About 14° is the classic tube.	朝左右边缘弯曲的程度。约 14° 是经典显像管。	左右の端に向かってどれだけ反るか。約 14° が定番のブラウン管です。	De combien il se bombe vers les bords gauche et droit. Environ 14° donne le tube classique.	Cuánto se curva hacia los bordes izquierdo y derecho. Unos 14° es el tubo clásico.	Sol ve sağ kenarlara doğru ne kadar kavislendiği. Yaklaşık 14° klasik tüptür.	Wie stark es sich zum linken und rechten Rand wölbt. Etwa 14° ist die klassische Röhre.
+fx_curvature_crt_app	The CRT effect is curving the whole app, so the lyrics are not curved again. Flatten its curve, or set it to draw over the lyrics only, to use these.	CRT 效果正在弯曲整个应用，所以歌词不会再弯曲一次。要使用这些设置，请把它的弯曲调平，或设为只绘制在歌词上。	CRT エフェクトがアプリ全体を湾曲させているため、歌詞はもう一度曲げません。これを使うには、その湾曲をなくすか、歌詞だけに描くように設定してください。	L'effet CRT bombe toute l'appli, donc les paroles ne sont pas bombées une deuxième fois. Aplatis sa courbe, ou fais-le dessiner sur les paroles seulement, pour utiliser ceux-ci.	El efecto CRT curva toda la app, así que la letra no se curva otra vez. Aplana su curva o haz que solo se dibuje sobre la letra para usar estos.	CRT efekti tüm uygulamayı kavislendiriyor, bu yüzden sözler bir kez daha kavislenmez. Bunları kullanmak için kavisini düzleştir ya da yalnızca sözlerin üzerine çizecek şekilde ayarla.	Der CRT-Effekt wölbt die ganze App, deshalb werden die Lyrics nicht noch einmal gewölbt. Mach seine Wölbung flach oder lass ihn nur über die Lyrics zeichnen, um diese zu nutzen.
+fx_curve_target	Curve	弯曲范围	曲げる対象	Courber	Curvar	Kavis yeri	Wölbung auf
+fx_curve_all	All lyrics	全部歌词	すべての歌詞	Toutes les paroles	Toda la letra	Tüm sözler	Alle Zeilen
+fx_curve_line	Sung line	正在唱的行	歌っている行	Ligne chantée	Línea cantada	Söylenen satır	Gesungene Zeile
+fx_curve_word	Sung word	正在唱的词	歌っている単語	Mot chanté	Palabra cantada	Söylenen kelime	Gesungenes Wort
+tm_multiplayer	Multiplayer	多人游戏	マルチプレイ	Multijoueur	Multijugador	Çok oyunculu	Mehrspieler
+tm_mp_menu_subtitle	Rooms: the same chart, together	房间：同一张谱面，一起玩	ルーム：同じ譜面を、いっしょに	Salons : la même chart, ensemble	Salas: la misma partitura, juntos	Odalar: aynı chart, birlikte	Räume: dieselbe Chart, gemeinsam
+tm_mp_latency	%1$d ms	%1$d 毫秒	%1$d ms	%1$d ms	%1$d ms	%1$d ms	%1$d ms
+tm_mp_refresh	Refresh rooms	刷新房间	ルームを更新	Actualiser les salons	Actualizar salas	Odaları yenile	Räume neu laden
+tm_mp_ok	OK	确定	OK	OK	OK	Tamam	OK
+tm_mp_sign_in	Multiplayer plays as your Tryptify account. Sign in to join a room.	多人游戏使用你的 Tryptify 账号。登录后才能加入房间。	マルチプレイは Tryptify アカウントで遊びます。ルームに入るにはサインインしてください。	Le multijoueur utilise ton compte Tryptify. Connecte-toi pour rejoindre un salon.	El multijugador usa tu cuenta de Tryptify. Inicia sesión para unirte a una sala.	Çok oyunculu, Tryptify hesabınla oynanır. Bir odaya katılmak için giriş yap.	Mehrspieler läuft über dein Tryptify-Konto. Melde dich an, um einem Raum beizutreten.
+tm_mp_sign_in_button	Sign in	登录	サインイン	Se connecter	Iniciar sesión	Giriş yap	Anmelden
+tm_mp_no_server	No rooms server is set up. Add one under Settings › Connections.	尚未设置房间服务器。请在 设置 › 连接 中添加。	ルームサーバーが設定されていません。設定 › 接続 で追加してください。	Aucun serveur de salons configuré. Ajoute-en un dans Réglages › Connexions.	No hay servidor de salas. Añade uno en Ajustes › Conexiones.	Oda sunucusu ayarlanmamış. Ayarlar › Bağlantılar altından bir tane ekle.	Kein Raum-Server eingerichtet. Füge einen unter Einstellungen › Verbindungen hinzu.
+tm_mp_connecting	Connecting to %1$s…	正在连接 %1$s…	%1$s に接続中…	Connexion à %1$s…	Conectando con %1$s…	%1$s sunucusuna bağlanılıyor…	Verbinde mit %1$s…
+tm_mp_failed	Could not reach the rooms server: %1$s	无法连接房间服务器：%1$s	ルームサーバーに接続できません：%1$s	Impossible de joindre le serveur de salons : %1$s	No se pudo conectar con el servidor de salas: %1$s	Oda sunucusuna ulaşılamadı: %1$s	Der Raum-Server ist nicht erreichbar: %1$s
+tm_mp_retry	Try again	重试	再試行	Réessayer	Reintentar	Yeniden dene	Erneut versuchen
+tm_mp_playing_as	Playing as %1$s	当前身份：%1$s	%1$s としてプレイ中	Tu joues en tant que %1$s	Jugando como %1$s	%1$s olarak oynuyorsun	Du spielst als %1$s
+tm_mp_room_name	Room name	房间名称	ルーム名	Nom du salon	Nombre de la sala	Oda adı	Raumname
+tm_mp_create	Create a room	创建房间	ルームを作る	Créer un salon	Crear sala	Oda oluştur	Raum erstellen
+tm_mp_code	Room code	房间代码	ルームコード	Code du salon	Código de sala	Oda kodu	Raumcode
+tm_mp_join	Join	加入	参加	Rejoindre	Unirse	Katıl	Beitreten
+tm_mp_rooms	Open rooms	开放的房间	公開中のルーム	Salons ouverts	Salas abiertas	Açık odalar	Offene Räume
+tm_mp_no_rooms	No rooms yet. Make one, or join by code.	还没有房间。创建一个，或用代码加入。	まだルームはありません。作るか、コードで参加してください。	Pas encore de salon. Crées-en un ou rejoins-en un par code.	Aún no hay salas. Crea una o únete con un código.	Henüz oda yok. Bir tane kur ya da kodla katıl.	Noch keine Räume. Erstelle einen oder tritt per Code bei.
+tm_mp_players	%1$d players	%1$d 位玩家	%1$d 人	%1$d joueurs	%1$d jugadores	%1$d oyuncu	%1$d Spieler
+tm_mp_code_label	Code	代码	コード	Code	Código	Kod	Code
+tm_mp_chart	Chart	谱面	譜面	Chart	Partitura	Chart	Chart
+tm_mp_pick_hint	Pick a chart from your songs. Everyone needs the song on their phone.	从你的歌曲中选一张谱面。每个人的手机上都需要有这首歌。	自分の曲から譜面を選んでください。全員がその曲を端末に持っている必要があります。	Choisis une chart parmi tes morceaux. Tout le monde doit avoir le morceau sur son téléphone.	Elige una partitura de tus canciones. Todos necesitan la canción en su teléfono.	Şarkılarından bir chart seç. Herkesin şarkıyı telefonunda olmalı.	Wähle eine Chart aus deinen Songs. Alle brauchen den Song auf ihrem Handy.
+tm_mp_no_chart	The host has not picked a chart yet.	房主还没有选谱面。	ホストはまだ譜面を選んでいません。	L'hôte n'a pas encore choisi de chart.	El anfitrión aún no ha elegido partitura.	Ev sahibi henüz chart seçmedi.	Der Host hat noch keine Chart gewählt.
+tm_mp_checking	Checking this phone…	正在检查本机…	この端末を確認中…	Vérification de ce téléphone…	Comprobando este teléfono…	Bu telefon kontrol ediliyor…	Dieses Handy wird geprüft…
+tm_mp_pick_chart	Pick a chart	选择谱面	譜面を選ぶ	Choisir une chart	Elegir partitura	Chart seç	Chart wählen
+tm_mp_players_label	Players	玩家	プレイヤー	Joueurs	Jugadores	Oyuncular	Spieler
+tm_mp_results	Results	结果	結果	Résultats	Resultados	Sonuçlar	Ergebnisse
+tm_mp_ready	Ready	已准备	準備完了	Prêt	Listo	Hazır	Bereit
+tm_mp_not_ready	Not ready	未准备	未準備	Pas prêt	No listo	Hazır değil	Nicht bereit
+tm_mp_start	Start	开始	開始	Démarrer	Empezar	Başlat	Start
+tm_mp_leave	Leave	离开	退出	Quitter	Salir	Ayrıl	Verlassen
+tm_mp_chat	Chat	聊天	チャット	Chat	Chat	Sohbet	Chat
+tm_mp_chat_hint	Say something	说点什么	なにか話す	Écris quelque chose	Escribe algo	Bir şey yaz	Schreib etwas
+tm_mp_send	Send	发送	送信	Envoyer	Enviar	Gönder	Senden
+tm_mp_spectating	Watching	观战中	観戦中	Spectateur	Mirando	İzliyor	Schaut zu
+tm_mp_no_song	Does not have the song	没有这首歌	曲を持っていません	N'a pas le morceau	No tiene la canción	Şarkı onda yok	Hat den Song nicht
+tm_mp_kick	Kick	踢出	退出させる	Exclure	Expulsar	At	Entfernen
+tm_mp_state_lobby	Lobby	大厅	ロビー	Salon d'attente	Sala de espera	Lobi	Lobby
+tm_mp_state_playing	Playing	游戏中	プレイ中	En jeu	Jugando	Oynuyor	Spielt
+tm_mp_state_results	Results	结果	結果	Résultats	Resultados	Sonuçlar	Ergebnisse
+tm_mp_waiting	Waiting for the others…	等待其他人…	ほかの人を待っています…	En attente des autres…	Esperando a los demás…	Diğerleri bekleniyor…	Warten auf die anderen…
+tm_mp_back_to_room	Back to room	返回房间	ルームに戻る	Retour au salon	Volver a la sala	Odaya dön	Zurück zum Raum
+tm_mp_pick_title	Room: pick a chart	房间：选择谱面	ルーム：譜面を選ぶ	Salon : choisis une chart	Sala: elige una partitura	Oda: bir chart seç	Raum: Chart wählen
+tm_mp_pick_for_room	Pick for the room	为房间选择	ルーム用に選ぶ	Choisir pour le salon	Elegir para la sala	Oda için seç	Für den Raum wählen
+tm_mp_room_title	Room	房间	ルーム	Salon	Sala	Oda	Raum
+tm_mp_quit_to_room	Quit to room	返回房间	ルームに戻る	Retour au salon	Volver a la sala	Odaya dön	Zurück in den Raum
+crt_reset_slider	Reset %1$s	重置 %1$s	%1$s をリセット	Réinitialiser %1$s	Restablecer %1$s	%1$s sıfırla	%1$s zurücksetzen
+crt_presets	Presets	预设	プリセット	Préréglages	Ajustes predefinidos	Hazır ayarlar	Voreinstellungen
+crt_presets_hint	Tap one to use it. Save keeps the look on screen; Export and Import pass it on as a file.	轻点即可使用。“保存”保留当前效果；“导出”和“导入”以文件形式分享。	タップで適用します。「保存」で今の見た目を残し、「書き出し」と「読み込み」でファイルとして受け渡せます。	Touchez-en un pour l’utiliser. Enregistrer garde le rendu actuel ; Exporter et Importer le partagent sous forme de fichier.	Toca uno para usarlo. Guardar conserva el aspecto actual; Exportar e Importar lo comparten como archivo.	Kullanmak için birine dokun. Kaydet ekrandaki görünümü saklar; Dışa aktar ve İçe aktar onu dosya olarak paylaşır.	Tippe eine an, um sie zu nutzen. Speichern behält den aktuellen Look; Exportieren und Importieren geben ihn als Datei weiter.
+crt_preset_standard	Default	默认	デフォルト	Par défaut	Predeterminado	Varsayılan	Standard
+crt_preset_arcade	Arcade	街机	アーケード	Arcade	Arcade	Atari salonu	Arcade
+crt_preset_trinitron	Trinitron	特丽珑	トリニトロン	Trinitron	Trinitron	Trinitron	Trinitron
+crt_preset_living_room	Living room	客厅	リビング	Salon	Salón	Oturma odası	Wohnzimmer
+crt_preset_vhs	VHS	VHS	VHS	VHS	VHS	VHS	VHS
+crt_preset_import	Import	导入	読み込み	Importer	Importar	İçe aktar	Importieren
+crt_preset_export	Export	导出	書き出し	Exporter	Exportar	Dışa aktar	Exportieren
+crt_preset_delete	Delete %1$s	删除 %1$s	%1$s を削除	Supprimer %1$s	Eliminar %1$s	%1$s sil	%1$s löschen
+crt_preset_name	Preset name	预设名称	プリセット名	Nom du préréglage	Nombre del ajuste	Hazır ayar adı	Name der Voreinstellung
+crt_preset_save_title	Save this look	保存此效果	この見た目を保存	Enregistrer ce rendu	Guardar este aspecto	Bu görünümü kaydet	Diesen Look speichern
+crt_preset_default_name	My CRT	我的 CRT	マイ CRT	Mon CRT	Mi CRT	CRT’m	Mein CRT
+crt_preset_exported	Exported %1$s	已导出 %1$s	%1$s を書き出しました	%1$s exporté	%1$s exportado	%1$s dışa aktarıldı	%1$s exportiert
+crt_preset_export_failed	Could not write the file	无法写入文件	ファイルを書き込めませんでした	Impossible d’écrire le fichier	No se pudo escribir el archivo	Dosya yazılamadı	Die Datei konnte nicht geschrieben werden
+crt_preset_import_failed	Could not import: %1$s	无法导入：%1$s	読み込めませんでした：%1$s	Import impossible : %1$s	No se pudo importar: %1$s	İçe aktarılamadı: %1$s	Import fehlgeschlagen: %1$s

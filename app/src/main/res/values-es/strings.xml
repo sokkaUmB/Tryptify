@@ -2441,8 +2441,6 @@
         <item quantity="many">%1$d canciones</item>
         <item quantity="other">%1$d canciones</item>
     </plurals>
-
-    <!-- Stats and achievements -->
     <string name="stats_tab_stats">Estadísticas</string>
     <string name="stats_tab_achievements">Logros</string>
     <string name="stats_achievements_count">%1$d/%2$d</string>
@@ -2773,8 +2771,6 @@
     <string name="fx_curve_all">Toda la letra</string>
     <string name="fx_curve_line">Línea cantada</string>
     <string name="fx_curve_word">Palabra cantada</string>
-
-    <!-- Trypt Mania: multiplayer rooms -->
     <string name="tm_multiplayer">Multijugador</string>
     <string name="tm_mp_menu_subtitle">Salas: la misma partitura, juntos</string>
     <string name="tm_mp_latency">%1$d ms</string>
@@ -2821,8 +2817,6 @@
     <string name="tm_mp_pick_for_room">Elegir para la sala</string>
     <string name="tm_mp_room_title">Sala</string>
     <string name="tm_mp_quit_to_room">Volver a la sala</string>
-
-    <!-- CRT presets -->
     <string name="crt_reset_slider">Restablecer %1$s</string>
     <string name="crt_presets">Ajustes predefinidos</string>
     <string name="crt_presets_hint">Toca uno para usarlo. Guardar conserva el aspecto actual; Exportar e Importar lo comparten como archivo.</string>

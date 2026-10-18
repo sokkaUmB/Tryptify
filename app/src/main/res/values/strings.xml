@@ -2359,7 +2359,6 @@
     <string name="music_link_listens_song_desc">The song as it comes into the mixer.</string>
     <string name="music_link_listens_bus">This bus</string>
     <string name="music_link_listens_bus_desc">What reaches this bus, before its effects.</string>
-    <!-- Library galaxy: the music on this device as a sky -->
     <string name="library_galaxy">Library galaxy</string>
     <string name="library_galaxy_caption">Your artists, each beside their genre · Bigger stars, more of their music</string>
     <string name="library_galaxy_planets_caption">Planets: their albums, the first nearest · Moons: the tracks · Tap a moon to play</string>
@@ -2373,8 +2372,6 @@
     <string name="library_galaxy_uncharted">Genre not recognised</string>
     <string name="library_galaxy_search_hint">Find an artist in your galaxy</string>
     <string name="library_galaxy_search_none">No artist by that name</string>
-    <!-- Trypt Mania: the Glyph rhythm mode, as a tile under the library galaxy.
-         A name, like the name of the app, so it reads the same in every language. -->
     <string name="trypt_mania" translatable="false">Trypt Mania</string>
     <string name="galaxy_legend_hearted_ring">Dashed ring: a genre kept in your genres</string>
     <string name="galaxy_switch_to_library">Your library galaxy</string>
@@ -2386,8 +2383,6 @@
         <item quantity="one">%1$d track</item>
         <item quantity="other">%1$d tracks</item>
     </plurals>
-
-    <!-- Stats and achievements -->
     <string name="stats_tab_stats">Stats</string>
     <string name="stats_tab_achievements">Achievements</string>
     <string name="stats_achievements_count">%1$d/%2$d</string>
@@ -2710,8 +2705,6 @@
     <string name="fx_curve_all">All lyrics</string>
     <string name="fx_curve_line">Sung line</string>
     <string name="fx_curve_word">Sung word</string>
-
-    <!-- Trypt Mania: multiplayer rooms -->
     <string name="tm_multiplayer">Multiplayer</string>
     <string name="tm_mp_menu_subtitle">Rooms: the same chart, together</string>
     <string name="tm_mp_latency">%1$d ms</string>
@@ -2758,8 +2751,6 @@
     <string name="tm_mp_pick_for_room">Pick for the room</string>
     <string name="tm_mp_room_title">Room</string>
     <string name="tm_mp_quit_to_room">Quit to room</string>
-
-    <!-- CRT presets -->
     <string name="crt_reset_slider">Reset %1$s</string>
     <string name="crt_presets">Presets</string>
     <string name="crt_presets_hint">Tap one to use it. Save keeps the look on screen; Export and Import pass it on as a file.</string>
