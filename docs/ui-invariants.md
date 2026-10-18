@@ -547,7 +547,10 @@ every ♪ to a target, and checks each one moves its own setting and no other.
 ### Titles over descriptions
 
 **A title above a description is at most `FontWeight.Medium`, a size under
-Material's.** The theme's `titleLarge`, `titleMedium` and `bodyLarge` (the row
+Material's, and two weights above its description.** The theme's row title
+(`bodyLarge`) is Medium and its descriptions (`bodyMedium`, `bodySmall`)
+Light: both at Regular, a Settings row's name and the line under it read as
+one weight, told apart only by size and colour. The theme's `titleLarge`, `titleMedium` and `bodyLarge` (the row
 title) are 17, 15 and 15 sp against Material's 18, 16 and 16, with Material's
 line heights, so no row changes height; descriptions keep their sizes. Titles
 forced Bold, ExtraBold or Black over a description (the link editor, the

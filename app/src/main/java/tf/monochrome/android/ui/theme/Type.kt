@@ -29,6 +29,11 @@ fun buildTypography(fontFamily: FontFamily, scale: Float): Typography {
     // description is at most Medium: the owner found bold titles a size up
     // from their text heavy to read. Line heights are Material's, so rows keep
     // their height (ListRowHeightTest).
+    //
+    // And the two are two weights apart: a row title (bodyLarge) is Medium
+    // and a description (bodyMedium, bodySmall) Light. Both at Regular, a
+    // Settings row's name and its line under it read as one weight, told
+    // apart only by size and colour.
     return Typography(
         displayLarge = TextStyle(
             fontFamily = fontFamily,
@@ -88,21 +93,21 @@ fun buildTypography(fontFamily: FontFamily, scale: Float): Typography {
         ),
         bodyLarge = TextStyle(
             fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = FontWeight.Medium,
             fontSize = 15f.scaled(),
             lineHeight = 24f.scaled(),
             letterSpacing = 0.5.sp
         ),
         bodyMedium = TextStyle(
             fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = FontWeight.Light,
             fontSize = 14f.scaled(),
             lineHeight = 20f.scaled(),
             letterSpacing = 0.25.sp
         ),
         bodySmall = TextStyle(
             fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
+            fontWeight = FontWeight.Light,
             fontSize = 12f.scaled(),
             lineHeight = 16f.scaled(),
             letterSpacing = 0.4.sp
