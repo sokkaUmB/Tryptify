@@ -153,6 +153,13 @@ underneath — an opaque frosted pane there gives them an opaque backdrop and th
 come out as flat slabs with the artwork nowhere in them. Haze belongs under a
 sheet that slides *over* a page, like the audio-tools sheet.
 
+**A dialog is opaque.** A dialog has no haze to blur what is behind it
+(below), so any alpha on its container shows the page through its text. The
+mixer's Add Plugin list was `surfaceContainerLow` at card alpha, and the FX
+chain's preset chips, MIX and Add Effect read through the plugin names. Its
+container is `surfaceContainerHigh`, the Material 3 dialog colour, at full
+alpha.
+
 **A pane that needs haze cannot live in a dialog, popup or `ModalBottomSheet.`**
 Those are separate windows. The backdrop was captured into a layer belonging to
 the window behind them, and a haze effect cannot sample a layer from another
@@ -1673,6 +1680,15 @@ under the finger.
 both lead to the song list, Settings to its own page, and Back from the song
 list returns to the menu rather than leaving the mode. The leaderboard returns
 to whichever of the two opened it.
+
+**The menu's three small pills put the icon over the name, and the name
+shrinks before it is cut.** Map editor, Packs and Settings share one row, a
+third of the width each. Laid out as icon-then-name with `maxLines = 1`, a
+wide font (or Width over 100%) wrapped "Map editor" to "Map" and clipped
+"Settings" to "Setting", with nothing to say text was missing. The name sits
+under its icon with `TextAutoSize` down to 9 sp and an ellipsis as the last
+resort; Play and Multiplayer keep the side-by-side layout, since they have
+the width.
 
 **Player options, Settings, the leaderboard and the results are menus, so they
 are the app's.** StepMania's options and scoring, never StepMania's page: a top

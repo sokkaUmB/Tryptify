@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
@@ -42,7 +43,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.util.Locale
 import tf.monochrome.android.R
 import tf.monochrome.android.glyph.asset.GlyphAssetRepository
@@ -231,6 +234,30 @@ private fun MenuPill(
         modifier = modifier,
     ) {
         val scheme = MaterialTheme.colorScheme
+        if (!large && subtitle == null) {
+            // Three to a row: the icon over its name, which shrinks before it would be cut,
+            // so "Map editor" and "Settings" stay whole in a wide font.
+            Column(
+                modifier = Modifier.align(Alignment.Center).padding(horizontal = MonoDimens.spacingSm),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(icon, contentDescription = null, tint = scheme.onSurface, modifier = Modifier.size(20.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = scheme.onSurface,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    autoSize = TextAutoSize.StepBased(
+                        minFontSize = 9.sp,
+                        maxFontSize = MaterialTheme.typography.titleSmall.fontSize,
+                        stepSize = 0.5.sp,
+                    ),
+                )
+            }
+            return@GlassPill
+        }
         Row(
             modifier = Modifier
                 .align(if (large) Alignment.CenterStart else Alignment.Center)
