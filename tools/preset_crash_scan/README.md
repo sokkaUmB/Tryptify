@@ -63,6 +63,8 @@ not an Adreno or a Mali. On the device, `PresetCrashGuard` covers that:
 - On Android 11 and later, it only does so when the system's exit record says
   the death was a native crash or an ANR (app not responding).
 
-Settings › Visual Studio › Crash-flagged presets clears those device flags.
+Crash-flagged presets, on the Visualizer tab of Player Visuals Studio
+(Settings › Visual Studio), clears those device flags. The row only shows
+while some preset is flagged.
 
 Rerun the scan when projectM, its patches or the preset pack change.

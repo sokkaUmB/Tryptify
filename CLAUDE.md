@@ -25,6 +25,11 @@ compaction, so anything that must not be forgotten belongs here, not in chat.
   the gitignored `local.properties` key `tryptmania.cpuServer` (or the
   `TRYPTMANIA_CPU_SERVER` environment variable). Never print it, never commit
   it. Before each commit, check the staged diff does not contain it.
+- The multiplayer rooms server address is kept the same way, in
+  `tryptmania.roomsServer` (or `TRYPTMANIA_ROOMS_SERVER`), under the same rules.
+- A release built without these keys has no built-in chart or rooms server.
+  Before a release build, check both keys are set (without printing them), and
+  say so if they are not.
 - Never commit `keystore.properties` or any `.jks`, and never print keystore
   passwords.
 

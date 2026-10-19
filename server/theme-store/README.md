@@ -9,14 +9,16 @@ build setting (`themeStore.url` in `local.properties` overrides it).
 
 Railway project **humble-charm**, environment **production**:
 
-| Service       | What it is                                              |
-| ------------- | ------------------------------------------------------- |
-| `theme-store` | This file, at `https://theme-store-production-a3db.up.railway.app` |
-| `Postgres`    | The packs, likes, downloads and reports                 |
+| Service       | What it is                                                  |
+| ------------- | ----------------------------------------------------------- |
+| `theme-store` | `index.ts`, at the address the app's `THEME_STORE_URL` names |
+| `Postgres`    | The packs, their pictures, likes, downloads and reports     |
 
-`theme-store` has one variable, `DATABASE_URL = ${{Postgres.DATABASE_URL}}`
-(a reference, so the password never leaves Railway). It creates its tables on
-start, and waits up to a minute for the database if it is still starting.
+`theme-store` has one variable set, `DATABASE_URL = ${{Postgres.DATABASE_URL}}`
+(a reference, so the password never leaves Railway). `SUPABASE_URL` and
+`SUPABASE_ANON_KEY` can also be set; left out, they are the app's own project
+and its public key. It creates its tables on start, and waits up to a minute
+for the database if it is still starting.
 
 ## Sign-in
 
@@ -40,38 +42,52 @@ Auth does not answer, the store says `auth_unreachable` (502) rather than
 
 ## Routes
 
-`GET /health` answers without an account. Everything under `/v1` needs one:
+`GET /health` (and `GET /`) answers without an account, with whether it has a
+database. Everything under `/v1` needs one:
 
 | Route                          | Does                                                    |
 | ------------------------------ | ------------------------------------------------------- |
-| `GET /v1/packs?sort=&q=&page=` | The store, 20 a page. `sort` is `popular`, `new` or `mine` |
+| `GET /v1/packs?sort=&q=&page=` | The store, 20 a page. `sort` is `popular`, `new` or `mine`; `q` searches names |
 | `GET /v1/packs/:id`            | One pack, the pack itself included                      |
 | `GET /v1/codes/:code`          | A pack by its share code, listed or not                 |
 | `POST /v1/packs`               | Publish. At most 50 per person; the pack at most 64 KB  |
 | `PATCH /v1/packs/:id`          | `{"listed": bool}`, author only                         |
 | `DELETE /v1/packs/:id`         | Author only                                             |
-| `GET /v1/likes?ids=`           | Which of those ids this person likes                    |
+| `GET /v1/likes?ids=`           | Which of those ids (up to 100) this person likes        |
 | `PUT` / `DELETE /v1/packs/:id/like` | Like, unlike                                       |
 | `POST /v1/packs/:id/download`  | Counted once per person and pack                        |
 | `POST /v1/packs/:id/report`    | One report per person and pack                          |
 | `GET /v1/packs/:id/snapshot`   | The pack's store picture                                |
 | `PUT /v1/packs/:id/snapshot`   | Set or replace it, author only: the image as the body   |
 
-A store picture is the phone-shaped poster the app draws of a pack with its own
-renderers when it is shared (lyrics, player, and the mini player and tab bar),
-as WebP, at most 160 KB. The server takes WebP, PNG or JPEG by their first
-bytes, whatever the upload says it is. Every listing row carries `snapshot`, a
-short hash of the picture or null, and the app keeps pictures by that hash, so
-a replaced picture is fetched once and an unchanged one never again.
+A published pack has a name of 1 to 40 characters, a description of up to 280,
+1 to 8 of the theme parts, and the pack itself as a JSON string. Its share code
+is 8 characters, with no 0, O, 1 or I. No request body may be over 192 KB.
 
-Errors are `{"error": code}`: `signed_out` (401), `bad_pack` and `bad_image` (400),
-`not_found` (404), `limit_reached` (409), `too_big` (413), `auth_unreachable`
-(502), `not_set_up` (503, no database). `StoreWire.errorOf` in the app reads
-exactly these; anything else is treated as the network failing.
+A store picture is the phone-shaped poster the app draws of a pack with its own
+renderers when it is shared (lyrics, player, and the mini player and tab bar).
+The app sends it as WebP, 540 pixels across and at most 150 KB; the server
+takes up to 160 KB. It takes WebP, PNG or JPEG by their first bytes, whatever
+the upload says it is, and answers with the picture's new hash. Every listing
+row carries `snapshot`, a short hash of the picture or null, and the app keeps
+pictures by that hash, so a replaced picture is fetched once and an unchanged
+one never again.
+
+Errors are `{"error": code}`: `signed_out` (401), `bad_pack`, `bad_image` and
+`bad_request` (400, a `PATCH` without a true or false `listed`), `not_found`
+(404), `limit_reached` (409), `too_big` (413), `server_error` (500),
+`auth_unreachable` (502), `not_set_up` (503, no database) and `busy` (503, no
+free share code in five tries). `StoreWire.errorOf` in the app reads
+`signed_out`, `limit_reached`, `bad_pack` and `too_big` (both as a bad pack),
+`not_found` and `not_set_up`. Anything else, `auth_unreachable` included, is
+treated as the network failing, so the app keeps its session; a 401 with no
+code is still signed out.
 
 The list of theme parts the server accepts and the 64 KB pack cap have to match
-the app's `ThemePart` and `ThemePackCodec.MAX_BYTES`. `ThemeStoreWireTest`
-reads this file and fails if they drift apart.
+the app's `ThemePart` and `ThemePackCodec.MAX_BYTES`, the app's picture cap
+(`SnapshotCodec.MAX_BYTES`) has to fit under the server's, and the body limit
+has to hold a picture and twice a pack. `ThemeStoreWireTest` reads `index.ts`
+and fails if they drift apart.
 
 ## Testing
 

@@ -1,13 +1,13 @@
 # Tryptify Agent Playbook
 
 Repository: `tryptz/Tryptify`
-Prepared: 2026-08-21 · Review targets re-verified against `main` on 2026-08-21
+Prepared: 2026-08-21 · Re-verified against `281c07a2` (1.9.4) on 2026-10-19: paths, test names and every review target
 
 This file is durable project context for coding agents working on Tryptify. Treat the repository itself as the source of truth whenever a path, field, version, or command has changed.
 
 ## Paste into Project Instructions
 
-You are working on Tryptify, an Android music player with a native audio engine, Media3 playback, Jetpack Compose UI, radio/discovery ranking, and configurable glass surfaces.
+You are working on Tryptify, an Android music player with a native audio engine, Media3 playback, Jetpack Compose UI, radio/discovery ranking, configurable glass surfaces, visuals that move with the music, and Trypt Mania, a rhythm game built in.
 
 Before changing code:
 
@@ -15,9 +15,12 @@ Before changing code:
 2. Inspect the current implementation, tests, Gradle configuration, and call sites. Never rely on an old field list or remembered API.
 3. Route the task through the matching playbook in `docs/agent-playbook.md`:
    - themes, haze, glass, mini-player visuals -> Glass Surfaces
+   - a visual setting or mixer knob that moves with the music -> Music Links
    - DSP, JNI, Atmos, loudness, normalization -> Realtime Audio
    - player service, Media3, Cast, Auto, intents, deep links -> Playback Routing
    - radio, recommendation, scoring, discovery -> Radio Ranking
+   - Supabase sync, synced settings, favourites, playlists, presets -> Cloud Sync
+   - Trypt Mania, chart generation, its servers, multiplayer, the CRT effect -> Trypt Mania
    - build upgrades, testing, performance, shrinking, security -> Engineering Gates
 4. Preserve existing behavior unless the request explicitly changes it. Do not remove features, settings, compatibility paths, or tests merely to simplify an implementation.
 5. Keep UI state, persisted settings, serialization, defaults, clamping, previews, and runtime consumers in sync.
@@ -32,14 +35,16 @@ Repository conventions in `AGENTS.md` override this file. When opening a pull re
 | Trigger | Primary playbook | Required secondary check |
 |---|---|---|
 | Player glass, theme, haze, opacity, progress visuals | Glass Surfaces | Compose performance when rendering changes |
+| A setting or knob that follows the music | Music Links | `VisualLinkTargetsTest`, `MusicLinkFollowerTest`, `mod_route_test` |
 | Native DSP, Atmos, JNI, buffers, audio callbacks | Realtime Audio | Native tests and realtime-safety audit |
 | Media3 session/service, notification, Cast, Auto | Playback Routing | Intent/security review for exported surfaces |
 | Radio queue, ranking, discovery, recommendations | Radio Ranking | Deterministic tests and observability |
 | Supabase sync, favourites/playlists/presets persistence, settings sync | Cloud Sync | `SyncOutboxTest`, `SettingsSyncCodecTest`, `PresetSyncMappingTest` |
+| Trypt Mania game, charts, servers, multiplayer, CRT effect | Trypt Mania | `docs/ui-invariants.md` "Trypt Mania", JVM and `glyph/tests` engine tests |
 | AGP/Kotlin/KSP/Hilt upgrade | Engineering Gates | Full clean build and migration review |
 | R8/ProGuard or release-size work | Engineering Gates | Release build plus keep-rule evidence |
 
-The repository also ships a `player-visuals-themes` skill under `.claude/skills/`. It is the detailed reference for authoring Lyrics FX and Player Glass themes; this playbook's Glass Surfaces section is the process around it. Where the two disagree, the model's own `clamped()` wins — see the Known Review Targets below, which record where that skill is currently wrong.
+The repository also ships a `player-visuals-themes` skill under `.claude/skills/`. It is the detailed reference for authoring Lyrics FX and Player Glass themes; this playbook's Glass Surfaces section is the process around it. Where the two disagree, the model's own `clamped()` wins. Its validator now holds the skill's tables to the model (see the Known Review Targets below), so a disagreement there fails loudly.
 
 ## Playbook: Glass Surfaces
 
@@ -56,6 +61,8 @@ Locate and inspect the current definitions and consumers before editing. At mini
 - player and mini-player renderers
 - theme/preset application code
 - `bodyOpacity`, `hazeBlurDp`, `hazeTint`, and `miniProgressBar`
+- the two stored copies: the Studio's Player tab (`player_glass_json`: the play disc, chevrons and dock) and its UI panels tab (`mini_player_glass_json`: the mini player, tab bar and every panel and pill), which offer the same `PRESETS`; `LocalGlassArea` says which one a renderer is drawing
+- the glass fields a music link can move (`VisualLinkTargets`, see Music Links)
 
 Do not reintroduce removed settings such as `popAmount`. Do not copy ranges from documentation when the model's current clamping logic differs.
 
@@ -78,6 +85,39 @@ Note that `PlayerGlassSettings` distinguishes *material* fields, which a theme s
 - Boundary values are tested from the actual clamp contract.
 - No stale setting name remains in docs, validators, or tests.
 
+## Playbook: Music Links
+
+Use for anything that makes a setting move with the music: a visual link (a Studio slider's ♪, the Music links page, a theme pack's links) or a mixer knob's link.
+
+### Source of truth
+
+- `domain/model/VisualLinkTargets.kt`: every visual setting a link may move, its key (`lyrics.`, `player.`, `panels.`, `tv.`, `visualizer.`, by `LinkArea`), its range, and what has to be on for it to show. Its `VisualLinkTarget` doc lists what may not be linked, and why.
+- `domain/model/MusicLink.kt`: `LinkShape`, `VisualLink`, `MusicLinkFollower` (how a band of the music becomes a value) and `VisualLinkCodec` (the saved form); `LinkFormula.kt` for a custom formula.
+- `data/repository/MusicLinksRepository.kt`: every edit goes through it under one lock, so the Studio, the Music links page and a theme import cannot race; it also holds the master pause and the link an open editor is running.
+- `ui/settings/StudioMusicLinks.kt`: the Studio's editing (`VisualLinkEditing`), overlay and undo. `ui/musiclinks/` is the page and the editor; `ui/player/VisualLinks.kt` publishes the live values the renderers read.
+- Mixer knobs: `audio/dsp/model/KnobLink.kt`, `ui/mixer/KnobLinks.kt`, and natively `dsp/mod_route.h`.
+- The rules: `docs/ui-invariants.md` "### Music links".
+
+### Invariants
+
+- A link never moves the saved value. Renderers fold the live values in inside their draw and layer blocks; composition may read only `linkedKeys`. Read in composition, a linked lyric layer recomposes every frame.
+- A target's `min` and `max` are its field's own `clamped()` bounds. The one exception is `lyrics.curvatureSideDeg`, which starts at 0, because a link sets the sides' own angle, never "the same as the top and bottom".
+- What is read in composition, multiplied by time, gating a clock or a sensor, stepped quality, the CRT's curve and tilt (taps are mapped through them), and projectM's own settings are not targets. Do not add one to make a request work; say why it cannot move.
+- Every target has a Studio slider that names it (`linkKey = "…"`, or `glassKey(linkArea, "…")` on the glass tabs), and every name has a target.
+- A linked knob keeps and saves its own value (`Route::base`), and the native follower gives the same numbers as the Kotlin one.
+- Links sync with the settings (`VISUAL_LINKS_JSON` and `MUSIC_LINKS_PAUSED` are in `SETTINGS_SYNC_KEYS`) and travel in theme packs (`ThemePack.links`, cleaned by `VisualLinkCodec.sanitize`). A file from a newer version still opens; a target this build does not know is dropped.
+
+### Workflow
+
+1. For a new target: the field must be read in a draw or layer block. Add it to `VisualLinkTargets` with its clamp bounds and its `Need`, and give its slider the key.
+2. Check all three drivers that run links: the app's (`MainActivity`: `panels.` and `tv.`), the player's (`MainPlayerRoute`: `player.`, `lyrics.`, `visualizer.`), and the Studio's preview.
+3. Walk the edges: the master pause, a link paused on its own, an editor closed without saving, a theme pack applied and undone.
+
+### Completion gates
+
+- `VisualLinkTargetsTest` (every target reads and writes its own setting, moves nothing else, stays in range, has its slider) and `MusicLinkFollowerTest` pass; for knobs, `run_host_tests.sh` runs `mod_route_test` against the same numbers.
+- A linked setting moves on screen with no recomposition per frame.
+
 ## Playbook: Realtime Audio
 
 Use for DSP, Atmos/spatial processing, equalization, loudness, normalization, native code, JNI, buffers, resampling, or audio callback changes.
@@ -99,7 +139,7 @@ Use for DSP, Atmos/spatial processing, equalization, loudness, normalization, na
 3. Inspect callback code for allocation and synchronization hazards.
 4. Add deterministic native unit tests for math and boundary behavior. Use fixtures or generated signals with tolerances, not subjective listening claims.
 5. Add Kotlin/JNI contract tests where practical: invalid sizes, unsupported layouts, lifecycle/reinitialization, and rapid parameter changes.
-6. Register native test executables with CMake/CTest (or the repository's chosen runner) so existing native test sources actually run in CI.
+6. Register native test executables with CMake/CTest (or the repository's chosen runner) so existing native test sources actually run. The Atmos tests now have a CTest project of their own (`atmos/tests/`); note that CI runs no tests at all yet (see Known Review Targets).
 
 ### Completion gates
 
@@ -107,7 +147,8 @@ Use for DSP, Atmos/spatial processing, equalization, loudness, normalization, na
 - Bypass output is verified.
 - No new realtime allocation or blocking path is introduced.
 - Native tests are discoverable and executable, not merely present as source files.
-- `dsp/tests/run_host_tests.sh` passes, including `engine_stress_test` under ASan/UBSan (with `-ffast-math`, as on the phone) and its chaos run under TSan. A new effect gets swept automatically once `snapin_ranges.csv` carries its parameters.
+- `dsp/tests/run_host_tests.sh` passes, including `engine_stress_test` under ASan/UBSan (with `-ffast-math`, as on the phone) and its chaos run under TSan. A new effect gets swept automatically once `snapin_ranges.csv` (`app/src/test/resources/`) carries its parameters.
+- For Atmos changes, the `atmos/tests` CTest project passes (commands in `AGENTS.md`).
 - The change documents any measurable latency or gain impact.
 
 ## Playbook: Playback Routing
@@ -218,6 +259,45 @@ Use for anything that writes a favourite, playlist, playlist entry, EQ or mixer 
 
 Known limitation: a delete made on one device reaches another only if that device hasn't pushed the row since. The manual Sync (`pushAll`) re-uploads every local row, so it can re-create a row deleted elsewhere. Fixing that needs a server-side tombstone (a `deleted_at` column), which is a schema change.
 
+## Playbook: Trypt Mania
+
+Use for the rhythm game: its screens (`ui/glyph/`); its engine, charts, packs, timing and multiplayer (`glyph/`); chart generation (`audio/stepmania/`); its native engine (`cpp/glyph/`); its servers; and the CRT effect, which began as its TV shader and now also draws over the app or the lyrics.
+
+### Source of truth
+
+- The look: `docs/ui-invariants.md` "### Trypt Mania". The playfield is the mode's own (`GlyphTheme`); the menus follow the app's theme, glass and components. Read it before any screen change.
+- The rules of play exist twice: `cpp/glyph/glyph_engine.cpp` (its own `.so`, loaded the first time the mode opens, built without `-ffast-math` because it compares against window edges exactly and keeps NaN as "no offset") and its Kotlin twin, `glyph/engine/GlyphKotlinEngine.kt`, which the JVM tests drive and which plays if the native library cannot load. Every comparison and float operation runs in the same order in both.
+- Charts and packs: `glyph/chart/` (SSC parsing and writing, timing) and `glyph/pack/` (StepMania packs). Generated charts: `audio/stepmania/`, below.
+- The CRT effect: `GlyphTvShader` and `GlyphTvTuning` (`glyph/engine/GlyphPlayerOptions.kt`), drawn by `ui/glyph/GlyphTvShader.kt`. Its presets (`glyph/engine/CrtPreset.kt`, `ui/settings/crt/`) serve the app-wide effect, the Lyrics FX tab and Trypt Mania's Graphics alike.
+- Multiplayer: `glyph/multiplayer/` (`RoomClient`, `RoomProtocol`), against a server that serves `ApiService.MULTIPLAYER`.
+- The StepMania noteskin and theme art are generated by scripts (see `AGENTS.md`); never hand-edit the PNGs.
+- The built-in chart and rooms server addresses are build secrets (`AGENTS.md`). Never print or commit them, in code, tests or docs.
+
+### Workflow
+
+1. Read the "Trypt Mania" invariants and the code that draws the screen you are changing.
+2. A change to the rules of play changes the C++ and the Kotlin together, in the same order of operations, and runs both test sets. Change one and a run is judged differently on and off the phone.
+3. A change to the CRT effect is checked in all three places it draws: over the whole app, over the lyrics only, and over the playfield. While it reshapes the whole app (a curve, a tilt or a frame), taps are mapped through the tube (`tubeSource`), and while it curves the app the lyrics' own curve is set aside.
+4. New user-facing text goes in all seven languages; `trypt_mania` stays untranslated. No look is named after where its shader came from, except CRT-Royale.
+
+### Completion gates
+
+- The mode's JVM tests pass: everything under the `glyph` packages (the `Glyph*Test`s, `StepManiaPackTest`, `StepManiaScoringTest`, `RoomProtocolTest`, `CrtPresetTest`, `GlyphTvTuningTest`) and `audio/stepmania` (`ChartQueueTest`, `ChartPaceTest`, `EnvelopeParityTest`, `RemoteStemAnalysisTest`, `StepManiaMapGeneratorTest`, …): `./gradlew :app:testDebugUnitTest --tests '*.glyph.*' --tests '*.audio.stepmania.*'` (35 classes at 1.9.4).
+- The native engine test passes: `glyph/tests` under CTest (commands in `AGENTS.md`).
+- A screen change is checked against its invariants on a device, in a light and a dark theme.
+
+### Charting is on servers, never the phone
+
+Charts are separated by [TryptMania Parser](https://github.com/tryptz/TryptMania-Parser) servers. A server under Settings › Connections is detected as `ApiService.STEMS` (its `/api/stems/info` answers `{success: true}`), and the probe records what it separates on, `cuda` or `cpu` (`ApiServer.stemDevice`); a server added before that learns it from its first song (`RemoteStemAnalysis.learnDevice`). Trypt Mania's **Fast** mode tries the GPU servers, then any that has not said, then the CPU ones; **Slow** goes to CPU servers only, since an unknown server may be a GPU and Slow must not bill one (`RemoteStemAnalysis.planFor`). The song file goes up; the drums' and each layer's envelope come back (`RemoteStemAnalysis.parse`), not stems. No server, or none that manages the song, and the chart fails with that said: there is no separator on the phone.
+
+The phone's separators were removed: ONNX Runtime with Qualcomm's QNN (the NPU and GPU backends, over 150 MB of native libraries), the model import and download code, and the built-in DSP separator. The server now runs those models. Do not bring a runtime back for a fallback; the fallback is the CPU server. `MonochromeApp` deletes the old model files (`stem-models`, `stem_npu_cache`) on start.
+
+Charting is a line, `ChartQueue`, kept on disk and drained by one `StepManiaGenerationWorker`, with as many songs in flight as the server says it separates at once plus one uploading ahead, at most 43 (`StepManiaGenerationWorker.lanes`, held by `ChartPaceTest`). Generate joins the line; a folder heading's pill and "Chart every song without one" put many in at once, after `GlyphBatchDialog` shows each mode's time and cost (`ChartPace`, learned from the servers' own timings and `pricePerHour`/`idleSeconds`, never by waking one to ask). A song's failure is counted and the batch goes on. `ChartQueueTest` holds the rule that a song added as the worker stops still gets a worker.
+
+The server's envelopes are a port of `TransientEnvelopeBuilder`, held to it by `stemsapi/envelope_parity.json`, which both repositories test against (`EnvelopeParityTest` here): change the builder and the server's port with it, regenerate the fixture there, and copy it here. `STEMS` is not a catalog, and neither are `LYRICS` (the same servers timing lyrics) and `MULTIPLAYER` (the rooms server): every `when` over `ApiService` gives them no search and no quality, and a `STEMS` pill says GPU or CPU.
+
+Lyrics timing runs on the same servers: `ServerLyricsEngine` keeps its own line, drained by `LyricsSyncWorker`, the way charts are, and a song with no file on the phone is downloaded first.
+
 ## Engineering Gates
 
 Use these focused external skill categories when they are available in the agent environment. Their recommendations are inputs, not substitutes for inspecting Tryptify's current code.
@@ -241,16 +321,6 @@ Replace broad package-wide keep rules with evidence-based rules. Confirm reflect
 ### Intent security
 
 Review every exported service/activity/receiver and all OAuth/playback deep links. Validate scheme, host, path, extras, and caller assumptions; use explicit intents where possible; apply permissions and `exported=false` where external invocation is not required. Reassess whether global cleartext traffic is necessary or can be scoped with network security configuration.
-
-### Stem separation is on servers, never the phone
-
-Charts are separated by [TryptMania Parser](https://github.com/tryptz/TryptMania-Parser) servers. A server under Settings › Connections is detected as `ApiService.STEMS` (its `/api/stems/info` answers `{success: true}`), and the probe records what it separates on, `cuda` or `cpu` (`ApiServer.stemDevice`); a server added before that learns it from its first song (`RemoteStemAnalysis.learnDevice`). Trypt Mania's **Fast** mode tries the GPU servers, then any that has not said, then the CPU ones; **Slow** goes to CPU servers only, since an unknown server may be a GPU and Slow must not bill one (`RemoteStemAnalysis.planFor`). The song file goes up; the drums' and each layer's envelope come back (`RemoteStemAnalysis.parse`), not stems. No server, or none that manages the song, and the chart fails with that said: there is no separator on the phone.
-
-The phone's separators were removed: ONNX Runtime with Qualcomm's QNN (the NPU and GPU backends, over 150 MB of native libraries), the model import and download code, and the built-in DSP separator. The server now runs those models. Do not bring a runtime back for a fallback; the fallback is the CPU server. `MonochromeApp` deletes the old model files (`stem-models`, `stem_npu_cache`) on start.
-
-Charting is a line, `ChartQueue`, kept on disk and drained by one `StepManiaGenerationWorker`, two songs in flight so the next uploads while the server separates the current one. Generate joins the line; a folder heading's pill and "Chart every song without one" put many in at once, after `GlyphBatchDialog` shows each mode's time and cost (`ChartPace`, learned from the servers' own timings and `pricePerHour`/`idleSeconds`, never by waking one to ask). A song's failure is counted and the batch goes on. `ChartQueueTest` holds the rule that a song added as the worker stops still gets a worker.
-
-The server's envelopes are a port of `TransientEnvelopeBuilder`, held to it by `stemsapi/envelope_parity.json`, which both repositories test against (`EnvelopeParityTest` here): change the builder and the server's port with it, regenerate the fixture there, and copy it here. `STEMS` is not a catalog: every `when` over `ApiService` gives it no search, no quality and a plain pill, which says GPU or CPU.
 
 ### Compose performance
 
@@ -277,15 +347,17 @@ The two commands that work from a bare clone are the ones in `AGENTS.md`:
 ./gradlew :app:testDebugUnitTest
 ```
 
+The native suites need only a desktop compiler and CMake, no device or NDK: `app/src/main/cpp/dsp/tests/run_host_tests.sh`, and the `atmos/tests` and `glyph/tests` CTest projects (commands in `AGENTS.md`).
+
 Anything that assembles an APK — `assembleDebug`, any release build, the R8 and clean-build rows above — needs the git submodules (`third_party/projectm`, `libusb`) checked out. Without them it fails for reasons unrelated to the change, so do not report that as a regression, and do not claim a shrinker or release-build gate passed on a tree where it could not have run.
 
 Several JVM tests exist specifically to hold the UI invariants in `docs/ui-invariants.md` — `LightSchemesTest`, `CustomSchemeTest`, `GlobeLandClipTest`, `SettingsSearchIndexTest`. They are the guarantee, not a formality. If one fails, fix the code; do not loosen the threshold.
 
 ## Known Review Targets
 
-Re-verified against `main` on 2026-08-21; every item was true at that commit. The first has since been fixed and is kept here as the worked example. Re-check the rest before acting — and treat each as a candidate for its own focused pull request, not as a batch.
+Re-verified at `281c07a2` (1.9.4) on 2026-10-19; every item below is true at that commit. Items marked resolved are kept as worked examples. Re-check the rest before acting — and treat each as a candidate for its own focused pull request, not as a batch.
 
-**Glass Surfaces — resolved.** The `player-visuals-themes` skill's tables and its `validate_theme_ranges.py` had drifted from the model: fourteen wrong Player Glass defaults, `hazeBlurDp`/`hazeTint` undocumented, `miniProgressBar` missing from the personal set, a `popAmount` field that no longer exists, and a `bodyOpacity` floor copied from the Lyrics FX sibling. The validator now reads the bounds, the personal set and the defaults **out of the Kotlin** and checks `SKILL.md`'s tables against them, so the drift cannot recur silently — a field it cannot check is reported, and an unreadable model exits 2 rather than passing. Run it alongside `./gradlew :app:testDebugUnitTest --tests '*LyricsFxSettingsTest' --tests '*PlayerGlassSettingsTest'`.
+**Glass Surfaces — resolved.** The `player-visuals-themes` skill's tables and its `validate_theme_ranges.py` had drifted from the model: fourteen wrong Player Glass defaults, `hazeBlurDp`/`hazeTint` undocumented, `miniProgressBar` missing from the personal set, a `popAmount` field that no longer exists, and a `bodyOpacity` floor copied from the Lyrics FX sibling. The validator now reads the bounds, the personal set and the defaults **out of the Kotlin** and checks `SKILL.md`'s tables against them, so the drift cannot recur silently — a field it cannot check is reported, and an unreadable model exits 2 rather than passing. Run it alongside `./gradlew :app:testDebugUnitTest --tests '*LyricsFxSettingsTest' --tests '*PlayerGlassSettingsTest'`. Re-checked at 1.9.4, after the lyric curve fields (`curvatureDeg`, `curvatureSideDeg`, `curvatureTarget`) arrived: the validator passes and both tests are green. It parses 17 of the 19 glass presets; Float and Clear are references to `FLOAT` and `CLEAR`, which it cannot read, so only the unit tests cover them.
 
 **The "missing" ORDER BY indexes are measured and not worth adding.** Six list
 queries plan as `SCAN … USE TEMP B-TREE FOR ORDER BY` — `favorite_tracks`,
@@ -302,21 +374,32 @@ download and playlist edit, and lose time on a large library. Do not add them
 without a measurement that contradicts this one.
 
 The same probe found where the time actually goes: `getAllTracks`
-(`data/local/db/LocalMediaDao.kt:17`) returns the whole library on every
+(`data/local/db/LocalMediaDao.kt:19`) returns the whole library on every
 emission and costs ~118 ms at 20,000 tracks *already using its index*, and
-`searchTracks` (`:23`) is ~63 ms per search, a leading-`%` LIKE no index can
-serve. Neither is an indexing problem; both are "return fewer rows" problems
-(projection or paging), and there is no Paging 3 in the project.
+`searchTracks` (`:150`) is ~63 ms per search, a leading-`%` LIKE no index can
+serve (it now matches `genre` too, so it is if anything slower). Neither is an
+indexing problem; both are "return fewer rows" problems. Paging 3 has since
+come in for the library's song list (`LocalMediaDao.pagedBy…`, through
+`LocalMediaRepository.pagedTracks`), but `getAllTracks` is still there, and
+its remaining caller takes the whole list: Trypt Mania's song list
+(`glyph/data/GlyphSongRepository.kt:58`, through
+`LocalMediaRepository.getAllTracks`). The search is not paged.
 
-**Instrumentation coverage is absent.** `app/src/` contains only `main` and `test`; there is no `androidTest` source set at all. Navigation, settings persistence and session integration have no device-level coverage.
+**Instrumentation coverage is absent.** `app/src/` tracks only `main` and `test`; there is no `androidTest` source set at all. Navigation, settings persistence and session integration have no device-level coverage. The `:baselineprofile` module drives the app on an emulator or phone, but it records a profile and asserts nothing.
 
-**Native Atmos tests are source files, not a test target.** Twelve test sources sit in `app/src/main/cpp/atmos/tests/` (QMF, JOC, OAMD, EMDF, E-AC-3 header, object engine, HRTF render/motion/polish, pipeline), and `app/src/main/cpp/CMakeLists.txt` contains no `enable_testing`, `add_test`, or a test `add_executable`. Nothing builds or runs them.
+**Native Atmos tests — resolved as a target, but nothing runs them.** `app/src/main/cpp/atmos/tests/CMakeLists.txt` is now a host CMake project that builds every test source there as its own CTest test: sixteen (the foundation's `atmos_tests`, QMF, JOC, OAMD, EMDF, E-AC-3 header, object engine, HRTF render/motion/polish, the two pipelines, the speaker renderer, the channel placer), all passing on a desktop compiler at 1.9.4. The app's `app/src/main/cpp/CMakeLists.txt` still only type-checks the headers for Android. Nothing runs the suite by itself: `run_host_tests.sh` runs only `channel_placer_test` from it, and CI runs no tests (next item).
+
+**CI runs no tests, and builds without Trypt Mania's servers.** `.github/workflows/main.yml` is the only workflow. On a `v*` tag, or by hand, it builds and signs a release and checks the signature. It runs no JVM unit tests and none of the native suites (`run_host_tests.sh`, `atmos/tests`, `glyph/tests`), and it sets neither `TRYPTMANIA_CPU_SERVER` nor `TRYPTMANIA_ROOMS_SERVER`, so the APK it builds has no built-in chart or rooms server (see `AGENTS.md`).
+
+**No baseline profile is committed.** `app/src/release/generated/baselineProfiles/` holds no tracked file at 1.9.4, so a release installs only the profiles the AndroidX libraries ship, and nothing of this app's own startup. Recording one needs an emulator or a phone (`AGENTS.md`, Baseline profile).
 
 **Build-toolchain migration debt.** `gradle.properties` carries `android.builtInKotlin=false` and `android.newDsl=false` against AGP 9.0.0 with Kotlin 2.1.0 / KSP 2.1.0-1.0.29 / Hilt 2.57.1, alongside Media3 1.5.1 and Ktor 3.0.3. These opt-outs are deliberate and load-bearing today; they are also the thing that has to be resolved rather than deleted.
 
+**Two model comments name the Studio's old places.** `PlayerGlassSettings` says it is tuned in the Studio's "Player Glass" tab, and `LyricsFxSettings` that the Studio is under Settings › Interface. The tabs are Player and UI panels, and the Studio opens from Settings' Visual Studio chip or from the player. Comments only; the `player-visuals-themes` skill has the current names.
+
 **Keep rules are package-wide, and one of them keeps nothing at all.** `app/proguard-rules.pro` holds `-keep class io.ktor.** { *; }` and `-keep class androidx.media3.** { *; }`, which keep two large dependencies whole rather than keeping their reflective and serialized entry points. It also holds `-keep class io.appwrite.** { *; }` while there is no Appwrite dependency in `app/build.gradle.kts` or `gradle/libs.versions.toml` — the only surviving reference is a prose comment in `MainActivity.kt` describing OAuth history, so that rule matches nothing. Narrowing the first two needs release-build evidence; dropping the third needs only a check that no serialized name still depends on it.
 
-**Exported surfaces and cleartext are unreviewed.** `AndroidManifest.xml` declares `android:usesCleartextTraffic="true"` application-wide and five components with `android:exported="true"` (one activity, two services, two receivers). Each needs its caller assumptions checked, and the cleartext allowance is a candidate for a scoped `networkSecurityConfig`.
+**Exported surfaces and cleartext are unreviewed.** `AndroidManifest.xml` declares `android:usesCleartextTraffic="true"` application-wide and five components with `android:exported="true"`: one activity (`MainActivity`), two services (`PlaybackService`, `MonochromeMediaBrowserService`) and two receivers (`MediaButtonReceiver`, `NowPlayingWidgetReceiver`). Each needs its caller assumptions checked, and the cleartext allowance is a candidate for a scoped `networkSecurityConfig`.
 
 ## Definition of Done
 

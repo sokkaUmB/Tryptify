@@ -6,7 +6,7 @@ description: >-
   Use whenever the user wants to add, design, remix, or fix a lyrics/player
   "theme", "preset", "skin", or visual style, wants a new look for the now-playing
   screen, or asks what a Lyrics FX / Player Glass parameter does or what its range
-  is, including the lyric god rays and the letter-glass optics. Covers every
+  is, including the lyric god rays, the lyric curve and the letter-glass optics. Covers every
   tunable field, its range and visual effect, the hard rules that
   keep the unit tests green, and a repeatable recipe for coordinated, in-range,
   visually distinct themes.
@@ -16,13 +16,16 @@ description: >-
 
 Tryptify's "themes" for the now-playing screen are **two independent parametric
 preset systems**, both surfaced as chips in the **Player Visuals Studio**
-(Settings → *Now Playing Appearance*). They carry **geometry and optics only —
-never colour or font** (colours are derived from album art at runtime).
+(Settings › the *Visual Studio* chip, which opens it directly, or from the
+player). The Studio has four tabs: *Player* and *UI panels* (both Player
+Glass), *Lyrics* (Lyrics FX) and *Visualizer* (not a preset system). Presets
+carry **geometry and optics only — never colour or font** (colours are derived
+from album art at runtime).
 
 | System | Data class | File | What it styles |
 |---|---|---|---|
 | **Lyrics FX** | `LyricsFxSettings` | `app/src/main/java/tf/monochrome/android/domain/model/LyricsFxSettings.kt` | Lyric typography, the liquid-glass letters, the 3D per-letter wave, the bass beat engine, the reactive glow, the god rays |
-| **Player Glass** | `PlayerGlassSettings` | `app/src/main/java/tf/monochrome/android/domain/model/PlayerGlassSettings.kt` | The refractive glass on the transport buttons + the progress "thermometer" |
+| **Player Glass** | `PlayerGlassSettings` | `app/src/main/java/tf/monochrome/android/domain/model/PlayerGlassSettings.kt` | Refractive glass, kept as two copies: the *Player* tab's (play disc, chevrons, action dock, the progress "thermometer") and the *UI panels* tab's (mini player, tab bar, every panel and pill). Both tabs offer the same `PRESETS`. |
 
 The two rosters are **independent**. Player Glass opens with six themes
 tuned on device (Float, the starting look, first), then an iOS Liquid Glass
@@ -33,7 +36,8 @@ are separate, so the same name may appear in both.
 
 Each system exposes a `companion object` `PRESETS: List<Pair<String, …Settings>>`.
 **Appending a `Pair` to that list is all it takes to add a chip** — the Studio
-renders the list with `FilterChip { … }.forEach` (LyricsFxStudioScreen.kt), so no
+renders the list with `PRESETS.forEach { GlassChoiceChip(…) }`
+(LyricsFxStudioScreen.kt; the chip is `ui/mixer/GlassChoiceChip.kt`), so no
 UI edit is needed. Chip order follows list order; the selected chip lights via
 `matchesPreset`.
 
@@ -46,6 +50,22 @@ user colour pins are `PlayerGlassSettings.tintColor` / `previewBg`, and those ar
 all — it is always the album accent. Do not add a colour/font to a preset; a unit
 test enforces `tintColor == 0 && previewBg == 0` for every preset, and
 `withPersonalFrom` strips personal fields on apply.
+
+## Not in a preset: the CRT effect and music links
+
+- **The CRT effect is not a Lyrics FX field.** The Studio's Lyrics tab ends
+  with its controls, but they are Settings › Appearance › CRT effect's own
+  preferences (`appTvShader`, `appTvTuning`, and whether it draws over the
+  whole app or the lyrics only), with its own presets (`glyph/engine/CrtPreset.kt`,
+  `ui/settings/crt/`). A Lyrics FX preset cannot set or change it. While the
+  CRT effect bows the whole app, the lyrics' own curve is set aside
+  (`appTubeCurved()`), so a curve tuned then looks flat; the Studio says so
+  under the curve sliders.
+- **Music links are not in a preset.** A link (`VisualLinkTargets`, saved by
+  `MusicLinksRepository`) moves a field's drawn value with the music each
+  frame and never its saved value, so a preset needs nothing for it and a
+  chip still lights while a link runs. A Theme Store pack can carry links
+  beside the settings, but that is the pack, not `PRESETS`.
 
 ## Hard rules (these keep the build + tests green)
 
@@ -66,13 +86,18 @@ test enforces `tintColor == 0 && previewBg == 0` for every preset, and
 3. **Set every field you want to differ from `DEFAULT`.** `matchesPreset` compares
    the full non-personal field set with `==`; any field you omit inherits the
    data-class default (listed below), which may not be the look you intend.
-4. **Mind the three gates** (they cut whole subsystems off):
+4. **Mind the gates** (they cut whole subsystems off):
    - Lyrics `rotationDegrees ≤ 0.05` → the entire per-letter 3D path is off, so
      `waveSpeed` / `wavePhaseStep` / `waveTravelDp` do nothing. (`shadowDepth`
      no longer depends on it: the shadow is its own layer under every line.)
    - Lyrics `bassReact ≤ 0.01` → the analyzer is off, so `pumpAmount` / `attackMs`
      / `releaseMs` / `bounce` / `glowRadiusDp` / `glowBrightness` do nothing —
      and neither does `godRayBeat`, which rides the same pulse.
+   - Lyrics curve: both angles under 0.05° (`curvatureDeg`, and
+     `effectiveCurvatureSideDeg`, which is `curvatureDeg` while
+     `curvatureSideDeg` is -1) → no curve layer, and `curvatureTarget` does
+     nothing (`curved`). Android 13+ only, and set aside while the CRT effect
+     bows the whole app.
    - Lyrics `godRays = false` → every other `godRay*` field does nothing.
      Within the rays, `godRaySunSize` only matters with `godRaySource = 1`
      (backlight), and `godRaysFollowWord` only with word-timed (karaoke)
@@ -87,6 +112,10 @@ test enforces `tintColor == 0 && previewBg == 0` for every preset, and
    *before* `Sunburst`: the test `god rays are off by default and every
    earlier preset is untouched` takes the 17 presets ahead of it and asserts
    none of them sets a letter-glass optic or a god-ray field.
+   No Lyrics FX preset may curve the lyrics: `the lyrics are flat unless
+   curved, and the curve stays in range` asserts every preset leaves
+   `curvatureDeg` at 0. Leave `curvatureSideDeg` and `curvatureTarget` at
+   their defaults too, since the sides' angle alone also bends them.
    Player Glass presets must also keep `frost` light, at most 0.15 (`no preset
    uses more than a light frost grain`): frosted glass is made from
    `hazeBlurDp`, and heavy shader grain read as noise on the rim. Blurred
@@ -114,8 +143,9 @@ test enforces `tintColor == 0 && previewBg == 0` for every preset, and
 
 ## Where to add a preset
 
-- Lyrics FX: append after `"Static"` inside `PRESETS = listOf(…)` in
-  `LyricsFxSettings.kt`, i.e. after `"Sea Glass"` (26 presets today).
+- Lyrics FX: append at the end of `PRESETS = listOf(…)` in
+  `LyricsFxSettings.kt`, after `"Sea Glass"` (26 presets today; `"Static"`
+  closes the first 17, and nothing goes between it and `"Sunburst"`).
 - Player Glass: append after `"Holo"` inside `PRESETS = listOf(…)` in
   `PlayerGlassSettings.kt` (19 today: Float, Opal, Ripple, Glint, Blurred,
   Frosted Ripple, Clear, Tinted, Tilt, Pure, Droplet, Prism, Bubble, Mercury,
@@ -163,9 +193,9 @@ Personal fields are omitted here — never set them in a preset.
 | `wavePhaseStep` | 0.05..0.9 | 0.22 | Phase advance per letter. Low = smooth ribbon; high = choppy/glitchy. |
 | `waveTravelDp` | 0..8 | 3 | Vertical bob amplitude of each letter. |
 | `shadowDepth` | 0..1 | 0.7 | Soft shadow cast on the background under every lyric line, falling away from the light (the rays' light when they are on, else the glass key light). 0 = none, 1 = darkest and softest. Not on the letters: it is its own layer outside the glass. |
-| `curvatureDeg` | 0..75 | 0 | The lyrics on a curved tube, as a CRT draws them: how far the glass bows toward the top and bottom edges, in degrees (the sides' are `curvatureSideDeg`) (the CRT shader's warp, `1/cos θ − 1`; about 14° is the classic tube's 1/32). The middle stays as it is, lines bow outward and draw in toward the corners, which round off: never a fish-eye. Set to 0.1° with the Studio's buttons. 0 = flat and no layer. Android 13+. Bends inside the letters' copy, so their shadow and rays bend too. |
+| `curvatureDeg` | 0..75 | 0 | The lyrics on a curved tube, as a CRT draws them: how far the glass bows toward the top and bottom edges, in degrees (the sides' are `curvatureSideDeg`). The bow is the CRT shader's warp, `1/cos θ − 1`: about 16° (1/24) is the classic tube's top and bottom, 14.1° (1/32) its sides. The middle stays as it is, lines bow outward and draw in toward the corners, which round off: never a fish-eye. Set to 0.1° with the Studio's buttons. 0 with the sides unset = flat and no layer. Android 13+. Bends inside the letters' copy, so their shadow and rays bend too. |
 | `curvatureSideDeg` | -1..75 | -1 | The same tube's bow toward the left and right edges, in degrees (about 14° is the classic tube); `curvatureDeg` is then the top and bottom's. -1 = unset: drawn at `curvatureDeg`, so a curve saved with one angle keeps its shape (`effectiveCurvatureSideDeg`). |
-| `curvatureTarget` | 0..2 | 0 | What the curve bends: 0 = all the lyrics as one tube, 1 = a tube over the sung line alone, 2 = over the sung word alone (word-timed lyrics; the line otherwise). Everything else stays flat, and so do the tube's own rounded-off corners. Only while `curvatureDeg` > 0. |
+| `curvatureTarget` | 0..2 | 0 | What the curve bends: 0 = all the lyrics as one tube (`CURVE_ALL`), 1 = a tube over the sung line alone (`CURVE_LINE`), 2 = over the sung word alone (`CURVE_WORD`; word-timed lyrics, the line otherwise). Everything else stays flat, and so do the tube's own rounded-off corners. Only while the lyrics are curved (either angle ≥ 0.05°). |
 | `bassReact` | 0..1 | 0.8 | Master reactive intensity **and gate** (≤0.01 = no pump/pop/glow). |
 | `pumpAmount` | 0..0.25 | 0.08 | Active-line swell on a kick. |
 | `attackMs` | 4..60 | 12 | Pulse attack — how fast it snaps onto a kick. Low = snappy, high = soft swell. |
@@ -222,12 +252,15 @@ relying on hard rule 3: a field you omit inherits these, not a tidy midpoint.
 | `hazeBlurDp` | 0..80 | 40 | Backdrop (Haze) frost blur radius, in dp, for surfaces that gaussian-blur what is behind them. 0 disables the frost layer entirely. Studio slider: *Backdrop blur*. |
 | `hazeTint` | 0..2 | 1 | Strength multiplier on the frost layer's luminance-picked tint. Studio slider: *Backdrop tint*. |
 
-`hazeBlurDp` / `hazeTint` reach further than the rest of this table. They style
-every surface that blurs its backdrop — the mini player bar, the player's
-audio-tools sheet, the nav pill, the genre map, the mixer strips — so a theme
-that sets them is restyling app chrome, not just the now-playing screen. They
-are material (not personal), so a preset may set them and a user who moves
-either slider stops matching every chip.
+`hazeBlurDp` / `hazeTint` reach further than the rest of this table. The app
+keeps two `PlayerGlassSettings` blobs, and both blur their backdrop: the *UI
+panels* copy (`mini_player_glass_json`) is the mini player bar, the tab bar,
+the audio-tools sheet, the speed panel, the search bar, the map panels and the
+mixer strips; the *Player* copy (`player_glass_json`) is the now-playing action
+dock and play disc. A glass theme applied on the UI panels tab is restyling app
+chrome, not just the now-playing screen. They are material (not personal), so
+a preset may set them and a user who moves either slider stops matching every
+chip.
 
 ## Recipe for a new coordinated theme
 
@@ -264,14 +297,25 @@ either slider stops matching every chip.
 ## Adding a brand-new FIELD (not just a preset)
 
 Much heavier — a multi-file change:
-1. Add the field + default to the data class.
+1. Add the field + default to the data class. Default it to the look that
+   ships, so every saved blob and every existing preset draws as before.
 2. Add its clamp line in `clamped()` (finite fallback + `coerceIn`).
 3. Decide **aesthetic vs personal**; if personal, add it to `withPersonalFrom`.
-4. Wire it into the renderer (`LyricsHero.kt` / `LyricsBassFx.kt`) or the shader
+4. Wire it into the renderer (`ui/player/LyricsHero.kt`, `LyricsBassFx.kt`,
+   `LyricsGodRays.kt`, `LyricsShadow.kt`, `LyricsCurvature.kt`) or the shader
    uniform push in `ui/player/LiquidGlass.kt` for the glass path.
 5. Add a Studio control in `LyricsFxStudioScreen.kt` so it's user-tunable.
-6. Extend persistence/sync if needed and update the `*SettingsTest.kt` (they assert
-   clamp bounds, round-trip, `matchesPreset`, `withPersonalFrom`).
+6. Music links: if the field is read in a draw or layer block and may move with
+   the music, add a `VisualLinkTarget` in `domain/model/VisualLinkTargets.kt`
+   with the clamp bounds, and give its Studio slider `linkKey = "lyrics.<field>"`
+   (glass sliders use `glassKey(linkArea, "<field>")`). `VisualLinkTargetsTest`
+   fails on a target with no slider and on a `linkKey` with no target. If it may
+   not be linked, its reason belongs in `VisualLinkTarget`'s doc list.
+7. Add its row to the table in this file. The validator fails on a tunable
+   field the table leaves out, and on a wrong range or default.
+8. Update the `*SettingsTest.kt` (they assert clamp bounds, round-trip,
+   `matchesPreset`, `withPersonalFrom`). The settings sync and Theme Store
+   packs carry the whole JSON blob, so neither needs a change for a new field.
 
 Shareable codes (`TRYPTFX1:` / `TRYPTGLASS1:`) re-clamp on encode and decode with a
 tolerant codec (`ignoreUnknownKeys`, `encodeDefaults`), so old codes stay importable

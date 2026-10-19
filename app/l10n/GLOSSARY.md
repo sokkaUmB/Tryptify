@@ -45,6 +45,12 @@ not Spain-only), Turkish, German.
 | Move with the music (action) | 随音乐而动 | 音楽に合わせて動かす | Bouger avec la musique | Mover con la música | Müzikle hareket ettir | Mit der Musik bewegen |
 | Theme Store (screen) / theme (a pack in it) | 主题商店 / 主题 | テーマストア / テーマ | Boutique de thèmes / thème | Tienda de temas / tema | Tema Mağazası / tema | Theme-Store / Theme |
 | Share my look (action) | 分享我的外观 | 自分の外観を共有 | Partager mon look | Compartir mi estilo | Görünümümü paylaş | Meinen Look teilen |
+| Share code (label) / code (a theme's, in sentences) | 分享码 | 共有コード / コード | Code de partage / code | Código para compartir / código | Paylaşım kodu / kod | Teilcode / Code |
+| CRT effect (Settings › Appearance) | CRT 效果 | CRT エフェクト | Effet CRT | Efecto CRT | CRT efekti | CRT-Effekt |
+| Library galaxy | 音乐库星系 | ライブラリ銀河 | Galaxie de la bibliothèque | Galaxia de la biblioteca | Kitaplık galaksisi | Bibliotheks-Galaxie |
+| Achievements (stats tab) | 成就 | 実績 | Succès | Logros | Başarılar | Erfolge |
+| Multiplayer (Trypt Mania) | 多人游戏 | マルチプレイ | Multijoueur | Multijugador | Çok oyunculu | Mehrspieler |
+| room (Trypt Mania multiplayer) | 房间 | ルーム | salon | sala | oda | Raum |
 | token (Discord, ListenBrainz) | 令牌 | トークン | jeton | token | belirteç | Token |
 | scrobble | 同步收听记录（scrobble） | スクロブル | scrobbler | scrobbling | scrobble | scrobbeln |
 
@@ -61,12 +67,21 @@ Name a menu as the person's own device shows it in their language.
 | Developer Mode / Copy Channel ID (Discord) | 开发者模式 / 复制频道 ID | 開発者モード / チャンネルIDをコピー | Mode développeur / Copier l’identifiant du salon | Modo desarrollador / Copiar ID del canal | Geliştirici Modu / Kanal ID’sini Kopyala | Entwicklermodus / Kanal-ID kopieren |
 | Blend modes: Normal · Screen · Additive · Soft Light (image editors) | 正常 · 滤色 · 相加 · 柔光 | 通常 · スクリーン · 加算 · ソフトライト | Normal · Superposition · Addition · Lumière tamisée | Normal · Trama · Aditivo · Luz suave | Normal · Ekran · Toplama · Yumuşak ışık | Normal · Negativ multiplizieren · Addieren · Weiches Licht |
 | Google Takeout | Google Takeout | Google データエクスポート（Takeout） | Google Takeout | Google Takeout | Google Takeout | Google Takeout |
+| Equalizer → Advanced (Nothing X) | 均衡器 → 高级 | イコライザー → 詳細 | Égaliseur → Avancé | Ecualizador → Avanzado | Ekolayzer → Gelişmiş | Equalizer → Erweitert *(all unverified against Nothing X)* |
 
 ## Never translated
 
 Brand and format names: Tryptify, Spotify, Apple Music, YouTube Music,
-TuneMyMusic, exportify.net, THX (but “Spatial Audio” after it is), AutoEQ,
-CSV, JSPF, XSPF, XML, FLAC, projectM, MilkDrop, Wave Candy, Oxford.
+TuneMyMusic, exportify.net and Exportify, THX (but “Spatial Audio” after it
+is), AutoEQ, CSV, JSPF, XSPF, XML, FLAC, projectM, MilkDrop, Wave Candy,
+Oxford, Nothing Ear, Nothing X.
+
+Trypt Mania, the rhythm game, is a name in every language. Its own row
+(`trypt_mania`) is in `NON_TRANSLATABLE` in `generate_strings.py`, so it has
+no translations; strings that name it keep it as it is (“Trypt Mania でプレイ”).
+
+CRT stays CRT, and CRT-Royale, the one look named after its shader, stays
+CRT-Royale.
 
 Plugin and console vocabulary stays English, as in every DAW, localized
 hosts included: Oxford's knob labels (INPUT, CURVE, THRESH, RATIO, ATTACK,

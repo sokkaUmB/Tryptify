@@ -1,8 +1,15 @@
 # Tryptify StepTech Glyph asset pack
 
-An original, dependency-free SVG system for Tryptify's StepMania **Glyph** and
-**Training Ground** modes. The artwork combines an 8 px technical grid with
-rounded arcade shapes, strong silhouettes, and restrained UI chrome.
+An original, dependency-free SVG system for **Trypt Mania**, Tryptify's
+StepMania-style rhythm game, and its **Training Ground**. The mode was called
+Glyph before it was renamed in the UI; its code still lives in the `glyph`
+packages. The artwork combines an 8 px technical grid with rounded arcade
+shapes, strong silhouettes, and restrained UI chrome.
+
+It is the **Classic** noteskin. The two retro noteskins (Retro glass, the
+default, and Retro) are StepMania's own art under `assets/stepmania/skins/retro`,
+and whatever they do not provide (lifts, fakes, the UI icons) comes from this
+pack, so every noteskin is complete.
 
 ## Pack contents
 
@@ -43,18 +50,21 @@ still communicated by shape when color perception is limited.
 - Snap gameplay art to whole physical pixels after lane scaling.
 - Render receptors above the lanes and note explosions above receptors.
 - Tile hold/roll bodies vertically without spacing; the body edges are seamless.
-- `ui/icons` and `ui/decor` use `currentColor`. Replace or tint it with the
-  current Material color when converting to Compose or Android VectorDrawable.
+- `ui/icons` and `ui/decor` use `currentColor`. `GlyphRasterizer` draws it in
+  the tint it is given, the current Material color.
 - Notes and feedback contain their own semantic colors and should not receive a
   global tint.
 - Preserve the SVG `viewBox` when exporting. Do not crop the intentional effect
   padding.
 - Keep touch targets at least 48 dp even though the icon artwork is 24 dp.
 
-Android does not decode SVG resources by itself, and this project does not
-currently include Coil's SVG decoder. Convert the selected masters to Compose
-paths/Android VectorDrawable during implementation, or add a deliberate SVG
-decoder dependency rather than silently rasterizing them.
+Android does not decode SVG by itself, and the app takes on no SVG library.
+`GlyphSvgParser` reads exactly the subset this pack uses (`svg`, `g`, `rect`,
+`path`, `circle` and a `title`) and refuses anything else when it loads.
+`GlyphAssetRepository` then has `GlyphRasterizer` draw each asset once, before
+play, at the size the lane was measured at, and drops those bitmaps when the
+lane changes size. Keep new artwork inside that subset, or the parser has to
+grow with it.
 
 ## Manifest
 
@@ -64,11 +74,11 @@ or an equivalent typed mapping instead of constructing filenames ad hoc.
 
 ## Regeneration
 
-Run from the repository root:
-
-```bash
-python3 tools/generate_stepmania_glyph_assets.py
-```
-
-The generator is deterministic. All production artwork is original to
-Tryptify and contains no copied StepMania noteskin graphics.
+The pack was made by a generator script that is not in this repository, so the
+SVGs and `manifest.json` here are the source: edit them directly and keep the
+manifest in step. `GlyphAssetCatalogTest` checks that all 117 files are there,
+that every manifest entry parses and matches its file's `viewBox`, and that
+only the UI art is tintable. The palette has a second copy in
+`GlyphAssetRepository.FALLBACK_PALETTE`, used when the manifest cannot be read,
+so change both together. All production artwork is original to Tryptify and
+contains no copied StepMania noteskin graphics.
