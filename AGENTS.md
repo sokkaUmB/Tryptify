@@ -14,15 +14,15 @@ list rows, themes and Theme Store pictures, the globe, the galaxies, stats
 charts, Trypt Mania (its menus, playfield and the CRT effect), or the Discord
 presence artwork. Every rule in it is a bug that was already found and fixed;
 none of them are obvious from the code, which is exactly why they kept getting
-undone. A slab drawn at a tenth opacity looks like a deliberate choice. A haze
-pane under a button looks like an improvement. A search bar laid out inline
-looks perfectly ordinary.
+undone. A slab drawn at a tenth opacity looks like a deliberate choice. A
+frosted pane behind a list row looks like an improvement. A search bar laid out
+inline looks perfectly ordinary.
 
-The build those rules describe is commit `5ec5b072`. If something looks wrong and
-you are not sure whether it changed, diff against it:
+The build those rules describe is commit `281c07a2` (1.9.4). If something looks
+wrong and you are not sure whether it changed, diff against it:
 
 ```
-git diff 5ec5b072 -- app/src/main/java/tf/monochrome/android/ui
+git diff 281c07a2 -- app/src/main/java/tf/monochrome/android/ui
 ```
 
 ## Route the work before starting

@@ -4,14 +4,17 @@ Guidance for anyone (human or agent) changing this codebase's interface. None of
 this is style preference: every rule is a bug that was found the hard way,
 usually from a screenshot, and reverting one brings the bug back.
 
-The build these describe is commit `5ec5b072` ("Match the search bars to the mini
-player, and undo the player haze"), plus the glass tab bar that replaced the page
-list on Home (see "Pages and the tab bar"), so the accepted state can be diffed
-against rather than argued about:
+The build these describe is commit `281c07a2` (1.9.4: Trypt Mania, music links,
+the CRT effect, Material 3 lists and the typography table), so the accepted state
+can be diffed against rather than argued about:
 
 ```
-git diff 5ec5b072 -- app/src/main/java/tf/monochrome/android/ui
+git diff 281c07a2 -- app/src/main/java/tf/monochrome/android/ui
 ```
+
+Until 1.9.4 the reference was `5ec5b072` ("Match the search bars to the mini
+player, and undo the player haze"); everything accepted since is written into the
+sections below.
 
 These describe the current, accepted look. If a change makes one of them false,
 the change is wrong even if it compiles and the tests pass.
@@ -26,11 +29,18 @@ for it to read as glass:
    *sibling* of, never a descendant: a haze effect cannot sample a layer it is
    drawn inside, and doing so paints the source's flat base colour instead of a
    blur. That is the "solid slab" failure.
-2. **Frost** — the tint over the blur. Black at 0.32 on dark themes, white at
-   0.45 on light. `GlassPanel` and the mini player use the same numbers on
-   purpose; they are the same material and are usually on screen together.
+2. **Frost** — the tint over the blur, `playerFrostTint`: black at 0.32 over a
+   dark ground, white at 0.26 over a light one, times the glass's Backdrop tint
+   (`hazeTint`, 0 on the Float preset). Every haze pane frosts through it
+   (`Modifier.glassFrost`), so `GlassPanel`, the mini player and the player's
+   sheets are the same material; they are usually on screen together. The
+   light side was 0.45, nearly twice the dark one, and buried the blur under
+   most of a solid colour: milky slabs on a light theme.
 3. **The shader slab** — a rounded rect drawn at **full tint opacity**, relit by
    the AGSL `playerGlass` modifier.
+
+Where the live lens runs (below), it takes the place of the first two layers:
+it draws the real backdrop, blurred and bent, with no frost veil.
 
 **The slab must be solid.** The shader builds its bevel and rim from the alpha
 heightfield of what is drawn beneath it. A near-transparent fill leaves it
@@ -87,8 +97,8 @@ through them (seen on device). `materialSurface` always draws.
 `materialSurface`.** The player hero's badges and buttons and the
 visualizer's: a container fill is light on a light theme, under white text.
 
-**Prototype: the mini player, the tab bar, `GlassPanel` and the full player's disc and dock bend the live screen**
-(`LiveGlassLens.kt`, behind `LIVE_LENS_GLASS`). **The mini player and the tab bar are one
+**The mini player, the tab bar, `GlassPanel` and the full player's disc and dock bend the live screen**
+(`LiveGlassLens.kt`, behind `LIVE_LENS_GLASS`, on since 1.9.3). **The mini player and the tab bar are one
 material and must match exactly:** same lens, same blur share
 (`LIVE_LENS_CHROME_BLUR_SHARE`, now the same share as every other pane's, kept
 as its own name so the two bars always pass one value), same frost, and the
@@ -146,12 +156,23 @@ rule as haze: drawing a source's layer from inside that source recurses. The two
 surfaces are one material, so they move together; turning the flag off restores
 the haze pane on both, exactly.
 
-**Do not put a haze pane under a punched glass slab** (the transport disc, the
-action dock, the mini player). Those are drawn solid and made see-through by the
-shader's body opacity, and what shows through is whatever is composited
-underneath — an opaque frosted pane there gives them an opaque backdrop and they
-come out as flat slabs with the artwork nowhere in them. Haze belongs under a
-sheet that slides *over* a page, like the audio-tools sheet.
+**A punched glass slab has its backdrop pane under it, clipped to its own
+shape** (the transport disc, the action dock, the mini player). Those are drawn
+solid and made see-through by the shader's body opacity, and what shows through
+the body and the punched holes is whatever is composited underneath. Each lays
+its pane first: the live lens where it runs, else a haze frost of a source it
+is a sibling of (`PlayerGlassHaze` over the player background, which carries
+the artwork and the reactive glow; `MiniBarBackdrop` on the bar), clipped to
+the slab and drawn after the slab's drop shadow, so the holes open onto
+blurred light rather than the raw background and the shadow reads round the
+edges but not through the glass casting it. This rule used to say the
+opposite: the first pane put under the dock and the disc gave the body
+opacity an opaque backdrop to be see-through against, and they came out as
+flat light slabs (taken out in `5ec5b072`). It came back clipped and after the
+shadow (`c607bc59`), and the live lens lays no frost veil at all. What must
+not go under them is an opaque pane that is not the backdrop: a haze of a
+source the slab sits inside paints that source's flat base colour. Haze also
+belongs under a sheet that slides *over* a page, like the audio-tools sheet.
 
 **A dialog is opaque.** A dialog has no haze to blur what is behind it
 (below), so any alpha on its container shows the page through its text. The
@@ -219,9 +240,14 @@ it safe:
   what every device with no decoded cover falls back to.
 - Whoever provides the art decides whether there is any: `rememberBackdropArt`
   returns null when it should not be used and a null art binds `uArtMix = 0`.
-  In the player that means **only while the blurred album background is on**,
-  because that is the only time the artwork is really behind the glass; with it
-  off the backdrop is the flat wash, which the shader reconstructs exactly.
+  In the player that means **only while the blurred album background is
+  drawn**, because that is the only time the artwork is really behind the
+  glass; without it the backdrop is the flat wash, which the shader
+  reconstructs exactly. The background is no longer a setting
+  (`playerBlurredBackground` reads true, see "Settings has one home per
+  setting"), so in the player the art is always used. The gate is still in
+  `MainPlayerRoute` (`rememberBackdropArt(…, blurredBackground)`); a player
+  background without the artwork has to switch it off again.
 
 The **mini player is the exception, and deliberately so.** Away from the player
 the artwork is not behind the bar — the app's own content is — so its glass uses
@@ -231,13 +257,13 @@ use the honest mapping. A 64dp bar is about a twelfth of a phone, so the slice
 of a 64px thumbnail behind it is roughly five pixels and refraction moves it by
 a fraction of one — the effect would be invisible. And there is nothing honest
 to map: PANE is a material property of the bar, not a window onto something, so
-it is not gated on the blurred-background setting either. Its scrim is flat
+it is not gated on the player's blurred background either. Its scrim is flat
 (zero height in `uArtScreen`) and read off the bar's own position on screen,
 because the gradient it stands in for is not really there.
 
 The **Glass spectrum on the hero art is the other exception**. It lies on the
-cover itself, so the cover is behind it whatever the blurred-background setting
-says, and the hero hands it the art unconditionally while that style is on. The
+cover itself, so the cover is behind it whatever the player's background is,
+and the hero hands it the art unconditionally while that style is on. The
 mapping is still honest: the cover box records itself with `backdropFrame`, and
 `playerGlass(artFrame = …)` resolves the pane against that box through
 `anchorInFrame` rather than against the window, so the band lenses the bottom of
@@ -251,6 +277,14 @@ the width of the cover. Do not replace the ramp with a blur of the edge: the
 output alpha is capped by the input alpha, so a soft edge comes out as a smudge,
 and do not drop it — without it the body reads as a flat pane.
 
+The backdrop art (`uArt`) is a bitmap and not a live layer capture because it
+cannot be one: `RenderEffect.createRuntimeShaderEffect` binds exactly one
+input, this shader spends it on `content` (the alpha heightfield every bevel
+normal comes from), and no public API turns a `GraphicsLayer` into an
+`android.graphics.Shader` for the second. The thumbnail is 64px on purpose — it
+stands in for a 64dp blur, and lensing a sharp cover would refract detail that
+is nowhere on the screen.
+
 The **waterfall is one mesh, drawn with `drawVertices`**, not a `drawLines`
 and a `drawPath` per line. A stroke wider than a hairline with round caps is
 something the renderer cannot batch: `drawLines` strokes every segment as a
@@ -261,13 +295,6 @@ ribbon with a one-pixel transparent fringe (its anti-aliasing) and the ground
 as a strip under it, in back-to-front order, in one or two draws.
 `WaterfallMeshTest` holds the geometry. Below Android 10, where a mesh is not
 hardware-drawn, each line is one stroked path, never `drawLines`.
-
-It is a bitmap and not a live layer capture because it cannot be one:
-`RenderEffect.createRuntimeShaderEffect` binds exactly one input, this shader
-spends it on `content` (the alpha heightfield every bevel normal comes from),
-and no public API turns a `GraphicsLayer` into an `android.graphics.Shader` for
-the second. The thumbnail is 64px on purpose — it stands in for a 64dp blur, and
-lensing a sharp cover would refract detail that is nowhere on the screen.
 
 Search bars and other app chrome take **the mini player's** settings
 (`LocalMiniPlayerGlass`), not the player's. The player route overrides
@@ -558,9 +585,11 @@ theme's titles (`titleLarge`, `titleMedium`, `titleSmall`) and row title
 (`bodyLarge`) are SemiBold; descriptions (`bodyMedium`, `bodySmall`) are
 Regular. At one weight a Settings row's name and the line under it read as
 one, told apart only by size and colour; Medium over Light was tried and read
-too thin. Titles and row titles sit a size under Material's (17, 15, 15
-against 18, 16, 16) with Material's line heights, so no row changes height.
-All of it lives in one table, `TypeDefaults`, which `buildTypography` reads.
+too thin. `titleLarge`, `titleMedium` and the row title are a size under where
+the app had them (17, 15, 15 sp against 18, 16, 16) and keep the line heights
+they had, so no row changes height. All of it lives in one table,
+`TypeDefaults` (`domain/model/TypographySettings.kt`), which `buildTypography`
+reads.
 
 **A title over a description takes its style's weight; it does not force
 one.** The titles that used to force Bold or Black (the link editor, the
@@ -641,7 +670,7 @@ behaviour and it is not negotiable:
   around it — that animates the container's height, so measuring there reports a
   value climbing from zero and the inset chases it.
 - Fixed chrome the bar must never cover: Settings' tab rail sits *above* the bar
-  (it says which of nine tabs you are on, and searching is exactly when you are
+  (it says which of eleven tabs you are on, and searching is exactly when you are
   about to be moved between them). Discover's genre rail lives on the page, not
   inside the bar's pane — a pane four rows deep covers the feed it filters.
   Discover's bar is the field alone, one row like every other: its "Browse the
@@ -716,7 +745,7 @@ weight word) into one entry, "Imported · 3 styles", and deleting it deletes
 them all. A chosen font is stored as one file's path, and loading it brings
 the rest of its family, each file at its own weight and slope
 (`loadAppFontFamily`, and the lyrics' font through `loadImportedFontFamily`),
-so Medium titles draw the Medium file. A family of one file is declared at
+so a SemiBold title draws the SemiBold file. A family of one file is declared at
 every weight over that file, as before. `FontFamiliesTest` runs it on the
 app's own Inter, which is five files.
 
@@ -783,8 +812,9 @@ start pages folded: tab switching would become two taps.
 mode, whose own controls run to the bottom edge (`chromeHiddenRoutes`). The
 download pill follows the same list. A screen that needs the window for only
 part of its life asks for it with `HideAppChrome` instead of joining the list:
-the genre galaxy in full screen, and Trypt Mania only while a chart is being
-played or practised. Its song list, panels and results are menus and keep the
+either galaxy in full screen, the music link editor while it is open, and
+Trypt Mania only while a chart is being played, practised or edited in the map
+editor. Its song list, panels and results are menus and keep the
 bar like any other pushed screen; putting the whole route on the list hid the
 tab bar and the mini player from the menus too. While a screen holds
 `HideAppChrome` the nav host runs it full-bleed, so it pads the system bar
@@ -1267,8 +1297,9 @@ added for a nicer planet breaks that.
 `LibraryArtist`/`LibraryAlbum` (domain); the ViewModel lays them out. The
 `data` package imports nothing from `ui`.
 
-**Genres ⇄ Mine swaps the map, and keeps the view** (`switchSafe`,
-`GalaxyHandoff`). Both maps are laid out in one frame, so the camera and the
+**Switching maps swaps the map, and keeps the view** (the title bar's "Your
+library galaxy" on the genre map, "Genre galaxy" on the library map;
+`switchSafe`, `GalaxyHandoff`). Both maps are laid out in one frame, so the camera and the
 layout are handed over and the other map opens on the same part of the sky.
 The map being left comes off the back stack; otherwise switching back and forth
 stacked maps up behind Back. The handoff is taken once, and a map opened any
@@ -1832,8 +1863,11 @@ player's background, with the artwork composited into it. They are two framings
 of the same engine and they must never be on screen together:
 `ProjectMEngineRepository` refcounts attached surfaces and only the *first* owns
 the native bridge, whose GL objects belong to that one context. A second view
-would render from objects it does not have. `MainPlayerRoute` gates the overlay
-on `viewMode != VISUALIZER`.
+would render from objects it does not have. `MainPlayerRoute` keeps them apart
+with ambient winning: while the ambient visualizer is on, the view mode is moved
+off VISUALIZER to the cover. It used to be the other way round, the overlay
+standing down whenever the view mode was VISUALIZER, and switching ambient on
+then seemed to do nothing, because the hero kept the engine.
 
 The overlay is a `TextureView` for a reason that cannot be worked around: a
 `SurfaceView` is composited by SurfaceFlinger either *behind* the window
@@ -1887,7 +1921,8 @@ together.
 ```
 
 `assembleDebug` needs git submodules (`third_party/projectm`, `libusb`) checked
-out; without them it fails for reasons unrelated to any change here.
+out, recursively (projectM has a nested one; see AGENTS.md); without them it
+fails for reasons unrelated to any change here.
 
 ## Commits
 

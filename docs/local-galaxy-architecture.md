@@ -1,8 +1,22 @@
 # The library galaxy — architecture
 
-Status: **built** (all seven steps below). Read `docs/ui-invariants.md` → "The
-genre galaxy" and "The library galaxy" first. Every rule there applies to this
-map too, and this document assumes them rather than repeating them.
+> **Status at 1.9.4 (checked against `281c07a2`): built.**
+>
+> - **Built:** all seven steps of the build order below (`f1a4a75f`,
+>   `44792046`), and after them the planets' and moons' sound: an album's tempo,
+>   key, loudness and dynamic range on its planet, a track's tempo and key on
+>   its moon, and each local track's dynamic range measured as it plays
+>   (`0bd3dba6`, `94bc8b45`, `5abb16d8`, `2bb78a15`, all in 1.9.4). Both maps
+>   also share the Galaxy / Timeline pills and the search bar under the title.
+> - **Not built:** composer stars for classical (left as an option, below);
+>   hearts and "explored" on the library map (no local equivalent yet).
+> - **Built differently from the plan:** see the last section, "Where the
+>   build differs from the plan above". Signatures and constants in the text
+>   below are corrected to the code.
+
+Read `docs/ui-invariants.md` → "The genre galaxy" and "The library galaxy"
+first. Every rule there applies to this map too, and this document assumes
+them rather than repeating them.
 
 Where the code lives:
 
@@ -11,11 +25,15 @@ Where the code lives:
 | Star field seam | `ui/discover/galaxy/StarField.kt`, `GenreStarField.kt` |
 | Library stars | `ui/discover/galaxy/LibraryStarField.kt` |
 | Library systems | `ui/discover/galaxy/LocalSystems.kt` (and `PlanetSystem.kt`: `MoonRef`, `SystemLimits`) |
+| How a planet looks (tone, haze, spin, shade) | `ui/discover/galaxy/PlanetLook.kt` |
 | Input records | `domain/model/LibraryGalaxyModel.kt` |
 | Shared stage | `ui/discover/GalaxyStage.kt` (`GalaxyStage`, `GalaxyStageScope`, `GalaxyHandoff`) |
+| Shared controls | `ui/discover/GalaxyControls.kt` (`GalaxyLayoutPills`, `GalaxySearchBar`, `matchStars`) |
 | Data | `data/local/galaxy/LocalGalaxyRepository.kt`, galaxy queries in `LocalMediaDao` and `PlayEventDao` |
+| An album's sound | `data/local/galaxy/AlbumAggregates.kt` (median tempo, commonest key, LUFS, median DR) |
+| Dynamic range | `audio/meter/DynamicRangeTapProcessor.kt`, `DynamicRangeRules.kt`, `player/DynamicRangeRecorder.kt`, `cpp/dsp/meter/dynamic_range_meter.h` |
 | Screen | `ui/library/galaxy/LibraryMapScreen.kt`, `LibraryGalaxyViewModel.kt` |
-| Tests | `LibraryStarFieldTest`, `LocalSystemsTest` (plus the genre galaxy's own, unchanged in substance) |
+| Tests | `LibraryStarFieldTest`, `LocalSystemsTest`, `PlanetLookTest`, `AlbumAggregatesTest`, `MoonLabelTest`, `DynamicRangeRulesTest`, and the native `dynamic_range_meter_test` (plus the genre galaxy's own, unchanged in substance) |
 
 ## The idea in one table
 
@@ -112,6 +130,15 @@ class StarField(
 )
 ```
 
+*As built:* `StarField(ids, names, families, family, prominence, startYear,
+links, layout, phase, systemLimits)`. The positions are not arrays on the
+field: its `layout` (a `StarLayout`) writes each star's sound and time position
+into the scene, handed the scene's own seeded `gauss()` for a layout that has
+always drawn from it (the genre map) and free to seed itself per star (the
+library). There is no `halo` flag: the halo is a place the library layout puts
+a star, and its family is `uncharted`. `phase` (twinkle) is optional, and
+`systemLimits` says whose caps the field's systems take.
+
 - `GalaxyScene(field: StarField)` keeps everything decorative: dust, core, halo
   stars, sky, nebulae, flows. `GenreStarField.from(graph)` holds today's layout
   code (`bundleArms`, `timeRadius`, the baked x/y).
@@ -128,13 +155,16 @@ class StarField(
 
 - `genreId` → `starId`. `Planet.artist` → `key` + `label`.
 - `Moon.entry: ChartEntry` → `Moon.ref: MoonRef`, a sealed type:
-  `Chart(entry)` | `Local(trackKey, title, artworkUri)`. Tapping a moon
+  `Chart(entry)` | `Local(trackId, key, title, label)` (as built: the track's
+  row id and file path, and its cleaned name for the label). Tapping a moon
   dispatches on it.
 - The caps (`MAX_PLANETS = 6`, `MAX_MOONS = 4`) become a `SystemLimits`
   parameter. `minOrbitGap` and `reachFor` are derived from it, so the "moons
   never cross" rule holds for any limits.
 - New and optional: `Planet.ringCount` (tracks not shown as moons) and
-  `PlanetSystem.beltCount` (albums not shown as planets). The ring sits between
+  `PlanetSystem.beltCount` (albums not shown as planets). As built these are
+  lists, `Planet.ring` and `PlanetSystem.belt`, with the counts read off them,
+  so the system's sheet can list every album and track. The ring sits between
   the planet's surface and its first moon orbit (`< 2.2 ×` the largest planet),
   so it cannot touch a moon. The belt sits past the last planet's reach, and
   `reachFor` includes it, so the camera frames it. Both are batched
@@ -143,7 +173,8 @@ class StarField(
 
 ### `GalaxyStage` (extracted from `GenreMapScreen`)
 
-`GenreMapScreen` is 1,700 lines, and most of it is not about genres: camera,
+`GenreMapScreen` was 1,700 lines (about 990 since the stage came out), and most
+of it was not about genres: camera,
 glide, reserves, full screen, orientation, pacer, look sheet, lifecycle. Pull
 that into a `GalaxyStage` composable that takes a `StarField`, a system, and
 slots for the dock and sheets. Then the genre screen and the library screen are
@@ -155,18 +186,25 @@ flag through 1,700 lines is how the invariants get undone.
 
 ## Layer 2: the pure builders
 
-### `LibraryStarField.build(artists, artistGenres, collabs, graph)`
+### `LibraryStarField.build(artists, collabs, graph)`
+
+(As built, each `LibraryArtist` carries its own genre tags with their track
+counts, so there is no separate `artistGenres` argument; an optional `frame`
+argument is the genre map's places, `GenreStarField.frame(graph)`.)
 
 1. **Main genre per artist**: the most frequent tag across their tracks that
-   `GenreGraph.resolve` recognises. Split multi-genre tags the same way
-   `MediaScanner` does (around `MediaScanner.kt:388`). No resolvable tag → the
+   `GenreGraph.resolve` recognises, ties to the alphabetically first. A tag is
+   tried whole first; only when that fails is it split on `;`, `/`, `,` and `|`
+   (`splitTags`, its own split, not the scanner's). The genre must also be a
+   star on the genre map's disc. No resolvable tag → the
    artist goes in the **halo**, above and below the disc, instead of on it:
    "genre unknown" is shown honestly rather than guessed. `resolve` returning
    null instead of guessing is the same principle.
 2. **Sound position**: the genre star's sound position, plus a 3D Gaussian
-   scatter (fixed σ ≈ 60 units, flattened like the disc). The scatter is seeded
-   by the artist's own key, then pushed out radially to stay clear of
-   `DISK_OUTER`.
+   scatter (as built, σ 46 units across the disc and 14 off its plane:
+   `SCATTER`, `SCATTER_THICKNESS`). The scatter is seeded by the artist's own
+   key, then pushed out radially past the core's clearing
+   (`GalaxyScene.CORE_CLEAR`, which lies outside `DISK_OUTER`).
 3. **Time position**: the genre-map spiral, using the artist's first album year,
    on their genre family's arm (`bundleArms`, reused).
 4. **Links**: collaboration pairs, deduplicated, kept only when both artists are
@@ -178,16 +216,21 @@ seeded by a **stable hash of that star's own key** (`PlanetSystem.stableHash`
 already exists), never by a shared sequential `Random`. Adding one artist must
 not move any other star. The test below pins that.
 
-### `LocalSystems.build(albums, tracks, plays, starRadius, limits)`
+### `LocalSystems.build(starId, albums, starRadius, limits)`
 
-- **Which albums are planets**: up to `limits.maxPlanets` (proposed 8), picked by
-  lifetime plays, ties broken by running time. They are laid out in release order
+(As built, each `LibraryAlbum` carries its tracks, its plays ever and in the
+last 30 days, and its tempo, key, loudness and dynamic range, so tracks and
+plays are not separate arguments.)
+
+- **Which albums are planets**: up to `limits.maxPlanets` (8), picked by
+  lifetime plays, ties broken by running time, then track count. They are laid out in release order
   (year, then title), with the debut on the innermost orbit. The rest go into the
   belt.
-- **Which tracks are moons**: up to `limits.maxMoons` (proposed 6), picked by
-  plays, ties broken by track number. Moon orbits follow the album's own running
-  order. The rest go into the ring.
-- **Heat** (plays in the last 30 days) is drawn as **glow**, not distance. An album
+- **Which tracks are moons**: up to `limits.maxMoons` (6), picked by
+  plays, ties broken by running order (disc, then track number). Moon orbits
+  follow the album's own running order. The rest go into the ring.
+- **Heat** (plays in the last 30 days) is drawn as **glow**, not distance, as a
+  share of the system's hottest album. An album
   you have on repeat burns brighter, and nothing moves when you play it.
 - The phase, tilt and node of every body are hashed from its own key (album
   `groupingKey`, track `filePath`), the same way `PlanetSystem.from` hashes names
@@ -250,20 +293,28 @@ the data layer imports nothing from the UI.
 | Body | Key | Why |
 |---|---|---|
 | Star | `artist:` + `local_artists.normalizedName` | unique-indexed and survives a rescan; autoincrement ids may not |
-| Planet | `local_albums.groupingKey` | already normalised title + artist + year |
-| Moon | `filePath` (or `musicbrainzTrack` when present) | unique per file |
+| Planet | `local_albums.groupingKey` (as built, `ungrouped\|<artist id>` for tracks with no album row) | already normalised title + artist + year |
+| Moon | `filePath` (as built, always; `musicbrainzTrack` is not used) | unique per file |
 
 ## Special cases
 
 - **Compilations** ("Various Artists", or an album where most tracks have
   different artists): one *Compilations* star near the inner disc. Its planets
   are the compilations, and it links to every track artist who is also a star.
-- **Unknown Artist**: one dim star in the halo.
+  *Built* for the album artists "Various Artists", "Various", "VA" and "V.A."
+  only (an album of mixed artists under a real album artist stays that
+  artist's), placed just past the core's clearing; its links are the ordinary
+  collaboration pairs.
+- **Unknown Artist**: one dim star in the halo. *Built* as a star drawn at 0.4
+  of its size (`UNKNOWN_DIM`) in the uncharted colour; it sits in the halo
+  unless its tracks' tags resolve to a genre, which puts it beside that genre.
 - **Empty library**: no scene. Show the Library's empty state with its scan
-  action, not an empty sky.
+  action, not an empty sky. *Built differently*: the map shows a line over the
+  empty sky ("Nothing in your library yet. Scan a music folder in Library to
+  fill the sky.") and has no scan button of its own.
 - **Classical**: composer-as-star would read better for some libraries. Leave it
   as a later option; it doesn't change the architecture, only the key the
-  builder groups by.
+  builder groups by. *Not built.*
 
 ## Performance budget
 
@@ -294,6 +345,12 @@ The genre map is tuned for **771 stars**. A library can have 5,000 artists.
   - orbits in release order
   - moons never cross under `SystemLimits(8, 6)`
   - a play changes glow, never an orbit
+- Added with the planets' sound (1.9.4): `PlanetLookTest` (each look's default
+  is the old drawing exactly, so chart planets are untouched),
+  `AlbumAggregatesTest` (median tempo, commonest key, LUFS from ReplayGain or
+  R128, median DR), `DynamicRangeRulesTest` (only a whole, clean play is kept)
+  and the native `dynamic_range_meter_test`. `MoonLabelTest` holds the moons'
+  names.
 
 ## Build order (each step its own commit, each green)
 
@@ -307,12 +364,17 @@ The genre map is tuned for **771 stars**. A library can have 5,000 artists.
 5. **Screen**: `LibraryMapScreen` on the stage. Dock: Play (shuffle artist),
    Albums (the system sheet), Artist page, and up to three collaborators as pills
    (the "related genres" slot). Planet tap → Play album / Open album. Moon tap →
-   play the track.
+   play the track. *Built:* a planet tap flies the camera to it, and the dock
+   then shows the album's name with Play album and Open album; a moon plays its
+   track with the rest of the album after it.
 6. **Entry points**: a Library galaxy tile under Folders on the local Library tab, and a
    *Genres · Mine* switch on the genre map that keeps the camera (it's the same
-   frame).
+   frame). *Built* as a title-bar action, see Decisions.
 7. **Polish**: ring and belt art, heat glow, compilations star, level-of-detail
-   promotion, then a "The library galaxy" section in `ui-invariants.md`.
+   promotion, then a "The library galaxy" section in `ui-invariants.md`. *Built.*
+
+All seven are built. They landed together in `f1a4a75f`; `44792046` then
+added the shared pills and search and moved the entry tile under Folders.
 
 ## Decisions (settled)
 
@@ -340,8 +402,21 @@ The genre map is tuned for **771 stars**. A library can have 5,000 artists.
   share their plays; tracks are matched within their album, so that only
   matters for the planet's glow and its choice as a planet over the belt.
 - **The switch is a title-bar action, not a segmented control.** It has to be
-  there whatever is selected, and the HUD is only up with nothing selected.
+  there whatever is selected, and the bottom controls (now the Galaxy /
+  Timeline pills) are only up with nothing selected.
 - **Hearts and "explored" are empty on the library map.** There is no local
   equivalent yet; the renderer takes them as plain id sets if one comes.
 - **The panel reserve is one measured height** for whichever bottom panel is up
-  (HUD or dock), not one per kind. The camera's reserve eases either way.
+  (the pills or the dock), not one per kind. The camera's reserve eases either way.
+- **Both maps search, and share their controls** (`GalaxyControls.kt`): the
+  app's search bar under the title, its matches as pills, and the Galaxy /
+  Timeline pills in place of the panel the plan's HUD was. Surprise is in the
+  title bar. Not in the plan; added in `44792046`.
+- **The sound of an album and a track reaches its planet and moon** (1.9.4, not
+  in the first plan): the rows in the table above for planet colour,
+  atmosphere, spin and shadow, and for moon pace and glow, and the dynamic
+  range measured as a track plays. Each has a default that is the old look
+  exactly, so a value that is missing changes nothing.
+- **Moon names are cleaned** (`moonLabel`, through `TrackNames.label`): a title
+  tag that carries the track number or the artist ("03 Artist - Title") loses
+  them on the map (`d0c841fe`).
