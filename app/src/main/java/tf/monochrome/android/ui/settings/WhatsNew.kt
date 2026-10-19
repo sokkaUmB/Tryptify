@@ -134,12 +134,48 @@ object WhatsNew {
     /** Sharing a whole look, and taking someone else's. */
     private const val THEME_STORE = "Theme Store"
 
+    /** The rhythm game in Library › Local, its charts, packs and rooms. */
+    private const val TRYPT_MANIA = "Trypt Mania"
+
+    /** The old-TV look over the whole app or the lyrics. */
+    private const val CRT_EFFECT = "CRT effect"
+
+    /** The Fonts page: the main font, its width and the typography table. */
+    private const val FONTS = "Fonts"
+
+    /** The account button and page, listening stats and achievements. */
+    private const val STATS = "Account and stats"
+
     /** Newest first. */
     val releases: List<WhatsNewRelease> = listOf(
         WhatsNewRelease(
             versionCode = 194,
             versionName = "1.9.4",
             entries = listOf(
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = TRYPT_MANIA,
+                    title = "A rhythm game on your own music",
+                    body = "Trypt Mania, in Library › Local, plays your songs by StepMania's rules and in its look. Charts are made for you on the built-in chart server, and Multiplayer plays the same chart with friends in a room.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = TRYPT_MANIA,
+                    title = "Charts, packs and a map editor",
+                    body = "Chart any MP3 or FLAC, import StepMania packs or browse StepMania Online, and chart by hand in the Map editor. Your charts are saved as a pack StepMania and ITGmania can play.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = CRT_EFFECT,
+                    title = "The app through an old TV",
+                    body = "Settings › Appearance › CRT effect draws every screen, or only the lyrics, as Scanlines, CRT, CRT-Royale and more, with a curved tube, a bezel and presets of your own. Android 13 and later.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = FONTS,
+                    title = "A typography table",
+                    body = "Settings › Fonts gives each of 15 kinds of text its own font, weight, size, width and spacing. The Width slider makes every letter narrower or wider, and a font imported as several files is one font with all its weights.",
+                ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
                     section = MUSIC_LINKS,
@@ -198,13 +234,19 @@ object WhatsNew {
                     kind = WhatsNewKind.NEW,
                     section = LIBRARY,
                     title = "Track info",
-                    body = "A song's menu (long-press, or its ⋮) has Track info: its file's format, sample rate, bit depth and bitrate, and every tag in it, ready to copy. The menu itself is glass.",
+                    body = "A song's menu (its ⋮) has Track info: its file's format, sample rate, bit depth and bitrate, and every tag in it, ready to copy. The menu itself is glass.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
                     section = LIBRARY,
                     title = "Choose a song row's badges",
                     body = "Settings › Appearance › Song row badges turns off the source, quality, format, download and length marks on every song list, one by one or all at once, so a song's artist and album get the whole line.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Hold a song to hear it",
+                    body = "Press and hold a song in any list to hear up to 25 seconds of it, from its drop when one is known; let go and it stops. Choosing several songs now starts from Select in a song's ⋮ menu.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
@@ -325,6 +367,36 @@ object WhatsNew {
                     section = USB_DAC,
                     title = "USB DAC bit-perfect routing",
                     body = "It pointed Android's output at a USB DAC, still through Android's own mixer. Exclusive USB DAC is the bit-perfect path, so it is the one switch now.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LYRICS,
+                    title = "Lyrics timed word by word",
+                    body = "Songs without word-timed lyrics are timed on the server after 15 seconds of play (Settings › Appearance › Server lyrics), and Player ⋮ › Edit lyrics lets you stamp each line or word yourself.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = STATS,
+                    title = "Listening stats and achievements",
+                    body = "Account › Listening stats: glass cards and fourteen charts of how you listen, and ten achievements to chase. The account button shows your own picture, and you pick your own username.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = LOOK,
+                    title = "Lighter lists",
+                    body = "Song rows, tiles, folders and cards are plain Material 3 surfaces instead of the old frosted glass, and titles are SemiBold over Regular descriptions.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = EQUALIZER,
+                    title = "The preamp turns bass and treble down too",
+                    body = "With the AutoEQ correction off, the Preamp did nothing and a bass boost played at full level. It now applies whenever the correction or a tone knob changes the sound.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.REMOVED,
+                    section = LOOK,
+                    title = "The Now Playing group in Settings",
+                    body = "Its rows repeated settings found elsewhere: View Mode is a tap on the artwork, and the player's tint follows Appearance › Dynamic Colors.",
                 ),
             ),
         ),
