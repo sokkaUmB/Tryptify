@@ -2824,4 +2824,6 @@
     <string name="settings_bluetooth_sync_more">遅延を長く</string>
     <string name="settings_bluetooth_sync_set_there">設定 › オーディオ › Bluetooth 同期 でデバイスごとに設定します。</string>
     <string name="tm_sync_saved_for">%1$s 用に保存され、アプリ全体で使われます。</string>
+    <string name="stats_ach_unlocked_toast">実績を解除</string>
+    <string name="stats_ach_view">見る</string>
 </resources>

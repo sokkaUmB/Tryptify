@@ -1372,6 +1372,15 @@ Stats and Achievements are **two pages under one glass pill**, not two tabs of
 a Material `TabRow`; the pill is a pair of `GlassChoiceChip`s, as on the chart
 page's view and compare switches.
 
+**An achievement completed shows once, as a glass pill from the top**
+(`AchievementUnlockedPill`): its icon in a gold ring, "Achievement unlocked",
+its name and View, which opens Stats on Achievements. Chrome, so the mini
+player's material and a sibling of the app's haze source, as the DAC popup is.
+`AchievementWatcher` is the only place an achievement is stamped, the Stats
+screen reading its states, so none is stamped without its pill; the first check
+after the pill arrived stamps what was already done quietly. Gold is for the
+ring and the icon only: as text it does not read on light glass.
+
 ### Trypt Mania
 
 **The playfield is the mode's own; the menus are the app's.** `GlyphTheme`'s

@@ -2892,4 +2892,6 @@
     <string name="settings_bluetooth_sync_more">Gecikmeyi artır</string>
     <string name="settings_bluetooth_sync_set_there">Her cihaz için Ayarlar › Ses › Bluetooth senkronizasyonu bölümünden ayarlanır.</string>
     <string name="tm_sync_saved_for">%1$s için kaydedilir ve tüm uygulamada kullanılır.</string>
+    <string name="stats_ach_unlocked_toast">Başarı açıldı</string>
+    <string name="stats_ach_view">Gör</string>
 </resources>

@@ -13,6 +13,7 @@ import tf.monochrome.android.data.achievements.AchievementStore
 @InstallIn(SingletonComponent::class)
 interface AchievementEntryPoint {
     fun achievementStore(): AchievementStore
+    fun achievementWatcher(): AchievementWatcher
 }
 
 /**
@@ -20,6 +21,14 @@ interface AchievementEntryPoint {
  * model of its own to inject it into. Null where there is no Hilt application
  * (a preview), so recording there is simply skipped.
  */
+@Composable
+fun rememberAchievementWatcher(): AchievementWatcher? {
+    val app = LocalContext.current.applicationContext
+    return remember(app) {
+        runCatching { EntryPointAccessors.fromApplication(app, AchievementEntryPoint::class.java).achievementWatcher() }.getOrNull()
+    }
+}
+
 @Composable
 fun rememberAchievementStore(): AchievementStore? {
     val app = LocalContext.current.applicationContext

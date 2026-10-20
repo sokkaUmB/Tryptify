@@ -155,7 +155,10 @@ sealed class Screen(val route: String) {
     data object ParametricEq : Screen("parametric_eq")
     data object ParametricEqEdit : Screen("parametric_eq_edit")
     data object Profile : Screen("profile")
-    data object Stats : Screen("stats")
+    data object Stats : Screen("stats?page={page}") {
+        /** page: 0 = Stats, 1 = Achievements (the unlocked pill's View). */
+        fun createRoute(page: Int = 0) = "stats?page=$page"
+    }
     /** One Stats chart, opened to be looked at closely; see statsChartRoute. */
     data object StatsChart : Screen("stats_chart/{chart}?range={range}")
     data object ListeningStats : Screen("listening_stats")
@@ -957,9 +960,16 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                         ProfileScreen(navController = navController)
                     }
                 }
-                composable(Screen.Stats.route) {
+                composable(
+                    route = Screen.Stats.route,
+                    arguments = listOf(navArgument("page") { type = NavType.IntType; defaultValue = 0 }),
+                ) { entry ->
                     tf.monochrome.android.devedit.DevEditScreen("stats") {
-                        StatsScreen(navController = navController, onOpenPage = openMainPage)
+                        StatsScreen(
+                            navController = navController,
+                            onOpenPage = openMainPage,
+                            initialPage = entry.arguments?.getInt("page") ?: 0,
+                        )
                     }
                 }
                 composable(
@@ -1245,6 +1255,21 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             glass = miniPlayerGlass,
             modifier = Modifier.align(Alignment.TopCenter),
         )
+
+        // An achievement just completed: a pill over whatever is open, the
+        // same chrome and haze as the DAC popup above. View opens it.
+        tf.monochrome.android.ui.stats.rememberAchievementWatcher()?.let { watcher ->
+            val pendingAchievements by watcher.pending.collectAsStateWithLifecycle()
+            tf.monochrome.android.ui.stats.AchievementUnlockedPill(
+                pending = pendingAchievements,
+                onShown = watcher::shown,
+                onView = { navController.navigateTool(Screen.Stats, Screen.Stats.createRoute(page = 1)) },
+                hazeState = hazeState,
+                glass = miniPlayerGlass,
+                reducedMotion = tf.monochrome.android.ui.theme.reduceMotion(),
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
     }
 }
 

@@ -2894,4 +2894,6 @@
     <string name="settings_bluetooth_sync_more">Longer delay</string>
     <string name="settings_bluetooth_sync_set_there">Set for each device in Settings › Audio › Bluetooth sync.</string>
     <string name="tm_sync_saved_for">Saved for %1$s and used across the app.</string>
+    <string name="stats_ach_unlocked_toast">Achievement unlocked</string>
+    <string name="stats_ach_view">View</string>
 </resources>

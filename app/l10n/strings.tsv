@@ -2845,3 +2845,5 @@ settings_bluetooth_sync_less	Shorter delay	缩短延迟	遅延を短く	Réduire
 settings_bluetooth_sync_more	Longer delay	延长延迟	遅延を長く	Augmenter le retard	Aumentar el retardo	Gecikmeyi artır	Verzögerung verlängern
 settings_bluetooth_sync_set_there	Set for each device in Settings › Audio › Bluetooth sync.	在 设置 › 音频 › 蓝牙同步 中为每个设备设置。	設定 › オーディオ › Bluetooth 同期 でデバイスごとに設定します。	Se règle pour chaque appareil dans Paramètres › Audio › Synchro Bluetooth.	Se ajusta para cada dispositivo en Ajustes › Audio › Sincronización Bluetooth.	Her cihaz için Ayarlar › Ses › Bluetooth senkronizasyonu bölümünden ayarlanır.	Wird für jedes Gerät unter Einstellungen › Audio › Bluetooth-Synchronisierung eingestellt.
 tm_sync_saved_for	Saved for %1$s and used across the app.	已为 %1$s 保存，并在整个应用中使用。	%1$s 用に保存され、アプリ全体で使われます。	Enregistré pour %1$s et utilisé dans toute l’app.	Guardado para %1$s y usado en toda la app.	%1$s için kaydedilir ve tüm uygulamada kullanılır.	Für %1$s gespeichert und in der ganzen App verwendet.
+stats_ach_unlocked_toast	Achievement unlocked	成就已解锁	実績を解除	Succès débloqué	Logro desbloqueado	Başarı açıldı	Erfolg freigeschaltet
+stats_ach_view	View	查看	見る	Voir	Ver	Gör	Ansehen

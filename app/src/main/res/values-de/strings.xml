@@ -2892,4 +2892,6 @@
     <string name="settings_bluetooth_sync_more">Verzögerung verlängern</string>
     <string name="settings_bluetooth_sync_set_there">Wird für jedes Gerät unter Einstellungen › Audio › Bluetooth-Synchronisierung eingestellt.</string>
     <string name="tm_sync_saved_for">Für %1$s gespeichert und in der ganzen App verwendet.</string>
+    <string name="stats_ach_unlocked_toast">Erfolg freigeschaltet</string>
+    <string name="stats_ach_view">Ansehen</string>
 </resources>

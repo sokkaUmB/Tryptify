@@ -2824,4 +2824,6 @@
     <string name="settings_bluetooth_sync_more">延长延迟</string>
     <string name="settings_bluetooth_sync_set_there">在 设置 › 音频 › 蓝牙同步 中为每个设备设置。</string>
     <string name="tm_sync_saved_for">已为 %1$s 保存，并在整个应用中使用。</string>
+    <string name="stats_ach_unlocked_toast">成就已解锁</string>
+    <string name="stats_ach_view">查看</string>
 </resources>

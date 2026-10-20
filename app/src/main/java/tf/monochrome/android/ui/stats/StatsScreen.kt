@@ -105,6 +105,8 @@ import tf.monochrome.android.ui.settings.settingsTabIndex
 fun StatsScreen(
     navController: NavController,
     onOpenPage: (String) -> Unit = {},
+    /** 0 Stats, 1 Achievements: the unlocked pill's View opens the second. */
+    initialPage: Int = 0,
     viewModel: StatsViewModel = hiltViewModel(),
 ) {
     val report by viewModel.report.collectAsStateWithLifecycle()
@@ -112,7 +114,7 @@ fun StatsScreen(
     val range by viewModel.range.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val lastSyncedAt by viewModel.lastSyncedAt.collectAsStateWithLifecycle()
-    var page by rememberSaveable { mutableStateOf(0) }
+    var page by rememberSaveable { mutableStateOf(initialPage) }
     val locale = statsLocale()
     val context = LocalContext.current
 

@@ -2960,4 +2960,6 @@
     <string name="settings_bluetooth_sync_more">Augmenter le retard</string>
     <string name="settings_bluetooth_sync_set_there">Se règle pour chaque appareil dans Paramètres › Audio › Synchro Bluetooth.</string>
     <string name="tm_sync_saved_for">Enregistré pour %1$s et utilisé dans toute l’app.</string>
+    <string name="stats_ach_unlocked_toast">Succès débloqué</string>
+    <string name="stats_ach_view">Voir</string>
 </resources>

@@ -4,6 +4,10 @@
 
 ### Added
 
+#### A pill when you complete an achievement
+- **Finish an achievement and a glass pill drops in at the top**, over whatever is open: its icon in a gold ring that fills, "Achievement unlocked" and its name, and View, which opens it in Account › Listening stats › Achievements. It goes away by itself after four seconds.
+- **Each one shows once.** One finished while the app was closed shows the next time it's open, and the ones you'd finished before this update don't all pop up at once.
+
 #### Bluetooth sync for the whole app
 - **One delay per device, measured once, used everywhere.** Settings › Audio › Bluetooth sync shows how late the output playing now plays. Measure opens Trypt Mania's tap test: tap along to the clicks you hear, apply, and you're back in Settings. You can also nudge it 5 ms at a time.
 - **Each pair of headphones keeps its own.** The value switches by itself when another device connects. A device you never measured uses the value for Bluetooth in general, and the phone speaker and wired headphones stay at none unless you set them.

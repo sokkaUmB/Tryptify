@@ -3,6 +3,7 @@ package tf.monochrome.android.data.achievements
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -86,6 +87,18 @@ class AchievementStore @Inject constructor(
         scope.launch { store.edit { it[AUTO_EQ_RUNS] = (it[AUTO_EQ_RUNS] ?: 0) + 1 } }
     }
 
+    /**
+     * Whether an achievement seen complete is announced (the unlocked pill).
+     * False until the first check after the pill arrived has stamped what was
+     * already done, so updating the app does not set off one pill per goal
+     * finished before it.
+     */
+    val announcing: Flow<Boolean> = store.data.map { it[ANNOUNCING] ?: false }
+
+    suspend fun startAnnouncing() {
+        store.edit { it[ANNOUNCING] = true }
+    }
+
     /** Stamps achievements seen complete for the first time; earlier stamps are kept. */
     suspend fun markUnlocked(firstSeen: Map<String, Long>) {
         if (firstSeen.isEmpty()) return
@@ -107,6 +120,7 @@ class AchievementStore @Inject constructor(
         private val AUTO_EQ_RUNS = intPreferencesKey("auto_eq_runs")
         private val LONGEST_CHAIN = intPreferencesKey("longest_chain")
         private val UNLOCKED = stringSetPreferencesKey("unlocked_at")
+        private val ANNOUNCING = booleanPreferencesKey("announcing")
 
         /** "NAME=epochMillis" entries; a malformed one is dropped rather than failing the read. */
         internal fun decodeUnlocked(entries: Set<String>): Map<String, Long> =
