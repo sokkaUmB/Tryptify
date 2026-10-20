@@ -148,6 +148,19 @@ fun GlyphRoute(
     val lastResults = remember { arrayOfNulls<GlyphResultsUi>(1) }
     state.results?.let { lastResults[0] = it }
 
+    // The mode follows the song picked on the wheel, as the player follows the
+    // one playing: that song's album colour becomes the accent here, the wheel
+    // and the menus as well as the play, through the contrast-safe tint
+    // (AlbumTintScope). It is the player's rule (Dynamic Colors and the
+    // player's own switch) and the listener's blend length, but never slower
+    // than GLYPH_COLOR_BLEND_MAX_MS: songs are skipped through here, and a
+    // colour still arriving two picks later is a lag, not a fade.
+    val songPalette = tf.monochrome.android.ui.theme.rememberDynamicPalette(
+        coverUrl = gameplayCoverUri(state.selectedSong),
+        enabled = backdropLook.albumColored,
+        blendMillis = tf.monochrome.android.ui.theme.motionMillis(glyphBlendMillis(backdropLook.colorTransitionMs)),
+    )
+    tf.monochrome.android.ui.theme.AlbumTintScope(songPalette) {
     AnimatedContent(
         targetState = state.screen,
         modifier = modifier.fillMaxSize(),
@@ -278,6 +291,7 @@ fun GlyphRoute(
                 }
             }
         }
+    }
     }
 }
 

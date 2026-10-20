@@ -945,6 +945,10 @@ meant to be loud, and the contrast floors catch it wherever it lands.
 asserts neither direction ever flips. Do not raise `ALBUM_GROUND_MIX` to make a
 tint stronger.
 
+Trypt Mania is the one exception, and on request: its accent follows the song
+picked on its wheel (`AlbumTintScope`, see "### Trypt Mania"), the accent
+only, by the same safe path.
+
 The tint goes through `customScheme` rather than swapping slots the way
 `DynamicColorScope` does. Slot-swapping works on the player, whose foregrounds
 are hardcoded white, and falls apart across the menus, where the album accent
@@ -1364,6 +1368,18 @@ ink from `MaterialTheme`, never `GlyphTheme.Paper`: a fixed dark menu was the
 only dark screen in a light theme, and fixed white text on the app's glass is
 the wrong ink wherever the glass is light. An accent written as text on the
 page goes through `menuAccent`, which keeps its hue and moves it until it reads.
+
+**The mode takes the accent of the song picked on the wheel.** `GlyphRoute`
+wraps every screen of the mode in `AlbumTintScope` with the selected song's
+palette (`rememberDynamicPalette` of `gameplayCoverUri`), as the player follows
+the playing track: the accent moves, the ground stays, through `tintedByAlbum`
+and never a slot swap, so it keeps the contrast floors on the menus. It is the
+player's rule (Dynamic Colors and the player's own switch, read through
+`backdropLook`) and the listener's blend length, capped at
+`GLYPH_COLOR_BLEND_MAX_MS` (0.5 s, `glyphBlendMillis`): songs are skipped
+through on the wheel, and at the player's longer blends a colour was still
+arriving two picks later. The gameplay background's cover dissolves at the
+same capped speed. The playfield's own palette is untouched.
 
 **The home panels' haze source is the page in every state**, the loading and
 empty messages included, not the list alone. While the list was the source,

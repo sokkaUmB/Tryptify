@@ -765,6 +765,35 @@ private fun tintedByAlbum(
 }
 
 /**
+ * [content] in the accent of [palette], for a part of the app that follows a
+ * cover other than the playing track's: Trypt Mania, whose wheel picks a song
+ * the player is not playing.
+ *
+ * Through [tintedByAlbum], never [DynamicColorScope]'s slot swap: this covers
+ * menus, where a swapped accent can land under 4.5:1. The ground is kept, as the
+ * player keeps it; the accent alone follows the cover. Tinting the ground too
+ * would tint it twice under "Tint the menus too", once for the playing track
+ * and again here, past the quarter that keeps light and dark from flipping.
+ *
+ * Takes the state, not the value, so the fade recomposes this scope and its
+ * content and nothing above it. A passthrough while there is no palette.
+ */
+@Composable
+fun AlbumTintScope(palette: State<DynamicPalette?>, content: @Composable () -> Unit) {
+    val value = palette.value
+    if (value == null) {
+        content()
+        return
+    }
+    MaterialTheme(
+        colorScheme = tintedByAlbum(MaterialTheme.colorScheme, value, keepBackground = true),
+        typography = MaterialTheme.typography,
+        shapes = MaterialTheme.shapes,
+        content = content,
+    )
+}
+
+/**
  * The album-art-derived palette for the currently playing track, as state:
  * whose value is null when Dynamic Colours is off, nothing is playing, or
  * extraction failed, and the outer state is null when no source is providing
@@ -791,7 +820,8 @@ val LocalDynamicColorPalette = compositionLocalOf<State<DynamicPalette?>?> { nul
  * reaches the glass the same way it reaches everything else — by the screen
  * opting into [DynamicColorScope], where the scheme's own primary becomes the
  * album's. That keeps it to the places where following the music is the point:
- * the player, and the world radio globe.
+ * the player, the world radio globe, and Trypt Mania ([AlbumTintScope], the
+ * song picked on its wheel).
  */
 @Composable
 fun glassTint(explicitArgb: Int): Color {

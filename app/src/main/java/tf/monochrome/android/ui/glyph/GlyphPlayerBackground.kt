@@ -46,7 +46,7 @@ internal fun GlyphPlayerBackground(
     } else {
         AlbumColors(dominant = accent, vibrant = accent)
     }
-    val blendMillis = motionMillis(ColorBlend.millisFor(colorTransitionMs))
+    val blendMillis = motionMillis(glyphBlendMillis(colorTransitionMs))
     val legacy = LocalLowPerformance.current.legacyPlayer
     Box(modifier.fillMaxSize()) {
         // Its own node, so the dither wraps the gradient alone.
@@ -83,3 +83,18 @@ data class GlyphBackdropLook(
  */
 internal fun gameplayCoverUri(song: GlyphSong?): String? =
     song?.let { it.artworkUri ?: it.backgroundUri }
+
+/**
+ * The longest a colour change takes in Trypt Mania. Songs are skipped through
+ * on the wheel, and at the player's longer blends a colour was still arriving
+ * two picks later. Half a second keeps it a fade and never a lag.
+ */
+const val GLYPH_COLOR_BLEND_MAX_MS = 500
+
+/**
+ * The listener's blend length ([ColorBlend.millisFor] of the stored
+ * "Blend between tracks"), capped at [GLYPH_COLOR_BLEND_MAX_MS] for this mode.
+ * Shorter choices, Instant included, are kept as they are.
+ */
+fun glyphBlendMillis(storedMs: Int): Int =
+    ColorBlend.millisFor(storedMs).coerceAtMost(GLYPH_COLOR_BLEND_MAX_MS)

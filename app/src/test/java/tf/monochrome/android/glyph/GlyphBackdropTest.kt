@@ -10,7 +10,10 @@ import tf.monochrome.android.glyph.data.GlyphChartState
 import tf.monochrome.android.glyph.data.GlyphSong
 import tf.monochrome.android.glyph.engine.GlyphPreviewPlayer
 import tf.monochrome.android.glyph.pack.StepManiaPack
+import tf.monochrome.android.ui.glyph.GLYPH_COLOR_BLEND_MAX_MS
 import tf.monochrome.android.ui.glyph.gameplayCoverUri
+import tf.monochrome.android.ui.glyph.glyphBlendMillis
+import tf.monochrome.android.ui.theme.ColorBlend
 
 /**
  * What is behind the game: the song list's picture for each song, and the
@@ -76,5 +79,19 @@ class GlyphBackdropTest {
         // Neither, or no song: the wash and the glow alone.
         assertNull(gameplayCoverUri(song()))
         assertNull(gameplayCoverUri(null))
+    }
+
+    @Test
+    fun aSongsColoursArriveWithinHalfASecond() {
+        assertEquals(500, GLYPH_COLOR_BLEND_MAX_MS)
+        // The player's longest blend, and anything past it, is held to the cap.
+        assertEquals(500, glyphBlendMillis(ColorBlend.MAX_MS))
+        assertEquals(500, glyphBlendMillis(60_000))
+        assertEquals(500, glyphBlendMillis(750))
+        // A shorter choice is kept, Instant included.
+        assertEquals(250, glyphBlendMillis(250))
+        assertEquals(0, glyphBlendMillis(0))
+        // An old build's "match blend" (-1) reads as the default, inside the cap.
+        assertEquals(ColorBlend.DEFAULT_MS.coerceAtMost(500), glyphBlendMillis(-1))
     }
 }

@@ -24,6 +24,7 @@
 - **The arrows are now over the same background as the music player**: the song's cover, blurred and darkened, over a wash and a glow in its album colours. It is the player's own background, so it follows the player's colour settings and changes when they do.
 - **The arcade pad, the speakers and the stage lights are gone** from behind the play, so the only thing moving is the arrows.
 - **The ambient visualizer stays in the player.** It can only run on one screen at a time, and the game's music does not feed it.
+- **Trypt Mania takes the colour of the song you pick.** Choose a song on the wheel and the mode's accent fades to its album colour within half a second, whatever your "Blend between tracks" length is (a shorter one is kept). Like the player, only the accent changes; the background stays, and the colours stay readable on every menu. It follows your Dynamic Colors switches, as the player does.
 
 ## [1.9.4]
 
