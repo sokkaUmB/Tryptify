@@ -15,7 +15,7 @@ import tf.monochrome.android.domain.model.Track
 
 /**
  * A listening party's wire format as the phone reads and writes it, held to
- * what the rooms server's party rules (`multiplayer/cpp/party.cpp`) send; and
+ * what the rooms server's party rules (tryptz/tryptify-party, `cpp/party.cpp`) send; and
  * the clock and the song match the phone follows the party with.
  */
 class PartyProtocolTest {

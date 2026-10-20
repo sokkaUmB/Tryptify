@@ -19,7 +19,7 @@ import java.net.URLEncoder
 /*
  * A listening party on the rooms server, as the wire has it: JSON, one object
  * per WebSocket text frame, tagged by `t`, the same socket and hello as Trypt
- * Mania's rooms (`tryptmania-parser/multiplayer/src/protocol.rs` is the other
+ * Mania's rooms (tryptz/tryptify-party's `src/protocol.rs` is the other
  * side). Times are ms; the server's clock is UNIX time, and [ClockSync] gives
  * this phone's gap to it.
  */

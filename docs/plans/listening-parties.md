@@ -1,15 +1,17 @@
 # Listening parties: plan
 
-Agreed with the owner on 2026-10-20. Built the same day: the server and the
-website on the TryptMania-Parser branch `tryptz/listening-parties` (the
-party's rules in C++, `multiplayer/cpp/`, at the owner's word; sockets,
-songs and the website in Rust), the app here (`party/`, `ui/party/`). Not yet
-deployed to Railway (ask first, below) and not yet tried on a phone.
+Agreed with the owner on 2026-10-20 and built the same day. The server and
+the website are their own repository, tryptz/tryptify-party (the party's
+rules in C++, `cpp/`, at the owner's word; sockets, songs and the website in
+Rust), moved out of TryptMania-Parser so neither is built or deployed with
+the other; Railway's "rooms" service builds from it, and is live with
+parties since 2026-10-20. The app is here (`party/`, `ui/party/`). Not yet
+tried on a phone.
 
 ## What it is
 
 A party is a room on the Trypt Mania multiplayer rooms server
-(`tryptmania-parser/multiplayer`, Rust) where everyone queues songs and
+(tryptz/tryptify-party) where everyone queues songs and
 listens to the same moment, in the app (also in the background) or on a
 website. It has a live chat, notifications on the phone, and a Share songs
 toggle so someone without a song still hears it.
