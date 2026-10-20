@@ -1392,24 +1392,9 @@ class EqViewModel @Inject constructor(
         }
     }
 
-    // ===== EQ Studio: whole-list band edits =====
-
-    /**
-     * Adds a flat peaking filter where the current ones leave the most room
-     * (see [StudioBands.withNewBand]) and returns its id, so the Studio can
-     * select it straight away. -1 when the list is already full.
-     */
-    fun addBand(): Int {
-        var added = -1
-        editActiveBands { bands ->
-            StudioBands.withNewBand(bands).also { if (it.size > bands.size) added = it.last().id }
-        }
-        return added
-    }
+    // ===== Whole-list band edits (Precision AutoEQ's filter editor) =====
 
     fun removeBand(bandId: Int) = editActiveBands { StudioBands.without(it, bandId) }
-
-    fun sortBandsByFrequency() = editActiveBands { StudioBands.sortedByFrequency(it) }
 
     /**
      * One edit to the bands of whichever ear is being edited, written through

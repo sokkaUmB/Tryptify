@@ -241,12 +241,6 @@ object WhatsNew {
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
-                    section = EQUALIZER,
-                    title = "EQ Studio",
-                    body = "Tune the equalizer on its graph, from the top of the Equalizer screen: drag a filter's dot, pinch for its width, and swipe glass pills for frequency, gain and Q.",
-                ),
-                WhatsNewEntry(
-                    kind = WhatsNewKind.NEW,
                     section = BLUETOOTH_SYNC,
                     title = "Bluetooth sync for the whole app",
                     body = "Settings › Audio › Bluetooth sync. Measure it once per device with Trypt Mania's tap test, and the lyrics, the visuals, the visualizer and the game all wait for your headphones.",

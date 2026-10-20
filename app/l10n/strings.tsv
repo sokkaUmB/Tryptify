@@ -1476,37 +1476,16 @@ eq_nothing_hack	Some bands may go past ±6 dB. Nothing X keeps them, but its sli
 eq_nothing_save	Save image	保存图片	画像を保存	Enregistrer l'image	Guardar imagen	Görseli kaydet	Bild speichern
 eq_nothing_saved	QR code saved	二维码已保存	QR コードを保存しました	Code QR enregistré	Código QR guardado	QR kodu kaydedildi	QR-Code gespeichert
 eq_nothing_save_failed	Couldn't save the QR code	无法保存二维码	QR コードを保存できませんでした	Impossible d'enregistrer le code QR	No se pudo guardar el código QR	QR kodu kaydedilemedi	QR-Code konnte nicht gespeichert werden
-eq_studio_title	EQ Studio	EQ 工作室	EQ スタジオ	Studio EQ	Estudio EQ	EQ Stüdyosu	EQ-Studio
-eq_studio_tagline	Drag, pinch and tune every filter	拖动、捏合，调好每个滤波器	すべてのフィルターをドラッグ・ピンチで調整	Glissez, pincez et réglez chaque filtre	Arrastra, pellizca y ajusta cada filtro	Her filtreyi sürükle, sıkıştır ve ayarla	Jeden Filter ziehen, zoomen und abstimmen
-eq_studio_open	Open EQ Studio	打开 EQ 工作室	EQ スタジオを開く	Ouvrir le Studio EQ	Abrir Estudio EQ	EQ Stüdyosu'nu aç	EQ-Studio öffnen
-eq_studio_graph_description	Frequency response graph. Drag a handle to move a filter, pinch to change its width.	频率响应图。拖动手柄可移动滤波器，双指捏合可改变其宽度。	周波数特性グラフ。ハンドルをドラッグしてフィルターを移動し、ピンチで幅を変更します。	Graphique de réponse en fréquence. Faites glisser une poignée pour déplacer un filtre, pincez pour changer sa largeur.	Gráfico de respuesta en frecuencia. Arrastra un punto para mover un filtro y pellizca para cambiar su anchura.	Frekans yanıtı grafiği. Bir filtreyi taşımak için tutamacı sürükleyin, genişliğini değiştirmek için iki parmakla sıkıştırın.	Frequenzgang-Diagramm. Ziehe einen Griff, um einen Filter zu verschieben, und spreize zwei Finger, um seine Breite zu ändern.
-eq_studio_with_eq	With EQ	应用 EQ 后	EQ 適用後	Avec EQ	Con EQ	EQ ile	Mit EQ
 eq_studio_import_target	Import	导入	読み込む	Importer	Importar	İçe aktar	Importieren
-eq_studio_tab_filters	Filters	滤波器	フィルター	Filtres	Filtros	Filtreler	Filter
-eq_studio_tab_headphone	Headphone	耳机	ヘッドホン	Casque	Auriculares	Kulaklık	Kopfhörer
-eq_studio_tab_output	Output	输出	出力	Sortie	Salida	Çıkış	Ausgabe
 eq_studio_on	On	开	オン	Activé	Activado	Açık	An
-eq_studio_off	Off	关	オフ	Désactivé	Desactivado	Kapalı	Aus
 eq_studio_bypassed	Bypassed	已旁通	バイパス	Contourné	Omitido	Atlandı	Umgangen
 eq_studio_delete	Delete	删除	削除	Supprimer	Eliminar	Sil	Löschen
-eq_studio_autoeq	AutoEQ	AutoEQ	AutoEQ	AutoEQ	AutoEQ	AutoEQ	AutoEQ
-eq_studio_add	Add	添加	追加	Ajouter	Añadir	Ekle	Hinzufügen
-eq_studio_sort	Sort	排序	並べ替え	Trier	Ordenar	Sırala	Sortieren
-eq_studio_flat	Flat	平直	フラット	Neutre	Plano	Düz	Neutral
 eq_studio_no_filters	No filters yet. Pick a headphone and run AutoEQ, or add one by hand.	还没有滤波器。选择耳机并运行 AutoEQ，或手动添加一个。	フィルターはまだありません。ヘッドホンを選んで AutoEQ を実行するか、手動で追加してください。	Aucun filtre pour l'instant. Choisissez un casque et lancez AutoEQ, ou ajoutez-en un à la main.	Aún no hay filtros. Elige unos auriculares y ejecuta AutoEQ, o añade uno a mano.	Henüz filtre yok. Bir kulaklık seçip AutoEQ çalıştırın ya da elle bir tane ekleyin.	Noch keine Filter. Wähle einen Kopfhörer und starte AutoEQ, oder füge einen von Hand hinzu.
 eq_studio_no_filter_selected	Tap a handle on the graph or a filter above. Drag a handle to move it, pinch with two fingers to change its width, and touch the graph anywhere to read it.	点按图上的手柄或上方的滤波器。拖动手柄可移动，双指捏合可改变宽度，触摸图表可读取数值。	グラフのハンドルか上のフィルターをタップします。ハンドルをドラッグして移動、2 本指のピンチで幅を変更、グラフに触れると値を読み取れます。	Touchez une poignée du graphique ou un filtre ci-dessus. Faites glisser une poignée pour la déplacer, pincez à deux doigts pour changer sa largeur et touchez le graphique pour le lire.	Toca un punto del gráfico o un filtro de arriba. Arrastra un punto para moverlo, pellizca con dos dedos para cambiar su anchura y toca el gráfico para leerlo.	Grafikteki bir tutamaca ya da yukarıdaki bir filtreye dokunun. Taşımak için tutamacı sürükleyin, genişliğini değiştirmek için iki parmakla sıkıştırın, okumak için grafiğe dokunun.	Tippe auf einen Griff im Diagramm oder einen Filter oben. Ziehe einen Griff, um ihn zu verschieben, spreize zwei Finger, um seine Breite zu ändern, und berühre das Diagramm, um es abzulesen.
 eq_studio_filter_n	Filter %1$d	滤波器 %1$d	フィルター %1$d	Filtre %1$d	Filtro %1$d	Filtre %1$d	Filter %1$d
 eq_studio_freq	Frequency	频率	周波数	Fréquence	Frecuencia	Frekans	Frequenz
 eq_studio_gain	Gain	增益	ゲイン	Gain	Ganancia	Kazanç	Verstärkung
 eq_studio_q	Q	Q	Q	Q	Q	Q	Q
-eq_studio_search_headphones	Search headphones	搜索耳机	ヘッドホンを検索	Rechercher un casque	Buscar auriculares	Kulaklık ara	Kopfhörer suchen
-eq_studio_import_measurement	Import file	导入文件	ファイルを読み込む	Importer un fichier	Importar archivo	Dosya içe aktar	Datei importieren
-eq_studio_loading_headphones	Loading headphones…	正在加载耳机…	ヘッドホンを読み込み中…	Chargement des casques…	Cargando auriculares…	Kulaklıklar yükleniyor…	Kopfhörer werden geladen…
-eq_studio_no_headphones	No headphone matches	没有匹配的耳机	一致するヘッドホンがありません	Aucun casque ne correspond	Ningún auricular coincide	Eşleşen kulaklık yok	Kein passender Kopfhörer
-eq_studio_auto	Auto	自动	自動	Auto	Auto	Otomatik	Auto
-eq_studio_two_channel	Separate left and right	左右分开	左右を個別に	Gauche et droite séparés	Izquierdo y derecho por separado	Sol ve sağ ayrı	Links und rechts getrennt
-eq_studio_copy_apo	Copy as Equalizer APO	复制为 Equalizer APO 格式	Equalizer APO 形式でコピー	Copier pour Equalizer APO	Copiar como Equalizer APO	Equalizer APO olarak kopyala	Als Equalizer APO kopieren
-eq_studio_copied	Copied	已复制	コピーしました	Copié	Copiado	Kopyalandı	Kopiert
 eq_studio_scrub_hint	Swipe sideways to adjust, tap to type	左右滑动调整，点按输入	横にスワイプで調整、タップで入力	Glissez latéralement pour régler, touchez pour saisir	Desliza a los lados para ajustar, toca para escribir	Ayarlamak için yana kaydırın, yazmak için dokunun	Zum Einstellen seitlich wischen, zum Eingeben tippen
 eq_studio_type_value	Type a value	输入数值	値を入力	Saisir une valeur	Escribe un valor	Bir değer yazın	Wert eingeben
 eq_studio_set	Set	设定	設定	Appliquer	Aplicar	Uygula	Übernehmen
