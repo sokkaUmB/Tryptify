@@ -2318,6 +2318,7 @@
     <string name="music_link_needs_crt_look">Bu ayar yalnızca CRT görünümünde var. Hareket ettiğini görmek için onu seçin.</string>
     <string name="music_link_needs_royale_look">Bu ayar yalnızca CRT-Royale görünümünde var. Hareket ettiğini görmek için onu seçin.</string>
     <string name="music_link_needs_ambient">Bunun hareket ettiğini görmek için ortam görselleştiricisini açın.</string>
+    <string name="music_link_needs_art_glow">Bunun hareket ettiğini görmek için Albüm kapağının arkasında parlama\'yı açın.</string>
     <string name="music_link_tv_strength">Güç</string>
     <string name="music_link_tv_brightness">Parlaklık</string>
     <string name="music_link_tv_scanlines">Tarama çizgileri</string>
@@ -2325,6 +2326,12 @@
     <string name="music_link_tv_glow">Parıltı</string>
     <string name="music_link_tv_sharpness">Keskinlik</string>
     <string name="music_link_tv_chromatic">Renk kayması</string>
+    <string name="music_link_tv_curve_top">Eğrilik, üst ve alt</string>
+    <string name="music_link_tv_curve_side">Eğrilik, yanlar</string>
+    <string name="music_link_tv_tilt_side">Yana eğim</string>
+    <string name="music_link_tv_tilt_top">Yukarı ve aşağı eğim</string>
+    <string name="music_link_art_glow_radius">Kapak parlaması yarıçapı</string>
+    <string name="music_link_art_glow_brightness">Kapak parlaması parlaklığı</string>
     <string name="music_link_tv_bezel">Çerçeve</string>
     <string name="music_link_tv_corners">Yuvarlak köşeler</string>
     <string name="music_link_tv_vignette">Vinyet</string>

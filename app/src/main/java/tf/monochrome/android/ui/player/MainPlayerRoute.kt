@@ -98,6 +98,7 @@ import tf.monochrome.android.ui.main.LocalImmersiveFullScreen
 import tf.monochrome.android.ui.main.SystemBarsHidden
 import androidx.navigation.NavController
 import tf.monochrome.android.domain.model.NowPlayingViewMode
+import tf.monochrome.android.domain.model.VisualLinkTargets
 import tf.monochrome.android.domain.model.SourceType
 import tf.monochrome.android.domain.model.Track
 import tf.monochrome.android.ui.navigation.Screen
@@ -557,7 +558,9 @@ fun MainPlayerRoute(
     val albumGlowOn = lyricsFx.glowBehindArt && lyricsFx.bassReact > 0.01f &&
         // A halo at zero brightness is the same case as the legacy guard below:
         // drawArtGlow returns immediately, so staking the tap buys nothing.
-        lyricsFx.effectiveArtGlowBrightness > 0.001f &&
+        // A linked brightness can rise from zero, so a link keeps it staked.
+        (lyricsFx.effectiveArtGlowBrightness > 0.001f ||
+            visualLinks.any { it.target == "lyrics.artGlowBrightness" && !it.paused }) &&
         viewMode == NowPlayingViewMode.COVER_ART &&
         // Only MainPlayerScreen is handed the fxUnderlay that draws this glow.
         // Without the guard the legacy layout still staked the FFT tap and woke
@@ -568,7 +571,8 @@ fun MainPlayerRoute(
     val beatPulse: androidx.compose.runtime.State<Float>? =
         if (beatOn) rememberBassPulse(playerViewModel.spectrumAnalyzer, lyricsFx) else null
     // The visual settings that follow the music here: the lyrics' only while
-    // the lyrics are what the player shows (that is where they are drawn), the
+    // the lyrics are what the player shows (that is where they are drawn),
+    // apart from the cover glow's, which is drawn in cover-art view; the
     // player's own controls' whenever the player is up, the ambient
     // visualizer's while it is the background. The UI panels and the CRT
     // effect follow the app's own driver, which shows through this one.
@@ -578,6 +582,7 @@ fun MainPlayerRoute(
         visualLinks.filter {
             it.target.startsWith("player.") ||
                 (lyricsShown && it.target.startsWith("lyrics.")) ||
+                it.target in VisualLinkTargets.COVER_KEYS ||
                 (ambientActive && it.target.startsWith("visualizer."))
         }
     }

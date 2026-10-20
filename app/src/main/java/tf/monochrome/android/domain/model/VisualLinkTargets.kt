@@ -51,9 +51,9 @@ enum class LinkArea(@StringRes val title: Int, val prefix: String) {
  *    composition, and moving them every frame would rebuild the lyric list.
  *  - Stepped quality (sample rings, ray quality, the CRT's pixel size and mask
  *    size): each step rebuilds what the GPU draws with.
- *  - The CRT's curve, tilt and zoom: the app maps every touch through the
- *    tube's shape, so a tube that bent or a picture that grew with the beat
- *    would move where taps land.
+ *  - The CRT's zoom: not linked yet. Taps would follow it as they follow the
+ *    linked curve and tilt (each gesture holds the tube it began on), but a
+ *    picture that grows and shrinks with the beat has not been asked for.
  *  - The visualizer engine's own settings (mesh, frame rate, delay, preset
  *    timer, sensitivity, brightness): they configure projectM, which already
  *    follows the music, and sensitivity carries a flashing-light warning.
@@ -100,6 +100,9 @@ class VisualLinkTarget(
 
         /** The Visualizer tab's ambient mode: MilkDrop in the player's background. */
         AMBIENT,
+
+        /** Glow behind album art (Settings › Appearance), which the bass reaction draws. */
+        ART_GLOW,
     }
 
     /** The Studio tab this setting is on. */
@@ -144,6 +147,11 @@ class VisualLinkTarget(
                 else -> Need.TV_ROYALE
             }
             Need.AMBIENT -> if (look.ambient.enabled) null else Need.AMBIENT
+            Need.ART_GLOW -> when {
+                !fx.glowBehindArt -> Need.ART_GLOW
+                fx.bassReact <= 0.01f -> Need.BASS_REACTION
+                else -> null
+            }
         }
     }
 }
@@ -219,9 +227,10 @@ object VisualLinkTargets {
     private fun tv(
         field: String, @StringRes label: Int, min: Float, max: Float, needs: VisualLinkTarget.Need,
         get: (GlyphTvTuning) -> Float, set: (GlyphTvTuning, Float) -> GlyphTvTuning,
+        format: (Float) -> String = ::pct,
     ) = VisualLinkTarget(
         "tv.$field", label, VisualLinkTarget.Group.TV, min, max, needs,
-        { get(it.tv) }, { look, v -> look.copy(tv = set(look.tv, v)) }, ::pct,
+        { get(it.tv) }, { look, v -> look.copy(tv = set(look.tv, v)) }, format,
     )
 
     private val LYRICS: List<VisualLinkTarget> = listOf(
@@ -253,6 +262,14 @@ object VisualLinkTargets {
             { "+${it.roundToInt()} dp" }),
         lyric("glowBrightness", R.string.settings_glow_brightness, VisualLinkTarget.Group.GLOW, 0f, 0.6f,
             VisualLinkTarget.Need.BASS_REACTION, { it.glowBrightness }, { f, v -> f.copy(glowBrightness = v) }, ::pct),
+        // The same glow behind the album cover (Settings › Appearance). Read
+        // through its fallback, so a new link rests on the glow on screen;
+        // a link pins it, as its slider does.
+        lyric("artGlowRadiusDp", R.string.music_link_art_glow_radius, VisualLinkTarget.Group.GLOW, 0f, 160f,
+            VisualLinkTarget.Need.ART_GLOW, { it.effectiveArtGlowRadiusDp }, { f, v -> f.copy(artGlowRadiusDp = v) },
+            { "+${it.roundToInt()} dp" }),
+        lyric("artGlowBrightness", R.string.music_link_art_glow_brightness, VisualLinkTarget.Group.GLOW, 0f, 0.6f,
+            VisualLinkTarget.Need.ART_GLOW, { it.effectiveArtGlowBrightness }, { f, v -> f.copy(artGlowBrightness = v) }, ::pct),
         lyric("pumpAmount", R.string.fx_pump_amount, VisualLinkTarget.Group.GLOW, 0f, 0.25f,
             VisualLinkTarget.Need.BASS_REACTION, { it.pumpAmount }, { f, v -> f.copy(pumpAmount = v) },
             { "+${(it * 100).roundToInt()}%" }),
@@ -312,6 +329,17 @@ object VisualLinkTargets {
             { it.sharpness }, { t, v -> t.copy(sharpness = v) }),
         tv("chromatic", R.string.music_link_tv_chromatic, 0f, 1f, VisualLinkTarget.Need.TV,
             { it.chromatic }, { t, v -> t.copy(chromatic = v) }),
+        // The tube's shape. Touches are bent through it too: each gesture
+        // keeps the shape it started on (MainActivity.dispatchTouchEvent), so
+        // a tap lands where it was seen and a held finger does not drift.
+        tv("curveTopDeg", R.string.music_link_tv_curve_top, 0f, GlyphTvTuning.MAX_CURVE_DEG, VisualLinkTarget.Need.TV,
+            { it.curveTopDeg }, { t, v -> t.copy(curveTopDeg = v) }, ::deg),
+        tv("curveSideDeg", R.string.music_link_tv_curve_side, 0f, GlyphTvTuning.MAX_CURVE_DEG, VisualLinkTarget.Need.TV,
+            { it.curveSideDeg }, { t, v -> t.copy(curveSideDeg = v) }, ::deg),
+        tv("tiltSideDeg", R.string.music_link_tv_tilt_side, -GlyphTvTuning.MAX_TILT_DEG, GlyphTvTuning.MAX_TILT_DEG,
+            VisualLinkTarget.Need.TV, { it.tiltSideDeg }, { t, v -> t.copy(tiltSideDeg = v) }, ::deg),
+        tv("tiltTopDeg", R.string.music_link_tv_tilt_top, -GlyphTvTuning.MAX_TILT_DEG, GlyphTvTuning.MAX_TILT_DEG,
+            VisualLinkTarget.Need.TV, { it.tiltTopDeg }, { t, v -> t.copy(tiltTopDeg = v) }, ::deg),
         tv("bezel", R.string.music_link_tv_bezel, 0f, 1f, VisualLinkTarget.Need.TV,
             { it.bezel }, { t, v -> t.copy(bezel = v) }),
         tv("corners", R.string.music_link_tv_corners, 0f, 1f, VisualLinkTarget.Need.TV,
@@ -413,6 +441,12 @@ object VisualLinkTargets {
         if (values.keys.none { it.startsWith("visualizer.") }) return base
         return apply(StudioLook(ambient = base), values, LinkArea.VISUALIZER).ambient
     }
+
+    /**
+     * The lyric settings drawn behind the album cover rather than the lyrics:
+     * the player runs these in cover-art view, where the rest of `lyrics.` rest.
+     */
+    val COVER_KEYS: Set<String> = setOf("lyrics.artGlowRadiusDp", "lyrics.artGlowBrightness")
 
     /** Whether any of [keys] keeps the god rays' clock running (their dust or sway). */
     fun movesRayClock(keys: Set<String>): Boolean =

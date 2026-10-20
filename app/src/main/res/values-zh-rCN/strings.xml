@@ -2262,6 +2262,7 @@
     <string name="music_link_needs_crt_look">只有 CRT 外观有这项设置。选择它后才能看到它变化。</string>
     <string name="music_link_needs_royale_look">只有 CRT-Royale 外观有这项设置。选择它后才能看到它变化。</string>
     <string name="music_link_needs_ambient">开启氛围可视化后才能看到它变化。</string>
+    <string name="music_link_needs_art_glow">开启“专辑封面后的光晕”后才能看到它变化。</string>
     <string name="music_link_tv_strength">强度</string>
     <string name="music_link_tv_brightness">亮度</string>
     <string name="music_link_tv_scanlines">扫描线</string>
@@ -2269,6 +2270,12 @@
     <string name="music_link_tv_glow">辉光</string>
     <string name="music_link_tv_sharpness">锐度</string>
     <string name="music_link_tv_chromatic">色偏</string>
+    <string name="music_link_tv_curve_top">弧度（上下）</string>
+    <string name="music_link_tv_curve_side">弧度（左右）</string>
+    <string name="music_link_tv_tilt_side">左右倾斜</string>
+    <string name="music_link_tv_tilt_top">上下倾斜</string>
+    <string name="music_link_art_glow_radius">封面光晕半径</string>
+    <string name="music_link_art_glow_brightness">封面光晕亮度</string>
     <string name="music_link_tv_bezel">边框</string>
     <string name="music_link_tv_corners">圆角</string>
     <string name="music_link_tv_vignette">暗角</string>

@@ -2374,6 +2374,7 @@
     <string name="music_link_needs_crt_look">Solo el aspecto CRT tiene este ajuste. Elígelo para verlo moverse.</string>
     <string name="music_link_needs_royale_look">Solo el aspecto CRT-Royale tiene este ajuste. Elígelo para verlo moverse.</string>
     <string name="music_link_needs_ambient">Activa el visualizador ambiental para verlo moverse.</string>
+    <string name="music_link_needs_art_glow">Activa Brillo detrás de la portada para ver cómo se mueve.</string>
     <string name="music_link_tv_strength">Intensidad</string>
     <string name="music_link_tv_brightness">Brillo</string>
     <string name="music_link_tv_scanlines">Líneas de escaneo</string>
@@ -2381,6 +2382,12 @@
     <string name="music_link_tv_glow">Resplandor</string>
     <string name="music_link_tv_sharpness">Nitidez</string>
     <string name="music_link_tv_chromatic">Desfase cromático</string>
+    <string name="music_link_tv_curve_top">Curva arriba y abajo</string>
+    <string name="music_link_tv_curve_side">Curva a los lados</string>
+    <string name="music_link_tv_tilt_side">Inclinación lateral</string>
+    <string name="music_link_tv_tilt_top">Inclinación arriba y abajo</string>
+    <string name="music_link_art_glow_radius">Radio del brillo de la portada</string>
+    <string name="music_link_art_glow_brightness">Brillo del resplandor de la portada</string>
     <string name="music_link_tv_bezel">Marco</string>
     <string name="music_link_tv_corners">Esquinas redondeadas</string>
     <string name="music_link_tv_vignette">Viñeta</string>

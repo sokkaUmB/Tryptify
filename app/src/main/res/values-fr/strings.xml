@@ -2374,6 +2374,7 @@
     <string name="music_link_needs_crt_look">Seul le rendu CRT a ce réglage. Choisissez-le pour le voir bouger.</string>
     <string name="music_link_needs_royale_look">Seul le rendu CRT-Royale a ce réglage. Choisissez-le pour le voir bouger.</string>
     <string name="music_link_needs_ambient">Activez le visualiseur d’ambiance pour voir ce réglage bouger.</string>
+    <string name="music_link_needs_art_glow">Activez Halo derrière la pochette pour voir ce réglage bouger.</string>
     <string name="music_link_tv_strength">Intensité</string>
     <string name="music_link_tv_brightness">Luminosité</string>
     <string name="music_link_tv_scanlines">Lignes de balayage</string>
@@ -2381,6 +2382,12 @@
     <string name="music_link_tv_glow">Lueur</string>
     <string name="music_link_tv_sharpness">Netteté</string>
     <string name="music_link_tv_chromatic">Décalage chromatique</string>
+    <string name="music_link_tv_curve_top">Courbure haut et bas</string>
+    <string name="music_link_tv_curve_side">Courbure côtés</string>
+    <string name="music_link_tv_tilt_side">Inclinaison latérale</string>
+    <string name="music_link_tv_tilt_top">Inclinaison haut et bas</string>
+    <string name="music_link_art_glow_radius">Rayon du halo de la pochette</string>
+    <string name="music_link_art_glow_brightness">Luminosité du halo de la pochette</string>
     <string name="music_link_tv_bezel">Cadre</string>
     <string name="music_link_tv_corners">Coins arrondis</string>
     <string name="music_link_tv_vignette">Vignettage</string>

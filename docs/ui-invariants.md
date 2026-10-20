@@ -538,8 +538,9 @@ linked sets its own value and leaves the sound to the link.
 **Settings › Appearance links the CRT effect as the Studio does.** The tab sits
 in `StudioMusicLinkScope`, which hands it the Studio's own link host, sheet,
 editor and undo on `LyricsFxStudioViewModel`, so a link made there is the
-Studio's and the Music links page's, never a second copy. The curve, tilt and
-zoom stay unlinked in both places: they reshape the picture and where taps land.
+Studio's and the Music links page's, never a second copy. The curve and tilt
+link in both places (taps follow them; see the CRT paragraph below); the zoom
+stays unlinked.
 
 The link sheet and the editor are in-window glass, siblings of their screen's
 haze source, never a dialog or a `ModalBottomSheet` (see Glass). The live
@@ -551,6 +552,13 @@ over the system bar, with `HideAppChrome` putting the tab bar and the mini
 player away while it is open. Fitted under a preview and over the bar, it had
 room for its title and its first row, and every choice was a scroll away. The
 meter in its band picture is what shows the link moving.
+
+Appearance's cover glow links in the same scope: its radius and brightness
+(`IntSettingSlider` with a `linkKey`). The cover
+glow is drawn in cover-art view, so the player runs its two links there
+(`VisualLinkTargets.COVER_KEYS`) while the rest of `lyrics.` wait for the
+lyrics. Colour transition is not linked: it is an animation's length, read in
+composition.
 
 Every Studio tab links, not only Lyrics. A key's prefix is the part of the app
 that draws it (`LinkArea`): `lyrics.`, `player.` (the play disc, chevrons and
@@ -574,9 +582,14 @@ haze frost goes through `Modifier.glassFrost`, whose `hazeEffect` block re-reads
 the blur and tint each frame. Never build a `HazeStyle` from the glass settings
 in composition: the blur would ignore its link.
 
-The CRT effect draws `appLive.tv(tuning)`, but touches are still mapped through
-the tuning as set (`appTvNow`), and the curve and tilt cannot be linked: a tube
-bending with the beat would move where taps land. The ambient visualizer's
+The CRT effect draws `appLive.tv(tuning)`, and touches are bent through that
+same live shape, so the curve and tilt can be linked. **A gesture keeps the
+tube it started on** (`gestureTube` in `MainActivity.dispatchTouchEvent`), from
+the first finger down to the last up. Bent through each frame's shape, a finger
+held still would drift with the beat and a tap could become a scroll; held, a
+tap lands where it was seen. The lyrics' own curve still steps aside by the
+tube as set (`LocalAppTube` is `appTvNow`), so a linked curve does not switch
+it on and off with every beat. The ambient visualizer's
 render thread is handed its live opacity and black point (`updateLive`), NaN
 meaning "as saved", since it is a GL thread that cannot read Compose state.
 
