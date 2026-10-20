@@ -51,6 +51,16 @@
 - **The ambient visualizer stays in the player.** It can only run on one screen at a time, and the game's music does not feed it.
 - **Trypt Mania takes the colour of the song you pick.** Choose a song on the wheel and the app's dynamic colours fade to its album colour within half a second, whatever your "Blend between tracks" length is (a shorter one is kept). The whole app follows that one song while the mode is open, tab bar and "Tint the menus too" included, so two songs never colour the screen at once; when you leave, the playing track takes over again. The colours stay readable on every menu.
 
+### Fixed
+
+#### The Fonts page no longer freezes the app with many fonts
+- **Each font chip reads its font in the background now**, at the one weight it shows, and the chip shows in the normal font for the moment it takes. Before, every chip read its font in the frame that drew it, and every imported one read your whole font library again to find its family, so with a lot of fonts installed the page froze the app.
+- **A font file is read once** while the app runs, and the page keeps what it loaded, so scrolling the chips away and back is instant.
+
+#### Trypt Mania's results page has its own background
+- **The results page paints the theme's background under its cards**, so nothing of the song that just played shows through it.
+- **Album colours arriving mid-run no longer restart the game's screens.** When a song with cover colours followed one without, everything in the mode was rebuilt.
+
 ## [1.9.4]
 
 ### Added

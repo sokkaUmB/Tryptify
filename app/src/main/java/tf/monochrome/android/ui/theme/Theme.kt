@@ -780,13 +780,11 @@ private fun tintedByAlbum(
  */
 @Composable
 fun AlbumTintScope(palette: State<DynamicPalette?>?, content: @Composable () -> Unit) {
-    val value = palette?.value
-    if (value == null) {
-        content()
-        return
-    }
+    // One call site for the content whether or not there is a palette: two
+    // would tear down and rebuild everything inside each time a cover with
+    // colours followed one without, a game mid-run included.
     MaterialTheme(
-        colorScheme = tintedByAlbum(MaterialTheme.colorScheme, value, keepBackground = true),
+        colorScheme = tintedByAlbum(MaterialTheme.colorScheme, palette?.value, keepBackground = true),
         typography = MaterialTheme.typography,
         shapes = MaterialTheme.shapes,
         content = content,

@@ -32,6 +32,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,7 +42,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -52,6 +55,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import tf.monochrome.android.R
 import tf.monochrome.android.data.fonts.FontImportReport
 import tf.monochrome.android.data.fonts.FontSkipReason
@@ -65,7 +71,7 @@ import tf.monochrome.android.ui.settings.LocalSettingsSearchInset
 import tf.monochrome.android.ui.theme.BundledFonts
 import tf.monochrome.android.ui.theme.InterFontFamily
 import tf.monochrome.android.ui.theme.loadAppFontFamily
-import kotlin.math.roundToInt
+import tf.monochrome.android.ui.theme.loadSampleFontFamily
 
 /** One entry in the browser: the default, a font that ships, or an import. */
 internal data class FontChoice(
@@ -131,7 +137,10 @@ fun FontBrowserPage(
         }
     }
     val previewChoice = choices.firstOrNull { it.key == previewKey } ?: choices.first()
-    val previewFamily = rememberFontFamily(context, previewChoice)
+    // What the page has loaded, kept while it is open: a chip scrolled out of
+    // the list and back is not read again.
+    val loadedFonts = remember { HashMap<String, FontFamily>() }
+    val previewFamily = rememberFontFamily(context, previewChoice, loadedFonts)
     val mainFont = choices.firstOrNull { it.key == activeKey } ?: choices.first()
 
     pendingDelete?.let { font ->
@@ -198,6 +207,7 @@ fun FontBrowserPage(
             item(key = "fonts") {
                 FontChips(
                     choices = choices,
+                    loadedFonts = loadedFonts,
                     previewKey = previewKey,
                     activeKey = activeKey,
                     importing = importing,
@@ -228,7 +238,7 @@ fun FontBrowserPage(
 
 /** The font being tried, as one row: a sample in it, its name, and Use (or In use). */
 @Composable
-private fun PreviewRow(choice: FontChoice, family: FontFamily, inUse: Boolean, onApply: () -> Unit) {
+private fun PreviewRow(choice: FontChoice, family: FontFamily?, inUse: Boolean, onApply: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -237,14 +247,14 @@ private fun PreviewRow(choice: FontChoice, family: FontFamily, inUse: Boolean, o
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 stringResource(R.string.fonts_preview_track),
-                style = MaterialTheme.typography.bodyLarge.copy(fontFamily = family),
+                style = MaterialTheme.typography.bodyLarge.inFamily(family),
                 color = scheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 "${stringResource(R.string.fonts_preview_artist)} · ${choice.name}",
-                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = family),
+                style = MaterialTheme.typography.bodyMedium.inFamily(family),
                 color = scheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -314,6 +324,7 @@ private fun WidthRow(percent: Int, onCommit: (Int) -> Unit) {
 @Composable
 private fun FontChips(
     choices: List<FontChoice>,
+    loadedFonts: MutableMap<String, FontFamily>,
     previewKey: String,
     activeKey: String,
     importing: Boolean,
@@ -323,15 +334,16 @@ private fun FontChips(
 ) {
     val context = LocalContext.current
     val scheme = MaterialTheme.colorScheme
+    val chipStyle = MaterialTheme.typography.labelLarge
     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             choices.forEach { choice ->
-                val family = rememberFontFamily(context, choice)
+                val family = rememberFontFamily(context, choice, loadedFonts, chipStyle.fontWeight ?: FontWeight.Medium)
                 val selected = choice.key == previewKey
                 val deleteLabel = choice.imported?.let { stringResource(R.string.settings_delete_font, choice.name) }
                 Text(
                     choice.name + if (choice.key == activeKey) " ✓" else "",
-                    style = MaterialTheme.typography.labelLarge.copy(fontFamily = family),
+                    style = chipStyle.inFamily(family),
                     color = when {
                         !choice.usable -> scheme.error
                         selected -> scheme.onPrimary
@@ -376,17 +388,43 @@ private fun FontChips(
 }
 
 /**
- * The family a choice is drawn in. An import that cannot be read is drawn in
+ * The family a choice is drawn in: the whole family, or with [weight] only the
+ * one weight a sample of it needs. An import that cannot be read is drawn in
  * the default rather than handed to the renderer, which would fail on it.
+ *
+ * Read off the main thread, file and all, and null until then: the caller
+ * draws in the theme's font meanwhile. A page of every font used to read each
+ * one in the frame that first drew it, and an imported one's whole library
+ * beside it to find its family, so a long list of fonts froze the app.
+ * [cache] keeps what the page has read.
  */
 @Composable
-internal fun rememberFontFamily(context: android.content.Context, choice: FontChoice): FontFamily =
-    remember(choice.key, choice.usable) {
-        when {
-            choice.origin == FontChoice.Origin.DEFAULT || !choice.usable -> InterFontFamily
-            else -> loadAppFontFamily(context, choice.key) ?: InterFontFamily
+internal fun rememberFontFamily(
+    context: android.content.Context,
+    choice: FontChoice,
+    cache: MutableMap<String, FontFamily>,
+    weight: FontWeight? = null,
+): FontFamily? {
+    if (choice.origin == FontChoice.Origin.DEFAULT || !choice.usable) return InterFontFamily
+    val key = "${choice.key}@${weight?.weight ?: 0}"
+    val resolver = LocalFontFamilyResolver.current
+    val family by produceState(cache[key], key) {
+        if (value != null) return@produceState
+        val loaded = withContext(Dispatchers.IO) {
+            val family = (if (weight == null) loadAppFontFamily(context, choice.key) else loadSampleFontFamily(context, choice.key, weight))
+                ?: InterFontFamily
+            // The files are read here, so the frame that draws them only draws.
+            runCatching { resolver.preload(family) }
+            family
         }
+        cache[key] = loaded
+        value = loaded
     }
+    return family
+}
+
+/** This style in [family], or as it is while there is none yet. */
+private fun TextStyle.inFamily(family: FontFamily?): TextStyle = if (family == null) this else copy(fontFamily = family)
 
 /**
  * What the glass frosts: two soft fields of the theme's own colours and the
@@ -394,7 +432,7 @@ internal fun rememberFontFamily(context: android.content.Context, choice: FontCh
  * panes over it shift as fonts are tried.
  */
 @Composable
-private fun FontBackdrop(family: FontFamily, modifier: Modifier) {
+private fun FontBackdrop(family: FontFamily?, modifier: Modifier) {
     val scheme = MaterialTheme.colorScheme
     Box(modifier = modifier.background(scheme.background)) {
         Box(

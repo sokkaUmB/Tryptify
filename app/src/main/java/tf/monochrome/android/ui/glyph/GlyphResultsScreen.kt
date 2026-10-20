@@ -3,6 +3,7 @@
 package tf.monochrome.android.ui.glyph
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -85,7 +86,10 @@ fun GlyphResultsScreen(
     val attempt = results.attempt
     val scheme = MaterialTheme.colorScheme
 
-    Column(modifier = modifier.fillMaxSize()) {
+    // Its own ground under the whole page, as the start menu has: what it
+    // fades in over is the play, the cover and its glow, and nothing of that
+    // may show through between the cards.
+    Column(modifier = modifier.fillMaxSize().background(scheme.background)) {
         TopAppBar(
             title = {
                 Text(

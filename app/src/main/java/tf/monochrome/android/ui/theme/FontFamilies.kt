@@ -2,6 +2,7 @@ package tf.monochrome.android.ui.theme
 
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 
 /** One file of an imported family: where it is, and which weight and slope it draws. */
@@ -57,12 +58,35 @@ object FontFamilies {
     fun key(family: String): String =
         family.lowercase(Locale.ROOT).replace("-", " ").replace(Regex("\\s+"), " ").trim()
 
-    /** [file] as a cut, or null when it cannot be read as a font. */
+    /**
+     * [file] as a cut, or null when it cannot be read as a font.
+     *
+     * Read once per file as it stands (its path, size and date): finding one
+     * font's family reads every file beside it, so a page drawing a chip per
+     * font read the whole library once per chip, on the main thread.
+     */
     fun cutOf(file: File): FontCut? {
-        val font = FontFileInspector.inspect(file) as? FontInspection.Font ?: return null
-        val family = font.groupFamily?.takeIf { it.isNotBlank() } ?: file.nameWithoutExtension
-        return FontCut(file, family, font.weight, font.italic, font.variable, font.widthAxis)
+        val stamp = CutStamp(file.absolutePath, file.length(), file.lastModified())
+        cuts[stamp]?.let { return it.cut }
+        val font = FontFileInspector.inspect(file) as? FontInspection.Font
+        val cut = font?.let {
+            val family = it.groupFamily?.takeIf { name -> name.isNotBlank() } ?: file.nameWithoutExtension
+            FontCut(file, family, it.weight, it.italic, it.variable, it.widthAxis)
+        }
+        if (cuts.size > MAX_CUTS) cuts.clear()
+        cuts[stamp] = CutEntry(cut)
+        return cut
     }
+
+    private data class CutStamp(val path: String, val length: Long, val modified: Long)
+
+    /** A read, null cut included: a file that is not a font is not read again either. */
+    private class CutEntry(val cut: FontCut?)
+
+    private val cuts = ConcurrentHashMap<CutStamp, CutEntry>()
+
+    /** Far more fonts than anyone imports; past it the reads start over rather than grow. */
+    private const val MAX_CUTS = 2048
 
     /** [cuts] as families, each family's cuts upright first, light to heavy; families by name. */
     fun group(cuts: List<FontCut>): List<ImportedFamily> =

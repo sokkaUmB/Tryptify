@@ -624,6 +624,16 @@ every style in its own row, a weight menu and size and width steppers, with
 the font and letter spacing in a menu on the style's name. No row opens: a
 change is made where it shows.
 
+**The Fonts page reads its fonts off the main thread, once.** Each chip is
+drawn in its own font at the one weight it shows (`loadSampleFontFamily`), the
+preview in the whole family, all read on the IO dispatcher and preloaded
+there; until then the chip is in the theme's font. What it reads is kept while
+the page is open, so a chip scrolled away and back is not read again, and an
+imported font's family comes from its files as read once each
+(`FontFamilies.cutOf`, by path, size and date). Each chip used to read its file
+in the frame that drew it, and an imported one every file in the library to
+find its family: with a long list of fonts the app froze.
+
 ### Text on glass
 
 **Text on glass follows the glass, not the theme** (`GlassInkScope`). Every pane
@@ -1524,7 +1534,9 @@ count in the middle. The timing card draws a normal curve from the run's mean
 and spread — two numbers, so it says it is a curve of them, not of the hits —
 and offers a correction only from the recent runs' agreed lateness
 (`ApplyRecentTiming`), never from one run. Every count keeps its spoken
-"Label: value", and everything lands at once under reduced motion.
+"Label: value", and everything lands at once under reduced motion. The page paints
+the theme's ground under itself, as the start menu does: it fades in over the
+play, the cover and its glow, and none of that may show between its cards.
 
 **The play is over the player's background, and only the play.**
 `GlyphPlayerBackground`, under the playfield inside the TV shader (and the fail
