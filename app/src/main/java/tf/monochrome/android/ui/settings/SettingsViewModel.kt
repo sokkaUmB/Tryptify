@@ -57,6 +57,7 @@ class SettingsViewModel @Inject constructor(
     private val lastFmAuthManager: tf.monochrome.android.data.auth.LastFmAuthManager,
     private val discordPresence: tf.monochrome.android.data.presence.DiscordPresenceManager,
     private val spectrumAnalyzerTap: SpectrumAnalyzerTap,
+    musicLinksRepository: tf.monochrome.android.data.repository.MusicLinksRepository,
     private val channelDetectorProcessor: tf.monochrome.android.audio.dsp.ChannelDetectorProcessor,
     private val usbExclusiveController: tf.monochrome.android.audio.usb.UsbExclusiveController,
     private val scanCoordinator: tf.monochrome.android.data.local.scanner.ScanCoordinator,
@@ -105,6 +106,21 @@ class SettingsViewModel @Inject constructor(
      *  its descriptors. Null while no device is owned. */
     val usbDacInfo: StateFlow<tf.monochrome.android.audio.usb.DacInfo?> =
         usbExclusiveController.dacInfo
+
+    /**
+     * Music links for this page's sliders (the CRT effect's, the cover glow's):
+     * the same editing the Studio has, through the same repository.
+     */
+    val musicLinks = VisualLinkEditing(viewModelScope, musicLinksRepository)
+
+    /** What the links' editor listens to. */
+    val spectrumAnalyzer: SpectrumAnalyzerTap get() = spectrumAnalyzerTap
+
+    /** Every setting on this page a link can move, as saved: where a new link rests, and what it needs to show. */
+    val linkLook: StateFlow<tf.monochrome.android.domain.model.StudioLook> = combine(
+        preferences.lyricsFx, preferences.appTvTuning, preferences.appTvShader,
+    ) { fx, tv, look -> tf.monochrome.android.domain.model.StudioLook(lyrics = fx, tv = tv, tvLook = look) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.domain.model.StudioLook())
 
     /** Shared live FFT bins from the audio pipeline — same source the NowPlaying overlay uses. */
     val spectrumBins: StateFlow<FloatArray> = spectrumAnalyzerTap.spectrumBins

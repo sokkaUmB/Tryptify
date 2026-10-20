@@ -102,7 +102,9 @@ Use for anything that makes a setting move with the music: a visual link (a Stud
 
 - A link never moves the saved value. Renderers fold the live values in inside their draw and layer blocks; composition may read only `linkedKeys`. Read in composition, a linked lyric layer recomposes every frame.
 - A target's `min` and `max` are its field's own `clamped()` bounds. The one exception is `lyrics.curvatureSideDeg`, which starts at 0, because a link sets the sides' own angle, never "the same as the top and bottom".
-- What is read in composition, multiplied by time, gating a clock or a sensor, stepped quality, the CRT's curve and tilt (taps are mapped through them), and projectM's own settings are not targets. Do not add one to make a request work; say why it cannot move.
+- What is read in composition, multiplied by time, gating a clock or a sensor, stepped quality, and projectM's own settings are not targets. Do not add one to make a request work; say why it cannot move.
+- The CRT's curve and tilt are targets, because taps are bent through the shape the tube is drawn with: `MainActivity.dispatchTouchEvent` takes it at the first finger down and holds it to the last finger up, so a tap lands where it was seen and a held finger does not drift with the beat.
+- The cover glow's two (`lyrics.artGlowRadiusDp`, `lyrics.artGlowBrightness`) are drawn in cover-art view, so the player runs them there (`VisualLinkTargets.COVER_KEYS`), not only while the lyrics show. Their sliders are in Settings › Appearance, which has its own link host and overlay, like the Studio.
 - Every target has a Studio slider that names it (`linkKey = "…"`, or `glassKey(linkArea, "…")` on the glass tabs), and every name has a target.
 - A linked knob keeps and saves its own value (`Route::base`), and the native follower gives the same numbers as the Kotlin one.
 - Links sync with the settings (`VISUAL_LINKS_JSON` and `MUSIC_LINKS_PAUSED` are in `SETTINGS_SYNC_KEYS`) and travel in theme packs (`ThemePack.links`, cleaned by `VisualLinkCodec.sanitize`). A file from a newer version still opens; a target this build does not know is dropped.
@@ -110,7 +112,7 @@ Use for anything that makes a setting move with the music: a visual link (a Stud
 ### Workflow
 
 1. For a new target: the field must be read in a draw or layer block. Add it to `VisualLinkTargets` with its clamp bounds and its `Need`, and give its slider the key.
-2. Check all three drivers that run links: the app's (`MainActivity`: `panels.` and `tv.`), the player's (`MainPlayerRoute`: `player.`, `lyrics.`, `visualizer.`), and the Studio's preview.
+2. Check the drivers that run links: the app's (`MainActivity`: `panels.` and `tv.`), the player's (`MainPlayerRoute`: `player.`, `lyrics.`, `visualizer.`), the Studio's preview, and Settings' (its sliders' marks and the editor's meter, for `tv.` and the cover glow).
 3. Walk the edges: the master pause, a link paused on its own, an editor closed without saving, a theme pack applied and undone.
 
 ### Completion gates

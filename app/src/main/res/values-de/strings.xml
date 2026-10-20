@@ -2306,6 +2306,7 @@
     <string name="music_link_needs_crt_look">Nur der CRT-Look hat diese Einstellung. Wähle ihn, um die Bewegung zu sehen.</string>
     <string name="music_link_needs_royale_look">Nur der CRT-Royale-Look hat diese Einstellung. Wähle ihn, um die Bewegung zu sehen.</string>
     <string name="music_link_needs_ambient">Schalte den Ambient-Visualizer ein, um die Bewegung zu sehen.</string>
+    <string name="music_link_needs_art_glow">Schalte Leuchten hinter dem Albumcover ein, um das in Bewegung zu sehen.</string>
     <string name="music_link_tv_strength">Stärke</string>
     <string name="music_link_tv_brightness">Helligkeit</string>
     <string name="music_link_tv_scanlines">Scanlines</string>
@@ -2313,6 +2314,12 @@
     <string name="music_link_tv_glow">Leuchten</string>
     <string name="music_link_tv_sharpness">Schärfe</string>
     <string name="music_link_tv_chromatic">Farbversatz</string>
+    <string name="music_link_tv_curve_top">Wölbung oben &amp; unten</string>
+    <string name="music_link_tv_curve_side">Wölbung seitlich</string>
+    <string name="music_link_tv_tilt_side">Neigung seitlich</string>
+    <string name="music_link_tv_tilt_top">Neigung oben &amp; unten</string>
+    <string name="music_link_art_glow_radius">Radius des Cover-Leuchtens</string>
+    <string name="music_link_art_glow_brightness">Helligkeit des Cover-Leuchtens</string>
     <string name="music_link_tv_bezel">Rahmen</string>
     <string name="music_link_tv_corners">Runde Ecken</string>
     <string name="music_link_tv_vignette">Vignette</string>

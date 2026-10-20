@@ -2307,6 +2307,7 @@
     <string name="music_link_needs_crt_look">Only the CRT look has this. Choose it to see this move.</string>
     <string name="music_link_needs_royale_look">Only the CRT-Royale look has this. Choose it to see this move.</string>
     <string name="music_link_needs_ambient">Turn on the ambient visualizer to see this move.</string>
+    <string name="music_link_needs_art_glow">Turn on Glow behind album art to see this move.</string>
     <string name="music_link_tv_strength">Strength</string>
     <string name="music_link_tv_brightness">Brightness</string>
     <string name="music_link_tv_scanlines">Scanlines</string>
@@ -2314,6 +2315,12 @@
     <string name="music_link_tv_glow">Glow</string>
     <string name="music_link_tv_sharpness">Sharpness</string>
     <string name="music_link_tv_chromatic">Chromatic shift</string>
+    <string name="music_link_tv_curve_top">Curve, top &amp; bottom</string>
+    <string name="music_link_tv_curve_side">Curve, sides</string>
+    <string name="music_link_tv_tilt_side">Tilt, sideways</string>
+    <string name="music_link_tv_tilt_top">Tilt, up &amp; down</string>
+    <string name="music_link_art_glow_radius">Cover glow radius</string>
+    <string name="music_link_art_glow_brightness">Cover glow brightness</string>
     <string name="music_link_tv_bezel">Bezel</string>
     <string name="music_link_tv_corners">Rounded corners</string>
     <string name="music_link_tv_vignette">Vignette</string>

@@ -60,6 +60,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Cloud
@@ -167,6 +168,13 @@ import tf.monochrome.android.ui.theme.Paper
 import tf.monochrome.android.ui.theme.ColorBlend
 import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.Box
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
+import tf.monochrome.android.domain.model.VisualLinkTargets
+import tf.monochrome.android.ui.musiclinks.LinkedTrackMarker
+import tf.monochrome.android.ui.musiclinks.LocalMusicLinkHost
+import tf.monochrome.android.ui.musiclinks.musicLinkColor
+import tf.monochrome.android.ui.player.rememberVisualLinkDriver
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
@@ -307,8 +315,33 @@ fun SettingsScreen(
         searchSettings(searchQuery) { searchContext.getString(it) }
     }
 
-    CompositionLocalProvider(LocalSettingsAnchors provides settingsAnchors) {
-    Column(modifier = Modifier.fillMaxSize()) {
+    // Music links for Appearance's sliders (the CRT effect, the cover glow),
+    // as the Studio has them: the note beside a slider opens the link sheet,
+    // and the sheet and the editor are drawn over this screen in its own
+    // window, beside the haze source they frost. The app's own driver moves
+    // the CRT itself; this one is the sliders' live marks and the editor's meter.
+    val linkUi = remember { StudioLinkUi() }
+    val linkHaze = rememberHazeState()
+    val savedLinks = viewModel.musicLinks.links.collectAsStateWithLifecycle()
+    val previewLinks by viewModel.musicLinks.previewLinks.collectAsStateWithLifecycle()
+    val linkLook by viewModel.linkLook.collectAsStateWithLifecycle()
+    val pageLinks = remember(previewLinks) {
+        previewLinks.filter { it.target.startsWith("tv.") || it.target in VisualLinkTargets.COVER_KEYS }
+    }
+    val linkLive = rememberVisualLinkDriver(
+        tap = viewModel.spectrumAnalyzer,
+        links = pageLinks,
+        active = true,
+        delayMs = linkLook.lyrics.bluetoothDelayMs,
+    )
+    val linkHost = rememberVisualLinkHost(savedLinks, linkLive) { linkUi.sheetFor = it }
+
+    CompositionLocalProvider(
+        LocalSettingsAnchors provides settingsAnchors,
+        LocalMusicLinkHost provides linkHost,
+    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().hazeSource(linkHaze)) {
         TopAppBar(
             title = { Text(stringResource(R.string.settings)) },
             navigationIcon = {
@@ -475,6 +508,15 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+    StudioLinkOverlay(
+        ui = linkUi,
+        editing = viewModel.musicLinks,
+        look = linkLook,
+        live = linkLive,
+        tap = viewModel.spectrumAnalyzer,
+        hazeState = linkHaze,
+    )
     }
     }
 }
@@ -882,6 +924,7 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
                     onCommit = { viewModel.setArtGlowRadius(it) },
                     label = { stringResource(R.string.settings_glow_radius_value, it) },
                     subtitle = stringResource(R.string.settings_how_far_the_halo_reaches_past_the_cover_s_edge),
+                    linkKey = "lyrics.artGlowRadiusDp",
                 )
                 IntSettingSlider(
                     value = artGlowBrightness,
@@ -889,6 +932,9 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
                     onCommit = { viewModel.setArtGlowBrightness(it) },
                     label = { stringResource(R.string.settings_glow_brightness_value, it) },
                     subtitle = stringResource(R.string.settings_peak_strength_of_the_halo_on_a_kick),
+                    linkKey = "lyrics.artGlowBrightness",
+                    // The slider is in percent, the link in the setting's own 0 to 0.6.
+                    linkScale = 100f,
                 )
             }
         }
@@ -1334,14 +1380,37 @@ private fun IntSettingSlider(
     label: @Composable (Int) -> String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    /**
+     * The music link key, as on the CRT's sliders: a note beside the label,
+     * green while linked, and the link's reach under the track. [linkScale]
+     * is how many of this slider's steps make one of the setting's own units.
+     */
+    linkKey: String? = null,
+    linkScale: Float = 1f,
 ) {
     var local by remember(value) { mutableFloatStateOf(value.toFloat()) }
+    val linkHost = if (linkKey != null) LocalMusicLinkHost.current else null
     Spacer(modifier = Modifier.height(8.dp))
-    Text(
-        label(local.toInt()),
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurface,
-    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            label(local.toInt()),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (linkHost != null && linkKey != null) {
+            val moveLabel = stringResource(R.string.music_link_move_with_music)
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = moveLabel,
+                tint = if (linkHost.isLinked(linkKey)) musicLinkColor() else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                modifier = Modifier
+                    .clickable(onClickLabel = moveLabel) { linkHost.open(linkKey) }
+                    .padding(6.dp)
+                    .size(18.dp),
+            )
+        }
+    }
     if (subtitle != null) {
         Text(
             subtitle,
@@ -1356,6 +1425,9 @@ private fun IntSettingSlider(
         valueRange = valueRange,
         modifier = modifier.fillMaxWidth(),
     )
+    if (linkHost != null && linkKey != null && linkHost.isLinked(linkKey)) {
+        LinkedTrackMarker(linkKey, linkHost, valueRange.start / linkScale, valueRange.endInclusive / linkScale)
+    }
 }
 
 // ─── Tab 3: Scrobbling ─────────────────────────────────────────────────

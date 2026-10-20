@@ -15,9 +15,14 @@ class VisualLinkTargetsTest {
         assertEquals(keys.size, keys.toSet().size)
     }
 
-    // The sides' own bend, so moving the top and bottom does not carry the sides with it.
+    // The sides' own bend, so moving the top and bottom does not carry the sides
+    // with it; the cover glow's own size and strength, likewise for the lyric glow.
     private val base = StudioLook(
-        lyrics = LyricsFxSettings.DEFAULT.copy(curvatureSideDeg = LyricsFxSettings.DEFAULT.effectiveCurvatureSideDeg),
+        lyrics = LyricsFxSettings.DEFAULT.copy(
+            curvatureSideDeg = LyricsFxSettings.DEFAULT.effectiveCurvatureSideDeg,
+            artGlowRadiusDp = LyricsFxSettings.DEFAULT.effectiveArtGlowRadiusDp,
+            artGlowBrightness = LyricsFxSettings.DEFAULT.effectiveArtGlowBrightness,
+        ),
     )
 
     // The visualizer's two are stored as whole percents.
@@ -153,6 +158,17 @@ class VisualLinkTargetsTest {
             bloom.unmet(look.copy(tvLook = tf.monochrome.android.glyph.engine.GlyphTvShader.CRT)),
         )
         assertEquals(null, VisualLinkTargets.byKey("tv.strength")!!.unmet(look.copy(tvLook = tf.monochrome.android.glyph.engine.GlyphTvShader.ROYALE)))
+
+        val coverGlow = VisualLinkTargets.byKey("lyrics.artGlowBrightness")!!
+        assertEquals(VisualLinkTarget.Need.ART_GLOW, coverGlow.unmet(look.copy(lyrics = look.lyrics.copy(glowBehindArt = false))))
+        assertEquals(
+            VisualLinkTarget.Need.BASS_REACTION,
+            coverGlow.unmet(look.copy(lyrics = look.lyrics.copy(glowBehindArt = true, bassReact = 0f))),
+        )
+        assertEquals(null, coverGlow.unmet(look.copy(lyrics = look.lyrics.copy(glowBehindArt = true, bassReact = 0.5f))))
+        // The tube's shape is linked as the CRT's other settings are.
+        assertEquals(VisualLinkTarget.Need.TV, VisualLinkTargets.byKey("tv.tiltSideDeg")!!.unmet(look))
+        assertEquals(-tf.monochrome.android.glyph.engine.GlyphTvTuning.MAX_TILT_DEG, VisualLinkTargets.byKey("tv.tiltSideDeg")!!.min, 0f)
 
         val opacity = VisualLinkTargets.byKey("visualizer.opacity")!!
         assertEquals(VisualLinkTarget.Need.AMBIENT, opacity.unmet(look))

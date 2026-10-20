@@ -184,6 +184,7 @@ fun VisualLinkTarget.needsText(look: StudioLook): String? = when (unmet(look)) {
     VisualLinkTarget.Need.TV_CRT -> stringResource(R.string.music_link_needs_crt_look)
     VisualLinkTarget.Need.TV_ROYALE -> stringResource(R.string.music_link_needs_royale_look)
     VisualLinkTarget.Need.AMBIENT -> stringResource(R.string.music_link_needs_ambient)
+    VisualLinkTarget.Need.ART_GLOW -> stringResource(R.string.music_link_needs_art_glow)
 }
 
 /**

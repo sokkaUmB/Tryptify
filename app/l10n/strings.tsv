@@ -2270,6 +2270,7 @@ music_link_needs_crt	Turn on the CRT effect to see this move.	开启 CRT 效果�
 music_link_needs_crt_look	Only the CRT look has this. Choose it to see this move.	只有 CRT 外观有这项设置。选择它后才能看到它变化。	この設定は CRT の見た目だけにあります。選ぶと動きが見えます。	Seul le rendu CRT a ce réglage. Choisissez-le pour le voir bouger.	Solo el aspecto CRT tiene este ajuste. Elígelo para verlo moverse.	Bu ayar yalnızca CRT görünümünde var. Hareket ettiğini görmek için onu seçin.	Nur der CRT-Look hat diese Einstellung. Wähle ihn, um die Bewegung zu sehen.
 music_link_needs_royale_look	Only the CRT-Royale look has this. Choose it to see this move.	只有 CRT-Royale 外观有这项设置。选择它后才能看到它变化。	この設定は CRT-Royale の見た目だけにあります。選ぶと動きが見えます。	Seul le rendu CRT-Royale a ce réglage. Choisissez-le pour le voir bouger.	Solo el aspecto CRT-Royale tiene este ajuste. Elígelo para verlo moverse.	Bu ayar yalnızca CRT-Royale görünümünde var. Hareket ettiğini görmek için onu seçin.	Nur der CRT-Royale-Look hat diese Einstellung. Wähle ihn, um die Bewegung zu sehen.
 music_link_needs_ambient	Turn on the ambient visualizer to see this move.	开启氛围可视化后才能看到它变化。	「アンビエント ビジュアライザ」をオンにすると動きが見えます。	Activez le visualiseur d’ambiance pour voir ce réglage bouger.	Activa el visualizador ambiental para verlo moverse.	Bunun hareket ettiğini görmek için ortam görselleştiricisini açın.	Schalte den Ambient-Visualizer ein, um die Bewegung zu sehen.
+music_link_needs_art_glow	Turn on Glow behind album art to see this move.	开启“专辑封面后的光晕”后才能看到它变化。	「アートワークの後光」をオンにすると動きが見えます。	Activez Halo derrière la pochette pour voir ce réglage bouger.	Activa Brillo detrás de la portada para ver cómo se mueve.	Bunun hareket ettiğini görmek için Albüm kapağının arkasında parlama'yı açın.	Schalte Leuchten hinter dem Albumcover ein, um das in Bewegung zu sehen.
 music_link_tv_strength	Strength	强度	強さ	Intensité	Intensidad	Güç	Stärke
 music_link_tv_brightness	Brightness	亮度	明るさ	Luminosité	Brillo	Parlaklık	Helligkeit
 music_link_tv_scanlines	Scanlines	扫描线	走査線	Lignes de balayage	Líneas de escaneo	Tarama çizgileri	Scanlines
@@ -2277,6 +2278,12 @@ music_link_tv_mask	Mask	荫罩	マスク	Masque	Máscara	Maske	Maske
 music_link_tv_glow	Glow	辉光	グロー	Lueur	Resplandor	Parıltı	Leuchten
 music_link_tv_sharpness	Sharpness	锐度	シャープさ	Netteté	Nitidez	Keskinlik	Schärfe
 music_link_tv_chromatic	Chromatic shift	色偏	色ずれ	Décalage chromatique	Desfase cromático	Renk kayması	Farbversatz
+music_link_tv_curve_top	Curve, top & bottom	弧度（上下）	湾曲（上下）	Courbure haut et bas	Curva arriba y abajo	Eğrilik, üst ve alt	Wölbung oben & unten
+music_link_tv_curve_side	Curve, sides	弧度（左右）	湾曲（左右）	Courbure côtés	Curva a los lados	Eğrilik, yanlar	Wölbung seitlich
+music_link_tv_tilt_side	Tilt, sideways	左右倾斜	左右の傾き	Inclinaison latérale	Inclinación lateral	Yana eğim	Neigung seitlich
+music_link_tv_tilt_top	Tilt, up & down	上下倾斜	上下の傾き	Inclinaison haut et bas	Inclinación arriba y abajo	Yukarı ve aşağı eğim	Neigung oben & unten
+music_link_art_glow_radius	Cover glow radius	封面光晕半径	アートワークの後光の半径	Rayon du halo de la pochette	Radio del brillo de la portada	Kapak parlaması yarıçapı	Radius des Cover-Leuchtens
+music_link_art_glow_brightness	Cover glow brightness	封面光晕亮度	アートワークの後光の明るさ	Luminosité du halo de la pochette	Brillo del resplandor de la portada	Kapak parlaması parlaklığı	Helligkeit des Cover-Leuchtens
 music_link_tv_bezel	Bezel	边框	ベゼル	Cadre	Marco	Çerçeve	Rahmen
 music_link_tv_corners	Rounded corners	圆角	角の丸み	Coins arrondis	Esquinas redondeadas	Yuvarlak köşeler	Runde Ecken
 music_link_tv_vignette	Vignette	暗角	ビネット	Vignettage	Viñeta	Vinyet	Vignette

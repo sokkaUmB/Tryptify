@@ -274,6 +274,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             default = TV_DEFAULTS.curveTopDeg,
             range = 0f..GlyphTvTuning.MAX_CURVE_DEG,
             onChange = { drag(tv.copy(curveTopDeg = it)) },
+            linkKey = "tv.curveTopDeg",
             onDone = commit,
         )
         CrtSlider(
@@ -283,6 +284,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             default = TV_DEFAULTS.curveSideDeg,
             range = 0f..GlyphTvTuning.MAX_CURVE_DEG,
             onChange = { drag(tv.copy(curveSideDeg = it)) },
+            linkKey = "tv.curveSideDeg",
             onDone = commit,
         )
         val tilts = -GlyphTvTuning.MAX_TILT_DEG..
@@ -294,6 +296,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             default = TV_DEFAULTS.tiltSideDeg,
             range = tilts,
             onChange = { drag(tv.copy(tiltSideDeg = it)) },
+            linkKey = "tv.tiltSideDeg",
             onDone = commit,
         )
         CrtSlider(
@@ -303,6 +306,7 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             default = TV_DEFAULTS.tiltTopDeg,
             range = tilts,
             onChange = { drag(tv.copy(tiltTopDeg = it)) },
+            linkKey = "tv.tiltTopDeg",
             onDone = commit,
         )
         CrtSlider(
@@ -497,7 +501,7 @@ private fun CrtSlider(
      * The music link key ("tv.strength"), as on the Studio's own sliders: a
      * note beside the label, green while linked, and a press and hold on the
      * label opens the link sheet. Only where a [LocalMusicLinkHost] is
-     * provided, which Settings does not.
+     * provided: Settings and the Studio both do.
      */
     linkKey: String? = null,
 ) {

@@ -546,6 +546,15 @@ player away while it is open. Fitted under a preview and over the bar, it had
 room for its title and its first row, and every choice was a scroll away. The
 meter in its band picture is what shows the link moving.
 
+Settings › Appearance links too: the CRT effect's sliders (the same
+`CrtEffectSetting` the Studio shows) and the cover glow's radius and
+brightness. `SettingsScreen` has its own host, driver and `StudioLinkOverlay`,
+the overlay a sibling of the page's haze source, as in the Studio. The cover
+glow is drawn in cover-art view, so the player runs its two links there
+(`VisualLinkTargets.COVER_KEYS`) while the rest of `lyrics.` wait for the
+lyrics. Colour transition is not linked: it is an animation's length, read in
+composition.
+
 Every Studio tab links, not only Lyrics. A key's prefix is the part of the app
 that draws it (`LinkArea`): `lyrics.`, `player.` (the play disc, chevrons and
 dock), `panels.` (the mini player, tab bar and every pane), `tv.` (the CRT
@@ -568,9 +577,14 @@ haze frost goes through `Modifier.glassFrost`, whose `hazeEffect` block re-reads
 the blur and tint each frame. Never build a `HazeStyle` from the glass settings
 in composition: the blur would ignore its link.
 
-The CRT effect draws `appLive.tv(tuning)`, but touches are still mapped through
-the tuning as set (`appTvNow`), and the curve and tilt cannot be linked: a tube
-bending with the beat would move where taps land. The ambient visualizer's
+The CRT effect draws `appLive.tv(tuning)`, and touches are bent through that
+same live shape, so the curve and tilt can be linked. **A gesture keeps the
+tube it started on** (`gestureTube` in `MainActivity.dispatchTouchEvent`), from
+the first finger down to the last up. Bent through each frame's shape, a finger
+held still would drift with the beat and a tap could become a scroll; held, a
+tap lands where it was seen. The lyrics' own curve still steps aside by the
+tube as set (`LocalAppTube` is `appTvNow`), so a linked curve does not switch
+it on and off with every beat. The ambient visualizer's
 render thread is handed its live opacity and black point (`updateLive`), NaN
 meaning "as saved", since it is a GL thread that cannot read Compose state.
 

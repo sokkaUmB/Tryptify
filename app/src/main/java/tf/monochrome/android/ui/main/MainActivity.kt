@@ -77,11 +77,19 @@ class MainActivity : ComponentActivity() {
     private var pendingPostRoute by mutableStateOf<String?>(null)
 
     /**
-     * The app-wide CRT's sliders while its picture is drawn, for
-     * [dispatchTouchEvent] to bend taps through a curved tube; null when the
-     * effect is off. [appTubeBounds] is where its layer sits in the window.
+     * The app-wide CRT's sliders as its picture is drawn this frame, music
+     * links included, for [dispatchTouchEvent] to bend taps through a curved
+     * tube; null when the effect is off. [appTubeBounds] is where its layer
+     * sits in the window.
      */
     private var appTube: (() -> tf.monochrome.android.glyph.engine.GlyphTvTuning)? = null
+
+    /**
+     * The tube's shape as the gesture under way began on it. A linked curve or
+     * tilt moves with the beat; bent through each frame's shape, a finger held
+     * still would drift and a tap could turn into a scroll.
+     */
+    private var gestureTube: tf.monochrome.android.glyph.engine.GlyphTvTuning? = null
     private var appTubeLook = tf.monochrome.android.glyph.engine.GlyphTvShader.OFF
     private val appTubeBounds = android.graphics.RectF()
 
@@ -219,8 +227,8 @@ class MainActivity : ComponentActivity() {
                 delayMs = linkDelayMs,
             )
             // What the CRT shader draws: the tuning with its linked settings
-            // live, read in the shader's layer block. Touches are mapped through
-            // appTvNow, the tuning as set: a link never moves where a tap lands.
+            // live, read in the shader's layer block. Touches are bent through
+            // the same, held for each gesture (dispatchTouchEvent).
             val appTvDrawn = remember(appTvNow, appLive) { { appLive.tv(appTvNow()) } }
             val immersiveFullScreen by preferences.immersiveFullScreen
                 .collectAsStateWithLifecycle(initialValue = false)
@@ -347,7 +355,7 @@ class MainActivity : ComponentActivity() {
                         if (tvRuns && appTvOnLyrics) tf.monochrome.android.ui.glyph.LyricsTv(appTvShader, appTvDrawn) else null
                     }
                     SideEffect {
-                        appTube = if (appTv) appTvNow else null
+                        appTube = if (appTv) appTvDrawn else null
                         appTubeLook = appTvShader
                         tf.monochrome.android.debug.CrashBreadcrumbs.note(
                             "crt",
@@ -439,10 +447,18 @@ class MainActivity : ComponentActivity() {
     /**
      * Under the app-wide CRT's Curvature the picture is bowed but the screens
      * under it are not: a tap goes to the spot on them that is seen under the
-     * finger, so a button near a corner is pressed where it shows.
+     * finger, so a button near a corner is pressed where it shows. A gesture
+     * keeps the shape it started on, from the first finger down to the last up.
      */
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        val tuning = appTube?.invoke()
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> gestureTube = appTube?.invoke()
+            // Turned off mid-gesture, the rest of it goes through flat; turned
+            // on mid-gesture, it waits for the next finger down.
+            else -> if (appTube == null) gestureTube = null
+        }
+        val tuning = gestureTube
+        if (ev.actionMasked == MotionEvent.ACTION_UP || ev.actionMasked == MotionEvent.ACTION_CANCEL) gestureTube = null
         val bounds = appTubeBounds
         if (tuning == null || !tuning.reshaped || bounds.isEmpty || !tf.monochrome.android.ui.glyph.tubeDrawable(appTubeLook)) {
             return super.dispatchTouchEvent(ev)

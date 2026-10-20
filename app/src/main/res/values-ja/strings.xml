@@ -2250,6 +2250,7 @@
     <string name="music_link_needs_crt_look">この設定は CRT の見た目だけにあります。選ぶと動きが見えます。</string>
     <string name="music_link_needs_royale_look">この設定は CRT-Royale の見た目だけにあります。選ぶと動きが見えます。</string>
     <string name="music_link_needs_ambient">「アンビエント ビジュアライザ」をオンにすると動きが見えます。</string>
+    <string name="music_link_needs_art_glow">「アートワークの後光」をオンにすると動きが見えます。</string>
     <string name="music_link_tv_strength">強さ</string>
     <string name="music_link_tv_brightness">明るさ</string>
     <string name="music_link_tv_scanlines">走査線</string>
@@ -2257,6 +2258,12 @@
     <string name="music_link_tv_glow">グロー</string>
     <string name="music_link_tv_sharpness">シャープさ</string>
     <string name="music_link_tv_chromatic">色ずれ</string>
+    <string name="music_link_tv_curve_top">湾曲（上下）</string>
+    <string name="music_link_tv_curve_side">湾曲（左右）</string>
+    <string name="music_link_tv_tilt_side">左右の傾き</string>
+    <string name="music_link_tv_tilt_top">上下の傾き</string>
+    <string name="music_link_art_glow_radius">アートワークの後光の半径</string>
+    <string name="music_link_art_glow_brightness">アートワークの後光の明るさ</string>
     <string name="music_link_tv_bezel">ベゼル</string>
     <string name="music_link_tv_corners">角の丸み</string>
     <string name="music_link_tv_vignette">ビネット</string>
