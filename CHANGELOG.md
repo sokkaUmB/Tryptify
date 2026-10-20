@@ -12,7 +12,7 @@
 
 #### Themes carry the CRT effect
 - **A theme can carry your CRT effect now**: whether it's on, its look, every slider, and whether it draws over the whole app or only the lyrics. It's a part of its own, CRT effect, so you choose whether to publish it and whether to put it on, like the others.
-- **Before, the CRT never travelled with a theme**, so a theme made with the effect over the lyrics came out without it. The Theme Store server takes the new part after its next deploy; older app versions skip it.
+- **Before, the CRT never travelled with a theme**, so a theme made with the effect over the lyrics came out without it. Older app versions skip the part.
 
 #### A live board while a room plays
 - **Everyone's score is on a board down the left side while a room plays**, as in osu!: place, name, score and combo, best first, with your own card lit. If you're further down than the cards shown, you stay pinned at the bottom with your real place.
