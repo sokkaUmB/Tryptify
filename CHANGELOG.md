@@ -35,6 +35,9 @@
 
 ### Changed
 
+#### APIs in two groups
+- **Settings › Connections › APIs lists Streaming and Trypt Mania apart.** The servers that search and play (TIDAL, Qobuz, Apple Music, Deezer) are under Streaming; the ones that only chart, time lyrics or run rooms for Trypt Mania are under Trypt Mania. ↑ moves a server above the one before it in its own group, which is the order that decides which server is used.
+
 #### Player Visuals Studio's tabs are glass pills
 - **Player, UI panels, Lyrics and Visualizer are glass pills now**, like the chips at the top of Settings, instead of underlined tabs that broke "UI panels" and "Visualizer" over two lines. They scroll sideways if they don't fit, and the one you're on scrolls into view.
 

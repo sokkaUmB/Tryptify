@@ -1047,7 +1047,12 @@ class SettingsViewModel @Inject constructor(
             val list = preferences.apiServers.first().toMutableList()
             val i = list.indexOfFirst { it.url == url }
             if (i <= 0) return@launch
-            list.add(i - 1, list.removeAt(i))
+            // Above the one before it in its own group: the list shows Streaming
+            // and Trypt Mania apart, and passing a server of the other group
+            // would change nothing on screen.
+            val group = list[i].isTryptMania
+            val j = (i - 1 downTo 0).firstOrNull { list[it].isTryptMania == group } ?: return@launch
+            list.add(j, list.removeAt(i))
             preferences.setApiServers(list)
         }
     }

@@ -12,6 +12,14 @@ class ApiServerTest {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test
+    fun `only a server that serves nothing but Trypt Mania is listed under it`() {
+        assertTrue(ApiServer("https://a", setOf(ApiService.STEMS, ApiService.LYRICS)).isTryptMania)
+        assertTrue(ApiServer("https://b", setOf(ApiService.MULTIPLAYER)).isTryptMania)
+        assertTrue("a catalog makes it a streaming one", !ApiServer("https://c", setOf(ApiService.TIDAL, ApiService.STEMS)).isTryptMania)
+        assertTrue("one not checked yet is streaming", !ApiServer("https://d").isTryptMania)
+    }
+
+    @Test
     fun `a typed address becomes a base url`() {
         assertEquals("https://hifi.example.com", ApiServers.normalizeUrl("hifi.example.com"))
         assertEquals("https://hifi.example.com", ApiServers.normalizeUrl("  https://hifi.example.com/// "))
