@@ -3098,4 +3098,9 @@
         <item quantity="many">Se encontró portada para %1$d de %2$d canciones</item>
         <item quantity="other">Se encontró portada para %1$d de %2$d canciones</item>
     </plurals>
+    <string name="party_members_title">Quién escucha</string>
+    <string name="party_member_host">Anfitrión</string>
+    <string name="party_member_web">En la web</string>
+    <string name="party_member_away">Ausente</string>
+    <string name="party_cd_show_members">Mostrar quién escucha</string>
 </resources>

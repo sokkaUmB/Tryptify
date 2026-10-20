@@ -3026,4 +3026,9 @@
         <item quantity="one">Albumcover für %1$d von %2$d Titel gefunden</item>
         <item quantity="other">Albumcover für %1$d von %2$d Titeln gefunden</item>
     </plurals>
+    <string name="party_members_title">Wer zuhört</string>
+    <string name="party_member_host">Gastgeber</string>
+    <string name="party_member_web">Im Web</string>
+    <string name="party_member_away">Abwesend</string>
+    <string name="party_cd_show_members">Zeigen, wer zuhört</string>
 </resources>

@@ -3098,4 +3098,9 @@
         <item quantity="many">Pochette trouvée pour %1$d titres sur %2$d</item>
         <item quantity="other">Pochette trouvée pour %1$d titres sur %2$d</item>
     </plurals>
+    <string name="party_members_title">Qui écoute</string>
+    <string name="party_member_host">Hôte</string>
+    <string name="party_member_web">Sur le web</string>
+    <string name="party_member_away">Absent</string>
+    <string name="party_cd_show_members">Afficher qui écoute</string>
 </resources>

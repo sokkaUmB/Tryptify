@@ -94,8 +94,11 @@ To add:
   `WidgetSession.withSessionController` pattern) and `QueueManager` (the
   `RadioQueueManager` pattern), so the notification, lock screen and
   background play are the player's own.
-- Sync: follow the anchor with `ClockSync`; seek when more than about 250 ms
-  out, and re-check every few seconds.
+- Sync: follow the anchor with `ClockSync`; seek only when more than 600 ms
+  out, seen twice in a row, never in the 4 s after a load or a seek, and aim
+  ahead by what a seek has been costing (`PartyDrift`). Seeking at a quarter
+  second every second made the sound drop every second: a seek's refill put
+  the player behind again.
 - A Party screen: queue, now playing, members, chat, Share songs, invite
   link and code. Add to party from song menus.
 - Notifications: a "Listening party" channel for joins, chat and songs added,

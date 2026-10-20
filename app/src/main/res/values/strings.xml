@@ -3028,4 +3028,9 @@
         <item quantity="one">Found album art for %1$d of %2$d song</item>
         <item quantity="other">Found album art for %1$d of %2$d songs</item>
     </plurals>
+    <string name="party_members_title">Who\'s listening</string>
+    <string name="party_member_host">Host</string>
+    <string name="party_member_web">On the web</string>
+    <string name="party_member_away">Away</string>
+    <string name="party_cd_show_members">Show who\'s listening</string>
 </resources>

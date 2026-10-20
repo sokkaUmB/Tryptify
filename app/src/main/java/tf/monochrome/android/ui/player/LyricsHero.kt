@@ -764,7 +764,8 @@ internal fun SyncedLyricsView(
                 // Text vs per-letter glyphs at natural advances), never the
                 // rows themselves — so toggling active state moves nothing.
                 val perLetter = isActive && fx.rotationDegrees > 0.05f
-                val time = if (perLetter) rememberFrameSeconds() else null
+                val live = LocalVisualLinks.current
+                val time = if (perLetter) rememberLetterWaveSeconds { live.lyrics(fx).waveSpeed } else null
                 Column(
                     modifier = lineModifier,
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -817,7 +818,8 @@ internal fun KaraokeLyricLine(
     // One frame clock per line.
     val fx = LocalLyricsFx.current
     val perLetter = isActive && fx.rotationDegrees > 0.05f
-    val time = if (perLetter) rememberFrameSeconds() else null
+    val live = LocalVisualLinks.current
+    val time = if (perLetter) rememberLetterWaveSeconds { live.lyrics(fx).waveSpeed } else null
     val lyricFont = rememberLyricFontFamily(fx)
     // Frozen format: rows wrap from the state-independent measurement style,
     // so a given word always sits on the same row whether the line is active
@@ -1290,7 +1292,8 @@ private fun Letter3DText(
             // Music links move the tilt and the travel here, in the layer
             // block, so the wave answers the beat without recomposing a letter.
             val fx = live.lyrics(baseFx)
-            val t = time.value * fx.waveSpeed
+            // Seconds of wave: the speed is already in it (rememberLetterWaveSeconds).
+            val t = time.value
             // Slow temporal frequency (1.5 rad/s): the wave glides instead of
             // flickering — the eye tracks a slow ripple as one smooth motion.
             val p = t * 1.5f + phase

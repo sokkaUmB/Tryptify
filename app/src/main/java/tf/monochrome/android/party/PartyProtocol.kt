@@ -255,13 +255,17 @@ object PartyProtocol {
 }
 
 /**
- * What following the party's clock asks of the player, given where it is
- * ([localMs]) and where the party is ([targetMs]): nothing within
- * [toleranceMs], else a seek. A player more than the tolerance out is heard
- * as out of step; a quarter second is about where a room starts to notice.
+ * The party's moment as a position in its song, and the rule for when a
+ * player out of step is moved to it.
  */
 object PartySync {
-    const val TOLERANCE_MS = 250L
+    /**
+     * How far from the party's moment a player may drift before it is moved:
+     * more than a room of people in different places can hear, less than a
+     * line of a song. A seek drops the sound while the player refills, so it
+     * is the last resort, not a correction made every second.
+     */
+    const val TOLERANCE_MS = 600L
 
     fun needsSeek(localMs: Long, targetMs: Long, toleranceMs: Long = TOLERANCE_MS): Boolean =
         kotlin.math.abs(localMs - targetMs) > toleranceMs
@@ -270,5 +274,80 @@ object PartySync {
     fun target(playback: PartyPlayback, serverNowMs: Long, durationMs: Long): Long {
         val at = playback.positionAt(serverNowMs)
         return if (durationMs > 0) at.coerceIn(0, durationMs) else at.coerceAtLeast(0)
+    }
+}
+
+/**
+ * When to seek a player that has drifted from the party, and where to.
+ *
+ * Seeking every second the player was a quarter second out made the sound
+ * drop every second: each seek costs the time the player takes to refill,
+ * which leaves it behind again, so the next check seeked again. Now:
+ *
+ * - nothing is checked for [settleMs] after a song is loaded or a seek, while
+ *   the player settles;
+ * - a drift past [PartySync.TOLERANCE_MS] has to be seen [confirm] times in a
+ *   row, so a moment of clock jitter or a position read mid-update moves
+ *   nothing;
+ * - a seek aims ahead of the party by what the last seeks cost ([leadMs]),
+ *   learnt from where the player lands, so one seek lands in step.
+ */
+class PartyDrift(
+    private val toleranceMs: Long = PartySync.TOLERANCE_MS,
+    private val settleMs: Long = 4_000,
+    private val confirm: Int = 2,
+) {
+    /** How far ahead of the party a seek aims: what a seek has been costing. */
+    var leadMs: Long = 250
+        private set
+    private var quietUntil = 0L
+    private var strikes = 0
+    private var measuring = false
+
+    /** A song loaded (or reloaded) at [nowMs]: give it time to start. */
+    fun loaded(nowMs: Long) {
+        quietUntil = nowMs + settleMs
+        strikes = 0
+        measuring = false
+    }
+
+    /**
+     * The party moved on purpose (the host seeked or resumed): the next check
+     * may seek at once, without the settling or the second look a drift gets.
+     */
+    fun moved() {
+        quietUntil = 0
+        strikes = confirm - 1
+    }
+
+    /** How far out the player is: positive ahead of the party, negative behind. */
+    fun drift(localMs: Long, targetMs: Long): Long = localMs - targetMs
+
+    /**
+     * The player at [localMs] and the party at [targetMs], at [nowMs] on this
+     * phone's clock: where to seek to, or null to leave it playing.
+     */
+    fun check(localMs: Long, targetMs: Long, nowMs: Long): Long? {
+        if (nowMs < quietUntil) return null
+        val drift = drift(localMs, targetMs)
+        if (measuring) {
+            // Where the last seek landed says what a seek costs: behind by
+            // that much means aim that much further ahead next time.
+            leadMs = (leadMs - drift).coerceIn(0, MAX_LEAD_MS)
+            measuring = false
+        }
+        if (kotlin.math.abs(drift) <= toleranceMs) {
+            strikes = 0
+            return null
+        }
+        if (++strikes < confirm) return null
+        strikes = 0
+        quietUntil = nowMs + settleMs
+        measuring = true
+        return targetMs + leadMs
+    }
+
+    private companion object {
+        const val MAX_LEAD_MS = 2_000L
     }
 }

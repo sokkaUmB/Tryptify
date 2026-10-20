@@ -189,7 +189,7 @@ Personal fields are omitted here — never set them in a preset.
 | `glassFrost` | 0..1 | 0 | Shader grain on the letters: 0.7+ = sea glass. |
 | `glassRayCatch` | 0..1 | 0.7 | How much the glass letters catch the god rays' light: lit bevels, a glint and a lit face toward the source; with a backlight, glowing rims. Only while `godRays` is on. |
 | `rotationDegrees` | 0..25 | 12 | Per-letter 3D tilt amplitude **and gate** (≤0.05 = no wave). |
-| `waveSpeed` | 0.25..3 | 1 | Wave temporal rate. |
+| `waveSpeed` | 0.25..3 | 1 | Wave temporal rate. It adds to the wave's own clock each frame (`rememberLetterWaveSeconds`), so a change speeds the wave up from where it is; music-linkable (`lyrics.waveSpeed`). |
 | `wavePhaseStep` | 0.05..0.9 | 0.22 | Phase advance per letter. Low = smooth ribbon; high = choppy/glitchy. |
 | `waveTravelDp` | 0..8 | 3 | Vertical bob amplitude of each letter. |
 | `shadowDepth` | 0..1 | 0.7 | Soft shadow cast on the background under every lyric line, falling away from the light (the rays' light when they are on, else the glass key light). 0 = none, 1 = darkest and softest. Not on the letters: it is its own layer outside the glass. |

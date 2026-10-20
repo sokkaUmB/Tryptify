@@ -43,9 +43,11 @@ enum class LinkArea(@StringRes val title: Int, val prefix: String) {
  *
  *  - Switches and choices (god rays on/off, the light source, the layer): a
  *    switch would flash on and off with the beat.
- *  - Anything multiplied by elapsed time — the orbit, the wave speed, the wave
+ *  - Anything multiplied by elapsed time — the god rays' orbit, the wave
  *    tightness: moving the rate moves the whole phase, so the light and the
- *    letters would jump instead of speeding up.
+ *    letters would jump instead of speeding up. The wave speed was one until
+ *    the wave got a clock of its own that the speed adds to each frame
+ *    (rememberLetterWaveSeconds); a rate can be a target only that way.
  *  - Anything that gates a clock or a sensor (surface motion, tilt), or lays
  *    the lyrics out (size, spacing, margins, lines): those are read in
  *    composition, and moving them every frame would rebuild the lyric list.
@@ -302,6 +304,11 @@ object VisualLinkTargets {
         // The 3D wave, the shadow under it, and the bend of the whole block.
         lyric("rotationDegrees", R.string.fx_tilt, VisualLinkTarget.Group.WAVE, 0f, 25f,
             VisualLinkTarget.Need.WAVE, { it.rotationDegrees }, { f, v -> f.copy(rotationDegrees = v) }, ::deg),
+        // The speed adds to the wave's own clock each frame, never multiplies
+        // the app's, so a linked speed speeds the wave up instead of throwing it.
+        lyric("waveSpeed", R.string.fx_wave_speed, VisualLinkTarget.Group.WAVE, 0.25f, 3f,
+            VisualLinkTarget.Need.WAVE, { it.waveSpeed }, { f, v -> f.copy(waveSpeed = v) },
+            { String.format(Locale.US, "%.2fx", it) }),
         lyric("waveTravelDp", R.string.fx_wave_travel, VisualLinkTarget.Group.WAVE, 0f, 8f,
             VisualLinkTarget.Need.WAVE, { it.waveTravelDp }, { f, v -> f.copy(waveTravelDp = v) },
             { String.format(Locale.US, "%.1f dp", it) }),

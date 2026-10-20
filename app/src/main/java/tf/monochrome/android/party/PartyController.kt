@@ -88,7 +88,12 @@ data class PartyUi(
     /** A shared song's download, 0 to 1, while it is fetched. */
     val fetching: Float? = null,
     val shareSongs: Boolean = true,
+    /** Covers this phone has for songs the party carries none for (a file's own picture), by item id. */
+    val covers: Map<String, String> = emptyMap(),
 ) {
+    /** The cover to show for [item]: the party's, else this phone's own copy's. */
+    fun coverFor(item: PartyItem): String? = item.cover ?: covers[item.id]
+
     val party: PartyView? get() = client.party
     val myId: String? get() = client.myId
     val isHost: Boolean get() = client.isHost
@@ -132,8 +137,18 @@ class PartyController @Inject constructor(
     private val hearing = MutableStateFlow(PartyHearing.IDLE)
     private val fetching = MutableStateFlow<Float?>(null)
 
+    /** Each song's cover as this phone has it (its own copy's), by item id, for songs the party sends none for. */
+    private val covers = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /** When to move a drifting player, and how far ahead a seek must aim. */
+    private val drift = PartyDrift()
+    private var wasPaused = false
+
+    /** The party's playback as last seen, to tell a host's seek from a drift. */
+    private var lastAnchor: PartyPlayback? = null
+
     val state: StateFlow<PartyUi> =
-        combine(client.state, hearing, fetching, prefs.shareSongs) { c, h, f, share -> PartyUi(c, h, f, share) }
+        combine(client.state, hearing, fetching, prefs.shareSongs, covers) { c, h, f, share, art -> PartyUi(c, h, f, share, art) }
             .stateIn(scope, SharingStarted.Eagerly, PartyUi())
 
     /** Whether a party is on: the song menus offer "Add to party" only then. */
@@ -234,6 +249,7 @@ class PartyController @Inject constructor(
         mine.clear()
         pending.clear()
         fetched.clear()
+        covers.value = emptyMap()
         hearing.value = PartyHearing.IDLE
         fetching.value = null
     }
@@ -314,7 +330,13 @@ class PartyController @Inject constructor(
         }
         queueManager.setQueue(listOf(legacy), 0)
         val party = client.state.value.party ?: return
-        val target = PartySync.target(party.playback, client.serverNowMs(), item.durationMs)
+        // A playing song is started where the party will be once it has
+        // loaded, not where it was when asked.
+        val target = PartySync.target(party.playback, client.serverNowMs(), item.durationMs) +
+            if (party.playback.paused) 0 else drift.leadMs
+        coverOf(legacy)?.let { art -> covers.value = covers.value + (item.id to art) }
+        drift.loaded(System.currentTimeMillis())
+        wasPaused = party.playback.paused
         selfChange = true
         try {
             mc.setMediaItem(mediaItem, target)
@@ -353,6 +375,14 @@ class PartyController @Inject constructor(
         } ?: return null
         return playableLegacy(track)
     }
+
+    /**
+     * [track]'s cover as the app's lists draw it: a catalogue cover's address,
+     * or a local file's own picture (its path, which the app's image loader
+     * reads the embedded picture from).
+     */
+    private fun coverOf(track: Track): String? =
+        track.album?.cover?.takeIf { it.isNotBlank() }?.let { buildCoverUrl(it, 640) }
 
     private suspend fun playable(track: UnifiedTrack): Pair<MediaItem, Track>? {
         val resolved = withContext(Dispatchers.IO) { streamResolver.resolveUnifiedTrack(track) }
@@ -410,10 +440,17 @@ class PartyController @Inject constructor(
             }
             if (party.playback.paused) {
                 if (mc.playWhenReady) self { mc.pause() }
+                // Paused, a seek drops nothing: the player is put exactly where the party stopped.
                 val target = PartySync.target(party.playback, client.serverNowMs(), item.durationMs)
                 if (PartySync.needsSeek(mc.currentPosition, target)) self { mc.seekTo(target) }
+                wasPaused = true
                 hearing.value = PartyHearing.PAUSED
                 continue
+            }
+            if (wasPaused) {
+                // Just resumed: the player starts from where it waits, so it gets time to start.
+                wasPaused = false
+                drift.loaded(System.currentTimeMillis())
             }
             if (pausedHere) {
                 hearing.value = PartyHearing.PAUSED_HERE
@@ -424,12 +461,19 @@ class PartyController @Inject constructor(
                 hearing.value = PartyHearing.CATCHING_UP
                 continue
             }
+            // A new anchor for the same song is the host seeking: followed at once.
+            val anchor = party.playback
+            if (lastAnchor != null && lastAnchor != anchor && lastAnchor?.itemId == anchor.itemId) drift.moved()
+            lastAnchor = anchor
             val target = PartySync.target(party.playback, client.serverNowMs(), item.durationMs)
-            if (PartySync.needsSeek(mc.currentPosition, target)) {
-                self { mc.seekTo(target) }
+            val local = mc.currentPosition
+            val seekTo = drift.check(local, target, System.currentTimeMillis())
+            if (seekTo != null) {
+                self { mc.seekTo(seekTo.coerceAtLeast(0)) }
                 hearing.value = PartyHearing.CATCHING_UP
             } else {
-                hearing.value = PartyHearing.IN_SYNC
+                hearing.value =
+                    if (PartySync.needsSeek(local, target)) PartyHearing.CATCHING_UP else PartyHearing.IN_SYNC
             }
         }
     }
@@ -461,6 +505,8 @@ class PartyController @Inject constructor(
                 is PartyMsg.Added -> {
                     val own = pending.remove(msg.ref) ?: return@collect
                     mine[msg.itemId] = own
+                    (own.unified?.let { coverOf(it.toLegacyTrack()) } ?: own.legacy?.let(::coverOf))
+                        ?.let { art -> covers.value = covers.value + (msg.itemId to art) }
                     val file = own.file
                     if (file != null && prefs.shareSongs.value) {
                         scope.launch {

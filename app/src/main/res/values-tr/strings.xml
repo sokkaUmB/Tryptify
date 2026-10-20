@@ -3026,4 +3026,9 @@
         <item quantity="one">%2$d parçanın %1$d tanesi için albüm kapağı bulundu</item>
         <item quantity="other">%2$d parçanın %1$d tanesi için albüm kapağı bulundu</item>
     </plurals>
+    <string name="party_members_title">Kimler dinliyor</string>
+    <string name="party_member_host">Ev sahibi</string>
+    <string name="party_member_web">Web’de</string>
+    <string name="party_member_away">Uzakta</string>
+    <string name="party_cd_show_members">Kimlerin dinlediğini göster</string>
 </resources>

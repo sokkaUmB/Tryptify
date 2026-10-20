@@ -2954,4 +2954,9 @@
     <plurals name="art_found_many">
         <item quantity="other">%2$d 曲中 %1$d 曲のアルバムアートが見つかりました</item>
     </plurals>
+    <string name="party_members_title">聴いている人</string>
+    <string name="party_member_host">ホスト</string>
+    <string name="party_member_web">ウェブから</string>
+    <string name="party_member_away">離席中</string>
+    <string name="party_cd_show_members">聴いている人を表示</string>
 </resources>

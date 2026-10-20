@@ -530,6 +530,16 @@ the bass pulse is read. Read in composition, every lyric layer would recompose
 sixty times a second. Composition may read `linkedKeys` alone, which changes
 only when the links do — to keep a clock running for a linked ray setting.
 
+**A rate is a target only when it adds to a phase, never when it multiplies
+the clock.** The 3D letter wave runs on a clock of its own,
+`rememberLetterWaveSeconds`, which each frame moves on by the frame's length
+times the wave speed (linked or not) and wraps at 20π, a whole turn of every
+term the letters use. It was the app clock times the speed: the slider then
+threw the letters to a new pose at each step instead of speeding them up,
+looked dead while dragged, and a link on it would have shaken them every
+frame. One clock for the app, so every line rides the same wave; it stops
+with "Disable animations" and the CRT over the whole app, as the glass does.
+
 The knobs are the same rule in native code: the engine keeps each linked
 knob's own value (`Route::base`) and saves *that*, so a mix saved mid-song
 holds what the listener set, not where a kick left it. A knob turned while

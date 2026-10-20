@@ -133,10 +133,46 @@ class PartyProtocolTest {
     }
 
     @Test
-    fun aQuarterSecondOutIsInStepAndMoreIsMoved() {
-        assertFalse(PartySync.needsSeek(localMs = 10_000, targetMs = 10_250))
-        assertTrue(PartySync.needsSeek(localMs = 10_000, targetMs = 10_251))
+    fun withinSixHundredMillisecondsIsInStep() {
+        assertFalse(PartySync.needsSeek(localMs = 10_000, targetMs = 10_600))
+        assertTrue(PartySync.needsSeek(localMs = 10_000, targetMs = 10_601))
         assertTrue(PartySync.needsSeek(localMs = 12_000, targetMs = 10_000))
+    }
+
+    @Test
+    fun aDriftIsMovedOnlyOnceSeenTwiceAndNotWhileSettling() {
+        val drift = PartyDrift(toleranceMs = 600, settleMs = 4_000, confirm = 2)
+        drift.loaded(nowMs = 0)
+        // Settling after the load: nothing moves, however far out.
+        assertNull(drift.check(localMs = 0, targetMs = 5_000, nowMs = 1_000))
+        // Out once: a blip, left alone. Out twice: moved, aiming ahead.
+        assertNull(drift.check(localMs = 9_000, targetMs = 10_000, nowMs = 5_000))
+        // Aimed where the party is now, plus what a seek costs.
+        assertEquals(11_000L + 250, drift.check(localMs = 10_000, targetMs = 11_000, nowMs = 6_000))
+        // Just seeked: settling again, so the next second does not seek again.
+        assertNull(drift.check(localMs = 11_000, targetMs = 12_000, nowMs = 7_000))
+    }
+
+    @Test
+    fun aHostsSeekIsFollowedAtOnce() {
+        val drift = PartyDrift(toleranceMs = 600, settleMs = 4_000, confirm = 2)
+        drift.loaded(nowMs = 0)
+        drift.moved()
+        // Still inside the settling time, and seen only once: followed anyway.
+        assertEquals(40_000L + 250, drift.check(localMs = 12_000, targetMs = 40_000, nowMs = 1_000))
+    }
+
+    @Test
+    fun aSeekLearnsWhatItCostsSoTheNextLandsInStep() {
+        val drift = PartyDrift(toleranceMs = 600, settleMs = 1_000, confirm = 1)
+        drift.loaded(nowMs = 0)
+        assertEquals(20_250L, drift.check(localMs = 18_000, targetMs = 20_000, nowMs = 2_000))
+        // It landed 400 ms behind: a seek costs that much more than was allowed for.
+        assertNull(drift.check(localMs = 29_600, targetMs = 30_000, nowMs = 4_000))
+        assertEquals(650L, drift.leadMs)
+        // Inside the tolerance nothing moves, and the lead stays learnt.
+        assertNull(drift.check(localMs = 40_100, targetMs = 40_000, nowMs = 6_000))
+        assertEquals(650L, drift.leadMs)
     }
 
     private fun track(id: Long, title: String, artist: String, seconds: Int) =

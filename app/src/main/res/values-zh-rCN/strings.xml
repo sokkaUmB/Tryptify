@@ -2954,4 +2954,9 @@
     <plurals name="art_found_many">
         <item quantity="other">为 %2$d 首歌曲中的 %1$d 首找到了专辑封面</item>
     </plurals>
+    <string name="party_members_title">谁在听</string>
+    <string name="party_member_host">主持人</string>
+    <string name="party_member_web">在网页上</string>
+    <string name="party_member_away">暂时离开</string>
+    <string name="party_cd_show_members">显示谁在听</string>
 </resources>

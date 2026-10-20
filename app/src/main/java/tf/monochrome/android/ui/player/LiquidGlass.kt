@@ -125,6 +125,63 @@ private var frameClockEpochNanos = -1L
 private val frameClockSeconds = mutableFloatStateOf(0f)
 
 /**
+ * The 3D letter wave's own clock: seconds of wave, not of time. Each frame it
+ * moves on by the frame's length times the wave speed (with its music link),
+ * so a new speed speeds the wave up or slows it down from where it is.
+ *
+ * It was the app clock multiplied by the speed, which made the speed a
+ * multiplier on everything the clock had counted since the app started:
+ * every step of the slider threw the letters to a new pose ten minutes in,
+ * dragging it scrambled them, and a music link on it would have shaken them
+ * every frame. One for the whole app, as [frameClockSeconds] is, so every line
+ * and row rides the one wave, and a line composed later joins it in step.
+ */
+private val letterWaveSeconds = mutableFloatStateOf(0f)
+
+@Volatile
+private var letterWaveFrameNanos = -1L
+
+/**
+ * Where the wave wraps: 20π is a whole number of turns of every term the
+ * letters use (1.5 rad/s and 0.8 rad/s), so the wrap has no seam, and the
+ * float never grows past where it loses its fine steps.
+ */
+private const val LETTER_WAVE_WRAP = (20.0 * Math.PI).toFloat()
+
+/**
+ * The 3D letter wave's clock ([letterWaveSeconds]), run while anything draws
+ * the wave and stopped by the same switches as [rememberFrameSeconds]: "Disable
+ * animations" and the CRT effect over the whole app. [speed] is read each
+ * frame, outside composition, so a linked speed moves it with no
+ * recomposition; read the clock in a layer block.
+ */
+@Composable
+internal fun rememberLetterWaveSeconds(speed: () -> Float): State<Float> {
+    val currentSpeed by androidx.compose.runtime.rememberUpdatedState(speed)
+    if (!LocalLowPerformance.current.disableAnimations && !LocalAppTvShader.current) {
+        LaunchedEffect(Unit) {
+            while (true) {
+                withFrameNanos { now ->
+                    // Every line runs this loop; the first one each frame moves
+                    // the shared wave, the rest see the frame already counted.
+                    val last = letterWaveFrameNanos
+                    if (now != last) {
+                        letterWaveFrameNanos = now
+                        // A first frame, or one after the loop slept (the screen
+                        // was off, the lyrics closed), adds nothing: no jump.
+                        val dt = if (last < 0L || now < last) 0f
+                        else ((now - last) / 1_000_000_000f).coerceAtMost(0.1f)
+                        letterWaveSeconds.floatValue =
+                            (letterWaveSeconds.floatValue + dt * currentSpeed()) % LETTER_WAVE_WRAP
+                    }
+                }
+            }
+        }
+    }
+    return letterWaveSeconds
+}
+
+/**
  * Per-frame clock in seconds on a shared app-wide timeline. Read it from draw
  * or layout lambdas (graphicsLayer, drawBehind) so animation never recomposes.
  *

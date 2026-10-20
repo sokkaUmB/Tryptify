@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -284,7 +286,9 @@ private fun PartyRoom(ui: PartyUi, viewModel: PartyViewModel, onBack: () -> Unit
                     .padding(horizontal = MonoDimens.spacingLg),
                 verticalArrangement = Arrangement.spacedBy(MonoDimens.spacingMd),
             ) {
-                Listeners(party, ui)
+                var showMembers by rememberSaveable { mutableStateOf(false) }
+                Listeners(party, ui, onToggle = { showMembers = !showMembers })
+                if (showMembers) Members(party, ui.myId)
                 if (ui.client.status == PartyStatus.RECONNECTING) {
                     Text(stringResource(R.string.party_reconnecting), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
                 }
@@ -319,8 +323,16 @@ private fun PartyRoom(ui: PartyUi, viewModel: PartyViewModel, onBack: () -> Unit
 }
 
 @Composable
-private fun Listeners(party: PartyView, ui: PartyUi) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+private fun Listeners(party: PartyView, ui: PartyUi, onToggle: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MonoDimens.shapeMd)
+            .clickable(onClickLabel = stringResource(R.string.party_cd_show_members), onClick = onToggle)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
         // Overlapping, each a little over the last, as the demo has them.
         val shown = party.members.filterNot { it.away }.take(5)
         Box(Modifier.width((30 + 22 * (shown.size - 1).coerceAtLeast(0)).dp).height(30.dp)) {
@@ -338,6 +350,50 @@ private fun Listeners(party: PartyView, ui: PartyUi) {
             overflow = TextOverflow.Ellipsis,
         )
         HearingDot(ui)
+    }
+}
+
+/** Everyone at the party by name: the host, who is on the web, who is away, and you. */
+@Composable
+private fun Members(party: PartyView, myId: String?) {
+    Panel {
+        Text(
+            stringResource(R.string.party_members_title),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = MonoDimens.spacingSm).semantics { heading() },
+        )
+        // The host first, then everyone in the order they came.
+        party.members.sortedByDescending { it.id == party.hostId }.forEach { m ->
+            Row(
+                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Avatar(m)
+                Text(
+                    if (m.id == myId) "${m.name} (${stringResource(R.string.party_you)})" else m.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (m.away) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                val tags = listOfNotNull(
+                    stringResource(R.string.party_member_host).takeIf { m.id == party.hostId },
+                    stringResource(R.string.party_member_web).takeIf { m.web },
+                    stringResource(R.string.party_member_away).takeIf { m.away },
+                )
+                if (tags.isNotEmpty()) {
+                    Text(
+                        tags.joinToString(" · "),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (m.id == party.hostId) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -403,7 +459,7 @@ private fun NowPlaying(ui: PartyUi, party: PartyView, viewModel: PartyViewModel)
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Cover(now?.cover, Modifier.fillMaxWidth(0.72f).widthIn(max = 320.dp).aspectRatio(1f), RoundedCornerShape(24.dp), big = true)
+        Cover(now?.let(ui::coverFor), Modifier.fillMaxWidth(0.72f).widthIn(max = 320.dp).aspectRatio(1f), RoundedCornerShape(24.dp), big = true)
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 now?.title ?: stringResource(R.string.party_nothing_playing),
@@ -526,7 +582,7 @@ private fun QueueRow(item: PartyItem, ui: PartyUi, viewModel: PartyViewModel) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Cover(item.cover, Modifier.size(40.dp), RoundedCornerShape(10.dp), big = false)
+        Cover(ui.coverFor(item), Modifier.size(40.dp), RoundedCornerShape(10.dp), big = false)
         Column(Modifier.weight(1f)) {
             Text(item.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
@@ -782,7 +838,12 @@ private fun AddSongPage(viewModel: PartyViewModel, onDone: () -> Unit) {
 @Composable
 private fun PartyTopBar(title: String, subtitle: String?, onBack: () -> Unit, action: (@Composable () -> Unit)? = null) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = MonoDimens.spacingLg, top = 8.dp, bottom = 8.dp),
+        // The screen runs under the status bar, so the bar clears it itself:
+        // without this Back and Invite sat under the clock and could not be pressed.
+        modifier = Modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars)
+            .padding(start = 4.dp, end = MonoDimens.spacingLg, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {

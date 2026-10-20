@@ -157,6 +157,7 @@ import tf.monochrome.android.ui.player.lyricFitWidth
 import tf.monochrome.android.ui.player.rememberWrappedLyricLayout
 import tf.monochrome.android.ui.player.LocalBeatPulse
 import tf.monochrome.android.ui.player.rememberFrameSeconds
+import tf.monochrome.android.ui.player.rememberLetterWaveSeconds
 import tf.monochrome.android.ui.player.LocalLyricGlyphAnchors
 import tf.monochrome.android.ui.player.LocalLyricsFx
 import tf.monochrome.android.ui.player.LyricGlyphAnchors
@@ -1096,9 +1097,10 @@ fun LyricsFxStudioScreen(
                     fx.rotationDegrees, 0f..25f,
                     linkKey = "lyrics.rotationDegrees",
                 ) { viewModel.update { s -> s.copy(rotationDegrees = it) } }
-                FxSlider(stringResource(R.string.fx_wave_speed), "%.2fx".format(fx.waveSpeed), fx.waveSpeed, 0.25f..3f) {
-                    viewModel.update { s -> s.copy(waveSpeed = it) }
-                }
+                FxSlider(
+                    stringResource(R.string.fx_wave_speed), "%.2fx".format(fx.waveSpeed), fx.waveSpeed, 0.25f..3f,
+                    linkKey = "lyrics.waveSpeed",
+                ) { viewModel.update { s -> s.copy(waveSpeed = it) } }
                 FxSlider(
                     stringResource(R.string.fx_wave_tightness), "%.2f rad/letter".format(fx.wavePhaseStep),
                     fx.wavePhaseStep, 0.05f..0.9f,
@@ -2329,6 +2331,9 @@ internal fun StudioPreview(
                     sampleFit.rowIndices.map { row -> row.joinToString(" ") { sampleWords[it] } }
                 }
                 val clock = rememberFrameSeconds()
+                // The letters ride the wave's own clock, which carries the speed.
+                val sampleLive = LocalVisualLinks.current
+                val waveClock = rememberLetterWaveSeconds { sampleLive.lyrics(fx).waveSpeed }
                 // The sample has no word timings, so "Follow the sung word" is
                 // shown by singing it one word per beat of the synthetic kick.
                 val rowSpans = remember(rowTexts, sampleStyle) {
@@ -2402,7 +2407,7 @@ internal fun StudioPreview(
                                 text = rowText,
                                 style = sampleStyle,
                                 color = accent,
-                                time = clock,
+                                time = waveClock,
                                 phaseBase = phaseBase,
                                 modifier = Modifier.onGloballyPositioned { rowBands[row] = it.boundsInRoot() },
                             )

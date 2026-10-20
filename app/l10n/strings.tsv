@@ -2975,3 +2975,8 @@ art_own_one	This song already has its own cover.	这首歌曲已经有自己的�
 art_found_many#one	Found album art for %1$d of %2$d song	为 %2$d 首歌曲中的 %1$d 首找到了专辑封面	%2$d 曲中 %1$d 曲のアルバムアートが見つかりました	Pochette trouvée pour %1$d titre sur %2$d	Se encontró portada para %1$d de %2$d canción	%2$d parçanın %1$d tanesi için albüm kapağı bulundu	Albumcover für %1$d von %2$d Titel gefunden
 art_found_many#many	Found album art for %1$d of %2$d songs	为 %2$d 首歌曲中的 %1$d 首找到了专辑封面	%2$d 曲中 %1$d 曲のアルバムアートが見つかりました	Pochette trouvée pour %1$d titres sur %2$d	Se encontró portada para %1$d de %2$d canciones	%2$d parçanın %1$d tanesi için albüm kapağı bulundu	Albumcover für %1$d von %2$d Titeln gefunden
 art_found_many#other	Found album art for %1$d of %2$d songs	为 %2$d 首歌曲中的 %1$d 首找到了专辑封面	%2$d 曲中 %1$d 曲のアルバムアートが見つかりました	Pochette trouvée pour %1$d titres sur %2$d	Se encontró portada para %1$d de %2$d canciones	%2$d parçanın %1$d tanesi için albüm kapağı bulundu	Albumcover für %1$d von %2$d Titeln gefunden
+party_members_title	Who's listening	谁在听	聴いている人	Qui écoute	Quién escucha	Kimler dinliyor	Wer zuhört
+party_member_host	Host	主持人	ホスト	Hôte	Anfitrión	Ev sahibi	Gastgeber
+party_member_web	On the web	在网页上	ウェブから	Sur le web	En la web	Web’de	Im Web
+party_member_away	Away	暂时离开	離席中	Absent	Ausente	Uzakta	Abwesend
+party_cd_show_members	Show who's listening	显示谁在听	聴いている人を表示	Afficher qui écoute	Mostrar quién escucha	Kimlerin dinlediğini göster	Zeigen, wer zuhört
