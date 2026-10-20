@@ -184,11 +184,12 @@ import androidx.compose.ui.res.pluralStringResource
 //
 // The labels here are ids — English, stable, what the search index and the dev
 // editor key on. What a chip says comes from [settingsTabLabelRes].
-private val settingsTabs = listOf("Appearance", "Fonts", "Visual Studio", "Audio", "Equalizer", "Library", "Downloads", "Connections", "Radio", "System", "About")
+private val settingsTabs = listOf("Appearance", "Fonts", "Theme Store", "Visual Studio", "Audio", "Equalizer", "Library", "Downloads", "Connections", "Radio", "System", "About")
 
 private val settingsTabLabels: Map<String, Int> = mapOf(
     "Appearance" to R.string.settings_tab_appearance,
     "Fonts" to R.string.fonts_title,
+    "Theme Store" to R.string.theme_store_title,
     "Visual Studio" to R.string.settings_tab_visual_studio,
     "Audio" to R.string.settings_tab_audio,
     "Equalizer" to R.string.settings_tab_equalizer,
@@ -458,9 +459,18 @@ fun SettingsScreen(
                                 onOpenFonts = {
                                     settingsScope.launch { settingsPager.goToPage(settingsTabIndex("Fonts"), animateTabs) }
                                 },
+                                onOpenThemeStore = {
+                                    settingsScope.launch { settingsPager.goToPage(settingsTabIndex("Theme Store"), animateTabs) }
+                                },
                             )
                             "Fonts" -> tf.monochrome.android.ui.settings.fonts.FontBrowserPage(
                                 fontSize = { FontSizeSection(viewModel) },
+                            )
+                            // The store as a page of Settings: its own header
+                            // gives way to the chips, its search and undo stay.
+                            "Theme Store" -> tf.monochrome.android.ui.themestore.ThemeStoreScreen(
+                                navController = navController,
+                                embedded = true,
                             )
                             "Audio" -> AudioTab(viewModel, navController)
                             "Equalizer" -> EqualizerTab(navController, viewModel)
@@ -716,12 +726,17 @@ private tailrec fun android.content.Context.findActivityOrSelf(): android.conten
 }
 
 @Composable
-private fun AppearanceTab(viewModel: SettingsViewModel, navController: NavController, onOpenFonts: () -> Unit) {
+private fun AppearanceTab(
+    viewModel: SettingsViewModel,
+    navController: NavController,
+    onOpenFonts: () -> Unit,
+    onOpenThemeStore: () -> Unit,
+) {
     SettingsTabContent {
         AppearanceControls(
             viewModel,
             onOpenFonts = onOpenFonts,
-            onOpenThemeStore = { navController.navigateTool(Screen.ThemeStore) },
+            onOpenThemeStore = onOpenThemeStore,
         )
         Spacer(modifier = Modifier.height(16.dp))
         InterfaceControls(viewModel, navController)

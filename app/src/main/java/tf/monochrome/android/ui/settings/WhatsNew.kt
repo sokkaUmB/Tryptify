@@ -225,7 +225,7 @@ object WhatsNew {
                     kind = WhatsNewKind.NEW,
                     section = THEME_STORE,
                     title = "Share your look",
-                    body = "Settings › Appearance › Theme Store. Share your colours, lyrics, glass, font, visualizers, maps and music links as one theme, in the store or only by its code. Nothing personal goes with it. Needs an account.",
+                    body = "Settings › Theme Store. Share your colours, lyrics, glass, font, visualizers, maps and music links as one theme, in the store or only by its code. Nothing personal goes with it. Needs an account.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,

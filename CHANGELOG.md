@@ -35,6 +35,9 @@
 
 ### Changed
 
+#### The Theme Store has its own page in Settings
+- **Theme Store is a tab of Settings now, right after Fonts**, instead of a row under Appearance that opened another screen. Search and undo are at the top of the page; Appearance's row and Settings search take you to the tab.
+
 #### Precision AutoEQ gets target pills and a filter editor
 - **Targets are pills under the graph**, one tap each, with Import at the end. The target you've imported and picked has a × to delete it.
 - **Under the pills, each filter has a coloured chip**, and for the one picked its type, and its frequency, gain and Q as pills you swipe or tap to type. Dragging a dot on the graph picks that filter.
@@ -114,7 +117,7 @@
 - **Every link on one page.** Music links, from the ♪ at the top of Player Visuals Studio, lists every link by where it is (lyrics, player, UI panels, CRT effect, visualizer and mixer knobs), with pause, change and remove. One switch, Music links on, holds them all at your own values without removing any.
 
 #### Theme Store
-- **Share your look.** Settings › Appearance › Theme Store › Share my look puts your colours, lyrics, glass, font, visualizers, maps and music links up as one theme, in the store or only by its code. Nothing personal goes with it: a font you imported, your Bluetooth delay and your quality settings are put back to their defaults before a pack leaves the phone. A pack is held to what the sliders allow and capped at 64 KB. The app draws the theme's picture as you share it, with its own renderers, and sends it as a WebP under 150 KB. Needs an account.
+- **Share your look.** Settings › Theme Store › Share my look puts your colours, lyrics, glass, font, visualizers, maps and music links up as one theme, in the store or only by its code. Nothing personal goes with it: a font you imported, your Bluetooth delay and your quality settings are put back to their defaults before a pack leaves the phone. A pack is held to what the sliders allow and capped at 64 KB. The app draws the theme's picture as you share it, with its own renderers, and sends it as a WebP under 150 KB. Needs an account.
 - **Try someone else's.** Two themes to a row under Popular, New and Mine, each with a picture of how it really looks, plus a search and Have a code? for one that isn't listed. Every theme previews live on the real player first, and Use this theme has a switch for each part, so you can keep your own font or colours. Your look before is saved for a one-tap undo.
 - **The store has a server of its own** (`server/theme-store`), with its own database. Sign-in stays your Tryptify account: the app sends the session's token and the server checks it, holding no secret. `ThemeStoreWireTest` holds the app and the server to the same theme parts, size cap and error codes, and a deleted pack says so instead of reading as a network failure.
 

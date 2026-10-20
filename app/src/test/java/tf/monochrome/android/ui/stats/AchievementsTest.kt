@@ -100,7 +100,7 @@ class AchievementsTest {
 
     @Test
     fun `the real lists are the ones the app shows`() {
-        assertEquals(10, settingsPageIds.size)
+        assertEquals(11, settingsPageIds.size)
         assertFalse("Visual Studio" in settingsPageIds)
         assertEquals(36, SnapinType.availableTypes().size)
     }
