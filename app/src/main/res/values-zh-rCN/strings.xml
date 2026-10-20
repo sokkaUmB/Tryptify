@@ -2837,4 +2837,12 @@
     <string name="crt_preset_exported">已导出 %1$s</string>
     <string name="crt_preset_export_failed">无法写入文件</string>
     <string name="crt_preset_import_failed">无法导入：%1$s</string>
+    <string name="settings_bluetooth_sync">蓝牙同步</string>
+    <string name="settings_bluetooth_sync_desc">%1$s 的播放延迟。歌词、视觉效果、可视化和 Trypt Mania 都会等待它。每个设备单独保存。</string>
+    <string name="settings_bluetooth_sync_no_output">当前没有可保存的输出设备。</string>
+    <string name="settings_bluetooth_sync_measure">测量</string>
+    <string name="settings_bluetooth_sync_less">缩短延迟</string>
+    <string name="settings_bluetooth_sync_more">延长延迟</string>
+    <string name="settings_bluetooth_sync_set_there">在 设置 › 音频 › 蓝牙同步 中为每个设备设置。</string>
+    <string name="tm_sync_saved_for">已为 %1$s 保存，并在整个应用中使用。</string>
 </resources>

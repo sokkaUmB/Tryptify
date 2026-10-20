@@ -122,7 +122,9 @@ fun GlyphSettingsScreen(
     assets: GlyphAssetRepository? = null,
     palette: GlyphPalette? = null,
 ) {
-    var tab by rememberSaveable { mutableStateOf(SettingsTab.CONTROLS) }
+    var tab by rememberSaveable { mutableStateOf(if (state.syncFocus) SettingsTab.SYNC else SettingsTab.CONTROLS) }
+    // Opened from Settings › Audio to measure the output: the Sync tab.
+    androidx.compose.runtime.LaunchedEffect(state.syncFocus) { if (state.syncFocus) tab = SettingsTab.SYNC }
     // Which key slot is waiting for a key: "lane:slot".
     var listening by remember { mutableStateOf<Pair<GlyphLane, Int>?>(null) }
     var testing by remember { mutableStateOf(false) }
@@ -413,6 +415,12 @@ private fun SyncTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
     )
     TapSyncPanel(state.tapSync, onEvent)
     val offset = state.audioOffsetMs
+    Text(
+        text = state.syncOutput?.let { androidx.compose.ui.res.stringResource(tf.monochrome.android.R.string.tm_sync_saved_for, it) }
+            ?: androidx.compose.ui.res.stringResource(tf.monochrome.android.R.string.settings_bluetooth_sync_no_output),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Column {
         GlyphControlHeader("Audio offset", if (offset == 0) "None" else if (offset > 0) "Sound reaches you late" else "Sound reaches you early")
         GlyphStepper(
@@ -421,8 +429,8 @@ private fun SyncTab(state: GlyphUiState, onEvent: (GlyphEvent) -> Unit) {
             onMore = { onEvent(GlyphEvent.SetAudioOffset(offset + OFFSET_STEP_MS)) },
             lessLabel = "Lower the offset",
             moreLabel = "Raise the offset",
-            lessEnabled = offset > -GlyphCalibration.MAX_OFFSET_MS,
-            moreEnabled = offset < GlyphCalibration.MAX_OFFSET_MS,
+            lessEnabled = offset > tf.monochrome.android.audio.sync.OutputSync.MIN_MS,
+            moreEnabled = offset < tf.monochrome.android.audio.sync.OutputSync.MAX_MS,
         )
     }
     GlyphPanel(modifier = Modifier.fillMaxWidth()) {

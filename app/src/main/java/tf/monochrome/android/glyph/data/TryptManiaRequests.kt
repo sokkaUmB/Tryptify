@@ -37,4 +37,19 @@ object TryptManiaRequests {
 
     /** The request waiting, now taken; null when there is none. */
     fun take(): TryptManiaRequest? = _pending.getAndUpdate { null }
+
+    private val _syncPending = MutableStateFlow(false)
+
+    /**
+     * Settings › Audio's Measure: the mode opens on its Sync tab, the tap test
+     * that measures how late the output plays, and leaves when it is closed.
+     */
+    val syncPending: StateFlow<Boolean> = _syncPending.asStateFlow()
+
+    fun openSync() {
+        _syncPending.value = true
+    }
+
+    /** Whether Sync was asked for, now taken. */
+    fun takeSync(): Boolean = _syncPending.getAndUpdate { false }
 }

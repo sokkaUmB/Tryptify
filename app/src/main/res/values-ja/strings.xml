@@ -2837,4 +2837,12 @@
     <string name="crt_preset_exported">%1$s を書き出しました</string>
     <string name="crt_preset_export_failed">ファイルを書き込めませんでした</string>
     <string name="crt_preset_import_failed">読み込めませんでした：%1$s</string>
+    <string name="settings_bluetooth_sync">Bluetooth 同期</string>
+    <string name="settings_bluetooth_sync_desc">%1$s の再生の遅れです。歌詞、ビジュアル、ビジュアライザ、Trypt Mania がこれに合わせて待ちます。デバイスごとに保存されます。</string>
+    <string name="settings_bluetooth_sync_no_output">今は保存先の出力がありません。</string>
+    <string name="settings_bluetooth_sync_measure">測定</string>
+    <string name="settings_bluetooth_sync_less">遅延を短く</string>
+    <string name="settings_bluetooth_sync_more">遅延を長く</string>
+    <string name="settings_bluetooth_sync_set_there">設定 › オーディオ › Bluetooth 同期 でデバイスごとに設定します。</string>
+    <string name="tm_sync_saved_for">%1$s 用に保存され、アプリ全体で使われます。</string>
 </resources>

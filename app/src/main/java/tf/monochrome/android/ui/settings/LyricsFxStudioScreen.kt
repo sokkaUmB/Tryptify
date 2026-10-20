@@ -546,7 +546,7 @@ fun LyricsFxStudioScreen(
         tap = viewModel.spectrumAnalyzer,
         links = previewLinks,
         active = true,
-        delayMs = fx.bluetoothDelayMs,
+        delayMs = tf.monochrome.android.ui.player.LocalOutputSyncMs.current,
     )
     val linkHost = rememberVisualLinkHost(savedLinks, linkLive) { linkUi.sheetFor = it }
     // Every setting a link can move, as saved: where a new link rests, and
@@ -1065,12 +1065,14 @@ fun LyricsFxStudioScreen(
 
             item {
                 StudioSection(stringResource(R.string.fx_playback_sync))
-                FxSlider(
-                    stringResource(R.string.fx_bluetooth_sync_delay),
-                    "%+d ms".format(fx.bluetoothDelayMs.toInt()),
-                    fx.bluetoothDelayMs, -500f..1500f, steps = 39,
-                    description = stringResource(R.string.fx_delays_synced_lyrics_to_line_up_with_bluetooth),
-                ) { viewModel.update { s -> s.copy(bluetoothDelayMs = it) } }
+                // How long the lyrics wait is the output's own, set once for
+                // the whole app (Settings › Audio › Bluetooth sync).
+                Text(
+                    text = stringResource(R.string.settings_bluetooth_sync_set_there),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
             }
 
             item {

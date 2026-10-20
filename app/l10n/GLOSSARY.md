@@ -47,6 +47,7 @@ not Spain-only), Turkish, German.
 | Share my look (action) | 分享我的外观 | 自分の外観を共有 | Partager mon look | Compartir mi estilo | Görünümümü paylaş | Meinen Look teilen |
 | Share code (label) / code (a theme's, in sentences) | 分享码 | 共有コード / コード | Code de partage / code | Código para compartir / código | Paylaşım kodu / kod | Teilcode / Code |
 | CRT effect (Settings › Appearance) | CRT 效果 | CRT エフェクト | Effet CRT | Efecto CRT | CRT efekti | CRT-Effekt |
+| Bluetooth sync (Settings › Audio) | 蓝牙同步 | Bluetooth 同期 | Synchro Bluetooth | Sincronización Bluetooth | Bluetooth senkronizasyonu | Bluetooth-Synchronisierung |
 | Library galaxy | 音乐库星系 | ライブラリ銀河 | Galaxie de la bibliothèque | Galaxia de la biblioteca | Kitaplık galaksisi | Bibliotheks-Galaxie |
 | Achievements (stats tab) | 成就 | 実績 | Succès | Logros | Başarılar | Erfolge |
 | Multiplayer (Trypt Mania) | 多人游戏 | マルチプレイ | Multijoueur | Multijugador | Çok oyunculu | Mehrspieler |

@@ -4,6 +4,12 @@
 
 ### Added
 
+#### Bluetooth sync for the whole app
+- **One delay per device, measured once, used everywhere.** Settings › Audio › Bluetooth sync shows how late the output playing now plays. Measure opens Trypt Mania's tap test: tap along to the clicks you hear, apply, and you're back in Settings. You can also nudge it 5 ms at a time.
+- **Each pair of headphones keeps its own.** The value switches by itself when another device connects. A device you never measured uses the value for Bluetooth in general, and the phone speaker and wired headphones stay at none unless you set them.
+- **The lyrics, the music-linked visuals, the visualizer and Trypt Mania all wait the same amount.** Before, they had three separate sliders: the lyrics' Bluetooth delay, the visualizer's audio delay and Trypt Mania's offset. Those are gone, and your existing value carried over to Bluetooth: Trypt Mania's if you had measured one, otherwise the lyrics', otherwise the visualizer's.
+- **Trypt Mania's Sync tab says which device it's saving for.** A delay can be up to a second now; the tap test reads up to half a second.
+
 #### Themes carry the CRT effect
 - **A theme can carry your CRT effect now**: whether it's on, its look, every slider, and whether it draws over the whole app or only the lyrics. It's a part of its own, CRT effect, so you choose whether to publish it and whether to put it on, like the others.
 - **Before, the CRT never travelled with a theme**, so a theme made with the effect over the lyrics came out without it. The Theme Store server takes the new part after its next deploy; older app versions skip it.

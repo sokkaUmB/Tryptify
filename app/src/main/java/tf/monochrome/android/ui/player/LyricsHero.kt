@@ -422,7 +422,7 @@ internal fun SyncedLyricsView(
     // what's actually being heard. (Tunable in the Player Visuals Studio.)
     // The delay is wall time and the position song time, so it is scaled by
     // the playback speed: 200 ms of latency is 300 ms of song at 1.5×.
-    val syncDelayMs = LyricClock.delayInSongMs(LocalLyricsFx.current.bluetoothDelayMs, LocalPlaybackSpeed.current)
+    val syncDelayMs = LyricClock.delayInSongMs(LocalOutputSyncMs.current, LocalPlaybackSpeed.current)
     // Start composed at the current line so a freshly created instance (the
     // expand morph spawns one) never flashes the top of the song before the
     // centring effect runs.

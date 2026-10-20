@@ -121,7 +121,7 @@ private fun SyncedLyrics(
     // than the reported position over Bluetooth, so rewind the clock we match
     // lyrics against to keep them in step with what's heard. Wall-time latency,
     // so scaled into song time by the playback speed.
-    val syncDelayMs = LyricClock.delayInSongMs(LocalLyricsFx.current.bluetoothDelayMs, LocalPlaybackSpeed.current)
+    val syncDelayMs = LyricClock.delayInSongMs(LocalOutputSyncMs.current, LocalPlaybackSpeed.current)
     val lyricFont = rememberLyricFontFamily(LocalLyricsFx.current)
     val fontSizeSp = LocalLyricsFx.current.fontSizeSp
     val listState = rememberLazyListState()

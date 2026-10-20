@@ -2973,4 +2973,12 @@
     <string name="crt_preset_exported">%1$s exportado</string>
     <string name="crt_preset_export_failed">No se pudo escribir el archivo</string>
     <string name="crt_preset_import_failed">No se pudo importar: %1$s</string>
+    <string name="settings_bluetooth_sync">Sincronización Bluetooth</string>
+    <string name="settings_bluetooth_sync_desc">Cuánto se retrasa %1$s. La letra, los visuales, el visualizador y Trypt Mania lo esperan. Se guarda para cada dispositivo.</string>
+    <string name="settings_bluetooth_sync_no_output">Ahora no hay ninguna salida para guardarlo.</string>
+    <string name="settings_bluetooth_sync_measure">Medir</string>
+    <string name="settings_bluetooth_sync_less">Reducir el retardo</string>
+    <string name="settings_bluetooth_sync_more">Aumentar el retardo</string>
+    <string name="settings_bluetooth_sync_set_there">Se ajusta para cada dispositivo en Ajustes › Audio › Sincronización Bluetooth.</string>
+    <string name="tm_sync_saved_for">Guardado para %1$s y usado en toda la app.</string>
 </resources>

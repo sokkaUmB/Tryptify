@@ -65,6 +65,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var libusbDriver: tf.monochrome.android.audio.usb.LibusbUacDriver
     @Inject lateinit var bypassVolumeController: tf.monochrome.android.audio.usb.BypassVolumeController
     @Inject lateinit var musicLinks: tf.monochrome.android.data.repository.MusicLinksRepository
+    @Inject lateinit var outputSync: tf.monochrome.android.audio.sync.OutputSyncRepository
     @Inject lateinit var spectrumAnalyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap
 
     /** Set once the onboarding flag has been read; releases the splash screen. */
@@ -210,8 +211,10 @@ class MainActivity : ComponentActivity() {
             val appLinks = remember(runningLinks) {
                 runningLinks.filter { it.target.startsWith("panels.") || it.target.startsWith("tv.") }
             }
-            val linkDelayMs by remember { preferences.lyricsFx.map { it.bluetoothDelayMs } }
-                .collectAsStateWithLifecycle(initialValue = 0f)
+            // How late the output playing now plays (Settings › Audio ›
+            // Bluetooth sync): the lyrics and every visual link wait for it.
+            val outputSyncMs by outputSync.delayMs.collectAsStateWithLifecycle()
+            val linkDelayMs = outputSyncMs.toFloat()
             val appLive = tf.monochrome.android.ui.player.rememberVisualLinkDriver(
                 tap = spectrumAnalyzer,
                 links = appLinks,
@@ -296,6 +299,7 @@ class MainActivity : ComponentActivity() {
                 tf.monochrome.android.ui.theme.LocalShowExplicitBadges provides showExplicitBadges,
                 tf.monochrome.android.ui.theme.LocalRowBadges provides rowBadges,
                 LocalImmersiveFullScreen provides immersiveFullScreen,
+                tf.monochrome.android.ui.player.LocalOutputSyncMs provides linkDelayMs,
                 // Every list row's source tag reads its catalog from here.
                 tf.monochrome.android.ui.components.LocalTrackSource provides trackSourceResolver::of,
             ) {

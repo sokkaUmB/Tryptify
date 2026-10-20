@@ -25,6 +25,8 @@ sealed interface GlyphEvent {
     data object BackToMenu : GlyphEvent
     data object OpenSettings : GlyphEvent
     data object CloseSettings : GlyphEvent
+    /** The route has left the mode as [GlyphUiState.leaveRequested] asked. */
+    data object LeaveHandled : GlyphEvent
 
     // ── settings ────────────────────────────────────────────────────────
     /** [code] (an Android key code) on [lane]'s [slot]; wherever else it was, it goes. */

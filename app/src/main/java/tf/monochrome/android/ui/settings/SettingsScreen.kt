@@ -1042,7 +1042,6 @@ internal fun VisualizerSettings(
     val meshX by viewModel.visualizerMeshX.collectAsStateWithLifecycle()
     val meshY by viewModel.visualizerMeshY.collectAsStateWithLifecycle()
     val targetFps by viewModel.visualizerTargetFps.collectAsStateWithLifecycle()
-    val audioDelayMs by viewModel.visualizerAudioDelayMs.collectAsStateWithLifecycle()
     val vsyncEnabled by viewModel.visualizerVsyncEnabled.collectAsStateWithLifecycle()
     val showFps by viewModel.visualizerShowFps.collectAsStateWithLifecycle()
     val fullscreen by viewModel.visualizerFullscreen.collectAsStateWithLifecycle()
@@ -1217,14 +1216,13 @@ internal fun VisualizerSettings(
         )
 
         // The visualizer is fed from inside the playback chain, so it always
-        // sees audio slightly before the output device plays it. Wired output
-        // hides that; Bluetooth does not.
-        IntSettingSlider(
-            value = audioDelayMs,
-            valueRange = 0f..ProjectMAudioBus.MAX_DELAY_MS.toFloat(),
-            onCommit = { viewModel.setVisualizerAudioDelayMs(it) },
-            label = { if (it == 0) stringResource(R.string.settings_audio_delay_off) else stringResource(R.string.settings_audio_delay_ms, it) },
-            subtitle = stringResource(R.string.settings_holds_the_visualizer_back_to_match_what_you_hear),
+        // sees audio slightly before the output device plays it. How long it
+        // waits is the output's own, set once for the whole app.
+        Text(
+            text = stringResource(R.string.settings_bluetooth_sync_set_there),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 8.dp),
         )
 
         SettingSwitchItem(
@@ -1725,6 +1723,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         // above the downmix toggle instead of under a heading of its own.
         Spacer(modifier = Modifier.height(16.dp))
         SettingsGroupHeader(stringResource(R.string.settings_output))
+        BluetoothSyncRow(navController)
         DspBlockSizeSelector(viewModel)
 
         Spacer(modifier = Modifier.height(8.dp))

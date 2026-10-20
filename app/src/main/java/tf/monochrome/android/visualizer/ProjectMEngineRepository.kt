@@ -31,7 +31,8 @@ class ProjectMEngineRepository @Inject constructor(
     private val preferences: PreferencesManager,
     val audioBus: ProjectMAudioBus,
     private val assetInstaller: ProjectMAssetInstaller,
-    private val presetCatalog: ProjectMPresetCatalog
+    private val presetCatalog: ProjectMPresetCatalog,
+    private val outputSync: tf.monochrome.android.audio.sync.OutputSyncRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val engineLock = Any()
@@ -275,8 +276,9 @@ class ProjectMEngineRepository @Inject constructor(
         scope.launch {
             // Straight to the bus rather than through the engine: the delay is a
             // property of the audio reaching the visualizer, and it applies just
-            // as much before the native engine exists as after.
-            preferences.visualizerAudioDelayMs.collectLatest { ms ->
+            // as much before the native engine exists as after. It is the
+            // output's own (Settings › Audio › Bluetooth sync), as the lyrics'.
+            outputSync.delayMs.collectLatest { ms ->
                 audioBus.setDelayMs(ms)
             }
         }

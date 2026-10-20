@@ -1826,7 +1826,17 @@ through the game's own transport and each tap goes through `touchNanos` and
 judge — never a separate timer. At 140 BPM a beat (428 ms) is shorter than
 Bluetooth's lateness can be, so a tap is never matched to its nearest click:
 the first tap anchors on the first click and the rest follow the running
-median (`GlyphTapSync`). The offset's limit is 500 ms for the same reason.
+median (`GlyphTapSync`), which reads up to 500 ms.
+
+**The offset is the output's, and the whole app's.** Trypt Mania's audio
+offset is the Bluetooth sync of the output playing now (`OutputSync`, kept per
+device by `OutputId`, a device's own before its slot's, on this phone only).
+The Sync tab says which device it saves for; Settings › Audio › Bluetooth sync
+shows the same value with a 5 ms nudge and Measure, which opens this tab and
+leaves the mode when it closes. The lyrics (`LyricClock`), every visual link
+driver and the visualizer's bus wait the same amount (`LocalOutputSyncMs`,
+`OutputSyncRepository.delayMs`): one number per device, never three that
+drift apart. The old lyrics and visualizer sliders are a line pointing here.
 
 **Charting is a line, and a batch is asked before it starts.** Generate puts
 the song in `ChartQueue` and never cancels the one being charted; while a song

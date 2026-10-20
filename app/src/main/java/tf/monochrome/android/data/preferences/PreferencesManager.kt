@@ -403,6 +403,10 @@ class PreferencesManager @Inject constructor(
         // Per-device AutoEQ: output key -> preset id, and the named devices seen.
         private val EQ_OUTPUT_ASSIGNMENTS_JSON = stringPreferencesKey("eq_output_assignments_json")
         private val EQ_KNOWN_OUTPUTS_JSON = stringPreferencesKey("eq_known_outputs_json")
+        // How late each output plays (OutputSync), by OutputId.key. Kept on this
+        // phone, never synced: another phone's Bluetooth is another delay.
+        private val OUTPUT_SYNC_JSON = stringPreferencesKey("output_sync_ms_json")
+        private val OUTPUT_SYNC_MIGRATED = booleanPreferencesKey("output_sync_migrated")
         private val EQ_STEREO_MODE = booleanPreferencesKey("eq_stereo_mode")
         private val EQ_MEASUREMENT_R_JSON = stringPreferencesKey("eq_measurement_r_json")
         private val EQ_CUSTOM_TARGETS_JSON = stringPreferencesKey("eq_custom_targets_json")
@@ -1889,6 +1893,32 @@ class PreferencesManager @Inject constructor(
             val next = tf.monochrome.android.audio.eq.OutputEq.remember(known, seen)
             if (next != known) it[EQ_KNOWN_OUTPUTS_JSON] = json.encodeToString(next)
         }
+    }
+
+    // --- Per-output sync (see OutputSync) ---
+
+    /** How late each output plays, in milliseconds, by OutputId.key. */
+    val outputSyncDelays: Flow<Map<String, Int>> = dataStore.data
+        .map { it[OUTPUT_SYNC_JSON] }
+        .distinctUntilChanged()
+        .map { raw -> raw?.let { runCatching { json.decodeFromString<Map<String, Int>>(it) }.getOrNull() } ?: emptyMap() }
+
+    /** Changes the delays in one edit, so two quick changes cannot drop one. */
+    suspend fun updateOutputSyncDelays(transform: (Map<String, Int>) -> Map<String, Int>) {
+        dataStore.edit {
+            val now = it[OUTPUT_SYNC_JSON]?.let { raw ->
+                runCatching { json.decodeFromString<Map<String, Int>>(raw) }.getOrNull()
+            } ?: emptyMap()
+            val next = transform(now)
+            if (next != now) it[OUTPUT_SYNC_JSON] = json.encodeToString(next)
+        }
+    }
+
+    /** Whether the old lyrics, visualizer and Trypt Mania delays were folded into it. */
+    val outputSyncMigrated: Flow<Boolean> = dataStore.data.map { it[OUTPUT_SYNC_MIGRATED] ?: false }
+
+    suspend fun setOutputSyncMigrated() {
+        dataStore.edit { it[OUTPUT_SYNC_MIGRATED] = true }
     }
 
     private fun decodeAssignments(raw: String?): Map<String, String> =

@@ -585,7 +585,7 @@ fun MainPlayerRoute(
         tap = playerViewModel.spectrumAnalyzer,
         links = playerLinks,
         active = true,
-        delayMs = lyricsFx.bluetoothDelayMs,
+        delayMs = LocalOutputSyncMs.current,
         parent = appLive,
     )
     androidx.compose.runtime.LaunchedEffect(beatOn) {

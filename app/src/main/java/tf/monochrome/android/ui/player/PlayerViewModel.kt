@@ -68,6 +68,8 @@ class PlayerViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val downloadManager: DownloadManager,
     private val preferences: PreferencesManager,
+    /** How late the output plays: the lyrics poll wakes for the word as heard. */
+    private val outputSync: tf.monochrome.android.audio.sync.OutputSyncRepository,
     private val projectMEngineRepository: ProjectMEngineRepository,
     private val unifiedTrackRegistry: tf.monochrome.android.player.UnifiedTrackRegistry,
     private val qobuzIdRegistry: tf.monochrome.android.data.api.QobuzIdRegistry,
@@ -816,7 +818,7 @@ class PlayerViewModel @Inject constructor(
                     LyricClock.nextPollDelayMs(
                         positionMs = position,
                         speed = _liveSpeed.value,
-                        delayMs = lyricsFx.value.bluetoothDelayMs,
+                        delayMs = outputSync.delayMs.value.toFloat(),
                         lyrics = _currentLyrics.value,
                     ),
                 )

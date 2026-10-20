@@ -29,6 +29,11 @@ data class LyricsFxSettings(
      * what's heard; this pushes the lyric timeline back by the same amount.
      * Positive = lyrics wait longer (the usual case); negative = lyrics lead.
      * Personal/device setting — preserved when a theme preset is applied.
+     *
+     * No longer read: the delay is the output's own now
+     * ([tf.monochrome.android.audio.sync.OutputSync], Settings › Audio ›
+     * Bluetooth sync), and this value was carried into it once. Kept so a
+     * stored or shared value still reads, and stays out of shared themes.
      */
     val bluetoothDelayMs: Float = 0f,
 

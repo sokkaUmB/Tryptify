@@ -55,6 +55,13 @@ fun GlyphRoute(
 
     var palette by remember { mutableStateOf<GlyphPalette?>(null) }
     LaunchedEffect(Unit) { palette = assets.palette() }
+    // The Sync tab was opened from Settings › Audio: closing it goes back there.
+    LaunchedEffect(state.leaveRequested) {
+        if (state.leaveRequested) {
+            viewModel.onEvent(GlyphEvent.LeaveHandled)
+            onBack()
+        }
+    }
 
     // The tab bar and the mini player stay on the menus, as on every other
     // pushed screen, and step aside only while a chart is being played or

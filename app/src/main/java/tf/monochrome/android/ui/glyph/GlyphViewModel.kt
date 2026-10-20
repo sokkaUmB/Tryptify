@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
@@ -134,6 +135,11 @@ class GlyphViewModel @Inject constructor(
     private val supabaseAuth: SupabaseAuthManager,
     /** Read only, for the player's own look behind the play ([backdropLook]). */
     preferences: tf.monochrome.android.data.preferences.PreferencesManager,
+    /**
+     * How late the output playing now plays: the game's audio offset is that
+     * output's, and the Sync tab measures and saves it for the whole app.
+     */
+    private val outputSync: tf.monochrome.android.audio.sync.OutputSyncRepository,
     /**
      * Exposed rather than plumbed through navigation: the pack is a singleton
      * whose rasters are scoped to a run, and handing it down the composable
@@ -287,9 +293,11 @@ class GlyphViewModel @Inject constructor(
 
     init {
         loadOptions()
+        watchOutputSync()
         watchCharts()
         watchChartServers()
         watchPlayRequests()
+        watchSyncRequests()
         watchPacks()
         watchRooms()
         viewModelScope.launch {
@@ -325,8 +333,11 @@ class GlyphViewModel @Inject constructor(
             GlyphEvent.OpenSettings -> openSettings()
             GlyphEvent.CloseSettings -> {
                 stopTapSync()
-                _ui.value = _ui.value.copy(screen = GlyphScreen.MENU, tapSync = null)
+                // Opened from Settings › Audio: closing goes back there.
+                val leave = _ui.value.syncFocus
+                _ui.value = _ui.value.copy(screen = GlyphScreen.MENU, tapSync = null, syncFocus = false, leaveRequested = leave)
             }
+            GlyphEvent.LeaveHandled -> _ui.value = _ui.value.copy(leaveRequested = false)
             is GlyphEvent.SetKey -> setKey(event.lane, event.slot, event.code)
             GlyphEvent.ResetKeys -> saveKeys(GlyphKeyBindings.DEFAULT)
             is GlyphEvent.SetAudioOffset -> setAudioOffset(event.ms)
@@ -1131,6 +1142,17 @@ class GlyphViewModel @Inject constructor(
      * found on the wheel and chosen, its chart made first when it has none.
      * A song not on the phone, or not one the mode plays, says why.
      */
+    /** Settings › Audio's Measure: straight to the Sync tab, and out again when it closes. */
+    private fun watchSyncRequests() {
+        viewModelScope.launch {
+            TryptManiaRequests.syncPending.collect { pending ->
+                if (!pending || !TryptManiaRequests.takeSync()) return@collect
+                openSettings()
+                _ui.value = _ui.value.copy(syncFocus = true)
+            }
+        }
+    }
+
     private fun watchPlayRequests() {
         viewModelScope.launch {
             TryptManiaRequests.pending.collect { pending ->
@@ -1828,8 +1850,7 @@ class GlyphViewModel @Inject constructor(
             gameplay = _ui.value.gameplay.copy(modifiers = stored),
             playerName = prefs.getString(PREF_NAME, null).orEmpty(),
             keys = GlyphKeyBindings.decode(prefs.getString(PREF_KEYS, null)),
-            audioOffsetMs = prefs.getInt(PREF_AUDIO_OFFSET, 0)
-                .coerceIn(-GlyphCalibration.MAX_OFFSET_MS, GlyphCalibration.MAX_OFFSET_MS),
+            audioOffsetMs = outputSync.delayMs.value,
             previews = prefs.getBoolean(PREF_PREVIEWS, true),
             wheelSound = prefs.getBoolean(PREF_WHEEL_SOUND, true),
             songSort = GlyphSongSort(
@@ -2050,10 +2071,26 @@ class GlyphViewModel @Inject constructor(
         if (_ui.value.tapSync != null) publishTapSync(playing = false)
     }
 
+    /**
+     * Sets the offset for the output playing now, and so for the whole app:
+     * the lyrics and the visuals wait the same amount on it.
+     */
     private fun setAudioOffset(ms: Int) {
-        val clamped = ms.coerceIn(-GlyphCalibration.MAX_OFFSET_MS, GlyphCalibration.MAX_OFFSET_MS)
-        prefs.edit().putInt(PREF_AUDIO_OFFSET, clamped).apply()
+        val clamped = tf.monochrome.android.audio.sync.OutputSync.clamp(ms)
+        outputSync.setForCurrent(clamped)
         _ui.value = _ui.value.copy(audioOffsetMs = clamped)
+    }
+
+    /** The offset follows the output: other headphones, another delay. */
+    private fun watchOutputSync() {
+        viewModelScope.launch {
+            combine(outputSync.output, outputSync.delayMs) { output, ms -> output to ms }.collect { (output, ms) ->
+                _ui.value = _ui.value.copy(
+                    audioOffsetMs = ms,
+                    syncOutput = output?.let { tf.monochrome.android.audio.eq.label(context, it) },
+                )
+            }
+        }
     }
 
     // ── map editor ──────────────────────────────────────────────────────
@@ -2952,7 +2989,6 @@ class GlyphViewModel @Inject constructor(
         const val PREF_PREVIEWS = "previews"
         const val PREF_WHEEL_SOUND = "wheel_sound"
         const val PREF_KEYS = "keys"
-        const val PREF_AUDIO_OFFSET = "audio_offset_ms"
 
         /** Drafts kept for undo. */
         const val MAX_UNDO = 100

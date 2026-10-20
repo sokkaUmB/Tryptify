@@ -200,6 +200,11 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
         listOf("usb", "dac", "exclusive", "bit perfect", "bitperfect", "libusb", "uapp", "output"),
     ),
     entry(
+        "Bluetooth sync", R.string.settings_bluetooth_sync,
+        "Audio",
+        listOf("bluetooth", "latency", "delay", "lag", "offset", "lyrics", "visualizer", "headphones", "calibrate", "trypt mania"),
+    ),
+    entry(
         "Hi-res output (Bluetooth & speaker)", R.string.settings_hi_res_output_bluetooth_speaker,
         "Audio",
         listOf("bluetooth", "24-bit", "96khz", "ldac", "float", "high resolution", "bit depth"),

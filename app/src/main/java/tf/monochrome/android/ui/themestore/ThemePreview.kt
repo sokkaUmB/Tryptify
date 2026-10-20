@@ -189,7 +189,7 @@ fun PackPreview(
                         tap = analyzer,
                         links = pack.links.orEmpty(),
                         active = true,
-                        delayMs = fx.bluetoothDelayMs,
+                        delayMs = tf.monochrome.android.ui.player.LocalOutputSyncMs.current,
                     )
                     val position = remember { MutableStateFlow(0L) }
                     CompositionLocalProvider(LocalVisualLinks provides live) {

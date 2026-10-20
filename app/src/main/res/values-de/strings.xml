@@ -2905,4 +2905,12 @@
     <string name="crt_preset_exported">%1$s exportiert</string>
     <string name="crt_preset_export_failed">Die Datei konnte nicht geschrieben werden</string>
     <string name="crt_preset_import_failed">Import fehlgeschlagen: %1$s</string>
+    <string name="settings_bluetooth_sync">Bluetooth-Synchronisierung</string>
+    <string name="settings_bluetooth_sync_desc">Wie spät %1$s spielt. Songtexte, Visuals, Visualizer und Trypt Mania warten darauf. Für jedes Gerät gespeichert.</string>
+    <string name="settings_bluetooth_sync_no_output">Gerade gibt es keine Ausgabe, für die es gespeichert werden kann.</string>
+    <string name="settings_bluetooth_sync_measure">Messen</string>
+    <string name="settings_bluetooth_sync_less">Verzögerung verkürzen</string>
+    <string name="settings_bluetooth_sync_more">Verzögerung verlängern</string>
+    <string name="settings_bluetooth_sync_set_there">Wird für jedes Gerät unter Einstellungen › Audio › Bluetooth-Synchronisierung eingestellt.</string>
+    <string name="tm_sync_saved_for">Für %1$s gespeichert und in der ganzen App verwendet.</string>
 </resources>

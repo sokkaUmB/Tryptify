@@ -29,7 +29,6 @@ internal object LyricsDebug {
             if (fx.customFont && fx.customFontPath.isNotBlank()) fx.customFontPath.substringAfterLast('/')
             else "theme",
         )
-        append(" btDelay=").append(fx.bluetoothDelayMs.toInt()).append("ms")
 
         append(" | glass=").append(if (fx.liquidGlass) "ON" else "off")
         if (fx.liquidGlass) {
