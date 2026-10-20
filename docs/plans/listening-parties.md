@@ -39,8 +39,14 @@ toggle so someone without a song still hears it.
   bottom with the latest line and the message field. Colours, fonts and
   glass follow the user's own visual settings like every screen; the demo's
   purple is a placeholder. The website (demo D) keeps its own look.
-- **Deploy:** the rooms server is shared with Trypt Mania's game rooms. Ask the
-  owner before deploying it to Railway.
+- **Deploy:** parties run on their own Railway service, `parties`, in the
+  `tryptmania-rooms` project beside `rooms`, built from the same
+  `multiplayer/` folder on `main` (one replica, health check `/health`). Its
+  Supabase variables and `ROOMS_SECRET` are references to `rooms`' own, so
+  the two share one secret path until the owner gives `parties` its own. The
+  owner adds its custom domain. Building parties on a branch keeps it off
+  `main` until it is ready; ask the owner before deploying anything that
+  `rooms` also builds from.
 
 ## Server (`multiplayer/`)
 
