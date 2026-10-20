@@ -3042,4 +3042,6 @@
     <string name="party_end_all_confirm">Everyone is sent out, and the songs shared with the party are deleted from the server.</string>
     <string name="party_end_all_yes">End it</string>
     <string name="party_error_guest_host">A website guest can’t be the host.</string>
+    <string name="party_invite_switch">You\'re invited to party %1$s. Join it? You\'ll leave this party.</string>
+    <string name="party_invite_not_now">Not now</string>
 </resources>

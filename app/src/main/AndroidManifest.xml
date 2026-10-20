@@ -120,6 +120,22 @@
                     android:host="lastfm-callback" />
             </intent-filter>
 
+            <!-- Listening party invites: https://<rooms server>/<secret>/party/<code>.
+                 The host is the built-in rooms server's (build.gradle.kts), and
+                 its /.well-known/assetlinks.json lets Android open the links
+                 here without asking. Only the code is taken (PartyInvites),
+                 and joined on this phone's own rooms server. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="${partyLinkHost}"
+                    android:pathPattern="/party/.*" />
+                <data android:pathPattern="/.*/party/.*" />
+            </intent-filter>
+
             <!-- "Open with": an audio file from a file manager, a chat or
                  Downloads. Not BROWSABLE, so a web page cannot start it.
                  OpenedAudio checks every request before anything is read. -->

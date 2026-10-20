@@ -646,6 +646,17 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             ).partyController()
         }
         val partyOn by party.active.collectAsStateWithLifecycle()
+        // A party invite opened from a link goes to the party screen, which joins it.
+        val partyInvites = remember(appContext) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                appContext,
+                tf.monochrome.android.party.PartyEntryPoint::class.java,
+            ).partyInvites()
+        }
+        val invite by partyInvites.code.collectAsStateWithLifecycle()
+        LaunchedEffect(invite) {
+            if (invite != null) navController.navigate(Screen.ListeningParty.route) { launchSingleTop = true }
+        }
         val addToParty: ((tf.monochrome.android.domain.model.Track, String?) -> Unit)? =
             if (partyOn) remember(party) { { track, file -> party.add(track, file) } } else null
         val playInTryptMania: (tf.monochrome.android.glyph.data.TryptManiaRequest) -> Unit =

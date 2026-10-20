@@ -252,6 +252,15 @@ object PartyProtocol {
     /** The link a guest opens in a browser: the server's party page for [code]. */
     fun inviteLink(server: String, code: String): String = "${server.trimEnd('/')}/party/${code.uppercase()}"
 
+    /** The party code in an invite link (`https://host/<secret>/party/<code>`); null for any other link. */
+    fun inviteCode(scheme: String?, path: String?): String? {
+        if (!scheme.equals("https", ignoreCase = true) || path == null) return null
+        return INVITE_PATH.matchEntire(path)?.groupValues?.get(1)?.uppercase()
+    }
+
+    // Any secret path before /party/, but never the server's own /api/party/… routes.
+    private val INVITE_PATH = Regex("""(?:/(?!api/)[^/]+)*/party/([A-Za-z0-9]{4,8})/?""")
+
     /** Whether a rooms server's info (`/api/multiplayer/info`) says it holds parties. */
     fun supportsParties(json: Json, info: String): Boolean = runCatching {
         val data = json.parseToJsonElement(info).jsonObject["data"]?.jsonObject ?: return false

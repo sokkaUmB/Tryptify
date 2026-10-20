@@ -2968,4 +2968,6 @@
     <string name="party_end_all_confirm">所有人都会被移出，分享到派对的歌曲也会从服务器删除。</string>
     <string name="party_end_all_yes">结束</string>
     <string name="party_error_guest_host">网页访客不能当主持人。</string>
+    <string name="party_invite_switch">你被邀请加入派对 %1$s。要加入吗？你会离开当前派对。</string>
+    <string name="party_invite_not_now">暂不</string>
 </resources>

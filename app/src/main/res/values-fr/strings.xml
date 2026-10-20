@@ -3112,4 +3112,6 @@
     <string name="party_end_all_confirm">Tout le monde est renvoyé, et les morceaux partagés avec la soirée sont supprimés du serveur.</string>
     <string name="party_end_all_yes">Terminer</string>
     <string name="party_error_guest_host">Un invité sur le site ne peut pas être l’hôte.</string>
+    <string name="party_invite_switch">Vous êtes invité à la soirée %1$s. La rejoindre ? Vous quitterez celle-ci.</string>
+    <string name="party_invite_not_now">Pas maintenant</string>
 </resources>

@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Properties
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -112,11 +113,15 @@ android {
         // The rooms server for Trypt Mania's multiplayer (TryptMania-Parser's
         // multiplayer/ service on Railway), the same way: local.properties
         // `tryptmania.roomsServer` or TRYPTMANIA_ROOMS_SERVER.
-        buildConfigField(
-            "String",
-            "BUILT_IN_ROOMS_SERVER",
-            "\"${(localProperties.getProperty("tryptmania.roomsServer") ?: System.getenv("TRYPTMANIA_ROOMS_SERVER") ?: "").trim()}\"",
-        )
+        val roomsServer = (localProperties.getProperty("tryptmania.roomsServer") ?: System.getenv("TRYPTMANIA_ROOMS_SERVER") ?: "").trim()
+        buildConfigField("String", "BUILT_IN_ROOMS_SERVER", "\"$roomsServer\"")
+        // Listening party invites (https://<rooms host>/…/party/<code>) open
+        // in the app: the manifest claims the built-in rooms server's host,
+        // and that server's /.well-known/assetlinks.json vouches for the app.
+        // Only the host goes in, never the secret path. Without a built-in
+        // server it claims a host that cannot exist.
+        manifestPlaceholders["partyLinkHost"] =
+            runCatching { URI(roomsServer).host }.getOrNull()?.takeIf { it.isNotBlank() } ?: "party.invalid"
 
         externalNativeBuild {
             cmake {

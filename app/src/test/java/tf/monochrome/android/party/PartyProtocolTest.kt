@@ -104,6 +104,22 @@ class PartyProtocolTest {
     }
 
     @Test
+    fun anInviteLinkGivesItsCodeAndNothingElseDoes() {
+        assertEquals("K7QD", PartyProtocol.inviteCode("https", "/s3cret/party/K7QD"))
+        assertEquals("K7QD", PartyProtocol.inviteCode("https", "/party/k7qd/"))
+        // The link the app itself hands out comes back to the same code.
+        val link = java.net.URI(PartyProtocol.inviteLink("https://rooms.example/s3cret", "k7qd"))
+        assertEquals("/s3cret/party/K7QD", link.path)
+        assertNull(PartyProtocol.inviteCode("http", "/party/K7QD"))
+        assertNull(PartyProtocol.inviteCode("https", "/party/"))
+        assertNull(PartyProtocol.inviteCode("https", "/party/K7QD/extra"))
+        assertNull(PartyProtocol.inviteCode("https", "/party/K7-QD"))
+        assertNull(PartyProtocol.inviteCode("https", "/api/party/song"))
+        assertNull(PartyProtocol.inviteCode("https", "/s3cret/api/party/song"))
+        assertNull(PartyProtocol.inviteCode("https", null))
+    }
+
+    @Test
     fun theHostsOptionsAreTheMessagesTheServerReads() {
         val pass = json.parseToJsonElement(PartyProtocol.passHost("p2")).jsonObject
         assertEquals("passHost", pass.getValue("t").jsonPrimitive.content)

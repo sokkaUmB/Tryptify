@@ -3040,4 +3040,6 @@
     <string name="party_end_all_confirm">Alle werden hinausgeschickt, und die mit der Party geteilten Songs werden vom Server gelöscht.</string>
     <string name="party_end_all_yes">Beenden</string>
     <string name="party_error_guest_host">Ein Gast auf der Website kann nicht Gastgeber sein.</string>
+    <string name="party_invite_switch">Du bist zur Party %1$s eingeladen. Beitreten? Du verlässt dann diese Party.</string>
+    <string name="party_invite_not_now">Nicht jetzt</string>
 </resources>

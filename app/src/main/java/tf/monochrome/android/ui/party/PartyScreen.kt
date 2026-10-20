@@ -138,6 +138,25 @@ fun PartyScreen(
         onDispose { viewModel.screenShown(false) }
     }
 
+    // An invite opened from a link: joined at once when this phone is at no
+    // party; asked first when it is at another. Signed out, it waits in the
+    // Join field until the listener signs in and comes back.
+    val invite by viewModel.invite.collectAsStateWithLifecycle()
+    val status = ui.client.status
+    LaunchedEffect(invite, status, ui.party?.code, hasServer) {
+        val code = invite ?: return@LaunchedEffect
+        val atParty = ui.party != null && (status == PartyStatus.IN_PARTY || status == PartyStatus.RECONNECTING)
+        when {
+            atParty && ui.party?.code == code -> viewModel.clearInvite()
+            atParty || status == PartyStatus.CONNECTING -> Unit
+            viewModel.signedIn() && hasServer -> {
+                viewModel.clearInvite()
+                if (status == PartyStatus.ENDED || status == PartyStatus.FAILED) viewModel.dismiss()
+                viewModel.join(code)
+            }
+        }
+    }
+
     // A pushed screen's own backdrop: the page under it, for the pills on it.
     val ground = rememberHazeState()
     Box(Modifier.fillMaxSize()) {
@@ -146,8 +165,9 @@ fun PartyScreen(
             val party = ui.party
             when {
                 adding && party != null -> AddSongPage(viewModel, onDone = { adding = false })
-                party != null && ui.client.status != PartyStatus.ENDED -> PartyRoom(ui, viewModel, onBack, onAdd = { adding = true })
-                else -> PartyLobby(ui, hasServer, viewModel, onBack, onSignIn)
+                party != null && ui.client.status != PartyStatus.ENDED ->
+                    PartyRoom(ui, viewModel, onBack, onAdd = { adding = true }, invite = invite?.takeIf { it != party.code })
+                else -> PartyLobby(ui, hasServer, viewModel, onBack, onSignIn, invite = invite)
             }
         }
     }
@@ -162,6 +182,7 @@ private fun PartyLobby(
     viewModel: PartyViewModel,
     onBack: () -> Unit,
     onSignIn: () -> Unit,
+    invite: String?,
 ) {
     val client = ui.client
     Column(Modifier.fillMaxSize()) {
@@ -213,7 +234,8 @@ private fun PartyLobby(
                 }
                 else -> {
                     var name by rememberSaveable { mutableStateOf("") }
-                    var code by rememberSaveable { mutableStateOf("") }
+                    // An invite waiting for a sign-in is already in the Join field.
+                    var code by rememberSaveable(invite) { mutableStateOf(invite.orEmpty().take(4)) }
                     Panel {
                         Title(stringResource(R.string.party_start_title))
                         OutlinedTextField(
@@ -252,7 +274,7 @@ private fun PartyLobby(
 // At a party.
 
 @Composable
-private fun PartyRoom(ui: PartyUi, viewModel: PartyViewModel, onBack: () -> Unit, onAdd: () -> Unit) {
+private fun PartyRoom(ui: PartyUi, viewModel: PartyViewModel, onBack: () -> Unit, onAdd: () -> Unit, invite: String?) {
     val party = ui.party ?: return
     val context = LocalContext.current
     var chatOpen by rememberSaveable { mutableStateOf(false) }
@@ -287,6 +309,16 @@ private fun PartyRoom(ui: PartyUi, viewModel: PartyViewModel, onBack: () -> Unit
                     .padding(horizontal = MonoDimens.spacingLg),
                 verticalArrangement = Arrangement.spacedBy(MonoDimens.spacingMd),
             ) {
+                if (invite != null) {
+                    Panel {
+                        Text(stringResource(R.string.party_invite_switch, invite), style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(MonoDimens.spacingSm))
+                        Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {
+                            PillButton(stringResource(R.string.party_join), primary = true) { viewModel.switchTo(invite) }
+                            PillButton(stringResource(R.string.party_invite_not_now), onClick = viewModel::clearInvite)
+                        }
+                    }
+                }
                 var showMembers by rememberSaveable { mutableStateOf(false) }
                 Listeners(party, ui, onToggle = { showMembers = !showMembers })
                 if (showMembers) {

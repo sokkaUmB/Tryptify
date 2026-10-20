@@ -22,6 +22,7 @@ import tf.monochrome.android.domain.model.Track
 import tf.monochrome.android.domain.model.UnifiedTrack
 import tf.monochrome.android.party.PartyClient
 import tf.monochrome.android.party.PartyController
+import tf.monochrome.android.party.PartyInvites
 import tf.monochrome.android.party.PartyNotify
 import tf.monochrome.android.party.PartyPrefs
 import tf.monochrome.android.party.PartyUi
@@ -45,6 +46,7 @@ class PartyViewModel @Inject constructor(
     private val controller: PartyController,
     private val client: PartyClient,
     private val prefs: PartyPrefs,
+    private val invites: PartyInvites,
     private val music: MusicRepository,
     private val local: LocalMediaRepository,
 ) : ViewModel() {
@@ -79,6 +81,17 @@ class PartyViewModel @Inject constructor(
     fun playNext(itemId: String) = controller.playNext(itemId)
     fun chat(text: String) = controller.chat(text)
     fun kick(id: String) = controller.kick(id)
+
+    /** A party invite opened from a link, waiting to be joined. */
+    val invite: StateFlow<String?> = invites.code
+    fun clearInvite() = invites.clear()
+
+    /** The invite's party instead of this one. */
+    fun switchTo(code: String) {
+        invites.clear()
+        controller.leave()
+        controller.join(code)
+    }
     fun passHost(id: String) = controller.passHost(id)
     fun endParty() = controller.endParty()
     fun clearError() = controller.clearError()

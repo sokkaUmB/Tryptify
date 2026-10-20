@@ -2968,4 +2968,6 @@
     <string name="party_end_all_confirm">全員が退出し、パーティーで共有された曲はサーバーから削除されます。</string>
     <string name="party_end_all_yes">終了する</string>
     <string name="party_error_guest_host">ウェブのゲストはホストになれません。</string>
+    <string name="party_invite_switch">パーティー %1$s に招待されています。参加しますか？今のパーティーからは抜けます。</string>
+    <string name="party_invite_not_now">今はしない</string>
 </resources>

@@ -2079,6 +2079,15 @@ tap opens the whole chat in it.
   only opens a panel saying what it does, with End it and Cancel. Neither is
   a dialog (a dialog is another window and opaque; see Glass), and ending a
   party is never one tap.
+* An invite link (`https://<rooms server>/<secret>/party/<code>`) opens the
+  party screen, which joins the code at once when this phone is at no party.
+  At another party it asks first, in place at the top of the room ("You're
+  invited to party …", Join and Not now), never a dialog and never by
+  leaving on its own. Signed out, the code waits in the Join field. Only the
+  code is taken from a link, and an `/api/party/…` address is never one.
+* Website guests can add songs from the catalogue (the rooms server's
+  `TRYPT_HIFI_URL`); a song a guest added says so like any other, with
+  "added by" the guest's name.
 * The server's own chat lines (joined, left, added, skipped, now the host) arrive as kinds
   and names and are said in the listener's language; only what people type
   is shown as typed.
