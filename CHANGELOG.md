@@ -4,6 +4,10 @@
 
 ### Added
 
+#### Orbitron ships with the app
+- **Orbitron is a built-in font now**, in Settings › Fonts with the others: a wide, squared-off display face with a sci-fi console feel, every weight from Regular to Black. Pick it for the whole app or for single text styles in the typography table.
+- **It covers Latin letters only.** Turkish's ğ, ş and İ, and Japanese and Chinese, are drawn in the phone's own font.
+
 #### Zoom for the CRT effect
 - **A Zoom slider sets the picture's size on the tube**, from 60% to 120%, in Settings › Appearance › CRT effect, the Lyrics FX tab and Trypt Mania's Graphics. It works like a TV's picture-size knob: the glass keeps its curve while the picture inside it grows or shrinks.
 - **Zoom out to frame the curve.** Under 100% the whole bowed edge of the picture shows inside the screen, with the frame round it.
