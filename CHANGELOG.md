@@ -35,6 +35,12 @@
 
 ### Changed
 
+#### Player Visuals Studio's tabs are glass pills
+- **Player, UI panels, Lyrics and Visualizer are glass pills now**, like the chips at the top of Settings, instead of underlined tabs that broke "UI panels" and "Visualizer" over two lines. They scroll sideways if they don't fit, and the one you're on scrolls into view.
+
+#### Music links in Settings › Appearance
+- **The CRT effect's sliders in Settings › Appearance can move with the music**, as they do in Player Visuals Studio: tap the ♪ beside one, or press and hold it. It's the same link in both places and on the Music links page. Curve, tilt and zoom stay as you set them, since they move where your taps land.
+
 #### The Theme Store has its own page in Settings
 - **Theme Store is a tab of Settings now, right after Fonts**, instead of a row under Appearance that opened another screen. Search and undo are at the top of the page; Appearance's row and Settings search take you to the tab.
 

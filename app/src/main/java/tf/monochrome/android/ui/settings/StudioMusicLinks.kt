@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -347,3 +349,50 @@ fun BoxScope.UndoBar(text: String, hazeState: HazeState?, onUndo: () -> Unit) {
 
 /** How long an undo stays on offer. */
 private const val UNDO_MS = 6000L
+
+/**
+ * Music links for sliders outside the Studio, such as the CRT effect's in
+ * Settings › Appearance: the same ♪, sheet, editor and undo, on the Studio's own
+ * view model, so a link made here is the one the Studio and the Music links page
+ * show. [content] is the haze source the sheet frosts.
+ */
+@Composable
+fun StudioMusicLinkScope(
+    viewModel: LyricsFxStudioViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+    content: @Composable () -> Unit,
+) {
+    val linkUi = remember { StudioLinkUi() }
+    val linkHaze = dev.chrisbanes.haze.rememberHazeState()
+    val savedLinks = viewModel.musicLinks.links.collectAsStateWithLifecycle()
+    val previewLinks by viewModel.musicLinks.previewLinks.collectAsStateWithLifecycle()
+    val linkLive = tf.monochrome.android.ui.player.rememberVisualLinkDriver(
+        tap = viewModel.spectrumAnalyzer,
+        links = previewLinks,
+        active = true,
+        delayMs = tf.monochrome.android.ui.player.LocalOutputSyncMs.current,
+    )
+    val linkHost = rememberVisualLinkHost(savedLinks, linkLive) { linkUi.sheetFor = it }
+    val fx by viewModel.fx.collectAsStateWithLifecycle()
+    val playerGlass by viewModel.playerGlass.collectAsStateWithLifecycle()
+    val miniPlayerGlass by viewModel.miniPlayerGlass.collectAsStateWithLifecycle()
+    val tvTuning by viewModel.appTvTuning.collectAsStateWithLifecycle()
+    val tvLook by viewModel.appTvShader.collectAsStateWithLifecycle()
+    val ambient by viewModel.ambient.collectAsStateWithLifecycle()
+    val look = StudioLook(fx, playerGlass, miniPlayerGlass, tvTuning, tvLook, ambient)
+    Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().hazeSource(linkHaze)) {
+            androidx.compose.runtime.CompositionLocalProvider(
+                tf.monochrome.android.ui.musiclinks.LocalMusicLinkHost provides linkHost,
+                tf.monochrome.android.ui.player.LocalVisualLinks provides linkLive,
+            ) { content() }
+        }
+        StudioLinkOverlay(
+            ui = linkUi,
+            editing = viewModel.musicLinks,
+            look = look,
+            live = linkLive,
+            tap = viewModel.spectrumAnalyzer,
+            hazeState = linkHaze,
+        )
+    }
+}

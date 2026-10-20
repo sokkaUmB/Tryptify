@@ -535,6 +535,12 @@ knob's own value (`Route::base`) and saves *that*, so a mix saved mid-song
 holds what the listener set, not where a kick left it. A knob turned while
 linked sets its own value and leaves the sound to the link.
 
+**Settings › Appearance links the CRT effect as the Studio does.** The tab sits
+in `StudioMusicLinkScope`, which hands it the Studio's own link host, sheet,
+editor and undo on `LyricsFxStudioViewModel`, so a link made there is the
+Studio's and the Music links page's, never a second copy. The curve, tilt and
+zoom stay unlinked in both places: they reshape the picture and where taps land.
+
 The link sheet and the editor are in-window glass, siblings of their screen's
 haze source, never a dialog or a `ModalBottomSheet` (see Glass). The live
 reach and position on a slider or knob are drawn in the draw phase from

@@ -732,17 +732,21 @@ private fun AppearanceTab(
     onOpenFonts: () -> Unit,
     onOpenThemeStore: () -> Unit,
 ) {
-    SettingsTabContent {
-        AppearanceControls(
-            viewModel,
-            onOpenFonts = onOpenFonts,
-            onOpenThemeStore = onOpenThemeStore,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        InterfaceControls(viewModel, navController)
-        Spacer(modifier = Modifier.height(16.dp))
-        // Last of all: the whole app through an old TV.
-        CrtEffectSetting(viewModel)
+    // The CRT effect's sliders take music links here as in the Studio: a ♪ by
+    // each, and the sheet and editor over this page.
+    StudioMusicLinkScope {
+        SettingsTabContent {
+            AppearanceControls(
+                viewModel,
+                onOpenFonts = onOpenFonts,
+                onOpenThemeStore = onOpenThemeStore,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            InterfaceControls(viewModel, navController)
+            Spacer(modifier = Modifier.height(16.dp))
+            // Last of all: the whole app through an old TV.
+            CrtEffectSetting(viewModel)
+        }
     }
 }
 

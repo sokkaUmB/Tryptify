@@ -63,8 +63,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -597,23 +595,39 @@ fun LyricsFxStudioScreen(
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
 
-        TabRow(
-            selectedTabIndex = selectedTab,
-            containerColor = Color.Transparent,
+        // The tabs as the app's glass pills, as Settings' chips are, rather than
+        // a Material TabRow: four labels squeezed into equal columns broke
+        // "UI panels" and "Visualizer" over two lines.
+        //
+        // Player chrome first, then the glass shared by every floating panel,
+        // then lyrics. "UI panels" rather than "Mini Player" because this blob
+        // stopped being just the bar: it is the material for the audio-tools
+        // sheet, the speed panel, the nav pill, the search bar and the map
+        // panels too. Visualizer is not glass at all — the player's background
+        // and its visualizer engine — but nowhere else is a change to what the
+        // player looks like at home.
+        val studioTabs = listOf(
+            stringResource(R.string.fx_player),
+            stringResource(R.string.fx_ui_panels),
+            stringResource(R.string.mode_lyrics),
+            stringResource(R.string.visualizer),
+        )
+        val tabPills = androidx.compose.foundation.lazy.rememberLazyListState()
+        LaunchedEffect(selectedTab) { tabPills.animateScrollToItem(selectedTab) }
+        androidx.compose.foundation.lazy.LazyRow(
+            state = tabPills,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Player chrome first, then the glass shared by every floating
-            // panel, then lyrics. "UI panels" rather than "Mini Player"
-            // because this blob stopped being just the bar: it is the material
-            // for the audio-tools sheet, the speed panel, the nav pill, the
-            // search bar and the map panels too.
-            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(stringResource(R.string.fx_player)) })
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(R.string.fx_ui_panels)) })
-            Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text(stringResource(R.string.mode_lyrics)) })
-            // Not glass at all, unlike the other three — this is the player's
-            // background and its visualizer engine. It lives here because the
-            // screen is the Player Visuals Studio, and because there is nowhere
-            // else that a change to what the player looks like belongs.
-            Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text(stringResource(R.string.visualizer)) })
+            items(studioTabs.size) { index ->
+                tf.monochrome.android.ui.mixer.GlassChoiceChip(
+                    label = studioTabs[index],
+                    selected = selectedTab == index,
+                    accent = MaterialTheme.colorScheme.primary,
+                    onClick = { selectedTab = index },
+                )
+            }
         }
 
         // With the glass switched off app-wide, every control on these tabs still
