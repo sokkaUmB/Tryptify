@@ -159,6 +159,16 @@ fun GlyphMenuScreen(
                     .padding(horizontal = MonoDimens.spacingXl)
                     .semantics { heading() },
             )
+            // The mode is in beta. Its own line under the name, small and in
+            // the accent, so the logo keeps its two words.
+            Text(
+                text = stringResource(R.string.badge_beta).uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 3.sp,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = MonoDimens.spacingXl, vertical = MonoDimens.spacingXs),
+            )
             Spacer(Modifier.height(MonoDimens.spacingSm))
             Text(
                 text = "StepMania's rules, your library.",

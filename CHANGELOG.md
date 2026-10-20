@@ -24,6 +24,9 @@
 
 ### Changed
 
+#### Trypt Mania is marked as a beta
+- **Its name says (Beta)** on the Library tile, the song list and in Settings, and a small BETA sits under the logo on its menu, in every language.
+
 #### Trypt Mania plays over the player's background
 - **The arrows are now over the same background as the music player**: the song's cover, blurred and darkened, over a wash and a glow in its album colours. It is the player's own background, so it follows the player's colour settings and changes when they do.
 - **The arcade pad, the speakers and the stage lights are gone** from behind the play, so the only thing moving is the arrows.

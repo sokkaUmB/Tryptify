@@ -1710,12 +1710,12 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        SettingsGroupHeader("Trypt Mania")
+        SettingsGroupHeader(stringResource(R.string.trypt_mania_beta))
         OutlinedButton(
             onClick = { navController.navigateTool(Screen.Glyph) },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Trypt Mania")
+            Text(stringResource(R.string.trypt_mania_beta))
         }
 
         // One group, not two. "Spatial Audio" held nothing but the Atmos row,

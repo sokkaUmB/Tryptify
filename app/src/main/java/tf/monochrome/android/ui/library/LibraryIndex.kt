@@ -119,7 +119,7 @@ fun LibraryIndexList(
         }
         if (onTryptMania != null) {
             item(key = "trypt_mania", contentType = "category") {
-                CategoryTile(Icons.Default.SportsEsports, stringResource(R.string.trypt_mania), onTryptMania)
+                CategoryTile(Icons.Default.SportsEsports, stringResource(R.string.trypt_mania_beta), onTryptMania)
             }
         }
     }
