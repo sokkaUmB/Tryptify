@@ -417,42 +417,24 @@ fun EqualizerScreen(
                     val displayOther = remember(otherMeasurement, smoothing) {
                         AutoEqEngine.smoothCurve(otherMeasurement, smoothing)
                     }
-                    // The Studio's graph: drag a handle to move a filter, pinch
-                    // for its Q, touch anywhere else for a readout. The other
-                    // ear is drawn faintly beside the one being edited.
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(320.dp)
-                            .padding(horizontal = 12.dp),
-                    ) {
-                        EqStudioGraph(
-                            measurement = displayMeasurement,
-                            target = selectedTarget.data,
-                            bands = activeBands,
-                            selectedId = selectedBandId,
-                            onSelect = { selectedBandId = it },
-                            onMove = { id, freq, gain -> viewModel.updateBandByDrag(id, freq, gain) },
-                            onQ = { id, q ->
-                                activeBands.firstOrNull { it.id == id }?.let { viewModel.updateBand(id, it.copy(q = q)) }
-                            },
-                            measurementColor = MeasurementColor,
-                            targetColor = TargetColor,
-                            description = stringResource(R.string.eq_studio_graph_description),
-                            modifier = Modifier.fillMaxSize(),
-                            secondaryMeasurement = if (stereoMode) displayOther else emptyList(),
-                            secondaryBands = if (!stereoMode) emptyList() else if (editRight) currentBands else currentBandsR,
-                        )
-                        StudioLegend(
-                            measurementName = (measurementLabelText(if (editRight) measurementLabelR else measurementLabelL)
-                                ?: selectedHeadphone?.name)
-                                ?.takeIf { activeMeasurement.isNotEmpty() },
-                            targetName = selectedTarget.label.takeIf { selectedTarget.data.isNotEmpty() },
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(start = 38.dp, bottom = 26.dp),
-                        )
-                    }
+                    FrequencyResponseGraph(
+                        originalCurve = displayMeasurement,
+                        targetCurve = selectedTarget.data,
+                        eqBands = activeBands,
+                        preamp = currentPreamp,
+                        onBandDragged = { bandId, freq, gain ->
+                            // The dot being dragged is the filter placed below.
+                            selectedBandId = bandId
+                            viewModel.updateBandByDrag(bandId, freq, gain)
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        secondaryMeasurement = if (stereoMode) displayOther else emptyList(),
+                        secondaryBands =
+                            if (stereoMode) {
+                                if (editRight) currentBands else currentBandsR
+                            } else null,
+                        primaryIsRight = editRight,
+                    )
                 }
               }
             }

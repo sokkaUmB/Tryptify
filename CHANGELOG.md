@@ -43,11 +43,10 @@
 
 ### Changed
 
-#### Precision AutoEQ uses the EQ Studio's graph
-- **The same graph as EQ Studio**: drag a filter's dot to move it, pinch for its width, touch anywhere else for a readout. With left and right corrected separately, the other ear shows faintly beside the one you're editing.
+#### Precision AutoEQ takes the EQ Studio's target pills and filter editor
 - **Targets are pills under the graph**, one tap each, with Import at the end. The target you've imported and picked has a × to delete it.
-- **Under the pills, the filters are placed as in the Studio**: a coloured chip per filter, and for the one picked its type, and its frequency, gain and Q as pills you swipe or tap to type.
-- **Everything else stays**: smoothing, preamp, the algorithm, AutoEq, tone, automatic preamp, the headphone model, export, saved profiles and the full band list.
+- **Under the pills, the filters are placed as in the Studio**: a coloured chip per filter, and for the one picked its type, and its frequency, gain and Q as pills you swipe or tap to type. Dragging a dot on the graph picks that filter.
+- **The graph is the one Precision AutoEQ always had**, and everything else stays: smoothing, preamp, the algorithm, AutoEq, tone, automatic preamp, the headphone model, export, saved profiles and the full band list.
 
 #### Trypt Mania's score multiplies with your combo
 - **Points grow with the combo, as in osu!.** Each step is worth its judgement's points (Marvelous 300, Perfect 285, Great 210, Good 120, Boo 30) times 1 + (combo − 1) ÷ 25, so the 26th step of a combo is worth twice the first. A Good, a Boo, a miss or a mine starts it over.
