@@ -26,6 +26,16 @@ toggle so someone without a song still hears it.
   length), and website guests skip them.
 - **Restart:** parties live in memory. A server restart or deploy ends them;
   everyone sees "The party ended" and can start a new one.
+- **Party screen: direction A, "now playing first"** (owner's pick from the
+  demos, https://claude.ai/artifact/TDhHvpbjhwA6xiPJ6wDbYH): top bar with the
+  party name, host and code, and Invite; the listeners' avatars with "N
+  listening · N on the web" and an "In sync" dot; the big cover, title,
+  artist and who added it; the progress bar; Play/Pause for everyone (host)
+  and Vote skip (others, with the count); an Up next panel with who added
+  each song and Shared or Uploading N%, and Add song; chat as a sheet at the
+  bottom with the latest line and the message field. Colours, fonts and
+  glass follow the user's own visual settings like every screen; the demo's
+  purple is a placeholder. The website (demo D) keeps its own look.
 - **Deploy:** the rooms server is shared with Trypt Mania's game rooms. Ask the
   owner before deploying it to Railway.
 
