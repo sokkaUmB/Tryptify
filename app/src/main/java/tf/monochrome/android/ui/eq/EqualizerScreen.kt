@@ -391,6 +391,7 @@ fun EqualizerScreen(
                                 if (editRight) currentBands else currentBandsR
                             } else null,
                         primaryIsRight = editRight,
+                        bandDotColor = { studioFilterColor(it.id) },
                     )
                 }
               }

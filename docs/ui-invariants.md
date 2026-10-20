@@ -1362,6 +1362,16 @@ it first.
 (`LibraryIndexList`'s `onGalaxy`), drawn like the categories but not one of
 them: the categories open in place, this opens a screen.
 
+### Precision AutoEQ filter colours
+
+**A filter's dot on the graph is its chip's colour.** Precision AutoEQ
+(`EqualizerScreen`) passes `bandDotColor = { studioFilterColor(it.id) }` to
+`FrequencyResponseGraph`, the same colour as the dot on its filter chip and in
+the inspector, so dot 4 and chip 4 read as one thing. The graph's own
+fallback (green boosts, red cuts, grey flat) stays for the screens with no
+chips: Parametric EQ, car mode, the import sheet. Dropping the parameter makes
+the dots disagree with the chips under them.
+
 ### Stats charts
 
 **Bars are glass, and the glass is flat colour.** `glassBar` in `StatsVisuals.kt`
