@@ -2980,3 +2980,12 @@ party_member_host	Host	主持人	ホスト	Hôte	Anfitrión	Ev sahibi	Gastgeber
 party_member_web	On the web	在网页上	ウェブから	Sur le web	En la web	Web’de	Im Web
 party_member_away	Away	暂时离开	離席中	Absent	Ausente	Uzakta	Abwesend
 party_cd_show_members	Show who's listening	显示谁在听	聴いている人を表示	Afficher qui écoute	Mostrar quién escucha	Kimlerin dinlediğini göster	Zeigen, wer zuhört
+party_line_host	%1$s is now the host	%1$s 现在是主持人	%1$s がホストになりました	%1$s est maintenant l’hôte	%1$s ahora es el anfitrión	%1$s artık ev sahibi	%1$s ist jetzt Gastgeber
+party_host_ended	The host ended the party.	主持人结束了派对。	ホストがパーティーを終了しました。	L’hôte a mis fin à la soirée.	El anfitrión terminó la fiesta.	Ev sahibi partiyi bitirdi.	Der Gastgeber hat die Party beendet.
+party_member_options	Host options for %1$s	%1$s 的主持人选项	%1$s へのホスト操作	Options d’hôte pour %1$s	Opciones de anfitrión para %1$s	%1$s için ev sahibi seçenekleri	Gastgeber-Optionen für %1$s
+party_make_host	Make host	设为主持人	ホストにする	Nommer hôte	Hacer anfitrión	Ev sahibi yap	Zum Gastgeber machen
+party_take_out	Take out of the party	移出派对	パーティーから外す	Retirer de la soirée	Sacar de la fiesta	Partiden çıkar	Aus der Party nehmen
+party_end_all	End the party for everyone	为所有人结束派对	全員のパーティーを終了	Terminer la soirée pour tous	Terminar la fiesta para todos	Partiyi herkes için bitir	Party für alle beenden
+party_end_all_confirm	Everyone is sent out, and the songs shared with the party are deleted from the server.	所有人都会被移出，分享到派对的歌曲也会从服务器删除。	全員が退出し、パーティーで共有された曲はサーバーから削除されます。	Tout le monde est renvoyé, et les morceaux partagés avec la soirée sont supprimés du serveur.	Todos salen de la fiesta y las canciones compartidas se borran del servidor.	Herkes partiden çıkarılır ve partiyle paylaşılan şarkılar sunucudan silinir.	Alle werden hinausgeschickt, und die mit der Party geteilten Songs werden vom Server gelöscht.
+party_end_all_yes	End it	结束	終了する	Terminer	Terminar	Bitir	Beenden
+party_error_guest_host	A website guest can’t be the host.	网页访客不能当主持人。	ウェブのゲストはホストになれません。	Un invité sur le site ne peut pas être l’hôte.	Un invitado de la web no puede ser el anfitrión.	Web sitesindeki bir misafir ev sahibi olamaz.	Ein Gast auf der Website kann nicht Gastgeber sein.

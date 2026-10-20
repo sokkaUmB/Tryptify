@@ -109,7 +109,7 @@ data class PartyView(
     val onTheWeb: Int get() = members.count { !it.away && it.web }
 }
 
-enum class PartyLineKind { SAY, JOIN, LEAVE, ADD, SKIP }
+enum class PartyLineKind { SAY, JOIN, LEAVE, ADD, SKIP, HOST }
 
 /**
  * A line of the party's chat. The server's own lines (joins, songs added,
@@ -188,6 +188,7 @@ object PartyProtocol {
             "leave" -> PartyLineKind.LEAVE
             "add" -> PartyLineKind.ADD
             "skip" -> PartyLineKind.SKIP
+            "host" -> PartyLineKind.HOST
             else -> return null
         }
         return PartyLine(kind, str("id"), str("name").orEmpty(), str("text").orEmpty(), o["at"]?.jsonPrimitive?.longOrNull ?: 0L)
@@ -236,6 +237,11 @@ object PartyProtocol {
     fun skipVote(itemId: String, vote: Boolean): String =
         msg("skipVote", "itemId" to JsonPrimitive(itemId), "vote" to JsonPrimitive(vote))
     fun kick(id: String): String = msg("kick", "id" to JsonPrimitive(id))
+    fun passHost(id: String): String = msg("passHost", "id" to JsonPrimitive(id))
+    fun endParty(): String = msg("endParty")
+
+    /** The reason the server gives everyone when the host ends the party. */
+    const val HOST_ENDED = "the host ended the party"
 
     /** Song [itemId]'s address on [server] (`https://host/secret`); with [ext] when uploading. */
     fun songUrl(server: String, itemId: String, ext: String? = null): String {

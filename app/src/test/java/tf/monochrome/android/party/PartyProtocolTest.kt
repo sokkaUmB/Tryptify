@@ -104,6 +104,23 @@ class PartyProtocolTest {
     }
 
     @Test
+    fun theHostsOptionsAreTheMessagesTheServerReads() {
+        val pass = json.parseToJsonElement(PartyProtocol.passHost("p2")).jsonObject
+        assertEquals("passHost", pass.getValue("t").jsonPrimitive.content)
+        assertEquals("p2", pass.getValue("id").jsonPrimitive.content)
+        assertEquals("endParty", json.parseToJsonElement(PartyProtocol.endParty()).jsonObject.getValue("t").jsonPrimitive.content)
+        // The seat handed on comes back as a line naming the new host.
+        val line = PartyProtocol.parse(
+            json,
+            """{"t":"line","line":{"kind":"host","id":"p2","name":"Sam","text":"","at":9}}""",
+        ) as PartyMsg.Line
+        assertEquals(PartyLineKind.HOST, line.line.kind)
+        assertEquals("Sam", line.line.name)
+        // Everyone is told why, the same words the server's rules use.
+        assertEquals(PartyMsg.Left(PartyProtocol.HOST_ENDED), PartyProtocol.parse(json, """{"t":"left","reason":"the host ended the party"}"""))
+    }
+
+    @Test
     fun songsAndInvitesLiveUnderTheServersAddress() {
         assertEquals(
             "https://rooms.example/s3cret/api/party/song?item=s1&ext=flac",

@@ -3033,4 +3033,13 @@
     <string name="party_member_web">On the web</string>
     <string name="party_member_away">Away</string>
     <string name="party_cd_show_members">Show who\'s listening</string>
+    <string name="party_line_host">%1$s is now the host</string>
+    <string name="party_host_ended">The host ended the party.</string>
+    <string name="party_member_options">Host options for %1$s</string>
+    <string name="party_make_host">Make host</string>
+    <string name="party_take_out">Take out of the party</string>
+    <string name="party_end_all">End the party for everyone</string>
+    <string name="party_end_all_confirm">Everyone is sent out, and the songs shared with the party are deleted from the server.</string>
+    <string name="party_end_all_yes">End it</string>
+    <string name="party_error_guest_host">A website guest can’t be the host.</string>
 </resources>

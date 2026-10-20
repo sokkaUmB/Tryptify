@@ -590,6 +590,9 @@ class PartyController @Inject constructor(
     }
     fun remove(itemId: String) = client.remove(itemId)
     fun playNext(itemId: String) = client.move(itemId, 0)
+    fun kick(id: String) = client.kick(id)
+    fun passHost(id: String) = client.passHost(id)
+    fun endParty() = client.endParty()
     fun chat(text: String) = text.trim().takeIf { it.isNotEmpty() }?.let { client.chat(it) }
     fun clearError() = client.clearError()
     fun inviteLink(): String? = client.inviteLink()

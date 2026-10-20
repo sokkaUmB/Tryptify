@@ -2048,8 +2048,9 @@ that says how this phone is doing (In sync, Catching up, Paused by the host,
 host's Play/Pause for everyone and Skip, everyone else's Vote skip with the
 count; Up next with who added each song and Shared or Uploading N%, and
 Add song; the switches for this phone (Share songs, and which goings-on are
-notified); Leave the party. The chat is a sheet at the bottom with the
-latest line and the field, and a tap opens the whole chat in it.
+notified); Leave the party, and for the host End the party for everyone.
+The chat is a sheet at the bottom with the latest line and the field, and a
+tap opens the whole chat in it.
 
 * Colours, type and glass are the listener's own. The demos' purple and
   their Orbitron were placeholders; the website (demo D, served by the rooms
@@ -2070,7 +2071,15 @@ latest line and the field, and a tap opens the whole chat in it.
   without this phone, said the same way.
 * "Add to party" is in every song menu while a party is on, given at the
   root (`LocalAddToParty`) as "Play in Trypt Mania" is, and absent otherwise.
-* The server's own chat lines (joined, left, added, skipped) arrive as kinds
+* The host's options live where the people are: a tap on the listeners
+  opens Who's listening, and there the host taps someone else's name for
+  Make host and Take out of the party, in place under the name. A website
+  guest gets no Make host (a guest has no controls, and the server refuses
+  it). End the party for everyone is asked twice, in place: the first tap
+  only opens a panel saying what it does, with End it and Cancel. Neither is
+  a dialog (a dialog is another window and opaque; see Glass), and ending a
+  party is never one tap.
+* The server's own chat lines (joined, left, added, skipped, now the host) arrive as kinds
   and names and are said in the listener's language; only what people type
   is shown as typed.
 

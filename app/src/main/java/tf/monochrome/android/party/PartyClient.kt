@@ -71,7 +71,7 @@ enum class PartyStatus {
 }
 
 /** Why a party is over for this phone. */
-enum class PartyEnd { ENDED, KICKED, LEFT }
+enum class PartyEnd { ENDED, HOST_ENDED, KICKED, LEFT }
 
 /** Everything the party screen and the controller read, as it stands. */
 data class PartyState(
@@ -247,7 +247,15 @@ class PartyClient @Inject constructor(
                         return@consumeEach
                     }
                     msg is PartyMsg.Left -> {
-                        ended(if (msg.reason.contains("kicked")) PartyEnd.KICKED else PartyEnd.LEFT)
+                        ended(
+                            when {
+                                msg.reason.contains("kicked") -> PartyEnd.KICKED
+                                // The host who ended it is told the party ended, the rest who ended it.
+                                msg.reason == PartyProtocol.HOST_ENDED ->
+                                    if (_state.value.isHost) PartyEnd.ENDED else PartyEnd.HOST_ENDED
+                                else -> PartyEnd.LEFT
+                            },
+                        )
                         outcome = Outcome.DONE
                         ws.close()
                         return@consumeEach
@@ -320,6 +328,8 @@ class PartyClient @Inject constructor(
     fun vote(itemId: String, vote: Boolean) = tell(PartyProtocol.skipVote(itemId, vote))
     fun chat(text: String) = tell(PartyProtocol.chat(text))
     fun kick(id: String) = tell(PartyProtocol.kick(id))
+    fun passHost(id: String) = tell(PartyProtocol.passHost(id))
+    fun endParty() = tell(PartyProtocol.endParty())
     fun clearError() = _state.update { it.copy(error = null) }
 
     /** The server's time now, as this phone's clock and the pings put it. */

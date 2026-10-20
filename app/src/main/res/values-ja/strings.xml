@@ -2959,4 +2959,13 @@
     <string name="party_member_web">ウェブから</string>
     <string name="party_member_away">離席中</string>
     <string name="party_cd_show_members">聴いている人を表示</string>
+    <string name="party_line_host">%1$s がホストになりました</string>
+    <string name="party_host_ended">ホストがパーティーを終了しました。</string>
+    <string name="party_member_options">%1$s へのホスト操作</string>
+    <string name="party_make_host">ホストにする</string>
+    <string name="party_take_out">パーティーから外す</string>
+    <string name="party_end_all">全員のパーティーを終了</string>
+    <string name="party_end_all_confirm">全員が退出し、パーティーで共有された曲はサーバーから削除されます。</string>
+    <string name="party_end_all_yes">終了する</string>
+    <string name="party_error_guest_host">ウェブのゲストはホストになれません。</string>
 </resources>

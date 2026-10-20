@@ -3031,4 +3031,13 @@
     <string name="party_member_web">Im Web</string>
     <string name="party_member_away">Abwesend</string>
     <string name="party_cd_show_members">Zeigen, wer zuhört</string>
+    <string name="party_line_host">%1$s ist jetzt Gastgeber</string>
+    <string name="party_host_ended">Der Gastgeber hat die Party beendet.</string>
+    <string name="party_member_options">Gastgeber-Optionen für %1$s</string>
+    <string name="party_make_host">Zum Gastgeber machen</string>
+    <string name="party_take_out">Aus der Party nehmen</string>
+    <string name="party_end_all">Party für alle beenden</string>
+    <string name="party_end_all_confirm">Alle werden hinausgeschickt, und die mit der Party geteilten Songs werden vom Server gelöscht.</string>
+    <string name="party_end_all_yes">Beenden</string>
+    <string name="party_error_guest_host">Ein Gast auf der Website kann nicht Gastgeber sein.</string>
 </resources>

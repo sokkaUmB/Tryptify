@@ -2959,4 +2959,13 @@
     <string name="party_member_web">在网页上</string>
     <string name="party_member_away">暂时离开</string>
     <string name="party_cd_show_members">显示谁在听</string>
+    <string name="party_line_host">%1$s 现在是主持人</string>
+    <string name="party_host_ended">主持人结束了派对。</string>
+    <string name="party_member_options">%1$s 的主持人选项</string>
+    <string name="party_make_host">设为主持人</string>
+    <string name="party_take_out">移出派对</string>
+    <string name="party_end_all">为所有人结束派对</string>
+    <string name="party_end_all_confirm">所有人都会被移出，分享到派对的歌曲也会从服务器删除。</string>
+    <string name="party_end_all_yes">结束</string>
+    <string name="party_error_guest_host">网页访客不能当主持人。</string>
 </resources>

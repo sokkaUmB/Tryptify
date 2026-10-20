@@ -179,6 +179,7 @@ private fun PartyLobby(
                         stringResource(
                             when (client.end) {
                                 PartyEnd.KICKED -> R.string.party_kicked
+                                PartyEnd.HOST_ENDED -> R.string.party_host_ended
                                 PartyEnd.LEFT -> R.string.party_left
                                 else -> R.string.party_ended
                             },
@@ -288,7 +289,15 @@ private fun PartyRoom(ui: PartyUi, viewModel: PartyViewModel, onBack: () -> Unit
             ) {
                 var showMembers by rememberSaveable { mutableStateOf(false) }
                 Listeners(party, ui, onToggle = { showMembers = !showMembers })
-                if (showMembers) Members(party, ui.myId)
+                if (showMembers) {
+                    Members(
+                        party = party,
+                        myId = ui.myId,
+                        isHost = ui.client.isHost,
+                        onMakeHost = viewModel::passHost,
+                        onTakeOut = viewModel::kick,
+                    )
+                }
                 if (ui.client.status == PartyStatus.RECONNECTING) {
                     Text(stringResource(R.string.party_reconnecting), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
                 }
@@ -303,6 +312,7 @@ private fun PartyRoom(ui: PartyUi, viewModel: PartyViewModel, onBack: () -> Unit
                 UpNext(ui, party, viewModel, onAdd)
                 ThisPhone(ui, viewModel)
                 PillButton(stringResource(R.string.party_leave), danger = true, onClick = viewModel::leave)
+                if (ui.client.isHost) EndForEveryone(onEnd = viewModel::endParty)
                 Spacer(Modifier.height(sheetHeight + LocalBottomChromeInset.current + MonoDimens.spacingLg))
             }
         }
@@ -353,9 +363,21 @@ private fun Listeners(party: PartyView, ui: PartyUi, onToggle: () -> Unit) {
     }
 }
 
-/** Everyone at the party by name: the host, who is on the web, who is away, and you. */
+/**
+ * Everyone at the party by name: the host, who is on the web, who is away, and
+ * you. The host can tap someone else's name for what a host can do to them:
+ * hand them the host's seat (not a website guest, who has no controls) or take
+ * them out of the party.
+ */
 @Composable
-private fun Members(party: PartyView, myId: String?) {
+private fun Members(
+    party: PartyView,
+    myId: String?,
+    isHost: Boolean,
+    onMakeHost: (String) -> Unit,
+    onTakeOut: (String) -> Unit,
+) {
+    var open by rememberSaveable { mutableStateOf<String?>(null) }
     Panel {
         Text(
             stringResource(R.string.party_members_title),
@@ -365,8 +387,19 @@ private fun Members(party: PartyView, myId: String?) {
         )
         // The host first, then everyone in the order they came.
         party.members.sortedByDescending { it.id == party.hostId }.forEach { m ->
+            val canAct = isHost && m.id != myId
+            val optionsLabel = stringResource(R.string.party_member_options, m.name)
             Row(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 44.dp)
+                    .then(
+                        if (canAct) {
+                            Modifier.clickable(onClickLabel = optionsLabel) { open = if (open == m.id) null else m.id }
+                        } else {
+                            Modifier
+                        },
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -393,6 +426,38 @@ private fun Members(party: PartyView, myId: String?) {
                     )
                 }
             }
+            if (canAct && open == m.id) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 40.dp, bottom = MonoDimens.spacingSm),
+                    horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm),
+                ) {
+                    if (!m.web) {
+                        PillButton(stringResource(R.string.party_make_host)) { open = null; onMakeHost(m.id) }
+                    }
+                    PillButton(stringResource(R.string.party_take_out), danger = true) { open = null; onTakeOut(m.id) }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The host's way to end the party for everyone, asked twice: the first tap
+ * only shows what it does, in place, with End and Cancel.
+ */
+@Composable
+private fun EndForEveryone(onEnd: () -> Unit) {
+    var asking by rememberSaveable { mutableStateOf(false) }
+    if (!asking) {
+        PillButton(stringResource(R.string.party_end_all), danger = true) { asking = true }
+        return
+    }
+    Panel {
+        Text(stringResource(R.string.party_end_all_confirm), style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(MonoDimens.spacingSm))
+        Row(horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)) {
+            PillButton(stringResource(R.string.party_end_all_yes), danger = true) { asking = false; onEnd() }
+            PillButton(stringResource(R.string.action_cancel)) { asking = false }
         }
     }
 }
@@ -759,6 +824,7 @@ private fun ChatLine(line: PartyLine, myId: String?, oneLine: Boolean = false) {
 private fun systemLine(line: PartyLine): String = when (line.kind) {
     PartyLineKind.JOIN -> stringResource(if (line.text == "web") R.string.party_line_joined_web else R.string.party_line_joined, line.name)
     PartyLineKind.LEAVE -> stringResource(R.string.party_line_left, line.name)
+    PartyLineKind.HOST -> stringResource(R.string.party_line_host, line.name)
     PartyLineKind.ADD -> stringResource(R.string.party_line_added, line.name, line.text)
     PartyLineKind.SKIP -> if (line.name.isBlank()) stringResource(R.string.party_line_skipped, line.text)
     else stringResource(R.string.party_line_host_skipped, line.name, line.text)
@@ -943,6 +1009,7 @@ private fun errorText(message: String?): String = when (message) {
     "no party with that code" -> stringResource(R.string.party_error_no_party)
     "slow down a little" -> stringResource(R.string.party_error_slow_down)
     "only the host can do that" -> stringResource(R.string.party_error_host_only)
+    "a website guest cannot be the host" -> stringResource(R.string.party_error_guest_host)
     else -> message
 }
 

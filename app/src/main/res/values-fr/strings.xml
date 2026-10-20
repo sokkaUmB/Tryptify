@@ -3103,4 +3103,13 @@
     <string name="party_member_web">Sur le web</string>
     <string name="party_member_away">Absent</string>
     <string name="party_cd_show_members">Afficher qui écoute</string>
+    <string name="party_line_host">%1$s est maintenant l’hôte</string>
+    <string name="party_host_ended">L’hôte a mis fin à la soirée.</string>
+    <string name="party_member_options">Options d’hôte pour %1$s</string>
+    <string name="party_make_host">Nommer hôte</string>
+    <string name="party_take_out">Retirer de la soirée</string>
+    <string name="party_end_all">Terminer la soirée pour tous</string>
+    <string name="party_end_all_confirm">Tout le monde est renvoyé, et les morceaux partagés avec la soirée sont supprimés du serveur.</string>
+    <string name="party_end_all_yes">Terminer</string>
+    <string name="party_error_guest_host">Un invité sur le site ne peut pas être l’hôte.</string>
 </resources>

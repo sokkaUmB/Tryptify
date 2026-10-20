@@ -3031,4 +3031,13 @@
     <string name="party_member_web">Web’de</string>
     <string name="party_member_away">Uzakta</string>
     <string name="party_cd_show_members">Kimlerin dinlediğini göster</string>
+    <string name="party_line_host">%1$s artık ev sahibi</string>
+    <string name="party_host_ended">Ev sahibi partiyi bitirdi.</string>
+    <string name="party_member_options">%1$s için ev sahibi seçenekleri</string>
+    <string name="party_make_host">Ev sahibi yap</string>
+    <string name="party_take_out">Partiden çıkar</string>
+    <string name="party_end_all">Partiyi herkes için bitir</string>
+    <string name="party_end_all_confirm">Herkes partiden çıkarılır ve partiyle paylaşılan şarkılar sunucudan silinir.</string>
+    <string name="party_end_all_yes">Bitir</string>
+    <string name="party_error_guest_host">Web sitesindeki bir misafir ev sahibi olamaz.</string>
 </resources>
