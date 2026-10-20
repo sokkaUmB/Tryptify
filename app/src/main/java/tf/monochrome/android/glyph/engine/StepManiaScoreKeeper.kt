@@ -13,8 +13,9 @@ package tf.monochrome.android.glyph.engine
  * it would on a cabinet: the same percent, the same grade, the same point at
  * which the life bar empties.
  *
- * The engine's own 0..1,000,000 score is kept alongside, unchanged. This is
- * what the menus, the results and the high score tables rank by.
+ * The engine's own points, multiplied by the combo as osu!'s are, are kept
+ * alongside. This percent is what the menus, the results and the high score
+ * tables rank by; the points break their ties and rank a room's players.
  */
 class StepManiaScoreKeeper(
     /** Judgements the chart can award: taps and hold heads, and one per hold tail. */

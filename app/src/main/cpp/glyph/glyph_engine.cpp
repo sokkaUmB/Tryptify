@@ -18,6 +18,17 @@ float judgementWeight(int32_t judgement) {
     }
 }
 
+int32_t judgementPoints(int32_t judgement) {
+    switch (judgement) {
+        case kMarvelous: return 300;
+        case kPerfect: return 285;
+        case kGreat: return 210;
+        case kGood: return 120;
+        case kBoo: return 30;
+        default: return 0;
+    }
+}
+
 int32_t Windows::judge(float offsetSeconds) const {
     const float distance = std::fabs(offsetSeconds);
     if (distance <= marvelous) return kMarvelous;
@@ -262,6 +273,10 @@ void Engine::record(int32_t judgement, float offset) {
     } else {
         combo_ = 0;
     }
+    // Whole numbers, so both engines reach the same total to the point. A
+    // judgement that breaks the combo is worth its points once.
+    const int64_t streak = combo_ > 0 ? combo_ - 1 : 0;
+    points_ += static_cast<int64_t>(judgementPoints(judgement)) * (kComboStep + streak) / kComboStep;
     if (!std::isnan(offset) && isHit(judgement)) {
         offsetSum_ += static_cast<double>(offset);
         offsetSquareSum_ += static_cast<double>(offset) * static_cast<double>(offset);
@@ -275,6 +290,7 @@ void Engine::record(int32_t judgement, float offset) {
 void Engine::clearScore() {
     for (auto& c : counts_) c = 0;
     weightSum_ = 0.0f;
+    points_ = 0;
     offsetSum_ = 0.0;
     offsetSquareSum_ = 0.0;
     offsetSamples_ = 0;
@@ -392,16 +408,9 @@ ScoreState Engine::score() const {
     s.holdsDropped = holdsDropped_;
     s.judged = judged;
     s.totalJudgements = totalJudgements_;
-    if (totalJudgements_ <= 0) {
-        s.score = 0;
-        s.finalAccuracy = 0.0f;
-    } else {
-        const float raw = weightSum_ / static_cast<float>(totalJudgements_) * static_cast<float>(kMaxScore);
-        // Clamped as a float first: converting an out-of-range float is UB.
-        const float clamped = raw < 0.0f ? 0.0f : (raw > static_cast<float>(kMaxScore) ? static_cast<float>(kMaxScore) : raw);
-        s.score = static_cast<int32_t>(clamped);
-        s.finalAccuracy = weightSum_ / static_cast<float>(totalJudgements_);
-    }
+    // Held in 64 bits and reported in 32: no chart comes near the cap.
+    s.score = points_ > INT32_MAX ? INT32_MAX : static_cast<int32_t>(points_);
+    s.finalAccuracy = totalJudgements_ <= 0 ? 0.0f : weightSum_ / static_cast<float>(totalJudgements_);
     s.accuracy = judged <= 0 ? 0.0f : weightSum_ / static_cast<float>(judged);
     s.meanOffsetSeconds = offsetSamples_ == 0 ? 0.0f : static_cast<float>(offsetSum_ / offsetSamples_);
     if (offsetSamples_ < 2) {

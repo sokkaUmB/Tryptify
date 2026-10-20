@@ -62,17 +62,18 @@ class GlyphScore(
 
     fun count(judgement: GlyphJudgement): Int = counts[judgement.ordinal]
 
+    private var points = 0L
+
     /**
-     * Points out of [MAX_SCORE].
-     *
-     * Scaled by the chart's own judgement count so a short chart and a long one
-     * are on the same scale, which is what lets a training segment's score mean
-     * anything next to a full run's.
+     * Points, multiplied by the combo as osu! does: each judgement earns its
+     * [GlyphJudgement.points] times `1 + (combo - 1) / COMBO_STEP`, the combo
+     * counted with that hit, so a judgement that breaks it earns its points
+     * once. A long combo is worth more than the same hits broken up, and there
+     * is no ceiling; the percent and the grade are what compare one chart with
+     * another. Held as a Long and reported as an Int, which no chart nears.
      */
     val score: Int
-        get() = if (totalJudgements <= 0) 0 else {
-            (weightSum / totalJudgements * MAX_SCORE).toInt().coerceIn(0, MAX_SCORE)
-        }
+        get() = points.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 
     /**
      * Accuracy over the notes judged so far, not over the whole chart.
@@ -128,6 +129,10 @@ class GlyphScore(
         } else {
             combo = 0
         }
+        // Whole numbers, so this engine and the native one reach the same
+        // total to the point.
+        val streak = if (combo > 0) combo - 1L else 0L
+        points += judgement.points.toLong() * (COMBO_STEP + streak) / COMBO_STEP
 
         if (offsetSeconds != null && judgement.isHit) {
             offsetSum += offsetSeconds
@@ -155,6 +160,7 @@ class GlyphScore(
         this.totalJudgements = totalJudgements
         java.util.Arrays.fill(counts, 0)
         weightSum = 0f
+        points = 0L
         offsetSum = 0.0
         offsetSquareSum = 0.0
         offsetSamples = 0
@@ -185,7 +191,8 @@ class GlyphScore(
     )
 
     companion object {
-        const val MAX_SCORE = 1_000_000
+        /** The combo that adds one more times a judgement's points: 25, as osu!'s. */
+        const val COMBO_STEP = 25L
 
         /** Offsets inside this count as neither early nor late. */
         const val DEAD_ZONE_SECONDS = 0.001f

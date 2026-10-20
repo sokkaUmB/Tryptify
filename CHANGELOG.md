@@ -37,6 +37,11 @@
 
 ### Changed
 
+#### Trypt Mania's score multiplies with your combo
+- **Points grow with the combo, as in osu!.** Each step is worth its judgement's points (Marvelous 300, Perfect 285, Great 210, Good 120, Boo 30) times 1 + (combo − 1) ÷ 25, so the 26th step of a combo is worth twice the first. A Good, a Boo, a miss or a mine starts it over.
+- **There's no top score any more**: a long chart played clean scores far more than a short one. The percent and the grade still say how well you played, and they still rank your high scores; points break ties there, and rank the players in a room, where everyone needs this version for a fair race.
+- **Runs saved before keep the points they had**, on the old scale out of 1,000,000.
+
 #### Trypt Mania is marked as a beta
 - **Its name says (Beta)** on the Library tile, the song list and in Settings, and a small BETA sits under the logo on its menu, in every language.
 
