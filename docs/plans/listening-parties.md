@@ -1,0 +1,97 @@
+# Listening parties: plan
+
+Agreed with the owner on 2026-10-20. Not started. Build it in a fresh session,
+server first, then the app, then the website.
+
+## What it is
+
+A party is a room on the Trypt Mania multiplayer rooms server
+(`tryptmania-parser/multiplayer`, Rust) where everyone queues songs and
+listens to the same moment, in the app (also in the background) or on a
+website. It has a live chat, notifications on the phone, and a Share songs
+toggle so someone without a song still hears it.
+
+## Decisions
+
+- **Control:** everyone adds songs. Only the host pauses, seeks and reorders.
+  Anyone can vote to skip; half the room (rounded up) skips.
+- **Website:** guests with a name, through the party link only. Guests listen
+  and chat; they cannot add songs. App members are Supabase accounts, as now.
+- **Share songs:** files on the phone (local library, songs opened with
+  Tryptify) and Tryptify downloads. Shared files are temporary and belong to
+  the party: streamed to members, never offered as a download to keep, and
+  deleted when the song leaves the queue or the party ends. Streaming tracks
+  that are not downloaded are never uploaded: app members play them from
+  their own account (matched by ISRC or catalogue id, then title, artist and
+  length), and website guests skip them.
+- **Restart:** parties live in memory. A server restart or deploy ends them;
+  everyone sees "The party ended" and can start a new one.
+- **Deploy:** the rooms server is shared with Trypt Mania's game rooms. Ask the
+  owner before deploying it to Railway.
+
+## Server (`multiplayer/`)
+
+What exists: rooms with codes, host handover on leave, `ping`/`pong` clock
+sync, `start{at}` with a lead time, chat (no history), one host-shared song
+over HTTP with `X-Room-Key`, 16 players, 128 MB per song, one replica,
+everything in memory.
+
+To add:
+- A room `kind`: `game` (today) or `party`. Party rooms are not listed by
+  `rooms`; they are joined by code or link.
+- Queue: items `{id, title, artist, durationMs, addedBy, isrc?, catalogId?,
+  audioHash?, shared?}`; `queueAdd`, `queueRemove`, `queueMove` (host),
+  auto-advance at the end of a song.
+- Playback anchor broadcast on every change: `{itemId, positionMs, atServerMs,
+  paused}`. `pause`, `resume`, `seek` (host), `skipVote` (anyone), and
+  host-only `skip`.
+- Chat history: the last 50 messages with server timestamps, sent on join.
+  System lines for joins, leaves, songs added and skips. A rate limit.
+- Shared songs: several per party, uploaded by whoever added them; a quota
+  per party (say 1 GB) and per song (128 MB); deleted when they leave the
+  queue or the party ends. GET with Range (206), `Accept-Ranges`, `ETag`, and
+  a short-lived signed token in the query so a browser `<audio>` can play it.
+- Rejoin: `hello{resume: key}` within 60 s keeps the seat, host role and
+  state.
+- Heartbeat: the server pings and drops connections silent for 30 s;
+  bounded outbound queues.
+- Guests: `hello{guest: true, party: code, name}` allowed only for party
+  rooms, read and chat only.
+- The website, served by the rooms server under the same secret path (same
+  origin, so no CORS): one static page, vanilla JS.
+
+## App
+
+What exists: `RoomClient` (Ktor WebSocket singleton, backoff, chat buffer),
+`RoomProtocol` (tagged JSON, `ClockSync`), song share/fetch with progress. The
+socket dies with Trypt Mania's screen; Trypt Mania plays through its own
+`GlyphAudioTransport`.
+
+To add:
+- A `PartyController` singleton that owns the party connection while a party
+  is on, and drives the normal app player through a MediaController (the
+  `WidgetSession.withSessionController` pattern) and `QueueManager` (the
+  `RadioQueueManager` pattern), so the notification, lock screen and
+  background play are the player's own.
+- Sync: follow the anchor with `ClockSync`; seek when more than about 250 ms
+  out, and re-check every few seconds.
+- A Party screen: queue, now playing, members, chat, Share songs, invite
+  link and code. Add to party from song menus.
+- Notifications: a "Listening party" channel for joins, chat and songs added,
+  each type switchable.
+- `docs/ui-invariants.md` "Multiplayer is a room" says leaving the rooms
+  screen closes the socket; parties need an explicit exception there.
+- Decide whether party plays count in stats, scrobbles and Discord (default:
+  yes for what you hear, as normal plays).
+
+## Failures to test
+
+Host leaves (seat passes, queue keeps going); a phone loses Wi-Fi and comes
+back within and after 60 s; a late joiner lands mid-song; a slow download
+(starts in sync when ready, joining at the current position); a song too big
+or over the party quota; an upload cut off; a guest trying to add a song; two
+skips at once; a vote to skip from someone who left; the server restarting
+mid-song; the app killed in the background; a browser tab asleep and woken
+behind; an expired or wrong link; a full party; a song nobody can play.
+Server: `cargo test` with fake clients (`tests/flow.rs`). App: a fake rooms
+server for `RoomClient` and `PartyController` tests.
