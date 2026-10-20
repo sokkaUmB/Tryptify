@@ -1503,27 +1503,28 @@ and offers a correction only from the recent runs' agreed lateness
 (`ApplyRecentTiming`), never from one run. Every count keeps its spoken
 "Label: value", and everything lands at once under reduced motion.
 
-**The play has a stage behind it, and only the play.** `GlyphDanceStage`, under
-the playfield inside the TV shader: an arcade pad, a metal slab tilted 55°
-away, between two speaker cabinets turned toward it, under a spotlight and a
-veil. The pad is seen through a camera above it (`StageGeometry.project`): its
-face is drawn flat and laid onto the slab with a four-corner perspective matrix,
-so the near edge is wider than the far one and the lip under it shows its
-thickness (`GlyphDanceStageTest`). Its panels are raised and bolted, the four
-arrows sunk in black wells. The room is the song's album art (its chart
-background when it has none), decoded small, blurred and darkened so it reads
-as a room and never competes with the arrows; plain dark blue until it loads
-and for a song with no picture. The arrow panels light as the player steps,
-softly while a lane is held and brighter for a moment on a hit (`stageLight`),
-the light thrown onto the pad round them. The woofers pump on the chart's beat
-(`wooferPump`). Reduced motion keeps the held glow and drops the flash and the
-pump. The rig and the pad are drawn into their own layer and replayed: the
-playfield redraws every frame above it, and without the layer it was redrawn
-with it. Nothing else on the stage moves.
+**The play is over the player's background, and only the play.**
+`GlyphPlayerBackground`, under the playfield inside the TV shader (and the fail
+shake): the player's own layers from the player's own composables, in its
+order: the album-coloured wash (`dynamicPlayerBackground`), the cover blurred
+and darkened (`PlayerBlurredArtBackground`) and the glow (`DynamicAlbumGlow`).
+One look in two places, never a copy that drifts. The picture is the song's
+album art, as the player shows it, and the chart's own background only for a
+song with no art (`gameplayCoverUri`). Its colours follow the player's rule, the
+Dynamic Colors switch and the player's own together, read from the player's
+preferences (`GlyphViewModel.backdropLook`), never a second switch in the game;
+with either off they are the theme accent. Under the legacy player the cover is
+left out, as that player leaves it out: a full-screen blur under a playfield
+that redraws every frame is the cost low-end phones are spared. It holds still:
+the arrows are what moves. The ambient visualizer is not drawn here even when
+it is the player's background: its engine runs one view at a time (see "The
+visualizer has two compositions"), and the game's music plays through its own
+transport, which feeds it nothing. The arcade pad, speakers and lights that
+stood here before (`GlyphDanceStage`) were removed on request.
 
 **The lanes have no grounds.** The playfield draws its notes, its receptors and
 the receptor line over whatever is behind it, and no lane of its own: the
-grounds it shaded on every other lane cut the stage behind into strips. The
+grounds it shaded on every other lane cut the background behind into strips. The
 game, Training Ground and the previews alike; the map editor's grid keeps its
 own, being a grid to place notes on.
 

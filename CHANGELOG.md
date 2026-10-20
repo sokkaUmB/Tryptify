@@ -18,6 +18,13 @@
 - **Every target is one tap away** in a row under the graph, so comparing two is one tap instead of a menu.
 - **Add, sort, bypass and delete filters**, run AutoEQ, set the preamp, save a preset or copy the EQ as Equalizer APO text, all without leaving the graph. On a phone the graph stays on screen while the panel under it scrolls; on a tablet or in landscape they sit side by side.
 
+### Changed
+
+#### Trypt Mania plays over the player's background
+- **The arrows are now over the same background as the music player**: the song's cover, blurred and darkened, over a wash and a glow in its album colours. It is the player's own background, so it follows the player's colour settings and changes when they do.
+- **The arcade pad, the speakers and the stage lights are gone** from behind the play, so the only thing moving is the arrows.
+- **The ambient visualizer stays in the player.** It can only run on one screen at a time, and the game's music does not feed it.
+
 ## [1.9.4]
 
 ### Added

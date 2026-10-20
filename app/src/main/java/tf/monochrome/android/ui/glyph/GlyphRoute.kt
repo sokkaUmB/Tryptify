@@ -49,6 +49,7 @@ fun GlyphRoute(
     viewModel: GlyphViewModel = hiltViewModel(),
 ) {
     val state by viewModel.ui.collectAsStateWithLifecycle()
+    val backdropLook by viewModel.backdropLook.collectAsStateWithLifecycle()
     val assets = viewModel.assets
     val reduceMotion = reduceMotion()
 
@@ -227,6 +228,7 @@ fun GlyphRoute(
 
             GlyphScreen.GAMEPLAY -> GlyphGameplayScreen(
                 state = state,
+                backdropLook = backdropLook,
                 engine = viewModel.engine,
                 assets = assets,
                 palette = palette,

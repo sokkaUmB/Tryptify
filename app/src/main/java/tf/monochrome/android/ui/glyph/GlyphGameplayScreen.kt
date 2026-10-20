@@ -96,6 +96,8 @@ fun GlyphGameplayScreen(
     positionProvider: () -> Float,
     onEvent: (GlyphEvent) -> Unit,
     modifier: Modifier = Modifier,
+    /** The player's colour settings, for the player's background behind the play. */
+    backdropLook: GlyphBackdropLook = GlyphBackdropLook(),
     explosionProvider: () -> Map<GlyphLane, LaneFlash> = { emptyMap() },
     comboBurstProvider: () -> Long = { 0L },
     comboProvider: () -> Int = { 0 },
@@ -182,16 +184,13 @@ fun GlyphGameplayScreen(
                         }
                     },
             ) {
-                // The stage, under everything and across the whole screen, the
-                // field's column included: seen through the TV with the rest.
-                GlyphDanceStage(
-                    heldLanes = gameplay.heldLanes,
-                    explosionProvider = explosionProvider,
-                    reducedMotion = gameplay.modifiers.reducedMotion,
-                    // The album art is the room; the chart's own picture when
-                    // the song has none.
-                    artUri = state.selectedSong?.let { it.artworkUri ?: it.backgroundUri },
-                    beatProvider = { timing.secondsToBeat(positionProvider()) },
+                // The player's background, under everything and across the
+                // whole screen, the field's column included: seen through the
+                // TV with the rest, and still, so the arrows are what moves.
+                GlyphPlayerBackground(
+                    coverUri = gameplayCoverUri(state.selectedSong),
+                    albumColored = backdropLook.albumColored,
+                    colorTransitionMs = backdropLook.colorTransitionMs,
                 )
 
                 GlyphPlayfield(

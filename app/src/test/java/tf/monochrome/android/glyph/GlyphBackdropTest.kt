@@ -10,15 +10,11 @@ import tf.monochrome.android.glyph.data.GlyphChartState
 import tf.monochrome.android.glyph.data.GlyphSong
 import tf.monochrome.android.glyph.engine.GlyphPreviewPlayer
 import tf.monochrome.android.glyph.pack.StepManiaPack
-import tf.monochrome.android.ui.glyph.HELD_LIGHT
-import tf.monochrome.android.ui.glyph.HIT_LIGHT
-import tf.monochrome.android.ui.glyph.HIT_LIGHT_SECONDS
-import tf.monochrome.android.ui.glyph.LaneFlash
-import tf.monochrome.android.ui.glyph.stageLight
+import tf.monochrome.android.ui.glyph.gameplayCoverUri
 
 /**
  * What is behind the game: the song list's picture for each song, and the
- * stage's pad lights in play.
+ * player's background in play.
  */
 class GlyphBackdropTest {
 
@@ -72,27 +68,13 @@ class GlyphBackdropTest {
     }
 
     @Test
-    fun aHeldPanelGlowsSoftly() {
-        assertEquals(HELD_LIGHT, stageLight(held = true, flash = null, now = 0L), 0f)
-        assertEquals(0f, stageLight(held = false, flash = null, now = 0L), 0f)
-    }
-
-    @Test
-    fun aHitFlashesThePanelAndFades() {
-        val at = 1_000_000_000L
-        val hit = LaneFlash(atNanos = at, isHit = true)
-        assertEquals(HIT_LIGHT, stageLight(held = false, flash = hit, now = at), 1e-6f)
-        val half = at + (HIT_LIGHT_SECONDS * 500_000_000L).toLong()
-        assertEquals(HIT_LIGHT / 2f, stageLight(held = false, flash = hit, now = half), 1e-3f)
-        val gone = at + (HIT_LIGHT_SECONDS * 1_000_000_000L).toLong() + 1
-        assertEquals(0f, stageLight(held = false, flash = hit, now = gone), 0f)
-        // Held through the fade, the panel never drops below its held glow.
-        assertEquals(HELD_LIGHT, stageLight(held = true, flash = hit, now = half + 100_000_000L), 1e-6f)
-    }
-
-    @Test
-    fun aMissLightsNothing() {
-        val miss = LaneFlash(atNanos = 0L, isHit = false)
-        assertEquals(0f, stageLight(held = false, flash = miss, now = 0L), 0f)
+    fun thePlayIsBehindTheAlbumArtAsInThePlayer() {
+        // The album art, as the player shows it, even when the chart has a picture.
+        assertEquals("art", gameplayCoverUri(song(background = "bg", artwork = "art")))
+        // The chart's own picture only for a song with no art.
+        assertEquals("bg", gameplayCoverUri(song(background = "bg")))
+        // Neither, or no song: the wash and the glow alone.
+        assertNull(gameplayCoverUri(song()))
+        assertNull(gameplayCoverUri(null))
     }
 }

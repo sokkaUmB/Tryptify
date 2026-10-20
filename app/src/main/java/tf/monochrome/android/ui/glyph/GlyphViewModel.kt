@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -129,6 +130,8 @@ class GlyphViewModel @Inject constructor(
     private val ownPack: OwnPackStore,
     private val rooms: RoomClient,
     private val supabaseAuth: SupabaseAuthManager,
+    /** Read only, for the player's own look behind the play ([backdropLook]). */
+    preferences: tf.monochrome.android.data.preferences.PreferencesManager,
     /**
      * Exposed rather than plumbed through navigation: the pack is a singleton
      * whose rasters are scoped to a run, and handing it down the composable
@@ -136,6 +139,23 @@ class GlyphViewModel @Inject constructor(
      */
     val assets: GlyphAssetRepository,
 ) : ViewModel() {
+
+    /**
+     * The player's colour settings, read from the player's own preferences
+     * rather than copied into the game's: one switch, never two that can
+     * disagree. Defaults are the player's.
+     */
+    val backdropLook: StateFlow<GlyphBackdropLook> = kotlinx.coroutines.flow.combine(
+        preferences.dynamicColors,
+        preferences.playerDynamicColor,
+        preferences.colorTransitionMs,
+    ) { dynamic, playerDynamic, blendMs ->
+        GlyphBackdropLook(albumColored = dynamic && playerDynamic, colorTransitionMs = blendMs)
+    }.stateIn(
+        viewModelScope,
+        kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+        GlyphBackdropLook(),
+    )
 
     private val _ui = MutableStateFlow(GlyphUiState())
     val ui: StateFlow<GlyphUiState> = _ui.asStateFlow()
