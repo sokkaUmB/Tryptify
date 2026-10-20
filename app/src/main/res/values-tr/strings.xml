@@ -2428,6 +2428,8 @@
     <string name="theme_part_maps_desc">Küre ve tür galaksisinin görünümü</string>
     <string name="theme_part_links">Müzik bağlantıları</string>
     <string name="theme_part_links_desc">Müzikle hareket eden ayarlar</string>
+    <string name="theme_part_crt">CRT efekti</string>
+    <string name="theme_part_crt_desc">CRT görünümü ve kaydırıcıları, tüm uygulamada ya da yalnızca şarkı sözlerinde</string>
     <string name="theme_preview_panels">Paneller</string>
     <string name="theme_preview_player">Oynatıcı</string>
     <string name="theme_preview_lyrics">Şarkı sözleri</string>

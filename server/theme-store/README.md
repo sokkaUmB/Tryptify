@@ -61,7 +61,8 @@ database. Everything under `/v1` needs one:
 | `PUT /v1/packs/:id/snapshot`   | Set or replace it, author only: the image as the body   |
 
 A published pack has a name of 1 to 40 characters, a description of up to 280,
-1 to 8 of the theme parts, and the pack itself as a JSON string. Its share code
+1 to 16 of the theme parts (nine exist: the CRT effect is the ninth), and
+the pack itself as a JSON string. Its share code
 is 8 characters, with no 0, O, 1 or I. No request body may be over 192 KB.
 
 A store picture is the phone-shaped poster the app draws of a pack with its own
@@ -88,6 +89,11 @@ the app's `ThemePart` and `ThemePackCodec.MAX_BYTES`, the app's picture cap
 (`SnapshotCodec.MAX_BYTES`) has to fit under the server's, and the body limit
 has to hold a picture and twice a pack. `ThemeStoreWireTest` reads `index.ts`
 and fails if they drift apart.
+
+A table made before the CRT part held `parts` to eight. Every start drops that
+check and adds it again at `MAX_PARTS` (16), so an old database takes a
+nine-part pack after one deploy, and the pair of statements is safe to run on
+every start.
 
 ## Testing
 

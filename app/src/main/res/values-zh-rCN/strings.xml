@@ -2372,6 +2372,8 @@
     <string name="theme_part_maps_desc">地球仪和流派星系的外观</string>
     <string name="theme_part_links">音乐联动</string>
     <string name="theme_part_links_desc">随音乐而动的设置</string>
+    <string name="theme_part_crt">CRT 效果</string>
+    <string name="theme_part_crt_desc">CRT 外观及其滑块，作用于整个应用或仅歌词</string>
     <string name="theme_preview_panels">面板</string>
     <string name="theme_preview_player">播放器</string>
     <string name="theme_preview_lyrics">歌词</string>

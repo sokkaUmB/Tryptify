@@ -2429,6 +2429,8 @@
     <string name="theme_part_maps_desc">How the globe and the genre galaxy look</string>
     <string name="theme_part_links">Music links</string>
     <string name="theme_part_links_desc">Settings that move with the music</string>
+    <string name="theme_part_crt">CRT effect</string>
+    <string name="theme_part_crt_desc">The CRT look and its sliders, over the whole app or the lyrics only</string>
     <string name="theme_preview_panels">Panels</string>
     <string name="theme_preview_player">Player</string>
     <string name="theme_preview_lyrics">Lyrics</string>

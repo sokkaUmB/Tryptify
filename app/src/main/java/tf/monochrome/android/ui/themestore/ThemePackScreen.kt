@@ -134,6 +134,7 @@ internal fun previewOf(own: ThemePack, pack: ThemePack): ThemePack = own.copy(
     visualizer = pack.visualizer ?: own.visualizer,
     maps = pack.maps ?: own.maps,
     links = pack.links ?: own.links,
+    crt = pack.crt ?: own.crt,
 )
 
 @HiltViewModel

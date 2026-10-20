@@ -2484,6 +2484,8 @@
     <string name="theme_part_maps_desc">El aspecto del globo y de la galaxia de géneros</string>
     <string name="theme_part_links">Enlaces musicales</string>
     <string name="theme_part_links_desc">Ajustes que se mueven con la música</string>
+    <string name="theme_part_crt">Efecto CRT</string>
+    <string name="theme_part_crt_desc">El aspecto CRT y sus controles, en toda la app o solo en la letra</string>
     <string name="theme_preview_panels">Paneles</string>
     <string name="theme_preview_player">Reproductor</string>
     <string name="theme_preview_lyrics">Letra</string>

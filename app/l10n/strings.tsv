@@ -2392,6 +2392,8 @@ theme_part_maps	Maps	地图	マップ	Cartes	Mapas	Haritalar	Karten
 theme_part_maps_desc	How the globe and the genre galaxy look	地球仪和流派星系的外观	地球儀とジャンルギャラクシーの見た目	L’apparence du globe et de la galaxie des genres	El aspecto del globo y de la galaxia de géneros	Küre ve tür galaksisinin görünümü	Wie Globus und Genre-Galaxie aussehen
 theme_part_links	Music links	音乐联动	ミュージックリンク	Liens musicaux	Enlaces musicales	Müzik bağlantıları	Musik-Kopplungen
 theme_part_links_desc	Settings that move with the music	随音乐而动的设置	音楽に合わせて動く設定	Les réglages qui bougent avec la musique	Ajustes que se mueven con la música	Müzikle hareket eden ayarlar	Einstellungen, die sich mit der Musik bewegen
+theme_part_crt	CRT effect	CRT 效果	CRT エフェクト	Effet CRT	Efecto CRT	CRT efekti	CRT-Effekt
+theme_part_crt_desc	The CRT look and its sliders, over the whole app or the lyrics only	CRT 外观及其滑块，作用于整个应用或仅歌词	CRT の見た目とスライダー、アプリ全体または歌詞のみに	Le look CRT et ses curseurs, sur toute l’app ou sur les paroles seulement	El aspecto CRT y sus controles, en toda la app o solo en la letra	CRT görünümü ve kaydırıcıları, tüm uygulamada ya da yalnızca şarkı sözlerinde	Der CRT-Look und seine Regler, über der ganzen App oder nur den Songtexten
 theme_preview_panels	Panels	面板	パネル	Panneaux	Paneles	Paneller	Panels
 theme_preview_player	Player	播放器	プレーヤー	Lecteur	Reproductor	Oynatıcı	Player
 theme_preview_lyrics	Lyrics	歌词	歌詞	Paroles	Letra	Şarkı sözleri	Songtext

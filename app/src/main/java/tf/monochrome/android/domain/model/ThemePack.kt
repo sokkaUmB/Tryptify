@@ -1,6 +1,8 @@
 package tf.monochrome.android.domain.model
 
 import kotlinx.serialization.Serializable
+import tf.monochrome.android.glyph.engine.GlyphTvTuning
+import tf.monochrome.android.glyph.engine.GlyphTvShader
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -19,6 +21,7 @@ enum class ThemePart {
     VISUALIZER,
     MAPS,
     LINKS,
+    CRT,
 }
 
 /** The app's colours: a named theme and its paper, or the listener's own two. */
@@ -76,6 +79,34 @@ data class ThemeMaps(
  * `withPersonalFrom`). A pack carries no pictures either; its previews are
  * drawn from these settings by the real renderers.
  */
+/**
+ * The CRT effect: its look, its sliders, and whether it draws over the whole
+ * app or the lyrics only. Each as the app stores it, so a pack carries exactly
+ * what Settings › Appearance › CRT effect shows; the look "off" is the effect
+ * switched off.
+ */
+@Serializable
+data class ThemeCrt(
+    /** [GlyphTvShader.id]: `crt`, `royale`, … or `off`. */
+    val look: String? = null,
+    /** The sliders as [GlyphTvTuning.encode] writes them, the line a `.crt.json` carries. */
+    val tuning: String? = null,
+    /** `app` or `lyrics`: where the effect draws. */
+    val target: String? = null,
+) {
+    /** A look this build has (else off), the sliders held to their ranges, and one of the two targets. */
+    fun cleaned(): ThemeCrt = ThemeCrt(
+        look = look?.let { GlyphTvShader.fromId(it).id },
+        tuning = tuning?.let { GlyphTvTuning.decode(it).clamped().encode() },
+        target = target?.let { if (it == TARGET_LYRICS) TARGET_LYRICS else TARGET_APP },
+    )
+
+    companion object {
+        const val TARGET_APP = "app"
+        const val TARGET_LYRICS = "lyrics"
+    }
+}
+
 @Serializable
 data class ThemePack(
     val format: String = FORMAT,
@@ -92,6 +123,8 @@ data class ThemePack(
     val maps: ThemeMaps? = null,
     /** The visual music links. */
     val links: List<VisualLink>? = null,
+    /** The CRT effect, over the whole app or the lyrics. */
+    val crt: ThemeCrt? = null,
 ) {
     /** The parts this pack actually holds. */
     val parts: Set<ThemePart>
@@ -104,6 +137,7 @@ data class ThemePack(
             if (visualizer != null) add(ThemePart.VISUALIZER)
             if (maps != null) add(ThemePart.MAPS)
             if (links != null) add(ThemePart.LINKS)
+            if (crt != null) add(ThemePart.CRT)
         }
 
     /** This pack with only [keep] left in it. */
@@ -116,6 +150,7 @@ data class ThemePack(
         visualizer = visualizer.takeIf { ThemePart.VISUALIZER in keep },
         maps = maps.takeIf { ThemePart.MAPS in keep },
         links = links.takeIf { ThemePart.LINKS in keep },
+        crt = crt.takeIf { ThemePart.CRT in keep },
     )
 
     /**
@@ -140,6 +175,7 @@ data class ThemePack(
         ),
         maps = maps?.copy(globe = maps.globe?.clamped(), galaxy = maps.galaxy?.clamped()),
         links = links?.let { VisualLinkCodec.sanitize(it) },
+        crt = crt?.cleaned(),
     )
 
     companion object {

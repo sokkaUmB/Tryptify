@@ -20,6 +20,7 @@ class ThemePackTest {
         visualizer = ThemeVisualizer(waterfall = SpectrumWaterfallSettings(), ambientOn = true, ambientOpacity = 60),
         maps = ThemeMaps(galaxy = GalaxyVisualSettings()),
         links = listOf(VisualLink("lyrics.godRayExposure", LinkShape(lowest = 0.2f, highest = 1f))),
+        crt = ThemeCrt(look = "crt", target = ThemeCrt.TARGET_LYRICS),
     )
 
     @Test
@@ -122,5 +123,43 @@ class ThemePackTest {
         assertEquals(1.2f, preview.lyrics!!.godRayExposure, 0f)
         assertEquals(180f, preview.lyrics!!.bluetoothDelayMs, 0f)
         assertEquals("", preview.font)
+    }
+
+    @Test
+    fun `the CRT travels with its look, its sliders and where it draws`() {
+        val tuning = tf.monochrome.android.glyph.engine.GlyphTvTuning(curveTopDeg = 16f, curveSideDeg = 14f, zoom = 0.85f)
+        val pack = ThemePack(
+            name = "Arcade lyrics",
+            crt = ThemeCrt(look = "crt", tuning = tuning.encode(), target = ThemeCrt.TARGET_LYRICS),
+        )
+        val back = ThemePackCodec.decode(ThemePackCodec.encode(pack))!!
+        assertEquals(setOf(ThemePart.CRT), back.parts)
+        // Over the lyrics only, as it was made: the part that was being lost.
+        assertEquals(ThemeCrt.TARGET_LYRICS, back.crt!!.target)
+        assertEquals("crt", back.crt!!.look)
+        assertEquals(tuning, tf.monochrome.android.glyph.engine.GlyphTvTuning.decode(back.crt!!.tuning))
+        // Over the whole app round-trips just the same.
+        val app = ThemePackCodec.decode(ThemePackCodec.encode(pack.copy(crt = pack.crt!!.copy(target = ThemeCrt.TARGET_APP))))!!
+        assertEquals(ThemeCrt.TARGET_APP, app.crt!!.target)
+    }
+
+    @Test
+    fun `a CRT this build cannot draw is held to what it can`() {
+        val pack = ThemePackCodec.decode(
+            """{"format":"tryptheme","version":1,"name":"Odd","crt":{"look":"hologram","tuning":"curveTop=500;zoom=9","target":"ceiling"}}""",
+        )!!
+        val crt = pack.crt!!
+        assertEquals("off", crt.look)
+        assertEquals(ThemeCrt.TARGET_APP, crt.target)
+        val tuning = tf.monochrome.android.glyph.engine.GlyphTvTuning.decode(crt.tuning)
+        assertEquals(tf.monochrome.android.glyph.engine.GlyphTvTuning.MAX_CURVE_DEG, tuning.curveTopDeg, 0f)
+        assertEquals(tf.monochrome.android.glyph.engine.GlyphTvTuning.ZOOM_MAX, tuning.zoom, 0f)
+    }
+
+    @Test
+    fun `the CRT is a part to keep or leave like any other`() {
+        val pack = ThemePack(name = "x", crt = ThemeCrt(look = "crt", target = ThemeCrt.TARGET_LYRICS), maps = ThemeMaps())
+        assertEquals(null, pack.only(setOf(ThemePart.MAPS)).crt)
+        assertEquals(ThemeCrt.TARGET_LYRICS, pack.only(setOf(ThemePart.CRT)).crt!!.target)
     }
 }

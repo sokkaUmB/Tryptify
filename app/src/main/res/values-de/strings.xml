@@ -2428,6 +2428,8 @@
     <string name="theme_part_maps_desc">Wie Globus und Genre-Galaxie aussehen</string>
     <string name="theme_part_links">Musik-Kopplungen</string>
     <string name="theme_part_links_desc">Einstellungen, die sich mit der Musik bewegen</string>
+    <string name="theme_part_crt">CRT-Effekt</string>
+    <string name="theme_part_crt_desc">Der CRT-Look und seine Regler, über der ganzen App oder nur den Songtexten</string>
     <string name="theme_preview_panels">Panels</string>
     <string name="theme_preview_player">Player</string>
     <string name="theme_preview_lyrics">Songtext</string>

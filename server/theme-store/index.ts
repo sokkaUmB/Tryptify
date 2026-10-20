@@ -37,7 +37,9 @@ const MAX_BODY_BYTES = 192 * 1024;
 const MAX_SNAPSHOT_BYTES = 160 * 1024;
 const MAX_PACKS_PER_PERSON = 50;
 const PAGE = 20;
-const PARTS = new Set(["COLOURS", "LYRICS", "PLAYER_GLASS", "PANELS", "FONT", "VISUALIZER", "MAPS", "LINKS"]);
+const PARTS = new Set(["COLOURS", "LYRICS", "PLAYER_GLASS", "PANELS", "FONT", "VISUALIZER", "MAPS", "LINKS", "CRT"]);
+// Room for a few more parts without another migration.
+const MAX_PARTS = 16;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // No 0/O or 1/I: a code is read off one screen and typed into another.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -51,7 +53,7 @@ const SCHEMA = [
      author_name  text        not null default '' check (char_length(author_name) <= 40),
      name         text        not null check (char_length(btrim(name)) between 1 and 40),
      description  text        not null default '' check (char_length(description) <= 280),
-     parts        text[]      not null default '{}' check (cardinality(parts) <= 8),
+     parts        text[]      not null default '{}' check (cardinality(parts) <= ${MAX_PARTS}),
      accent       integer     not null default 0,
      background   integer     not null default 0,
      pack         text        not null check (octet_length(pack) <= ${MAX_PACK_BYTES}),
@@ -62,6 +64,10 @@ const SCHEMA = [
      created_at   timestamptz not null default now(),
      updated_at   timestamptz not null default now()
    )`,
+  // A table made when there were eight parts held them to eight; the CRT is
+  // the ninth. Dropped and made again, so this runs on every start alike.
+  `alter table theme_packs drop constraint if exists theme_packs_parts_check`,
+  `alter table theme_packs add constraint theme_packs_parts_check check (cardinality(parts) <= ${MAX_PARTS})`,
   // A short hash of the pack's picture, or null: the app keeps pictures by it.
   `alter table theme_packs add column if not exists snapshot text`,
   `create index if not exists theme_packs_popular on theme_packs (likes desc, downloads desc, created_at desc) where listed`,
@@ -275,7 +281,7 @@ app.post("/v1/packs", async (c) => {
   const parts: string[] = Array.isArray(input.parts) ? [...new Set(input.parts.map(String))] : [];
   const pack = typeof input.pack === "string" ? input.pack : "";
   if (name.length < 1 || name.length > 40) return fail(400, "bad_pack");
-  if (parts.length === 0 || parts.length > 8 || !parts.every((p) => PARTS.has(p))) return fail(400, "bad_pack");
+  if (parts.length === 0 || parts.length > MAX_PARTS || !parts.every((p) => PARTS.has(p))) return fail(400, "bad_pack");
   if (new TextEncoder().encode(pack).length > MAX_PACK_BYTES) return fail(400, "bad_pack");
   try {
     // The app leaves defaults out of its JSON, "format" among them, so a pack

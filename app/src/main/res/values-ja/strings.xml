@@ -2372,6 +2372,8 @@
     <string name="theme_part_maps_desc">地球儀とジャンルギャラクシーの見た目</string>
     <string name="theme_part_links">ミュージックリンク</string>
     <string name="theme_part_links_desc">音楽に合わせて動く設定</string>
+    <string name="theme_part_crt">CRT エフェクト</string>
+    <string name="theme_part_crt_desc">CRT の見た目とスライダー、アプリ全体または歌詞のみに</string>
     <string name="theme_preview_panels">パネル</string>
     <string name="theme_preview_player">プレーヤー</string>
     <string name="theme_preview_lyrics">歌詞</string>
