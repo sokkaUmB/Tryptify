@@ -2867,6 +2867,14 @@
     <string name="tm_mp_send">Senden</string>
     <string name="tm_mp_spectating">Schaut zu</string>
     <string name="tm_mp_no_song">Hat den Song nicht</string>
+    <string name="tm_mp_share_song">Song mit dem Raum teilen</string>
+    <string name="tm_mp_sharing_song">Song wird geteilt… %1$d %%</string>
+    <string name="tm_mp_song_shared">Der Song ist mit dem Raum geteilt</string>
+    <string name="tm_mp_get_song">Song holen (%1$s)</string>
+    <string name="tm_mp_getting_song">Song wird geholt… %1$d %%</string>
+    <string name="tm_mp_ask_host_share">Bitte den Host, den Song zu teilen.</string>
+    <string name="tm_mp_share_failed">Song konnte nicht geteilt werden: %1$s</string>
+    <string name="tm_mp_get_failed">Song konnte nicht geholt werden: %1$s</string>
     <string name="tm_mp_kick">Entfernen</string>
     <string name="tm_mp_state_lobby">Lobby</string>
     <string name="tm_mp_state_playing">Spielt</string>

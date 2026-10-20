@@ -87,4 +87,50 @@ class RoomProtocolTest {
         assertEquals("wss://rooms.example.app/secret/ws", RoomClient.wsUrl("https://rooms.example.app/secret/"))
         assertEquals("ws://10.0.0.2:8080/ws", RoomClient.wsUrl("http://10.0.0.2:8080"))
     }
+
+    @Test
+    fun theWelcomeHandsOverTheSongKeyAndAnOlderServerNone() {
+        val keyed = RoomProtocol.parse(json, """{"t":"welcome","id":"p7","serverTime":1000,"version":"0.2.0","user":null,"key":"0123456789abcdef0123456789abcdef"}""")
+        assertEquals("0123456789abcdef0123456789abcdef", (keyed as RoomMsg.Welcome).key)
+        // A server from before song sharing says nothing: no key, so no buttons.
+        val older = RoomProtocol.parse(json, """{"t":"welcome","id":"p8","serverTime":1000,"version":"0.1.0","user":null}""")
+        assertEquals("", (older as RoomMsg.Welcome).key)
+    }
+
+    @Test
+    fun theRoomSaysWhichSongTheHostShared() {
+        // As the server writes it (serde, camelCase).
+        val shared = RoomProtocol.parse(
+            json,
+            """{"t":"room","room":{"code":"XWVH","name":"test","hostId":"p1","state":"lobby","chart":null,"players":[],"startAt":null,"sharedSong":{"hash":"h1","bytes":31457280,"ext":"flac"}}}""",
+        )
+        assertEquals(RoomSharedSong("h1", 31_457_280L, "flac"), (shared as RoomMsg.Room).room.sharedSong)
+        val none = RoomProtocol.parse(json, """{"t":"room","room":{"code":"XWVH","name":"test","hostId":"p1","state":"lobby","sharedSong":null}}""")
+        assertNull((none as RoomMsg.Room).room.sharedSong)
+        // An older server leaves the field out altogether.
+        val older = RoomProtocol.parse(json, """{"t":"room","room":{"code":"XWVH","name":"test","hostId":"p1","state":"lobby"}}""")
+        assertNull((older as RoomMsg.Room).room.sharedSong)
+    }
+
+    @Test
+    fun theSongLivesBesideTheSocketUnderTheSecret() {
+        assertEquals(
+            "https://rooms.example/s3cret/api/multiplayer/song?hash=ab%2Bc",
+            RoomProtocol.songUrl("https://rooms.example/s3cret/", "ab+c"),
+        )
+        assertEquals(
+            "https://rooms.example/s3cret/api/multiplayer/song?hash=h1&ext=flac",
+            RoomProtocol.songUrl("https://rooms.example/s3cret", "h1", "flac"),
+        )
+    }
+
+    @Test
+    fun aSongsExtensionIsWhatTheServerKeeps() {
+        assertEquals("flac", RoomProtocol.songExt("/storage/emulated/0/Music/Above Heaven.FLAC"))
+        assertEquals("m4a", RoomProtocol.songExt("song.m4a"))
+        // A document with no extension, or anything odd, is "bin".
+        assertEquals("bin", RoomProtocol.songExt("content://media/external/audio/media/123"))
+        assertEquals("bin", RoomProtocol.songExt("x.toolongext"))
+        assertEquals("bin", RoomProtocol.songExt("evil.fl/ac"))
+    }
 }

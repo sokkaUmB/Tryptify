@@ -1865,6 +1865,19 @@ Ready, the host's Start, Leave, and a line of chat.
   seconds of its length. Each phone tells the room, and the lobby shows who
   has it; Ready is enabled only with the song. Back from that list returns
   to the room, not the menu.
+* A song can be passed round the room (`RoomSongShare`), on a rooms server
+  that can: its welcome hands the phone a key, and without one nothing of
+  this shows. While someone is without the song the host has Share the song
+  with the room, which uploads its file as it is (`RoomClient.shareSong`);
+  once it is up, a player without it has Get the song with its size, which
+  fetches it (`fetchSong`) into the cache, plays from that file and readies
+  them in one tap (`haveAndReady`, in that order on the socket, since the
+  server refuses a ready without the song). Until the host shares, they are
+  told to ask. Progress shows as a bar with its percentage, a failure as the
+  server's own reason. A fetched song is the room's, not the library's: it
+  is kept only while the room is on its chart and cleared on leaving, and
+  its runs, like any of a chart this phone does not have, never count
+  against local scores. Nothing of it while a song plays.
 * The server names the moment; READY, GO! counts down to it, however long
   that is. A room's song waits for nobody: the pause panel opens over the
   running song, for Quit (to the room, as it says), and offers no Restart.

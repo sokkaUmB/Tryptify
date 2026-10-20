@@ -2820,6 +2820,14 @@ tm_mp_chat_hint	Say something	说点什么	なにか話す	Écris quelque chose	
 tm_mp_send	Send	发送	送信	Envoyer	Enviar	Gönder	Senden
 tm_mp_spectating	Watching	观战中	観戦中	Spectateur	Mirando	İzliyor	Schaut zu
 tm_mp_no_song	Does not have the song	没有这首歌	曲を持っていません	N'a pas le morceau	No tiene la canción	Şarkı onda yok	Hat den Song nicht
+tm_mp_share_song	Share the song with the room	把这首歌分享给房间	曲をルームに共有	Partager le morceau avec la salle	Compartir la canción con la sala	Şarkıyı odayla paylaş	Song mit dem Raum teilen
+tm_mp_sharing_song	Sharing the song… %1$d%%	正在分享歌曲… %1$d%%	曲を共有中… %1$d%%	Partage du morceau… %1$d %%	Compartiendo la canción… %1$d %%	Şarkı paylaşılıyor… %%%1$d	Song wird geteilt… %1$d %%
+tm_mp_song_shared	The song is shared with the room	歌曲已分享给房间	曲はルームに共有されています	Le morceau est partagé avec la salle	La canción está compartida con la sala	Şarkı odayla paylaşıldı	Der Song ist mit dem Raum geteilt
+tm_mp_get_song	Get the song (%1$s)	获取这首歌（%1$s）	曲を入手（%1$s）	Récupérer le morceau (%1$s)	Obtener la canción (%1$s)	Şarkıyı al (%1$s)	Song holen (%1$s)
+tm_mp_getting_song	Getting the song… %1$d%%	正在获取歌曲… %1$d%%	曲を入手中… %1$d%%	Récupération du morceau… %1$d %%	Obteniendo la canción… %1$d %%	Şarkı alınıyor… %%%1$d	Song wird geholt… %1$d %%
+tm_mp_ask_host_share	Ask the host to share the song.	请房主分享这首歌。	ホストに曲の共有を頼んでください。	Demande à l’hôte de partager le morceau.	Pide al anfitrión que comparta la canción.	Oda sahibinden şarkıyı paylaşmasını iste.	Bitte den Host, den Song zu teilen.
+tm_mp_share_failed	Could not share the song: %1$s	无法分享歌曲：%1$s	曲を共有できませんでした: %1$s	Impossible de partager le morceau : %1$s	No se pudo compartir la canción: %1$s	Şarkı paylaşılamadı: %1$s	Song konnte nicht geteilt werden: %1$s
+tm_mp_get_failed	Could not get the song: %1$s	无法获取歌曲：%1$s	曲を入手できませんでした: %1$s	Impossible de récupérer le morceau : %1$s	No se pudo obtener la canción: %1$s	Şarkı alınamadı: %1$s	Song konnte nicht geholt werden: %1$s
 tm_mp_kick	Kick	踢出	退出させる	Exclure	Expulsar	At	Entfernen
 tm_mp_state_lobby	Lobby	大厅	ロビー	Salon d'attente	Sala de espera	Lobi	Lobby
 tm_mp_state_playing	Playing	游戏中	プレイ中	En jeu	Jugando	Oynuyor	Spielt

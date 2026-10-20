@@ -4,6 +4,11 @@
 
 ### Added
 
+#### Share the song with your room
+- **A player without the song no longer has to sit it out.** In a Trypt Mania room, the host gets Share the song with the room while someone is missing it, and once it's up they get Get the song, with its size: one tap downloads it, plays from it and readies them. The chart already came with the pick, so that's everything they need.
+- **Progress shows as it goes**, and a failure says why. A shared song is kept only while the room is on that chart, and runs on it don't count towards your own scores, since the chart is the host's.
+- **It needs the updated rooms server.** On an older one the buttons don't show.
+
 #### Orbitron ships with the app
 - **Orbitron is a built-in font now**, in Settings › Fonts with the others: a wide, squared-off display face with a sci-fi console feel, every weight from Regular to Black. Pick it for the whole app or for single text styles in the typography table.
 - **It covers Latin letters only.** Turkish's ğ, ş and İ, and Japanese and Chinese, are drawn in the phone's own font.

@@ -2799,6 +2799,14 @@
     <string name="tm_mp_send">送信</string>
     <string name="tm_mp_spectating">観戦中</string>
     <string name="tm_mp_no_song">曲を持っていません</string>
+    <string name="tm_mp_share_song">曲をルームに共有</string>
+    <string name="tm_mp_sharing_song">曲を共有中… %1$d%%</string>
+    <string name="tm_mp_song_shared">曲はルームに共有されています</string>
+    <string name="tm_mp_get_song">曲を入手（%1$s）</string>
+    <string name="tm_mp_getting_song">曲を入手中… %1$d%%</string>
+    <string name="tm_mp_ask_host_share">ホストに曲の共有を頼んでください。</string>
+    <string name="tm_mp_share_failed">曲を共有できませんでした: %1$s</string>
+    <string name="tm_mp_get_failed">曲を入手できませんでした: %1$s</string>
     <string name="tm_mp_kick">退出させる</string>
     <string name="tm_mp_state_lobby">ロビー</string>
     <string name="tm_mp_state_playing">プレイ中</string>

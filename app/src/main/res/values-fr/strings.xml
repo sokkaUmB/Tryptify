@@ -2935,6 +2935,14 @@
     <string name="tm_mp_send">Envoyer</string>
     <string name="tm_mp_spectating">Spectateur</string>
     <string name="tm_mp_no_song">N\'a pas le morceau</string>
+    <string name="tm_mp_share_song">Partager le morceau avec la salle</string>
+    <string name="tm_mp_sharing_song">Partage du morceau… %1$d %%</string>
+    <string name="tm_mp_song_shared">Le morceau est partagé avec la salle</string>
+    <string name="tm_mp_get_song">Récupérer le morceau (%1$s)</string>
+    <string name="tm_mp_getting_song">Récupération du morceau… %1$d %%</string>
+    <string name="tm_mp_ask_host_share">Demande à l’hôte de partager le morceau.</string>
+    <string name="tm_mp_share_failed">Impossible de partager le morceau : %1$s</string>
+    <string name="tm_mp_get_failed">Impossible de récupérer le morceau : %1$s</string>
     <string name="tm_mp_kick">Exclure</string>
     <string name="tm_mp_state_lobby">Salon d\'attente</string>
     <string name="tm_mp_state_playing">En jeu</string>

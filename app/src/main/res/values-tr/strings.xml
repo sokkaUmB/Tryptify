@@ -2867,6 +2867,14 @@
     <string name="tm_mp_send">Gönder</string>
     <string name="tm_mp_spectating">İzliyor</string>
     <string name="tm_mp_no_song">Şarkı onda yok</string>
+    <string name="tm_mp_share_song">Şarkıyı odayla paylaş</string>
+    <string name="tm_mp_sharing_song">Şarkı paylaşılıyor… %%%1$d</string>
+    <string name="tm_mp_song_shared">Şarkı odayla paylaşıldı</string>
+    <string name="tm_mp_get_song">Şarkıyı al (%1$s)</string>
+    <string name="tm_mp_getting_song">Şarkı alınıyor… %%%1$d</string>
+    <string name="tm_mp_ask_host_share">Oda sahibinden şarkıyı paylaşmasını iste.</string>
+    <string name="tm_mp_share_failed">Şarkı paylaşılamadı: %1$s</string>
+    <string name="tm_mp_get_failed">Şarkı alınamadı: %1$s</string>
     <string name="tm_mp_kick">At</string>
     <string name="tm_mp_state_lobby">Lobi</string>
     <string name="tm_mp_state_playing">Oynuyor</string>

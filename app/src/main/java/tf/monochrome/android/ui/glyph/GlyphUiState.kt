@@ -138,6 +138,10 @@ data class GlyphMultiplayerUi(
     val missing: String? = null,
     /** Local wall-clock ms the song starts at, from the server's start until it has. */
     val startAtMs: Long? = null,
+    /** The room's song going up (host) or coming down (player), 0 to 1; null when neither. */
+    val songTransfer: Float? = null,
+    /** Why the last share or fetch failed, when it did. */
+    val transferError: RoomTransferError? = null,
 ) {
     /** The room, when in one. */
     val room: tf.monochrome.android.glyph.multiplayer.RoomView? get() = session.room
@@ -512,3 +516,6 @@ data class GlyphTapSyncUi(
     /** Which click the track is on, so the pad can pulse with the sound; -1 before the first. */
     val beat: Int = -1,
 )
+
+/** A song share or fetch that failed: which it was, and the reason given. */
+data class RoomTransferError(val sharing: Boolean, val reason: String)

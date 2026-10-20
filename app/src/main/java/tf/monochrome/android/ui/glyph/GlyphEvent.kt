@@ -115,6 +115,10 @@ sealed interface GlyphEvent {
     /** From a room's results back to the room. */
     data object BackToRoom : GlyphEvent
     data object DismissRoomError : GlyphEvent
+    /** Host: the room's song, shared over the rooms server for the players without it. */
+    data object ShareRoomSong : GlyphEvent
+    /** A player without the song: the one the host shared, fetched and readied with. */
+    data object FetchRoomSong : GlyphEvent
 
     // ── packs ───────────────────────────────────────────────────────────
     data object OpenPacks : GlyphEvent

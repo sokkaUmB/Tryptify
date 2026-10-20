@@ -72,6 +72,19 @@ data class RoomPlayer(
     val spectating: Boolean = false,
 )
 
+/**
+ * The picked chart's song as the host shared it with the room: a phone
+ * without it fetches it ([RoomClient.fetchSong]) instead of sitting it out.
+ */
+@Serializable
+data class RoomSharedSong(
+    /** The chart it is the song of ([RoomChart.hash]). */
+    val hash: String,
+    val bytes: Long = 0L,
+    /** The host's file extension: `flac`, `mp3`, `m4a`, … */
+    val ext: String = "",
+)
+
 @Serializable
 data class RoomView(
     val code: String,
@@ -82,6 +95,8 @@ data class RoomView(
     val chart: RoomChart? = null,
     val players: List<RoomPlayer> = emptyList(),
     val startAt: Long? = null,
+    /** The picked chart's song, when the host has shared it; null on a server that cannot. */
+    val sharedSong: RoomSharedSong? = null,
 ) {
     val playing: Boolean get() = state == "playing"
     val atResults: Boolean get() = state == "results"
@@ -105,7 +120,14 @@ data class RoomChatLine(val id: String, val name: String, val text: String)
 /** What the server sends, parsed. */
 sealed interface RoomMsg {
     /** [user] is the account the server took this phone for; null for a guest server. */
-    data class Welcome(val id: String, val serverTime: Long, val version: String, val user: String? = null) : RoomMsg
+    /** [key] is this phone's own key for the song routes; empty on a server without them. */
+    data class Welcome(
+        val id: String,
+        val serverTime: Long,
+        val version: String,
+        val user: String? = null,
+        val key: String = "",
+    ) : RoomMsg
     data class Pong(val c: Long, val s: Long) : RoomMsg
     data class Rooms(val rooms: List<RoomSummary>) : RoomMsg
     data class Room(val room: RoomView) : RoomMsg
@@ -127,7 +149,7 @@ object RoomProtocol {
         fun long(key: String) = root[key]?.jsonPrimitive?.longOrNull ?: 0L
         return runCatching {
             when (str("t")) {
-                "welcome" -> RoomMsg.Welcome(str("id"), long("serverTime"), str("version"), root["user"]?.jsonPrimitive?.contentOrNull)
+                "welcome" -> RoomMsg.Welcome(str("id"), long("serverTime"), str("version"), root["user"]?.jsonPrimitive?.contentOrNull, str("key"))
                 "pong" -> RoomMsg.Pong(long("c"), long("s"))
                 "rooms" -> RoomMsg.Rooms(root["rooms"]?.let { json.decodeFromJsonElement(it) } ?: emptyList())
                 "room" -> RoomMsg.Room(json.decodeFromJsonElement(root.getValue("room")))
@@ -182,6 +204,24 @@ object RoomProtocol {
     }
 
     /** Which player a frame pair belongs to, with its name from [room]. */
+    /**
+     * The shared song's address on [server] (`https://host/secret`), for
+     * chart [hash]; with [ext] when uploading, which the server keeps it under.
+     */
+    fun songUrl(server: String, hash: String, ext: String? = null): String {
+        val base = "${server.trimEnd('/')}/api/multiplayer/song?hash=${java.net.URLEncoder.encode(hash, "UTF-8")}"
+        return if (ext.isNullOrBlank()) base else "$base&ext=${java.net.URLEncoder.encode(ext, "UTF-8")}"
+    }
+
+    /**
+     * A song file's extension as the server takes one: lower-case letters and
+     * digits, up to five; anything else is `bin`. [name] is a path or a file name.
+     */
+    fun songExt(name: String): String {
+        val ext = name.substringAfterLast('/').substringAfterLast('.', "").lowercase()
+        return ext.takeIf { it.isNotEmpty() && it.length <= 5 && it.all(Char::isLetterOrDigit) } ?: "bin"
+    }
+
     fun nameOf(room: RoomView?, id: String): String = room?.players?.firstOrNull { it.id == id }?.name ?: id
 }
 

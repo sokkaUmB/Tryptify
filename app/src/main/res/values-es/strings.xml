@@ -2935,6 +2935,14 @@
     <string name="tm_mp_send">Enviar</string>
     <string name="tm_mp_spectating">Mirando</string>
     <string name="tm_mp_no_song">No tiene la canción</string>
+    <string name="tm_mp_share_song">Compartir la canción con la sala</string>
+    <string name="tm_mp_sharing_song">Compartiendo la canción… %1$d %%</string>
+    <string name="tm_mp_song_shared">La canción está compartida con la sala</string>
+    <string name="tm_mp_get_song">Obtener la canción (%1$s)</string>
+    <string name="tm_mp_getting_song">Obteniendo la canción… %1$d %%</string>
+    <string name="tm_mp_ask_host_share">Pide al anfitrión que comparta la canción.</string>
+    <string name="tm_mp_share_failed">No se pudo compartir la canción: %1$s</string>
+    <string name="tm_mp_get_failed">No se pudo obtener la canción: %1$s</string>
     <string name="tm_mp_kick">Expulsar</string>
     <string name="tm_mp_state_lobby">Sala de espera</string>
     <string name="tm_mp_state_playing">Jugando</string>
