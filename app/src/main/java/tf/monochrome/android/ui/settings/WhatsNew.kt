@@ -157,12 +157,6 @@ object WhatsNew {
             entries = listOf(
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
-                    section = LIBRARY,
-                    title = "Open songs from other apps",
-                    body = "Pick Tryptify to open an audio file from a file manager, a chat or Downloads and it plays. Add to library, on the pill or in the player's menu, keeps it in Music/Tryptify.",
-                ),
-                WhatsNewEntry(
-                    kind = WhatsNewKind.NEW,
                     section = TRYPT_MANIA,
                     title = "A rhythm game on your own music",
                     body = "Trypt Mania, in Library › Local, plays your songs by StepMania's rules and in its look. Charts are made for you on the built-in chart server, and Multiplayer plays the same chart with friends in a room.",
@@ -250,6 +244,12 @@ object WhatsNew {
                     section = BLUETOOTH_SYNC,
                     title = "Bluetooth sync for the whole app",
                     body = "Settings › Audio › Bluetooth sync. Measure it once per device with Trypt Mania's tap test, and the lyrics, the visuals, the visualizer and the game all wait for your headphones.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Open songs from other apps",
+                    body = "Pick Tryptify to open an audio file from a file manager, a chat or Downloads and it plays. Add to library, on the pill or in the player's menu, keeps it in Music/Tryptify.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
