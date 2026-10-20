@@ -17,6 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -243,6 +245,7 @@ private fun RoomPanel(state: GlyphUiState, room: RoomView, onEvent: (GlyphEvent)
                 false -> Text(mp.missing ?: stringResource(R.string.tm_mp_no_song), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 true -> Unit
             }
+            RoomSongShare(mp = mp, room = room, chart = chart, isHost = isHost, onEvent = onEvent)
         }
         if (isHost && !room.playing) {
             Spacer(Modifier.height(MonoDimens.spacingSm))
@@ -312,6 +315,74 @@ private fun RoomPanel(state: GlyphUiState, room: RoomView, onEvent: (GlyphEvent)
                 Text(stringResource(R.string.tm_mp_send))
             }
         }
+    }
+}
+
+/**
+ * The room's song passed round it: the host shares it while a player is
+ * without it, and a player without it fetches it with one tap, which also
+ * readies them. Only on a rooms server that can (it handed this phone a
+ * key), and never while a song plays.
+ */
+@Composable
+private fun RoomSongShare(
+    mp: GlyphMultiplayerUi,
+    room: RoomView,
+    chart: tf.monochrome.android.glyph.multiplayer.RoomChart,
+    isHost: Boolean,
+    onEvent: (GlyphEvent) -> Unit,
+) {
+    if (!mp.session.canShareSongs || room.playing) return
+    val shared = room.sharedSong?.takeIf { it.hash == chart.hash }
+    val progress = mp.songTransfer
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val quiet = MaterialTheme.colorScheme.onSurfaceVariant
+    when {
+        progress != null -> {
+            Spacer(Modifier.height(MonoDimens.spacingSm))
+            Text(
+                stringResource(
+                    if (isHost) R.string.tm_mp_sharing_song else R.string.tm_mp_getting_song,
+                    kotlin.math.round(progress * 100f).toInt(),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = quiet,
+            )
+            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
+        }
+        isHost -> {
+            val someoneWithout = room.players.any { it.id != mp.session.myId && it.hasSong == false }
+            when {
+                shared != null -> Text(stringResource(R.string.tm_mp_song_shared), style = MaterialTheme.typography.bodySmall, color = quiet)
+                someoneWithout && mp.haveSong == true -> {
+                    Spacer(Modifier.height(MonoDimens.spacingSm))
+                    GlyphButton(
+                        text = stringResource(R.string.tm_mp_share_song),
+                        icon = Icons.Default.CloudUpload,
+                        onClick = { onEvent(GlyphEvent.ShareRoomSong) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+        mp.haveSong == false -> if (shared != null) {
+            Spacer(Modifier.height(MonoDimens.spacingSm))
+            GlyphButton(
+                text = stringResource(R.string.tm_mp_get_song, android.text.format.Formatter.formatShortFileSize(context, shared.bytes)),
+                icon = Icons.Default.CloudDownload,
+                onClick = { onEvent(GlyphEvent.FetchRoomSong) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            Text(stringResource(R.string.tm_mp_ask_host_share), style = MaterialTheme.typography.bodySmall, color = quiet)
+        }
+    }
+    mp.transferError?.let { failed ->
+        Text(
+            stringResource(if (failed.sharing) R.string.tm_mp_share_failed else R.string.tm_mp_get_failed, failed.reason),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+        )
     }
 }
 

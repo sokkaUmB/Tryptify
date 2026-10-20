@@ -78,7 +78,8 @@ class GlyphEngineWindowTest {
         assertEquals(2, score.judged)
         assertEquals(0, score.counts[GlyphJudgement.MISS])
         assertEquals("a perfect pass of the loop reads as perfect", 1f, score.finalAccuracy, 1e-6f)
-        assertEquals(1_000_000, score.score)
+        // Two Marvelous on a combo of 1 and 2.
+        assertEquals(300 + 312, score.score)
     }
 
     @Test

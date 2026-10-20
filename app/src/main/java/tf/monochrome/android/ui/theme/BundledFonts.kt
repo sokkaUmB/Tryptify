@@ -18,7 +18,7 @@ data class BundledFont(
 /**
  * The fonts Tryptify ships with.
  *
- * All ten are variable fonts under the SIL Open Font Licence, taken unmodified
+ * All eleven are variable fonts under the SIL Open Font Licence, taken unmodified
  * from github.com/google/fonts; the full licence text travels with them in
  * `assets/fonts/LICENSES.txt`. Variable means one file covers the whole weight
  * range, so the set costs about 2.3 MB rather than the ~10 MB the same coverage
@@ -26,9 +26,11 @@ data class BundledFont(
  *
  * The selection leans technical rather than decorative, because this is a
  * hi-fi player: most of these are grotesques and geometric sans that hold up at
- * list sizes and in the player's glass chrome. Fraunces and JetBrains Mono are
- * the two deliberate outliers — one serif, one monospace — for people who want
- * the interface to read as something other than another sans-serif app.
+ * list sizes and in the player's glass chrome. Fraunces, JetBrains Mono and
+ * Orbitron are the deliberate outliers — a serif, a monospace and a wide display
+ * face — for people who want the interface to read as something other than
+ * another sans-serif app. Orbitron covers Latin only: Turkish's ğ, ş and İ, and
+ * every Japanese and Chinese character, are drawn by the phone's own font.
  */
 object BundledFonts {
 
@@ -85,6 +87,11 @@ object BundledFonts {
             "fonts/jetbrains_mono.ttf",
             "JetBrains Mono",
             "Monospace throughout. Every number lines up; titles get a terminal look.",
+        ),
+        BundledFont(
+            "fonts/orbitron.ttf",
+            "Orbitron",
+            "Wide, squared-off display face with a sci-fi console feel; Latin only.",
         ),
     )
 

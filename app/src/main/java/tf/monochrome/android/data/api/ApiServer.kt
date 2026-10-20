@@ -41,6 +41,9 @@ enum class ApiService(val label: String, val probePath: String) {
     MULTIPLAYER("Multiplayer", "/api/multiplayer/info"),
 }
 
+/** What a TryptMania Parser server serves: Trypt Mania's charts, lyric times and rooms, never a catalog. */
+val TRYPT_MANIA_SERVICES: Set<ApiService> = setOf(ApiService.STEMS, ApiService.LYRICS, ApiService.MULTIPLAYER)
+
 /**
  * One API the user added under Settings › Connections, and what it was found
  * to serve when it was last checked.
@@ -64,6 +67,14 @@ data class ApiServer(
 ) {
     /** Whether this server separates on a GPU; null when it has not said. */
     val separatesOnGpu: Boolean? get() = stemDevice?.let { it == "cuda" }
+
+    /**
+     * Listed under Trypt Mania rather than Streaming: a server that serves only
+     * Trypt Mania's services. One not checked yet, or that serves a catalog
+     * too, is a streaming one.
+     */
+    val isTryptMania: Boolean
+        get() = services.isNotEmpty() && services.all { it in TRYPT_MANIA_SERVICES }
 }
 
 object ApiServers {

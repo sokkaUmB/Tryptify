@@ -97,7 +97,6 @@ import tf.monochrome.android.ui.player.NowPlayingScreen
 import tf.monochrome.android.ui.player.PlayerViewModel
 import tf.monochrome.android.ui.library.FolderBrowserScreen
 import tf.monochrome.android.ui.profile.ProfileScreen
-import tf.monochrome.android.ui.stats.ListeningStatsScreen
 import tf.monochrome.android.ui.stats.StatsScreen
 import tf.monochrome.android.ui.stats.StatsChartScreen
 import tf.monochrome.android.ui.search.SearchScreen
@@ -155,10 +154,12 @@ sealed class Screen(val route: String) {
     data object ParametricEq : Screen("parametric_eq")
     data object ParametricEqEdit : Screen("parametric_eq_edit")
     data object Profile : Screen("profile")
-    data object Stats : Screen("stats")
+    data object Stats : Screen("stats?page={page}") {
+        /** page: 0 = Stats, 1 = Achievements (the unlocked pill's View). */
+        fun createRoute(page: Int = 0) = "stats?page=$page"
+    }
     /** One Stats chart, opened to be looked at closely; see statsChartRoute. */
     data object StatsChart : Screen("stats_chart/{chart}?range={range}")
-    data object ListeningStats : Screen("listening_stats")
     data object FolderBrowser : Screen("folder/{folderPath}") {
         // Uri.encode (not URLEncoder) so spaces become %20 not '+', and every
         // reserved char (incl. '/' and '%') is percent-encoded. Navigation
@@ -957,9 +958,16 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                         ProfileScreen(navController = navController)
                     }
                 }
-                composable(Screen.Stats.route) {
+                composable(
+                    route = Screen.Stats.route,
+                    arguments = listOf(navArgument("page") { type = NavType.IntType; defaultValue = 0 }),
+                ) { entry ->
                     tf.monochrome.android.devedit.DevEditScreen("stats") {
-                        StatsScreen(navController = navController, onOpenPage = openMainPage)
+                        StatsScreen(
+                            navController = navController,
+                            onOpenPage = openMainPage,
+                            initialPage = entry.arguments?.getInt("page") ?: 0,
+                        )
                     }
                 }
                 composable(
@@ -974,11 +982,6 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                         ?: tf.monochrome.android.ui.stats.StatsChart.MINUTES
                     tf.monochrome.android.devedit.DevEditScreen("stats_chart") {
                         StatsChartScreen(navController = navController, chart = chart)
-                    }
-                }
-                composable(Screen.ListeningStats.route) {
-                    tf.monochrome.android.devedit.DevEditScreen("listening_stats") {
-                        ListeningStatsScreen(onBack = { navController.popBackStackSafe() })
                     }
                 }
                 composable(
@@ -1243,6 +1246,33 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             onMute = playerViewModel::setDacMuted,
             hazeState = hazeState,
             glass = miniPlayerGlass,
+            modifier = Modifier.align(Alignment.TopCenter),
+        )
+
+        // An achievement just completed: a pill over whatever is open, the
+        // same chrome and haze as the DAC popup above. View opens it.
+        tf.monochrome.android.ui.stats.rememberAchievementWatcher()?.let { watcher ->
+            val pendingAchievements by watcher.pending.collectAsStateWithLifecycle()
+            tf.monochrome.android.ui.stats.AchievementUnlockedPill(
+                pending = pendingAchievements,
+                onShown = watcher::shown,
+                onView = { navController.navigateTool(Screen.Stats, Screen.Stats.createRoute(page = 1)) },
+                hazeState = hazeState,
+                glass = miniPlayerGlass,
+                reducedMotion = tf.monochrome.android.ui.theme.reduceMotion(),
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
+        // A song opened from another app: it plays at once, and this pill
+        // offers to keep it in the library (or says why it could not open).
+        val openedFile by playerViewModel.openedFile.collectAsStateWithLifecycle()
+        tf.monochrome.android.ui.opened.OpenedFilePill(
+            opened = openedFile,
+            onTake = playerViewModel::takeOpenedFile,
+            onAdd = playerViewModel::addOpenedToLibrary,
+            hazeState = hazeState,
+            glass = miniPlayerGlass,
+            reducedMotion = tf.monochrome.android.ui.theme.reduceMotion(),
             modifier = Modifier.align(Alignment.TopCenter),
         )
     }

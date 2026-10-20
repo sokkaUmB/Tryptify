@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -238,6 +239,11 @@ class ThemeStoreViewModel @Inject constructor(
 fun ThemeStoreScreen(
     navController: NavController,
     viewModel: ThemeStoreViewModel = hiltViewModel(),
+    /**
+     * Shown as a page of Settings, under its chips: no bar of its own and no
+     * Back, only its undo and search, clear of the settings search bar.
+     */
+    embedded: Boolean = false,
 ) {
     val signedIn by viewModel.signedIn.collectAsStateWithLifecycle()
     val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
@@ -261,29 +267,41 @@ fun ThemeStoreScreen(
         Box(Modifier.fillMaxSize().hazeSource(overlay)) {
             LinksBackdrop(Modifier.fillMaxSize().hazeSource(backdrop))
             Column(Modifier.fillMaxSize()) {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.theme_store_title)) },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStackSafe() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back))
+                val actions: @Composable RowScope.() -> Unit = {
+                    if (signedIn && canUndo) {
+                        IconButton(onClick = {
+                            viewModel.undo { ok -> if (ok) Toast.makeText(context, undoneText, Toast.LENGTH_SHORT).show() }
+                        }) {
+                            Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = stringResource(R.string.theme_store_undo))
                         }
-                    },
-                    actions = {
-                        if (signedIn && canUndo) {
-                            IconButton(onClick = {
-                                viewModel.undo { ok -> if (ok) Toast.makeText(context, undoneText, Toast.LENGTH_SHORT).show() }
-                            }) {
-                                Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = stringResource(R.string.theme_store_undo))
+                    }
+                    if (signedIn) {
+                        IconButton(onClick = { searchOpen = !searchOpen }) {
+                            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.theme_store_search))
+                        }
+                    }
+                }
+                if (embedded) {
+                    // Under the settings search bar, which floats over the pager.
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = tf.monochrome.android.ui.settings.LocalSettingsSearchInset.current, end = 4.dp),
+                        content = actions,
+                    )
+                } else {
+                    TopAppBar(
+                        title = { Text(stringResource(R.string.theme_store_title)) },
+                        navigationIcon = {
+                            IconButton(onClick = { navController.popBackStackSafe() }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back))
                             }
-                        }
-                        if (signedIn) {
-                            IconButton(onClick = { searchOpen = !searchOpen }) {
-                                Icon(Icons.Default.Search, contentDescription = stringResource(R.string.theme_store_search))
-                            }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                )
+                        },
+                        actions = actions,
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    )
+                }
                 if (!signedIn) {
                     SignedOutPanel(backdrop) { navController.navigateTool(Screen.Profile) }
                 } else {

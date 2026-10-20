@@ -222,6 +222,7 @@ private fun Modifier.tvLayer(
                 tube.setFloatUniform("uVignette", tuning.vignette)
                 tube.setFloatUniform("uGlare", tuning.glare)
                 tube.setFloatUniform("uRim", if (clearRim) 0f else 1f)
+                tube.setFloatUniform("uZoom", tuning.zoomScale)
                 RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(tube, "content"), pattern)
                     .asComposeRenderEffect()
             }
@@ -514,6 +515,7 @@ private const val TUBE_SHADER = """
 uniform shader content;
 uniform float2 uSize;
 uniform float2 uWarp;
+uniform float uZoom;
 uniform float2 uAspect;
 uniform float2 uFit;
 uniform float2 uShift;
@@ -547,7 +549,8 @@ half4 main(float2 p) {
     float3 hit = float3(0.0, 0.0, -uDist) + t * dir;
     float2 c = float2(dot(uCol0, hit), dot(uCol1, hit)) / uAspect;
     float2 bowed = c * float2(1.0 + c.y * c.y * uWarp.x, 1.0 + c.x * c.x * uWarp.y);
-    float2 q = (bowed * 0.5 + 0.5) * uSize;
+    // The picture-size knob: the bowed picture scaled, the glass's curve kept.
+    float2 q = (bowed / uZoom * 0.5 + 0.5) * uSize;
     float fade = 1.0;
     if (uEdge > 0.0) {
         float2 middle = uSize * 0.5;

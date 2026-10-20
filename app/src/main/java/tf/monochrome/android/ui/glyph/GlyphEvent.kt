@@ -25,6 +25,8 @@ sealed interface GlyphEvent {
     data object BackToMenu : GlyphEvent
     data object OpenSettings : GlyphEvent
     data object CloseSettings : GlyphEvent
+    /** The route has left the mode as [GlyphUiState.leaveRequested] asked. */
+    data object LeaveHandled : GlyphEvent
 
     // ── settings ────────────────────────────────────────────────────────
     /** [code] (an Android key code) on [lane]'s [slot]; wherever else it was, it goes. */
@@ -115,6 +117,10 @@ sealed interface GlyphEvent {
     /** From a room's results back to the room. */
     data object BackToRoom : GlyphEvent
     data object DismissRoomError : GlyphEvent
+    /** Host: the room's song, shared over the rooms server for the players without it. */
+    data object ShareRoomSong : GlyphEvent
+    /** A player without the song: the one the host shared, fetched and readied with. */
+    data object FetchRoomSong : GlyphEvent
 
     // ── packs ───────────────────────────────────────────────────────────
     data object OpenPacks : GlyphEvent

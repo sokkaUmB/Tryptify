@@ -1,5 +1,100 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+#### Trypt Mania in your stats
+- **A Trypt Mania card on Account › Listening stats**: whole songs played and on how many charts, your best grade, full combos, and the accuracy of your last ten songs with an arrow for better or worse than the ten before. It counts all time, so it shows even when the range you picked has no plays. Its arrow opens Trypt Mania.
+- **Grades, not scores.** Points grow with your combo now, so an older run's score would look worse than it was. The card and the achievements compare grades and accuracy only. Training Ground segments don't count as songs.
+- **Three Trypt Mania achievements**: Unbroken (a full combo), Double A (an AA grade) and Chart Hopper (25 different charts). The achievement pill announces them like the others.
+
+#### Open songs from other apps
+- **Tryptify can now be the app that plays a song.** Open an audio file from a file manager, a chat or Downloads, pick Tryptify, and it plays straight away.
+- **It isn't added to your library unless you ask.** A pill at the top shows the song with Add to library, and the same option is in Now Playing's ⋮ menu while it plays. Adding copies it to Music/Tryptify, where the library finds it. Until then it plays from a temporary copy that Tryptify clears by itself.
+- **A song already in your library plays as that song**, so its plays and likes stay together.
+- **When a file can't be opened, the pill says why**: not audio, no permission from the app that sent it, missing, empty, larger than 2 GB, or not enough free space.
+
+#### A pill when you complete an achievement
+- **Finish an achievement and a glass pill drops in at the top**, over whatever is open: its icon in a gold ring that fills, "Achievement unlocked" and its name, and View, which opens it in Account › Listening stats › Achievements. It goes away by itself after four seconds.
+- **Each one shows once.** One finished while the app was closed shows the next time it's open, and the ones you'd finished before this update don't all pop up at once.
+
+#### Bluetooth sync for the whole app
+- **One delay per device, measured once, used everywhere.** Settings › Audio › Bluetooth sync shows how late the output playing now plays. Measure opens Trypt Mania's tap test: tap along to the clicks you hear, apply, and you're back in Settings. You can also nudge it 5 ms at a time.
+- **Each pair of headphones keeps its own.** The value switches by itself when another device connects. A device you never measured uses the value for Bluetooth in general, and the phone speaker and wired headphones stay at none unless you set them.
+- **The lyrics, the music-linked visuals, the visualizer and Trypt Mania all wait the same amount.** Before, they had three separate sliders: the lyrics' Bluetooth delay, the visualizer's audio delay and Trypt Mania's offset. Those are gone, and your existing value carried over to Bluetooth: Trypt Mania's if you had measured one, otherwise the lyrics', otherwise the visualizer's.
+- **Trypt Mania's Sync tab says which device it's saving for.** A delay can be up to a second now; the tap test reads up to half a second.
+
+#### Themes carry the CRT effect
+- **A theme can carry your CRT effect now**: whether it's on, its look, every slider, and whether it draws over the whole app or only the lyrics. It's a part of its own, CRT effect, so you choose whether to publish it and whether to put it on, like the others.
+- **Before, the CRT never travelled with a theme**, so a theme made with the effect over the lyrics came out without it. Older app versions skip the part.
+
+#### A live board while a room plays
+- **Everyone's score is on a board down the left side while a room plays**, as in osu!: place, name, score and combo, best first, with your own card lit. If you're further down than the cards shown, you stay pinned at the bottom with your real place.
+- **Overtakes animate.** When someone moves up, the cards slide into their new order and the climber glows green with a ▲; scores roll up as they arrive. With reduced motion on, the cards just move.
+
+#### Share the song with your room
+- **A player without the song no longer has to sit it out.** In a Trypt Mania room, the host gets Share the song with the room while someone is missing it, and once it's up they get Get the song, with its size: one tap downloads it, plays from it and readies them. The chart already came with the pick, so that's everything they need.
+- **Progress shows as it goes**, and a failure says why. A shared song is kept only while the room is on that chart, and runs on it don't count towards your own scores, since the chart is the host's.
+- **It needs the updated rooms server.** On an older one the buttons don't show.
+
+#### Orbitron ships with the app
+- **Orbitron is a built-in font now**, in Settings › Fonts with the others: a wide, squared-off display face with a sci-fi console feel, every weight from Regular to Black. Pick it for the whole app or for single text styles in the typography table.
+- **It covers Latin letters only.** Turkish's ğ, ş and İ, and Japanese and Chinese, are drawn in the phone's own font.
+
+#### Zoom for the CRT effect
+- **A Zoom slider sets the picture's size on the tube**, from 60% to 120%, in Settings › Appearance › CRT effect, the Lyrics FX tab and Trypt Mania's Graphics. It works like a TV's picture-size knob: the glass keeps its curve while the picture inside it grows or shrinks.
+- **Zoom out to frame the curve.** Under 100% the whole bowed edge of the picture shows inside the screen, with the frame round it.
+- **Zoom in to fill the corners.** Over 100% the picture fills the dark corners a curve leaves. It stops at 120% so the tab bar stays on screen.
+- **Taps follow the zoom**, as they follow the curve. Your looks and saved presets keep their size: anything saved before reads as 100%.
+
+### Changed
+
+#### APIs in two groups
+- **Settings › Connections › APIs lists Streaming and Trypt Mania apart.** The servers that search and play (TIDAL, Qobuz, Apple Music, Deezer) are under Streaming; the ones that only chart, time lyrics or run rooms for Trypt Mania are under Trypt Mania. ↑ moves a server above the one before it in its own group, which is the order that decides which server is used.
+
+#### Player Visuals Studio's tabs are glass pills
+- **Player, UI panels, Lyrics and Visualizer are glass pills now**, like the chips at the top of Settings, instead of underlined tabs that broke "UI panels" and "Visualizer" over two lines. They scroll sideways if they don't fit, and the one you're on scrolls into view.
+
+#### Music links in Settings › Appearance
+- **The CRT effect's sliders in Settings › Appearance can move with the music**, as they do in Player Visuals Studio: tap the ♪ beside one, or press and hold it. It's the same link in both places and on the Music links page.
+- **Curve and tilt can move with the music too.** Taps still land where you see them: each touch keeps the tube's shape from the moment your finger goes down until it lifts, so a held finger doesn't drift with the beat. Zoom stays as you set it.
+- **The glow behind album art links as well**: its radius and brightness, in Settings › Appearance under Glow behind album art. It moves in the player's cover view, where it's drawn.
+
+#### The Theme Store has its own page in Settings
+- **Theme Store is a tab of Settings now, right after Fonts**, instead of a row under Appearance that opened another screen. Search and undo are at the top of the page; Appearance's row and Settings search take you to the tab.
+
+#### Precision AutoEQ gets target pills and a filter editor
+- **Targets are pills under the graph**, one tap each, with Import at the end. The target you've imported and picked has a × to delete it.
+- **Under the pills, each filter has a coloured chip**, and for the one picked its type, and its frequency, gain and Q as pills you swipe or tap to type. Dragging a dot on the graph picks that filter.
+- **The graph is the one Precision AutoEQ always had**, and everything else stays: smoothing, preamp, the algorithm, AutoEq, tone, automatic preamp, the headphone model, export, saved profiles and the full band list.
+
+#### Trypt Mania's score multiplies with your combo
+- **Points grow with the combo, as in osu!.** Each step is worth its judgement's points (Marvelous 300, Perfect 285, Great 210, Good 120, Boo 30) times 1 + (combo − 1) ÷ 25, so the 26th step of a combo is worth twice the first. A Good, a Boo, a miss or a mine starts it over.
+- **There's no top score any more**: a long chart played clean scores far more than a short one. The percent and the grade still say how well you played, and they still rank your high scores; points break ties there, and rank the players in a room, where everyone needs this version for a fair race.
+- **Runs saved before keep the points they had**, on the old scale out of 1,000,000.
+
+#### Trypt Mania is marked as a beta
+- **Its name says (Beta)** on the Library tile, the song list and in Settings, and a small BETA sits under the logo on its menu, in every language.
+
+#### Trypt Mania plays over the player's background
+- **The arrows are now over the same background as the music player**: the song's cover, blurred and darkened, over a wash and a glow in its album colours. It is the player's own background, so it follows the player's colour settings and changes when they do.
+- **The arcade pad, the speakers and the stage lights are gone** from behind the play, so the only thing moving is the arrows.
+- **The ambient visualizer stays in the player.** It can only run on one screen at a time, and the game's music does not feed it.
+- **Trypt Mania takes the colour of the song you pick.** Choose a song on the wheel and the app's dynamic colours fade to its album colour within half a second, whatever your "Blend between tracks" length is (a shorter one is kept). The whole app follows that one song while the mode is open, tab bar and "Tint the menus too" included, so two songs never colour the screen at once; when you leave, the playing track takes over again. The colours stay readable on every menu.
+
+### Fixed
+- **Golden Ears and the Quality card agree on what Hi-Res is.** The achievement counted "HI-RES" or "HI RES" tags the card called lossy, and missed "HIRES", which the card counted.
+- **Night means one thing in your stats: 9 pm to 5 am.** The Night owl listening type, the share of night listening, the clock chart's Night row and the Night Owl achievement used four different windows, so a 4 am peak made you an "Early bird". Night Owl now counts plays from midnight to 5 am.
+
+#### The Fonts page no longer freezes the app with many fonts
+- **Each font chip reads its font in the background now**, at the one weight it shows, and the chip shows in the normal font for the moment it takes. Before, every chip read its font in the frame that drew it, and every imported one read your whole font library again to find its family, so with a lot of fonts installed the page froze the app.
+- **A font file is read once** while the app runs, and the page keeps what it loaded, so scrolling the chips away and back is instant.
+
+#### Trypt Mania's results page has its own background
+- **The results page paints the theme's background under its cards**, so nothing of the song that just played shows through it.
+- **Album colours arriving mid-run no longer restart the game's screens.** When a song with cover colours followed one without, everything in the mode was rebuilt.
+
 ## [1.9.4]
 
 ### Added
@@ -50,7 +145,7 @@
 - **Every link on one page.** Music links, from the ♪ at the top of Player Visuals Studio, lists every link by where it is (lyrics, player, UI panels, CRT effect, visualizer and mixer knobs), with pause, change and remove. One switch, Music links on, holds them all at your own values without removing any.
 
 #### Theme Store
-- **Share your look.** Settings › Appearance › Theme Store › Share my look puts your colours, lyrics, glass, font, visualizers, maps and music links up as one theme, in the store or only by its code. Nothing personal goes with it: a font you imported, your Bluetooth delay and your quality settings are put back to their defaults before a pack leaves the phone. A pack is held to what the sliders allow and capped at 64 KB. The app draws the theme's picture as you share it, with its own renderers, and sends it as a WebP under 150 KB. Needs an account.
+- **Share your look.** Settings › Theme Store › Share my look puts your colours, lyrics, glass, font, visualizers, maps and music links up as one theme, in the store or only by its code. Nothing personal goes with it: a font you imported, your Bluetooth delay and your quality settings are put back to their defaults before a pack leaves the phone. A pack is held to what the sliders allow and capped at 64 KB. The app draws the theme's picture as you share it, with its own renderers, and sends it as a WebP under 150 KB. Needs an account.
 - **Try someone else's.** Two themes to a row under Popular, New and Mine, each with a picture of how it really looks, plus a search and Have a code? for one that isn't listed. Every theme previews live on the real player first, and Use this theme has a switch for each part, so you can keep your own font or colours. Your look before is saved for a one-tap undo.
 - **The store has a server of its own** (`server/theme-store`), with its own database. Sign-in stays your Tryptify account: the app sends the session's token and the server checks it, holding no secret. `ThemeStoreWireTest` holds the app and the server to the same theme parts, size cap and error codes, and a deleted pack says so instead of reading as a network failure.
 
@@ -92,8 +187,8 @@
 
 #### Account and stats
 - **Your own picture and name.** The account button in the top bar is glass: your picture (or initials) when you're signed in, a Sign in pill when you're not. The Account page picks a picture from your photos, cropped to 512 px and kept on this phone, or goes back to your Google one, and you choose a username of your own instead of showing your Google name. The username is kept in the account's own metadata, which Google does not rewrite on sign-in, so it follows you to every device.
-- **Listening stats, rebuilt.** Account › Listening stats is a column of glass cards: time listened against the period before, your listening type from an hour-by-weekday grid, top artist, on repeat, discovery, a streak calendar and audio quality. Dig deeper opens fourteen charts of sessions, months, variety, track lengths, sources, weekdays, albums and tracks; tap a bar and it says what it holds. Every chart reads one report built from the plays themselves, on local days, so they agree on what a day, a session or a new artist is, and a play of a local file counts as local, not as a stream.
-- **Achievements.** Ten goals beside your stats, from 25 new artists in 30 days and a 30-day streak to trying every settings page and every plugin. Tap one to see what is left to do and a button that takes you there. They stay on your phone in a log of their own, so clearing settings keeps them, and an unlock is kept even if its count later falls.
+- **Listening stats, rebuilt.** Account › Listening stats is a column of glass cards: time listened against the period before, your listening type from an hour-by-weekday grid, top artist, on repeat, discovery, a streak calendar and audio quality. Dig deeper opens charts of sessions, months, variety, track lengths, sources, weekdays, albums and tracks; tap a bar and it says what it holds. Every chart reads one report built from the plays themselves, on local days, so they agree on what a day, a session or a new artist is, and a play of a local file counts as local, not as a stream.
+- **Achievements.** Goals beside your stats, from 25 new artists in 30 days and a 30-day streak to trying every settings page and every plugin. Tap one to see what is left to do and a button that takes you there. They stay on your phone in a log of their own, so clearing settings keeps them, and an unlock is kept even if its count later falls.
 
 ### Changed
 

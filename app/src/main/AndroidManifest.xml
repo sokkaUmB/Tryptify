@@ -119,6 +119,21 @@
                     android:scheme="tryptify"
                     android:host="lastfm-callback" />
             </intent-filter>
+
+            <!-- "Open with": an audio file from a file manager, a chat or
+                 Downloads. Not BROWSABLE, so a web page cannot start it.
+                 OpenedAudio checks every request before anything is read. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/ogg" />
+                <data android:mimeType="application/x-ogg" />
+                <data android:mimeType="application/flac" />
+                <data android:mimeType="application/x-flac" />
+            </intent-filter>
         </activity>
 
         <!-- Media Playback Service -->

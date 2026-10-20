@@ -234,7 +234,6 @@
     <string name="bpm_measure_again">Volver a medir el tempo</string>
     <string name="bpm_type_song_tempo">Escribir el tempo de la canción</string>
     <string name="action_set">Establecer</string>
-    <string name="unknown_artist">Artista desconocido</string>
     <string name="dock_mixer_fx">Mezclador/FX</string>
     <string name="lyrics_none_short">No hay letra disponible para esta canción</string>
     <string name="lyrics_server_sync">Sincronizar la letra en el servidor</string>
@@ -568,6 +567,7 @@
     <string name="mood_blissed_out">Extasiado</string>
     <string name="mood_deep_cuts">Joyas ocultas</string>
     <string name="discover_beta">Descubrir (beta)</string>
+    <string name="trypt_mania_beta">Trypt Mania (beta)</string>
     <string name="close_genre_search">Cerrar la búsqueda de géneros</string>
     <string name="search_genres">Buscar géneros</string>
     <string name="show_something_else">Muéstrame otra cosa</string>
@@ -826,8 +826,6 @@
     <string name="range_last_90d">Últimos 90 días</string>
     <string name="range_last_12m">Últimos 12 meses</string>
     <string name="synced_when">Sincronizado %1$s</string>
-    <string name="total_plays">Reproducciones totales</string>
-    <string name="music_enthusiast">¡Eres un amante de la música!</string>
     <string name="eq_settings">Ajustes del ecualizador</string>
     <string name="number_of_bands">Número de bandas</string>
     <string name="frequency_range_note">Rango de frecuencias: 20 Hz – 20.000 Hz</string>
@@ -1529,6 +1527,7 @@
     <string name="eq_import_left_measurement_file">Importar archivo de medición izquierdo</string>
     <string name="eq_import_right_measurement_file">Importar archivo de medición derecho</string>
     <string name="eq_import_measurement_file">Importar archivo de medición</string>
+    <string name="eq_delete_target">Eliminar el objetivo %1$s</string>
     <string name="eq_import_custom_target">Importar objetivo personalizado</string>
     <string name="eq_filter_bands_caps">BANDAS DE FILTRO</string>
     <string name="eq_max_hz_caps">HZ MÁX.</string>
@@ -1542,6 +1541,19 @@
     <string name="eq_nothing_save">Guardar imagen</string>
     <string name="eq_nothing_saved">Código QR guardado</string>
     <string name="eq_nothing_save_failed">No se pudo guardar el código QR</string>
+    <string name="eq_studio_import_target">Importar</string>
+    <string name="eq_studio_on">Activado</string>
+    <string name="eq_studio_bypassed">Omitido</string>
+    <string name="eq_studio_delete">Eliminar</string>
+    <string name="eq_studio_no_filters">Aún no hay filtros. Elige unos auriculares y ejecuta AutoEQ, o añade uno a mano.</string>
+    <string name="eq_studio_no_filter_selected">Toca un punto del gráfico o un filtro de arriba. Arrastra un punto para moverlo, pellizca con dos dedos para cambiar su anchura y toca el gráfico para leerlo.</string>
+    <string name="eq_studio_filter_n">Filtro %1$d</string>
+    <string name="eq_studio_freq">Frecuencia</string>
+    <string name="eq_studio_gain">Ganancia</string>
+    <string name="eq_studio_q">Q</string>
+    <string name="eq_studio_scrub_hint">Desliza a los lados para ajustar, toca para escribir</string>
+    <string name="eq_studio_type_value">Escribe un valor</string>
+    <string name="eq_studio_set">Aplicar</string>
     <string name="eq_save_as_preset">Guardar como preset</string>
     <string name="eq_remove_band">Quitar banda</string>
     <string name="eq_next_sample">Muestra siguiente</string>
@@ -2456,6 +2468,8 @@
     <string name="theme_part_maps_desc">El aspecto del globo y de la galaxia de géneros</string>
     <string name="theme_part_links">Enlaces musicales</string>
     <string name="theme_part_links_desc">Ajustes que se mueven con la música</string>
+    <string name="theme_part_crt">Efecto CRT</string>
+    <string name="theme_part_crt_desc">El aspecto CRT y sus controles, en toda la app o solo en la letra</string>
     <string name="theme_preview_panels">Paneles</string>
     <string name="theme_preview_player">Reproductor</string>
     <string name="theme_preview_lyrics">Letra</string>
@@ -2565,7 +2579,7 @@
     <string name="stats_persona_afternoon">Soñador de la tarde</string>
     <string name="stats_persona_early_bird">Madrugador</string>
     <string name="stats_peak_headline">El %1$s a las %2$s es tu hora punta</string>
-    <string name="stats_night_share">El %1$s de lo que escuchas empieza después de las 21:00.</string>
+    <string name="stats_night_share">El %1$s de lo que escuchas es de noche, entre las 21:00 y las 5:00.</string>
     <string name="stats_number_one_artist">Artista número uno</string>
     <string name="stats_artist_line">%1$s, el %2$s de todo lo que escuchaste.</string>
     <string name="stats_top5_share">Tu top 5 es el %1$s</string>
@@ -2640,7 +2654,7 @@
     <string name="stats_ach_golden_what">Las canciones Hi-Res son de 24 bits. Elige Hi-Res como calidad de streaming si tu servicio la ofrece.</string>
     <string name="stats_ach_night">Ave nocturna</string>
     <string name="stats_ach_night_goal">%1$d reproducciones después de medianoche</string>
-    <string name="stats_ach_night_what">Cuentan las reproducciones que empiezan entre la medianoche y las 4:00.</string>
+    <string name="stats_ach_night_what">Cuentan las reproducciones que empiezan entre la medianoche y las 5:00.</string>
     <string name="stats_ach_chain">Cadena de señal</string>
     <string name="stats_ach_chain_goal">Pon %1$d plugins en una cadena de efectos</string>
     <string name="stats_ach_chain_what">Crea una cadena de plugins en un bus del mezclador. Un bus admite hasta 16.</string>
@@ -2677,7 +2691,7 @@
     <string name="stats_of_listening">de lo que escuchas</string>
     <string name="stats_about_time">Unos %1$s en este periodo</string>
     <string name="stats_hour_rank">Número %1$d de las %2$d horas de tu semana</string>
-    <string name="stats_after_nine">Después de las 21:00</string>
+    <string name="stats_after_nine">De 21:00 a 5:00</string>
     <string name="stats_quietest_hour">Hora más tranquila</string>
     <string name="stats_busiest_day">Día más intenso</string>
     <string name="stats_morning">Mañana</string>
@@ -2833,6 +2847,9 @@
     <string name="settings_crt_tilt_top_desc">Lo mismo desde arriba o desde abajo</string>
     <string name="settings_crt_bezel">Marco: %1$d %%</string>
     <string name="settings_crt_bezel_desc">Un marco oscuro alrededor de la imagen</string>
+    <string name="settings_crt_zoom">Zoom: %1$d %%</string>
+    <string name="settings_crt_zoom_desc" formatted="false">El tamaño de la imagen en el tubo. Por debajo del 100 % se ve todo el borde curvo; por encima, la imagen llena las esquinas oscuras y sus propios bordes salen de la pantalla.</string>
+    <string name="crt_zoom">Zoom</string>
     <string name="settings_crt_corners">Esquinas redondeadas: %1$d %%</string>
     <string name="settings_crt_vignette">Viñeta: %1$d %%</string>
     <string name="settings_crt_vignette_desc">La imagen más oscura hacia los bordes</string>
@@ -2904,6 +2921,14 @@
     <string name="tm_mp_send">Enviar</string>
     <string name="tm_mp_spectating">Mirando</string>
     <string name="tm_mp_no_song">No tiene la canción</string>
+    <string name="tm_mp_share_song">Compartir la canción con la sala</string>
+    <string name="tm_mp_sharing_song">Compartiendo la canción… %1$d %%</string>
+    <string name="tm_mp_song_shared">La canción está compartida con la sala</string>
+    <string name="tm_mp_get_song">Obtener la canción (%1$s)</string>
+    <string name="tm_mp_getting_song">Obteniendo la canción… %1$d %%</string>
+    <string name="tm_mp_ask_host_share">Pide al anfitrión que comparta la canción.</string>
+    <string name="tm_mp_share_failed">No se pudo compartir la canción: %1$s</string>
+    <string name="tm_mp_get_failed">No se pudo obtener la canción: %1$s</string>
     <string name="tm_mp_kick">Expulsar</string>
     <string name="tm_mp_state_lobby">Sala de espera</string>
     <string name="tm_mp_state_playing">Jugando</string>
@@ -2931,4 +2956,52 @@
     <string name="crt_preset_exported">%1$s exportado</string>
     <string name="crt_preset_export_failed">No se pudo escribir el archivo</string>
     <string name="crt_preset_import_failed">No se pudo importar: %1$s</string>
+    <string name="settings_bluetooth_sync">Sincronización Bluetooth</string>
+    <string name="settings_bluetooth_sync_desc">Cuánto se retrasa %1$s. La letra, los visuales, el visualizador y Trypt Mania lo esperan. Se guarda para cada dispositivo.</string>
+    <string name="settings_bluetooth_sync_no_output">Ahora no hay ninguna salida para guardarlo.</string>
+    <string name="settings_bluetooth_sync_measure">Medir</string>
+    <string name="settings_bluetooth_sync_less">Reducir el retardo</string>
+    <string name="settings_bluetooth_sync_more">Aumentar el retardo</string>
+    <string name="settings_bluetooth_sync_set_there">Se ajusta para cada dispositivo en Ajustes › Audio › Sincronización Bluetooth.</string>
+    <string name="tm_sync_saved_for">Guardado para %1$s y usado en toda la app.</string>
+    <string name="stats_ach_unlocked_toast">Logro desbloqueado</string>
+    <string name="stats_ach_view">Ver</string>
+    <string name="opened_from_app">Abierto desde otra app</string>
+    <string name="opened_add">Añadir a la biblioteca</string>
+    <string name="opened_adding">Añadiendo…</string>
+    <string name="opened_added">Añadido a la biblioteca</string>
+    <string name="opened_added_where">Guardado en Music/%1$s</string>
+    <string name="opened_add_failed">No se pudo añadir a la biblioteca</string>
+    <string name="opened_failed">No se pudo abrir este archivo</string>
+    <string name="opened_fail_not_audio">No es un archivo de audio que Tryptify pueda reproducir.</string>
+    <string name="opened_fail_no_access">La app que lo envió no permitió que Tryptify lo leyera.</string>
+    <string name="opened_fail_not_found">El archivo ya no existe.</string>
+    <string name="opened_fail_too_big">Supera los 2 GB.</string>
+    <string name="opened_fail_empty">El archivo está vacío.</string>
+    <string name="opened_fail_no_space">No hay suficiente espacio libre en el teléfono.</string>
+    <string name="opened_fail_unreadable">No se pudo leer.</string>
+    <string name="opened_fail_no_write">Android no permitió que Tryptify guardara en Music.</string>
+    <string name="stats_ach_tm_combo">Sin fallos</string>
+    <string name="stats_ach_tm_combo_goal">Un full combo en Trypt Mania</string>
+    <string name="stats_ach_tm_combo_what">Termina una canción entera sin fallar ni soltar un paso. Los fragmentos de entrenamiento no cuentan.</string>
+    <string name="stats_ach_tm_aa">Doble A</string>
+    <string name="stats_ach_tm_aa_goal">Una nota AA en Trypt Mania</string>
+    <string name="stats_ach_tm_aa_what" formatted="false">Termina una canción entera con un 96 % o más sin fallar. Cuenta la nota, no la puntuación.</string>
+    <string name="stats_ach_tm_charts">Saltacharts</string>
+    <string name="stats_ach_tm_charts_goal">%1$d charts distintos jugados</string>
+    <string name="stats_ach_tm_charts_what">Juega una canción entera en esa cantidad de charts distintos en Trypt Mania. Cuenta cualquier canción y dificultad.</string>
+    <plurals name="stats_tm_songs">
+        <item quantity="one">canción jugada</item>
+        <item quantity="many">canciones jugadas</item>
+        <item quantity="other">canciones jugadas</item>
+    </plurals>
+    <plurals name="stats_tm_on_charts">
+        <item quantity="one">En %1$d chart, desde siempre</item>
+        <item quantity="many">En %1$d charts, desde siempre</item>
+        <item quantity="other">En %1$d charts, desde siempre</item>
+    </plurals>
+    <string name="stats_tm_best_grade">Mejor nota</string>
+    <string name="stats_tm_full_combos">Full combos</string>
+    <string name="stats_tm_accuracy">Precisión, últimas %1$d</string>
+    <string name="stats_tm_most_played">La más jugada: %1$s, %2$s</string>
 </resources>

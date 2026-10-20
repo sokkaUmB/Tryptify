@@ -21,15 +21,17 @@ enum class GlyphJudgement(
     /** Share of a note's points this judgement earns. */
     val weight: Float,
     val continuesCombo: Boolean,
+    /** The points it earns before the combo multiplies them ([GlyphScore.score]). */
+    val points: Int,
 ) {
-    MARVELOUS("Marvelous", GlyphJudgementArt.MARVELOUS, 1.00f, true),
-    PERFECT("Perfect", GlyphJudgementArt.PERFECT, 0.95f, true),
-    GREAT("Great", GlyphJudgementArt.GREAT, 0.70f, true),
+    MARVELOUS("Marvelous", GlyphJudgementArt.MARVELOUS, 1.00f, true, 300),
+    PERFECT("Perfect", GlyphJudgementArt.PERFECT, 0.95f, true, 285),
+    GREAT("Great", GlyphJudgementArt.GREAT, 0.70f, true, 210),
     // A Good breaks the combo, as it does in StepMania's dance mode, where
     // only a Great or better continues one.
-    GOOD("Good", GlyphJudgementArt.GOOD, 0.40f, false),
-    BOO("Boo", GlyphJudgementArt.BOO, 0.10f, false),
-    MISS("Miss", GlyphJudgementArt.MISS, 0.00f, false),
+    GOOD("Good", GlyphJudgementArt.GOOD, 0.40f, false, 120),
+    BOO("Boo", GlyphJudgementArt.BOO, 0.10f, false, 30),
+    MISS("Miss", GlyphJudgementArt.MISS, 0.00f, false, 0),
     ;
 
     val isHit: Boolean get() = this != MISS

@@ -318,6 +318,17 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             linkKey = "tv.bezel",
             onDone = commit,
         )
+        // No music link yet: a picture that grows and shrinks with the beat
+        // has not been asked for (see VisualLinkTarget).
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_zoom, percent(tv.zoom)),
+            subtitle = stringResource(R.string.settings_crt_zoom_desc),
+            value = tv.zoom,
+            default = TV_DEFAULTS.zoom,
+            range = GlyphTvTuning.ZOOM_MIN..GlyphTvTuning.ZOOM_MAX,
+            onChange = { drag(tv.copy(zoom = it)) },
+            onDone = commit,
+        )
         CrtSlider(
             label = stringResource(R.string.settings_crt_corners, percent(tv.corners)),
             subtitle = null,

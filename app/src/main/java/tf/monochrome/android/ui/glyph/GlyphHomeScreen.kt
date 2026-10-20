@@ -253,7 +253,7 @@ fun GlyphHomeScreen(
                         text = when (state.songListMode) {
                             GlyphSongListMode.EDIT -> "Map editor: pick a song"
                             GlyphSongListMode.ROOM -> stringResource(R.string.tm_mp_pick_title)
-                            GlyphSongListMode.PLAY -> stringResource(R.string.trypt_mania)
+                            GlyphSongListMode.PLAY -> stringResource(R.string.trypt_mania_beta)
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

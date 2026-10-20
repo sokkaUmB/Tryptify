@@ -277,6 +277,27 @@ void calibrationShiftsEveryPress() {
     CHECK_NEAR(ev.offsetSeconds, 0.0f, 1e-5);
 }
 
+void comboMultipliesThePoints() {
+    // GlyphEngineTest's run: 26 Marvelous, each 12 more than the last, then a
+    // miss, after which a hit is worth its 300 once.
+    std::vector<Note> notes;
+    for (int i = 0; i < 28; ++i) notes.push_back(note(1.0f + static_cast<float>(i)));
+    Engine e = engine(notes);
+    for (int i = 0; i < 26; ++i) {
+        const float t = 1.0f + static_cast<float>(i);
+        e.advanceTo(t - 0.1f);
+        e.press(L, t, nullptr);
+    }
+    const int32_t run = 26 * 300 + 12 * 25 * 26 / 2;
+    CHECK_EQ(e.score().score, run);
+    e.advanceTo(27.5f);  // the 27th times out
+    CHECK_EQ(e.score().combo, 0);
+    e.press(L, 28.0f, nullptr);
+    CHECK_EQ(e.score().score, run + 300);
+    e.reset();
+    CHECK_EQ(e.score().score, 0);
+}
+
 void scoreAccuracyAndGradeNumbers() {
     // The derivations GlyphScore.kt makes, pinned on hand-worked runs.
     Engine perfect = engine({note(1.0f), note(2.0f)});
@@ -286,7 +307,8 @@ void scoreAccuracyAndGradeNumbers() {
     perfect.press(L, 2.0f, nullptr);
     ScoreState s = perfect.score();
     CHECK_NEAR(s.finalAccuracy, 1.0f, 1e-5);
-    CHECK_EQ(s.score, Engine::kMaxScore);
+    // Combo 1 and 2: 300 x 25/25 and 26/25.
+    CHECK_EQ(s.score, 300 + 312);
 
     // A Great and a Good: 0.70 + 0.40 over two judgements is 0.55.
     Engine mixed = engine({note(1.0f), note(2.0f)});
@@ -296,7 +318,8 @@ void scoreAccuracyAndGradeNumbers() {
     mixed.press(L, 2.12f, nullptr);  // Good
     s = mixed.score();
     CHECK_NEAR(s.finalAccuracy, 0.55f, 1e-5);
-    CHECK_EQ(s.score, 550000);
+    // A Great on a combo of 1, then a Good that breaks it: each worth its points once.
+    CHECK_EQ(s.score, 210 + 120);
     CHECK_EQ(s.late, 2);
     CHECK_EQ(s.early, 0);
     CHECK_NEAR(s.meanOffsetSeconds, 0.10f, 1e-5);
@@ -370,7 +393,7 @@ void loopWindowSetsAsideNotesOutsideIt() {
     CHECK_EQ(s.judged, 2);
     CHECK_EQ(s.counts[kMiss], 0);
     CHECK_NEAR(s.finalAccuracy, 1.0f, 1e-6);
-    CHECK_EQ(s.score, Engine::kMaxScore);
+    CHECK_EQ(s.score, 300 + 312);
     // Notes outside the loop are never drawn either.
     VisibleNote v[8];
     CHECK_EQ(e.fillVisible(25.0f, 35.0f, 30.0f, Scroll{}, v, 8), 0);
@@ -521,6 +544,7 @@ int main() {
     liftIsJudgedOnRelease();
     calibrationShiftsEveryPress();
     scoreAccuracyAndGradeNumbers();
+    comboMultipliesThePoints();
     earlyLateDeadZone();
     resetPlaysTheChartAgain();
     resetReleasesHeldLanes();

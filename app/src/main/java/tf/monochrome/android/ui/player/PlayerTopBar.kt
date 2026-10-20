@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.EditNote
+import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
@@ -73,6 +74,8 @@ fun PlayerTopBar(
     onEditLyrics: (() -> Unit)? = null,
     onGoToArtist: (() -> Unit)? = null,
     onGoToAlbum: (() -> Unit)? = null,
+    /** Shown while a song opened from another app plays, until it is in the library. */
+    onAddToLibrary: (() -> Unit)? = null,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -182,6 +185,13 @@ fun PlayerTopBar(
                             )
                         },
                     )
+                    if (onAddToLibrary != null) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.opened_add)) },
+                            onClick = { onAddToLibrary(); menuExpanded = false },
+                            leadingIcon = { Icon(Icons.Default.LibraryAdd, contentDescription = null) },
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text(downloadMenuLabel(downloadState, isDownloaded)) },
                         onClick = { onDownload(); menuExpanded = false },

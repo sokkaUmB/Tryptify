@@ -230,7 +230,6 @@
     <string name="bpm_measure_again">Tempoyu yeniden ölç</string>
     <string name="bpm_type_song_tempo">Şarkının temposunu yaz</string>
     <string name="action_set">Ayarla</string>
-    <string name="unknown_artist">Bilinmeyen sanatçı</string>
     <string name="dock_mixer_fx">Mikser/FX</string>
     <string name="lyrics_none_short">Bu parça için şarkı sözü yok</string>
     <string name="lyrics_server_sync">Şarkı sözünü sunucuda zamanla</string>
@@ -545,6 +544,7 @@
     <string name="mood_blissed_out">Kendinden geçmiş</string>
     <string name="mood_deep_cuts">Gizli cevherler</string>
     <string name="discover_beta">Keşfet (Beta)</string>
+    <string name="trypt_mania_beta">Trypt Mania (Beta)</string>
     <string name="close_genre_search">Tür aramasını kapat</string>
     <string name="search_genres">Tür ara</string>
     <string name="show_something_else">Başka bir şey göster</string>
@@ -794,8 +794,6 @@
     <string name="range_last_90d">Son 90 gün</string>
     <string name="range_last_12m">Son 12 ay</string>
     <string name="synced_when">%1$s eşitlendi</string>
-    <string name="total_plays">Toplam dinlenme</string>
-    <string name="music_enthusiast">Tam bir müzik tutkunusunuz!</string>
     <string name="eq_settings">EQ ayarları</string>
     <string name="number_of_bands">Bant sayısı</string>
     <string name="frequency_range_note">Frekans aralığı: 20 Hz – 20.000 Hz</string>
@@ -1485,6 +1483,7 @@
     <string name="eq_import_left_measurement_file">Sol ölçüm dosyasını içe aktar</string>
     <string name="eq_import_right_measurement_file">Sağ ölçüm dosyasını içe aktar</string>
     <string name="eq_import_measurement_file">Ölçüm dosyasını içe aktar</string>
+    <string name="eq_delete_target">%1$s hedefini sil</string>
     <string name="eq_import_custom_target">Özel hedef içe aktar</string>
     <string name="eq_filter_bands_caps">FİLTRE BANTLARI</string>
     <string name="eq_max_hz_caps">MAKS. HZ</string>
@@ -1498,6 +1497,19 @@
     <string name="eq_nothing_save">Görseli kaydet</string>
     <string name="eq_nothing_saved">QR kodu kaydedildi</string>
     <string name="eq_nothing_save_failed">QR kodu kaydedilemedi</string>
+    <string name="eq_studio_import_target">İçe aktar</string>
+    <string name="eq_studio_on">Açık</string>
+    <string name="eq_studio_bypassed">Atlandı</string>
+    <string name="eq_studio_delete">Sil</string>
+    <string name="eq_studio_no_filters">Henüz filtre yok. Bir kulaklık seçip AutoEQ çalıştırın ya da elle bir tane ekleyin.</string>
+    <string name="eq_studio_no_filter_selected">Grafikteki bir tutamaca ya da yukarıdaki bir filtreye dokunun. Taşımak için tutamacı sürükleyin, genişliğini değiştirmek için iki parmakla sıkıştırın, okumak için grafiğe dokunun.</string>
+    <string name="eq_studio_filter_n">Filtre %1$d</string>
+    <string name="eq_studio_freq">Frekans</string>
+    <string name="eq_studio_gain">Kazanç</string>
+    <string name="eq_studio_q">Q</string>
+    <string name="eq_studio_scrub_hint">Ayarlamak için yana kaydırın, yazmak için dokunun</string>
+    <string name="eq_studio_type_value">Bir değer yazın</string>
+    <string name="eq_studio_set">Uygula</string>
     <string name="eq_save_as_preset">Ön ayar olarak kaydet</string>
     <string name="eq_remove_band">Bandı kaldır</string>
     <string name="eq_next_sample">Sonraki örnek</string>
@@ -2400,6 +2412,8 @@
     <string name="theme_part_maps_desc">Küre ve tür galaksisinin görünümü</string>
     <string name="theme_part_links">Müzik bağlantıları</string>
     <string name="theme_part_links_desc">Müzikle hareket eden ayarlar</string>
+    <string name="theme_part_crt">CRT efekti</string>
+    <string name="theme_part_crt_desc">CRT görünümü ve kaydırıcıları, tüm uygulamada ya da yalnızca şarkı sözlerinde</string>
     <string name="theme_preview_panels">Paneller</string>
     <string name="theme_preview_player">Oynatıcı</string>
     <string name="theme_preview_lyrics">Şarkı sözleri</string>
@@ -2505,7 +2519,7 @@
     <string name="stats_persona_afternoon">Öğleden sonra gezgini</string>
     <string name="stats_persona_early_bird">Erken kuş</string>
     <string name="stats_peak_headline">En yoğun saatin: %1$s, %2$s</string>
-    <string name="stats_night_share">Dinlemenin %1$s kadarı 21.00’den sonra başlıyor.</string>
+    <string name="stats_night_share">Dinlemenin %1$s kadarı gece, 21.00 ile 05.00 arasında.</string>
     <string name="stats_number_one_artist">Bir numaralı sanatçı</string>
     <string name="stats_artist_line">%1$s, dinlediğin her şeyin %2$s kadarı.</string>
     <string name="stats_top5_share">İlk 5 sanatçın bunun %1$s kadarı</string>
@@ -2580,7 +2594,7 @@
     <string name="stats_ach_golden_what">Hi-Res parçalar 24 bittir. Hizmetin sunuyorsa akış kalitesi olarak Hi-Res’i seç.</string>
     <string name="stats_ach_night">Gece kuşu</string>
     <string name="stats_ach_night_goal">Gece yarısından sonra %1$d dinleme</string>
-    <string name="stats_ach_night_what">Gece yarısı ile 04.00 arasında başlayan dinlemeler sayılır.</string>
+    <string name="stats_ach_night_what">Gece yarısı ile 05.00 arasında başlayan dinlemeler sayılır.</string>
     <string name="stats_ach_chain">Sinyal zinciri</string>
     <string name="stats_ach_chain_goal">Bir efekt zincirine %1$d eklenti koy</string>
     <string name="stats_ach_chain_what">Bir mikser veriyolunda eklenti zinciri kur. Bir veriyolu en fazla 16 alır.</string>
@@ -2617,7 +2631,7 @@
     <string name="stats_of_listening">dinlemenin</string>
     <string name="stats_about_time">Bu aralıkta yaklaşık %1$s</string>
     <string name="stats_hour_rank">Haftandaki %2$d saatin %1$d. sırada olanı</string>
-    <string name="stats_after_nine">21.00’den sonra</string>
+    <string name="stats_after_nine">21.00–05.00</string>
     <string name="stats_quietest_hour">En sessiz saat</string>
     <string name="stats_busiest_day">En yoğun gün</string>
     <string name="stats_morning">Sabah</string>
@@ -2765,6 +2779,9 @@
     <string name="settings_crt_tilt_top_desc">Aynısı yukarıdan ya da aşağıdan</string>
     <string name="settings_crt_bezel">Çerçeve: %%%1$d</string>
     <string name="settings_crt_bezel_desc">Görüntünün çevresinde koyu bir çerçeve</string>
+    <string name="settings_crt_zoom">Yakınlaştırma: %%%1$d</string>
+    <string name="settings_crt_zoom_desc" formatted="false">Resmin tüpteki boyutu. %100’ün altında kavisli kenarın tamamı görünür; üstünde resim karanlık köşeleri doldurur ve kendi kenarları ekrandan taşar.</string>
+    <string name="crt_zoom">Yakınlaştırma</string>
     <string name="settings_crt_corners">Yuvarlak köşeler: %%%1$d</string>
     <string name="settings_crt_vignette">Vinyet: %%%1$d</string>
     <string name="settings_crt_vignette_desc">Görüntü kenarlara doğru kararır</string>
@@ -2836,6 +2853,14 @@
     <string name="tm_mp_send">Gönder</string>
     <string name="tm_mp_spectating">İzliyor</string>
     <string name="tm_mp_no_song">Şarkı onda yok</string>
+    <string name="tm_mp_share_song">Şarkıyı odayla paylaş</string>
+    <string name="tm_mp_sharing_song">Şarkı paylaşılıyor… %%%1$d</string>
+    <string name="tm_mp_song_shared">Şarkı odayla paylaşıldı</string>
+    <string name="tm_mp_get_song">Şarkıyı al (%1$s)</string>
+    <string name="tm_mp_getting_song">Şarkı alınıyor… %%%1$d</string>
+    <string name="tm_mp_ask_host_share">Oda sahibinden şarkıyı paylaşmasını iste.</string>
+    <string name="tm_mp_share_failed">Şarkı paylaşılamadı: %1$s</string>
+    <string name="tm_mp_get_failed">Şarkı alınamadı: %1$s</string>
     <string name="tm_mp_kick">At</string>
     <string name="tm_mp_state_lobby">Lobi</string>
     <string name="tm_mp_state_playing">Oynuyor</string>
@@ -2863,4 +2888,50 @@
     <string name="crt_preset_exported">%1$s dışa aktarıldı</string>
     <string name="crt_preset_export_failed">Dosya yazılamadı</string>
     <string name="crt_preset_import_failed">İçe aktarılamadı: %1$s</string>
+    <string name="settings_bluetooth_sync">Bluetooth senkronizasyonu</string>
+    <string name="settings_bluetooth_sync_desc">%1$s ne kadar geç çalıyor. Şarkı sözleri, görseller, görselleştirici ve Trypt Mania bunu bekler. Her cihaz için ayrı kaydedilir.</string>
+    <string name="settings_bluetooth_sync_no_output">Şu anda kaydedilecek bir çıkış yok.</string>
+    <string name="settings_bluetooth_sync_measure">Ölç</string>
+    <string name="settings_bluetooth_sync_less">Gecikmeyi azalt</string>
+    <string name="settings_bluetooth_sync_more">Gecikmeyi artır</string>
+    <string name="settings_bluetooth_sync_set_there">Her cihaz için Ayarlar › Ses › Bluetooth senkronizasyonu bölümünden ayarlanır.</string>
+    <string name="tm_sync_saved_for">%1$s için kaydedilir ve tüm uygulamada kullanılır.</string>
+    <string name="stats_ach_unlocked_toast">Başarı açıldı</string>
+    <string name="stats_ach_view">Gör</string>
+    <string name="opened_from_app">Başka bir uygulamadan açıldı</string>
+    <string name="opened_add">Kitaplığa ekle</string>
+    <string name="opened_adding">Ekleniyor…</string>
+    <string name="opened_added">Kitaplığa eklendi</string>
+    <string name="opened_added_where">Music/%1$s klasörüne kaydedildi</string>
+    <string name="opened_add_failed">Kitaplığa eklenemedi</string>
+    <string name="opened_failed">Bu dosya açılamadı</string>
+    <string name="opened_fail_not_audio">Tryptify\'ın çalabileceği bir ses dosyası değil.</string>
+    <string name="opened_fail_no_access">Gönderen uygulama Tryptify\'ın okumasına izin vermedi.</string>
+    <string name="opened_fail_not_found">Dosya artık orada değil.</string>
+    <string name="opened_fail_too_big">2 GB\'tan büyük.</string>
+    <string name="opened_fail_empty">Dosya boş.</string>
+    <string name="opened_fail_no_space">Telefonda yeterli boş alan yok.</string>
+    <string name="opened_fail_unreadable">Okunamadı.</string>
+    <string name="opened_fail_no_write">Android, Tryptify\'ın Music klasörüne kaydetmesine izin vermedi.</string>
+    <string name="stats_ach_tm_combo">Kusursuz</string>
+    <string name="stats_ach_tm_combo_goal">Trypt Mania\'da bir full combo</string>
+    <string name="stats_ach_tm_combo_what">Bir şarkıyı hiçbir adımı kaçırmadan ve bırakmadan bitirin. Antrenman bölümleri sayılmaz.</string>
+    <string name="stats_ach_tm_aa">Çift A</string>
+    <string name="stats_ach_tm_aa_goal">Trypt Mania\'da AA notu</string>
+    <string name="stats_ach_tm_aa_what" formatted="false">Bir şarkıyı başarısız olmadan %96 veya üzeriyle bitirin. Puan değil, not sayılır.</string>
+    <string name="stats_ach_tm_charts">Chart Avcısı</string>
+    <string name="stats_ach_tm_charts_goal">%1$d farklı chart oynandı</string>
+    <string name="stats_ach_tm_charts_what">Trypt Mania\'da o kadar farklı chart\'ta bir şarkıyı baştan sona oynayın. Her şarkı ve zorluk sayılır.</string>
+    <plurals name="stats_tm_songs">
+        <item quantity="one">şarkı oynandı</item>
+        <item quantity="other">şarkı oynandı</item>
+    </plurals>
+    <plurals name="stats_tm_on_charts">
+        <item quantity="one">%1$d chart\'ta, tüm zamanlar</item>
+        <item quantity="other">%1$d chart\'ta, tüm zamanlar</item>
+    </plurals>
+    <string name="stats_tm_best_grade">En iyi not</string>
+    <string name="stats_tm_full_combos">Full combo</string>
+    <string name="stats_tm_accuracy">Doğruluk, son %1$d</string>
+    <string name="stats_tm_most_played">En çok oynanan: %1$s, %2$s</string>
 </resources>

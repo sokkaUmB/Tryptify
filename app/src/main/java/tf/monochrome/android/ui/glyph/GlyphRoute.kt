@@ -49,11 +49,19 @@ fun GlyphRoute(
     viewModel: GlyphViewModel = hiltViewModel(),
 ) {
     val state by viewModel.ui.collectAsStateWithLifecycle()
+    val backdropLook by viewModel.backdropLook.collectAsStateWithLifecycle()
     val assets = viewModel.assets
     val reduceMotion = reduceMotion()
 
     var palette by remember { mutableStateOf<GlyphPalette?>(null) }
     LaunchedEffect(Unit) { palette = assets.palette() }
+    // The Sync tab was opened from Settings › Audio: closing it goes back there.
+    LaunchedEffect(state.leaveRequested) {
+        if (state.leaveRequested) {
+            viewModel.onEvent(GlyphEvent.LeaveHandled)
+            onBack()
+        }
+    }
 
     // The tab bar and the mini player stay on the menus, as on every other
     // pushed screen, and step aside only while a chart is being played or
@@ -147,6 +155,19 @@ fun GlyphRoute(
     val lastResults = remember { arrayOfNulls<GlyphResultsUi>(1) }
     state.results?.let { lastResults[0] = it }
 
+    // The app's colours follow the song picked on the wheel while the mode is
+    // open, as they follow the playing track everywhere else: one source, so
+    // the tab bar, the ground and the accent are one song's, never two
+    // (DynamicColorSource). The fade is capped at GLYPH_COLOR_BLEND_MAX_MS:
+    // songs are skipped through here, and a colour still arriving two picks
+    // later is a lag, not a fade. The mode's own screens then take that
+    // palette's accent through the contrast-safe tint (AlbumTintScope), as the
+    // player takes it, menus or not.
+    tf.monochrome.android.ui.theme.OverrideDynamicColorSource(
+        coverUrl = gameplayCoverUri(state.selectedSong),
+        maxBlendMillis = GLYPH_COLOR_BLEND_MAX_MS,
+    )
+    tf.monochrome.android.ui.theme.AlbumTintScope(tf.monochrome.android.ui.theme.LocalDynamicColorPalette.current) {
     AnimatedContent(
         targetState = state.screen,
         modifier = modifier.fillMaxSize(),
@@ -227,6 +248,7 @@ fun GlyphRoute(
 
             GlyphScreen.GAMEPLAY -> GlyphGameplayScreen(
                 state = state,
+                backdropLook = backdropLook,
                 engine = viewModel.engine,
                 assets = assets,
                 palette = palette,
@@ -276,6 +298,7 @@ fun GlyphRoute(
                 }
             }
         }
+    }
     }
 }
 

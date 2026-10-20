@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -96,6 +95,8 @@ fun GlyphGameplayScreen(
     positionProvider: () -> Float,
     onEvent: (GlyphEvent) -> Unit,
     modifier: Modifier = Modifier,
+    /** The player's colour settings, for the player's background behind the play. */
+    backdropLook: GlyphBackdropLook = GlyphBackdropLook(),
     explosionProvider: () -> Map<GlyphLane, LaneFlash> = { emptyMap() },
     comboBurstProvider: () -> Long = { 0L },
     comboProvider: () -> Int = { 0 },
@@ -182,16 +183,13 @@ fun GlyphGameplayScreen(
                         }
                     },
             ) {
-                // The stage, under everything and across the whole screen, the
-                // field's column included: seen through the TV with the rest.
-                GlyphDanceStage(
-                    heldLanes = gameplay.heldLanes,
-                    explosionProvider = explosionProvider,
-                    reducedMotion = gameplay.modifiers.reducedMotion,
-                    // The album art is the room; the chart's own picture when
-                    // the song has none.
-                    artUri = state.selectedSong?.let { it.artworkUri ?: it.backgroundUri },
-                    beatProvider = { timing.secondsToBeat(positionProvider()) },
+                // The player's background, under everything and across the
+                // whole screen, the field's column included: seen through the
+                // TV with the rest, and still, so the arrows are what moves.
+                GlyphPlayerBackground(
+                    coverUri = gameplayCoverUri(state.selectedSong),
+                    albumColored = backdropLook.albumColored,
+                    colorTransitionMs = backdropLook.colorTransitionMs,
                 )
 
                 GlyphPlayfield(
@@ -286,6 +284,27 @@ fun GlyphGameplayScreen(
                         reducedMotion = reduced,
                     )
                 }
+
+                // A room's run: everyone's score as it stands, down the left
+                // as osu! has it, where the arrows are in flight rather than
+                // at the receptors. Fewer cards upright, where the lanes take
+                // the whole width; more in landscape, where they leave room.
+                if (state.inRoomPlay) {
+                    RoomLeaderboard(
+                        rows = roomBoardRows(
+                            players = state.multiplayer.opponents,
+                            myId = state.multiplayer.session.myId,
+                            maxRows = if (glyphIsLandscape()) BOARD_ROWS_LANDSCAPE else BOARD_ROWS_PORTRAIT,
+                        ),
+                        fonts = fonts,
+                        reducedMotion = reduced,
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                            .padding(start = GlyphTheme.Grid)
+                            .graphicsLayer { alpha = intro.value },
+                    )
+                }
             }
 
             if (gameplay.failStops && gameplay.failedAtMs > 0L) {
@@ -378,10 +397,6 @@ private fun GameplayHud(
                 )
             }
         }
-
-        // A room's run: everyone's score as it stands, best first, this
-        // phone's in the HUD's ink and the rest muted.
-        if (state.inRoomPlay) RoomScoresRow(state, fonts)
 
         Spacer(Modifier.height(4.dp))
         GlyphMeter(
@@ -691,29 +706,6 @@ private fun PauseOverlay(
     }
 }
 
-/** The room's scores under the readouts: rank, name, score; as many as fit, the rest scroll. */
-@Composable
-private fun RoomScoresRow(state: GlyphUiState, fonts: GlyphStepFonts) {
-    val myId = state.multiplayer.session.myId
-    val shown = state.multiplayer.opponents.take(ROOM_SCORES_SHOWN)
-    if (shown.isEmpty()) return
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(GlyphTheme.Grid * 2),
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-    ) {
-        shown.forEachIndexed { index, player ->
-            Text(
-                text = "${index + 1} ${player.name} ${player.live.score}",
-                style = fonts.label,
-                color = if (player.id == myId) GlyphTheme.Paper else GlyphTheme.Muted,
-                maxLines = 1,
-            )
-        }
-    }
-}
-
-/** Enough of a room to read at a glance; a sixteen-phone room scrolls. */
-private const val ROOM_SCORES_SHOWN = 8
+/** Room board cards: all of a room's first places upright would sit on the lanes. */
+private const val BOARD_ROWS_PORTRAIT = 5
+private const val BOARD_ROWS_LANDSCAPE = 8

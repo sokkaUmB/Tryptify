@@ -31,7 +31,7 @@ not Spain-only), Turkish, German.
 | Settings | 设置 | 設定 | Paramètres | Ajustes | Ayarlar | Einstellungen |
 | Settings › System | 设置 › 系统 | 設定 › システム | Paramètres › Système | Ajustes › Sistema | Ayarlar › Sistem | Einstellungen › System |
 | Settings › Appearance | 设置 › 外观 | 設定 › 外観 | Paramètres › Apparence | Ajustes › Apariencia | Ayarlar › Görünüm | Einstellungen › Darstellung |
-| Settings tabs: Appearance · Fonts · Visual Studio · Audio · Equalizer · Library · Downloads · Connections · Radio · System · About | 外观 · 字体 · 视觉工作室 · 音频 · 均衡器 · 音乐库 · 下载 · 连接 · 电台 · 系统 · 关于 | 外観 · フォント · ビジュアルスタジオ · オーディオ · イコライザ · ライブラリ · ダウンロード · 接続 · ラジオ · システム · 情報 | Apparence · Polices · Studio visuel · Audio · Égaliseur · Bibliothèque · Téléchargements · Connexions · Radio · Système · À propos | Apariencia · Fuentes · Estudio visual · Audio · Ecualizador · Biblioteca · Descargas · Conexiones · Radio · Sistema · Acerca de | Görünüm · Yazı tipleri · Görsel Stüdyo · Ses · Ekolayzer · Kitaplık · İndirilenler · Bağlantılar · Radyo · Sistem · Hakkında | Darstellung · Schriftarten · Visual Studio · Audio · Equalizer · Bibliothek · Downloads · Verbindungen · Radio · System · Info |
+| Settings tabs: Appearance · Fonts · Theme Store · Visual Studio · Audio · Equalizer · Library · Downloads · Connections · Radio · System · About | 外观 · 字体 · 主题商店 · 视觉工作室 · 音频 · 均衡器 · 音乐库 · 下载 · 连接 · 电台 · 系统 · 关于 | 外観 · フォント · テーマストア · ビジュアルスタジオ · オーディオ · イコライザ · ライブラリ · ダウンロード · 接続 · ラジオ · システム · 情報 | Apparence · Polices · Boutique de thèmes · Studio visuel · Audio · Égaliseur · Bibliothèque · Téléchargements · Connexions · Radio · Système · À propos | Apariencia · Fuentes · Tienda de temas · Estudio visual · Audio · Ecualizador · Biblioteca · Descargas · Conexiones · Radio · Sistema · Acerca de | Görünüm · Yazı tipleri · Tema Mağazası · Görsel Stüdyo · Ses · Ekolayzer · Kitaplık · İndirilenler · Bağlantılar · Radyo · Sistem · Hakkında | Darstellung · Schriftarten · Theme-Store · Visual Studio · Audio · Equalizer · Bibliothek · Downloads · Verbindungen · Radio · System · Info |
 | APIs (Connections) | API | API | API | API | API’ler | APIs |
 | playlist | 歌单 | プレイリスト | playlist | playlist | çalma listesi | Playlist |
 | track / song | 歌曲 | 曲 | titre | canción | parça | Titel |
@@ -47,6 +47,7 @@ not Spain-only), Turkish, German.
 | Share my look (action) | 分享我的外观 | 自分の外観を共有 | Partager mon look | Compartir mi estilo | Görünümümü paylaş | Meinen Look teilen |
 | Share code (label) / code (a theme's, in sentences) | 分享码 | 共有コード / コード | Code de partage / code | Código para compartir / código | Paylaşım kodu / kod | Teilcode / Code |
 | CRT effect (Settings › Appearance) | CRT 效果 | CRT エフェクト | Effet CRT | Efecto CRT | CRT efekti | CRT-Effekt |
+| Bluetooth sync (Settings › Audio) | 蓝牙同步 | Bluetooth 同期 | Synchro Bluetooth | Sincronización Bluetooth | Bluetooth senkronizasyonu | Bluetooth-Synchronisierung |
 | Library galaxy | 音乐库星系 | ライブラリ銀河 | Galaxie de la bibliothèque | Galaxia de la biblioteca | Kitaplık galaksisi | Bibliotheks-Galaxie |
 | Achievements (stats tab) | 成就 | 実績 | Succès | Logros | Başarılar | Erfolge |
 | Multiplayer (Trypt Mania) | 多人游戏 | マルチプレイ | Multijoueur | Multijugador | Çok oyunculu | Mehrspieler |

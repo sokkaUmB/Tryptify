@@ -535,6 +535,13 @@ knob's own value (`Route::base`) and saves *that*, so a mix saved mid-song
 holds what the listener set, not where a kick left it. A knob turned while
 linked sets its own value and leaves the sound to the link.
 
+**Settings › Appearance links the CRT effect as the Studio does.** The tab sits
+in `StudioMusicLinkScope`, which hands it the Studio's own link host, sheet,
+editor and undo on `LyricsFxStudioViewModel`, so a link made there is the
+Studio's and the Music links page's, never a second copy. The curve and tilt
+link in both places (taps follow them; see the CRT paragraph below); the zoom
+stays unlinked.
+
 The link sheet and the editor are in-window glass, siblings of their screen's
 haze source, never a dialog or a `ModalBottomSheet` (see Glass). The live
 reach and position on a slider or knob are drawn in the draw phase from
@@ -546,10 +553,8 @@ player away while it is open. Fitted under a preview and over the bar, it had
 room for its title and its first row, and every choice was a scroll away. The
 meter in its band picture is what shows the link moving.
 
-Settings › Appearance links too: the CRT effect's sliders (the same
-`CrtEffectSetting` the Studio shows) and the cover glow's radius and
-brightness. `SettingsScreen` has its own host, driver and `StudioLinkOverlay`,
-the overlay a sibling of the page's haze source, as in the Studio. The cover
+Appearance's cover glow links in the same scope: its radius and brightness
+(`IntSettingSlider` with a `linkKey`). The cover
 glow is drawn in cover-art view, so the player runs its two links there
 (`VisualLinkTargets.COVER_KEYS`) while the rest of `lyrics.` wait for the
 lyrics. Colour transition is not linked: it is an animation's length, read in
@@ -637,6 +642,16 @@ their own letters, a hold on an imported one deletes it; and the table edits
 every style in its own row, a weight menu and size and width steppers, with
 the font and letter spacing in a menu on the style's name. No row opens: a
 change is made where it shows.
+
+**The Fonts page reads its fonts off the main thread, once.** Each chip is
+drawn in its own font at the one weight it shows (`loadSampleFontFamily`), the
+preview in the whole family, all read on the IO dispatcher and preloaded
+there; until then the chip is in the theme's font. What it reads is kept while
+the page is open, so a chip scrolled away and back is not read again, and an
+imported font's family comes from its files as read once each
+(`FontFamilies.cutOf`, by path, size and date). Each chip used to read its file
+in the frame that drew it, and an imported one every file in the library to
+find its family: with a long list of fonts the app froze.
 
 ### Text on glass
 
@@ -958,6 +973,12 @@ meant to be loud, and the contrast floors catch it wherever it lands.
 `AlbumTintTest` sweeps the app's real grounds against a spread of covers and
 asserts neither direction ever flips. Do not raise `ALBUM_GROUND_MIX` to make a
 tint stronger.
+
+Trypt Mania is the one exception, and on request: its accent follows the song
+picked on its wheel (`AlbumTintScope`, see "### Trypt Mania"), the accent
+only, by the same safe path. It does not add a second palette: while the mode
+is open the app's one palette is built from the picked song
+(`DynamicColorSource`).
 
 The tint goes through `customScheme` rather than swapping slots the way
 `DynamicColorScope` does. Slot-swapping works on the player, whose foregrounds
@@ -1364,6 +1385,38 @@ Stats and Achievements are **two pages under one glass pill**, not two tabs of
 a Material `TabRow`; the pill is a pair of `GlassChoiceChip`s, as on the chart
 page's view and compare switches.
 
+**An achievement completed shows once, as a glass pill from the top**
+(`AchievementUnlockedPill`): its icon in a gold ring, "Achievement unlocked",
+its name and View, which opens Stats on Achievements. Chrome, so the mini
+player's material and a sibling of the app's haze source, as the DAC popup is.
+`AchievementWatcher` is the only place an achievement is stamped, the Stats
+screen reading its states, so none is stamped without its pill; the first check
+after the pill arrived stamps what was already done quietly. Gold is for the
+ring and the icon only: as text it does not read on light glass.
+
+**Trypt Mania has a card of its own on the Stats page** (`TryptManiaCard`),
+after Quality, and also under "no plays" when the range is empty: it counts
+all time, from the saved runs (`TryptManiaStats`, read once by
+`AchievementWatcher`), not the range. Whole songs only, and runs compare by
+grade or percent, never score: score grows with the combo, so an older run's
+score reads as worse play.
+
+**Night is one window, 9 pm to 5 am** (`NIGHT_START_HOUR`, `NIGHT_END_HOUR`):
+the Night owl listening type, the night share, the clock chart's Night row
+and, for its after-midnight part, the Night Owl achievement. A stat with its
+own hours says a different thing under the same word.
+
+**A song opened from another app ("Open with") plays at once and is offered,
+not added** (`OpenedFilePill`): a glass pill from the top, the same chrome as
+the achievement pill, with "Opened from another app", the title and Add to
+library; a file that could not be opened says why on the same pill. The song
+plays from a copy in the cache and stays out of the library until Add (on the
+pill, or in Now Playing's ⋮ menu while it plays) copies it to Music/Tryptify.
+A file that is already a library song plays as that song, with no pill.
+Never route an unknown VIEW link to the sign-in callback: `MainActivity` hands
+content and file links to `OpenedAudioRepository`, and only
+`tf.monotrypt.android` links to Supabase.
+
 ### Trypt Mania
 
 **The playfield is the mode's own; the menus are the app's.** `GlyphTheme`'s
@@ -1378,6 +1431,23 @@ ink from `MaterialTheme`, never `GlyphTheme.Paper`: a fixed dark menu was the
 only dark screen in a light theme, and fixed white text on the app's glass is
 the wrong ink wherever the glass is light. An accent written as text on the
 page goes through `menuAccent`, which keeps its hue and moves it until it reads.
+
+**While the mode is open, the app's colours are the picked song's.** The
+wheel picks a song the player is not playing (previews play through the
+game's own player), and when the mode followed the picked song while the rest
+followed the playing track, two covers coloured one screen: the tab bar and,
+with "Tint the menus too", the ground from one, the accent from the other.
+There is one palette: `GlyphRoute` makes the selected song's cover
+(`gameplayCoverUri`) the app's colour source (`OverrideDynamicColorSource`,
+read in `MainActivity` through `DynamicColorSource`) for as long as the mode
+is open, and the playing track takes over again when it closes. The mode's
+screens take that palette's accent through `AlbumTintScope` (`tintedByAlbum`,
+never a slot swap, so the menus keep their contrast floors; the ground is the
+theme's, or the menus tint's when that is on). The fade is the listener's
+blend capped at `GLYPH_COLOR_BLEND_MAX_MS` (0.5 s): songs are skipped through
+on the wheel, and at longer blends a colour was still arriving two picks
+later. The gameplay background's cover dissolves at the same capped speed
+(`glyphBlendMillis`). The playfield's own palette is untouched.
 
 **The home panels' haze source is the page in every state**, the loading and
 empty messages included, not the list alone. While the list was the source,
@@ -1515,29 +1585,32 @@ count in the middle. The timing card draws a normal curve from the run's mean
 and spread — two numbers, so it says it is a curve of them, not of the hits —
 and offers a correction only from the recent runs' agreed lateness
 (`ApplyRecentTiming`), never from one run. Every count keeps its spoken
-"Label: value", and everything lands at once under reduced motion.
+"Label: value", and everything lands at once under reduced motion. The page paints
+the theme's ground under itself, as the start menu does: it fades in over the
+play, the cover and its glow, and none of that may show between its cards.
 
-**The play has a stage behind it, and only the play.** `GlyphDanceStage`, under
-the playfield inside the TV shader: an arcade pad, a metal slab tilted 55°
-away, between two speaker cabinets turned toward it, under a spotlight and a
-veil. The pad is seen through a camera above it (`StageGeometry.project`): its
-face is drawn flat and laid onto the slab with a four-corner perspective matrix,
-so the near edge is wider than the far one and the lip under it shows its
-thickness (`GlyphDanceStageTest`). Its panels are raised and bolted, the four
-arrows sunk in black wells. The room is the song's album art (its chart
-background when it has none), decoded small, blurred and darkened so it reads
-as a room and never competes with the arrows; plain dark blue until it loads
-and for a song with no picture. The arrow panels light as the player steps,
-softly while a lane is held and brighter for a moment on a hit (`stageLight`),
-the light thrown onto the pad round them. The woofers pump on the chart's beat
-(`wooferPump`). Reduced motion keeps the held glow and drops the flash and the
-pump. The rig and the pad are drawn into their own layer and replayed: the
-playfield redraws every frame above it, and without the layer it was redrawn
-with it. Nothing else on the stage moves.
+**The play is over the player's background, and only the play.**
+`GlyphPlayerBackground`, under the playfield inside the TV shader (and the fail
+shake): the player's own layers from the player's own composables, in its
+order: the album-coloured wash (`dynamicPlayerBackground`), the cover blurred
+and darkened (`PlayerBlurredArtBackground`) and the glow (`DynamicAlbumGlow`).
+One look in two places, never a copy that drifts. The picture is the song's
+album art, as the player shows it, and the chart's own background only for a
+song with no art (`gameplayCoverUri`). Its colours follow the player's rule, the
+Dynamic Colors switch and the player's own together, read from the player's
+preferences (`GlyphViewModel.backdropLook`), never a second switch in the game;
+with either off they are the theme accent. Under the legacy player the cover is
+left out, as that player leaves it out: a full-screen blur under a playfield
+that redraws every frame is the cost low-end phones are spared. It holds still:
+the arrows are what moves. The ambient visualizer is not drawn here even when
+it is the player's background: its engine runs one view at a time (see "The
+visualizer has two compositions"), and the game's music plays through its own
+transport, which feeds it nothing. The arcade pad, speakers and lights that
+stood here before (`GlyphDanceStage`) were removed on request.
 
 **The lanes have no grounds.** The playfield draws its notes, its receptors and
 the receptor line over whatever is behind it, and no lane of its own: the
-grounds it shaded on every other lane cut the stage behind into strips. The
+grounds it shaded on every other lane cut the background behind into strips. The
 game, Training Ground and the previews alike; the map editor's grid keeps its
 own, being a grid to place notes on.
 
@@ -1597,6 +1670,19 @@ or a round tube can be had. The middle keeps its size, the edges bow outward,
 the corners go dark. A line saved with the one Curvature slider of before is
 read as the two angles that draw the same tube. Chromatic shift reads red and
 blue up to 3 dp either side of green.
+
+**Zoom is the tube's picture-size knob, scaled after the bow** (`zoom`, 60% to
+120%, 100% by default; `uZoom` in `TUBE_SHADER`, `zoomScale` in
+`tubeSource`). The glass keeps its curve and the picture inside it grows or
+shrinks: under 100% the whole bowed edge shows inside the screen with the frame
+round it, over 100% the picture fills the corners a curve leaves dark. It is
+not Bezel, which shrinks the picture before the bow, as if the tube stood
+further off. At 100% the shader's sum is unchanged, and a line saved before
+Zoom reads as 100%, never 0; the built-in looks leave it at 100%, so picking
+one never resizes the picture. Zoom-in stops at 120%, enough to fill a
+classic curve's corners: past that the app's own edges, its tab bar first,
+leave the screen. Off 100% it counts as reshaping, so taps follow it, and like
+the curves and tilts it cannot be linked to the music.
 
 **CRT presets are one panel, in every place the CRT is set.**
 `CrtPresetsPanel` sits in Settings › Appearance › CRT effect, the Lyrics FX
@@ -1791,7 +1877,17 @@ through the game's own transport and each tap goes through `touchNanos` and
 judge — never a separate timer. At 140 BPM a beat (428 ms) is shorter than
 Bluetooth's lateness can be, so a tap is never matched to its nearest click:
 the first tap anchors on the first click and the rest follow the running
-median (`GlyphTapSync`). The offset's limit is 500 ms for the same reason.
+median (`GlyphTapSync`), which reads up to 500 ms.
+
+**The offset is the output's, and the whole app's.** Trypt Mania's audio
+offset is the Bluetooth sync of the output playing now (`OutputSync`, kept per
+device by `OutputId`, a device's own before its slot's, on this phone only).
+The Sync tab says which device it saves for; Settings › Audio › Bluetooth sync
+shows the same value with a 5 ms nudge and Measure, which opens this tab and
+leaves the mode when it closes. The lyrics (`LyricClock`), every visual link
+driver and the visualizer's bus wait the same amount (`LocalOutputSyncMs`,
+`OutputSyncRepository.delayMs`): one number per device, never three that
+drift apart. The old lyrics and visualizer sliders are a line pointing here.
 
 **Charting is a line, and a batch is asked before it starts.** Generate puts
 the song in `ChartQueue` and never cancels the one being charted; while a song
@@ -1842,13 +1938,35 @@ Ready, the host's Start, Leave, and a line of chat.
   seconds of its length. Each phone tells the room, and the lobby shows who
   has it; Ready is enabled only with the song. Back from that list returns
   to the room, not the menu.
+* A song can be passed round the room (`RoomSongShare`), on a rooms server
+  that can: its welcome hands the phone a key, and without one nothing of
+  this shows. While someone is without the song the host has Share the song
+  with the room, which uploads its file as it is (`RoomClient.shareSong`);
+  once it is up, a player without it has Get the song with its size, which
+  fetches it (`fetchSong`) into the cache, plays from that file and readies
+  them in one tap (`haveAndReady`, in that order on the socket, since the
+  server refuses a ready without the song). Until the host shares, they are
+  told to ask. Progress shows as a bar with its percentage, a failure as the
+  server's own reason. A fetched song is the room's, not the library's: it
+  is kept only while the room is on its chart and cleared on leaving, and
+  its runs, like any of a chart this phone does not have, never count
+  against local scores. Nothing of it while a song plays.
 * The server names the moment; READY, GO! counts down to it, however long
   that is. A room's song waits for nobody: the pause panel opens over the
   running song, for Quit (to the room, as it says), and offers no Restart.
   An empty bar is a fail in the ranking, never a stop.
-* The HUD carries one more line while a room plays: rank, name and score of
-  everyone, best first, this phone in the HUD's ink and the rest muted,
-  scrolling past eight.
+* A room's run has a live board down the left, as osu! has it
+  (`RoomLeaderboard`, `roomBoardRows`): a card per player with place, name,
+  score and combo, best first, a failed run under every live one, a tie kept
+  in the room's order so cards do not swap back and forth. This phone's card
+  is lit and outlined; past the cards shown (five upright, where the lanes
+  take the whole width, eight in landscape) it is pinned last with its real
+  place. Centred on the left edge, where arrows are in flight, never at the
+  receptors. When a place changes the cards slide to their new order and the
+  one that climbed glows green with a rising mark; the slide and the glow
+  are a layer's translation and a drawn fill, so the board recomposes only
+  as scores arrive (four times a second), each score rolling up in its own
+  scope. Reduced motion: the cards jump, nothing glows or rolls.
 * The results page of a room's run has the room's panel (the ranking once
   everyone has finished, the scores as they stand until then) and one way
   on, Back to room. A run of a chart this phone does not have is sent to

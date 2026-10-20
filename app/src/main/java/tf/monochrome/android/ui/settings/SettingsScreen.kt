@@ -60,7 +60,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Cloud
@@ -168,13 +167,10 @@ import tf.monochrome.android.ui.theme.Paper
 import tf.monochrome.android.ui.theme.ColorBlend
 import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.Box
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
-import tf.monochrome.android.domain.model.VisualLinkTargets
+import androidx.compose.material.icons.filled.MusicNote
 import tf.monochrome.android.ui.musiclinks.LinkedTrackMarker
 import tf.monochrome.android.ui.musiclinks.LocalMusicLinkHost
 import tf.monochrome.android.ui.musiclinks.musicLinkColor
-import tf.monochrome.android.ui.player.rememberVisualLinkDriver
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
@@ -192,11 +188,12 @@ import androidx.compose.ui.res.pluralStringResource
 //
 // The labels here are ids — English, stable, what the search index and the dev
 // editor key on. What a chip says comes from [settingsTabLabelRes].
-private val settingsTabs = listOf("Appearance", "Fonts", "Visual Studio", "Audio", "Equalizer", "Library", "Downloads", "Connections", "Radio", "System", "About")
+private val settingsTabs = listOf("Appearance", "Fonts", "Theme Store", "Visual Studio", "Audio", "Equalizer", "Library", "Downloads", "Connections", "Radio", "System", "About")
 
 private val settingsTabLabels: Map<String, Int> = mapOf(
     "Appearance" to R.string.settings_tab_appearance,
     "Fonts" to R.string.fonts_title,
+    "Theme Store" to R.string.theme_store_title,
     "Visual Studio" to R.string.settings_tab_visual_studio,
     "Audio" to R.string.settings_tab_audio,
     "Equalizer" to R.string.settings_tab_equalizer,
@@ -315,33 +312,8 @@ fun SettingsScreen(
         searchSettings(searchQuery) { searchContext.getString(it) }
     }
 
-    // Music links for Appearance's sliders (the CRT effect, the cover glow),
-    // as the Studio has them: the note beside a slider opens the link sheet,
-    // and the sheet and the editor are drawn over this screen in its own
-    // window, beside the haze source they frost. The app's own driver moves
-    // the CRT itself; this one is the sliders' live marks and the editor's meter.
-    val linkUi = remember { StudioLinkUi() }
-    val linkHaze = rememberHazeState()
-    val savedLinks = viewModel.musicLinks.links.collectAsStateWithLifecycle()
-    val previewLinks by viewModel.musicLinks.previewLinks.collectAsStateWithLifecycle()
-    val linkLook by viewModel.linkLook.collectAsStateWithLifecycle()
-    val pageLinks = remember(previewLinks) {
-        previewLinks.filter { it.target.startsWith("tv.") || it.target in VisualLinkTargets.COVER_KEYS }
-    }
-    val linkLive = rememberVisualLinkDriver(
-        tap = viewModel.spectrumAnalyzer,
-        links = pageLinks,
-        active = true,
-        delayMs = linkLook.lyrics.bluetoothDelayMs,
-    )
-    val linkHost = rememberVisualLinkHost(savedLinks, linkLive) { linkUi.sheetFor = it }
-
-    CompositionLocalProvider(
-        LocalSettingsAnchors provides settingsAnchors,
-        LocalMusicLinkHost provides linkHost,
-    ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-    Column(modifier = Modifier.fillMaxSize().hazeSource(linkHaze)) {
+    CompositionLocalProvider(LocalSettingsAnchors provides settingsAnchors) {
+    Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(stringResource(R.string.settings)) },
             navigationIcon = {
@@ -491,9 +463,18 @@ fun SettingsScreen(
                                 onOpenFonts = {
                                     settingsScope.launch { settingsPager.goToPage(settingsTabIndex("Fonts"), animateTabs) }
                                 },
+                                onOpenThemeStore = {
+                                    settingsScope.launch { settingsPager.goToPage(settingsTabIndex("Theme Store"), animateTabs) }
+                                },
                             )
                             "Fonts" -> tf.monochrome.android.ui.settings.fonts.FontBrowserPage(
                                 fontSize = { FontSizeSection(viewModel) },
+                            )
+                            // The store as a page of Settings: its own header
+                            // gives way to the chips, its search and undo stay.
+                            "Theme Store" -> tf.monochrome.android.ui.themestore.ThemeStoreScreen(
+                                navController = navController,
+                                embedded = true,
                             )
                             "Audio" -> AudioTab(viewModel, navController)
                             "Equalizer" -> EqualizerTab(navController, viewModel)
@@ -508,15 +489,6 @@ fun SettingsScreen(
                 }
             }
         }
-    }
-    StudioLinkOverlay(
-        ui = linkUi,
-        editing = viewModel.musicLinks,
-        look = linkLook,
-        live = linkLive,
-        tap = viewModel.spectrumAnalyzer,
-        hazeState = linkHaze,
-    )
     }
     }
 }
@@ -758,18 +730,27 @@ private tailrec fun android.content.Context.findActivityOrSelf(): android.conten
 }
 
 @Composable
-private fun AppearanceTab(viewModel: SettingsViewModel, navController: NavController, onOpenFonts: () -> Unit) {
-    SettingsTabContent {
-        AppearanceControls(
-            viewModel,
-            onOpenFonts = onOpenFonts,
-            onOpenThemeStore = { navController.navigateTool(Screen.ThemeStore) },
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        InterfaceControls(viewModel, navController)
-        Spacer(modifier = Modifier.height(16.dp))
-        // Last of all: the whole app through an old TV.
-        CrtEffectSetting(viewModel)
+private fun AppearanceTab(
+    viewModel: SettingsViewModel,
+    navController: NavController,
+    onOpenFonts: () -> Unit,
+    onOpenThemeStore: () -> Unit,
+) {
+    // The CRT effect's sliders take music links here as in the Studio: a ♪ by
+    // each, and the sheet and editor over this page.
+    StudioMusicLinkScope {
+        SettingsTabContent {
+            AppearanceControls(
+                viewModel,
+                onOpenFonts = onOpenFonts,
+                onOpenThemeStore = onOpenThemeStore,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            InterfaceControls(viewModel, navController)
+            Spacer(modifier = Modifier.height(16.dp))
+            // Last of all: the whole app through an old TV.
+            CrtEffectSetting(viewModel)
+        }
     }
 }
 
@@ -1088,7 +1069,6 @@ internal fun VisualizerSettings(
     val meshX by viewModel.visualizerMeshX.collectAsStateWithLifecycle()
     val meshY by viewModel.visualizerMeshY.collectAsStateWithLifecycle()
     val targetFps by viewModel.visualizerTargetFps.collectAsStateWithLifecycle()
-    val audioDelayMs by viewModel.visualizerAudioDelayMs.collectAsStateWithLifecycle()
     val vsyncEnabled by viewModel.visualizerVsyncEnabled.collectAsStateWithLifecycle()
     val showFps by viewModel.visualizerShowFps.collectAsStateWithLifecycle()
     val fullscreen by viewModel.visualizerFullscreen.collectAsStateWithLifecycle()
@@ -1263,14 +1243,13 @@ internal fun VisualizerSettings(
         )
 
         // The visualizer is fed from inside the playback chain, so it always
-        // sees audio slightly before the output device plays it. Wired output
-        // hides that; Bluetooth does not.
-        IntSettingSlider(
-            value = audioDelayMs,
-            valueRange = 0f..ProjectMAudioBus.MAX_DELAY_MS.toFloat(),
-            onCommit = { viewModel.setVisualizerAudioDelayMs(it) },
-            label = { if (it == 0) stringResource(R.string.settings_audio_delay_off) else stringResource(R.string.settings_audio_delay_ms, it) },
-            subtitle = stringResource(R.string.settings_holds_the_visualizer_back_to_match_what_you_hear),
+        // sees audio slightly before the output device plays it. How long it
+        // waits is the output's own, set once for the whole app.
+        Text(
+            text = stringResource(R.string.settings_bluetooth_sync_set_there),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 8.dp),
         )
 
         SettingSwitchItem(
@@ -1782,12 +1761,12 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        SettingsGroupHeader("Trypt Mania")
+        SettingsGroupHeader(stringResource(R.string.trypt_mania_beta))
         OutlinedButton(
             onClick = { navController.navigateTool(Screen.Glyph) },
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Trypt Mania")
+            Text(stringResource(R.string.trypt_mania_beta))
         }
 
         // One group, not two. "Spatial Audio" held nothing but the Atmos row,
@@ -1797,6 +1776,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         // above the downmix toggle instead of under a heading of its own.
         Spacer(modifier = Modifier.height(16.dp))
         SettingsGroupHeader(stringResource(R.string.settings_output))
+        BluetoothSyncRow(navController)
         DspBlockSizeSelector(viewModel)
 
         Spacer(modifier = Modifier.height(8.dp))

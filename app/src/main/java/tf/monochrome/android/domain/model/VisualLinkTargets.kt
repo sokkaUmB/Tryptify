@@ -51,6 +51,9 @@ enum class LinkArea(@StringRes val title: Int, val prefix: String) {
  *    composition, and moving them every frame would rebuild the lyric list.
  *  - Stepped quality (sample rings, ray quality, the CRT's pixel size and mask
  *    size): each step rebuilds what the GPU draws with.
+ *  - The CRT's zoom: not linked yet. Taps would follow it as they follow the
+ *    linked curve and tilt (each gesture holds the tube it began on), but a
+ *    picture that grows and shrinks with the beat has not been asked for.
  *  - The visualizer engine's own settings (mesh, frame rate, delay, preset
  *    timer, sensitivity, brightness): they configure projectM, which already
  *    follows the music, and sensitivity carries a flashing-light warning.

@@ -10,6 +10,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.update
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +23,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -129,6 +133,13 @@ class GlyphViewModel @Inject constructor(
     private val ownPack: OwnPackStore,
     private val rooms: RoomClient,
     private val supabaseAuth: SupabaseAuthManager,
+    /** Read only, for the player's own look behind the play ([backdropLook]). */
+    preferences: tf.monochrome.android.data.preferences.PreferencesManager,
+    /**
+     * How late the output playing now plays: the game's audio offset is that
+     * output's, and the Sync tab measures and saves it for the whole app.
+     */
+    private val outputSync: tf.monochrome.android.audio.sync.OutputSyncRepository,
     /**
      * Exposed rather than plumbed through navigation: the pack is a singleton
      * whose rasters are scoped to a run, and handing it down the composable
@@ -136,6 +147,23 @@ class GlyphViewModel @Inject constructor(
      */
     val assets: GlyphAssetRepository,
 ) : ViewModel() {
+
+    /**
+     * The player's colour settings, read from the player's own preferences
+     * rather than copied into the game's: one switch, never two that can
+     * disagree. Defaults are the player's.
+     */
+    val backdropLook: StateFlow<GlyphBackdropLook> = kotlinx.coroutines.flow.combine(
+        preferences.dynamicColors,
+        preferences.playerDynamicColor,
+        preferences.colorTransitionMs,
+    ) { dynamic, playerDynamic, blendMs ->
+        GlyphBackdropLook(albumColored = dynamic && playerDynamic, colorTransitionMs = blendMs)
+    }.stateIn(
+        viewModelScope,
+        kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+        GlyphBackdropLook(),
+    )
 
     private val _ui = MutableStateFlow(GlyphUiState())
     val ui: StateFlow<GlyphUiState> = _ui.asStateFlow()
@@ -255,6 +283,9 @@ class GlyphViewModel @Inject constructor(
     /** The room's chart as this phone can play it, once found here; null until then, or when it cannot. */
     private var roomPlan: RoomPlan? = null
     private var roomStartJob: Job? = null
+
+    /** The room's song going up or coming down; one at a time. */
+    private var roomTransferJob: Job? = null
     private var roomFrameJob: Job? = null
 
     /** Trypt Mania's own preferences: the player options and the high score name. */
@@ -262,9 +293,11 @@ class GlyphViewModel @Inject constructor(
 
     init {
         loadOptions()
+        watchOutputSync()
         watchCharts()
         watchChartServers()
         watchPlayRequests()
+        watchSyncRequests()
         watchPacks()
         watchRooms()
         viewModelScope.launch {
@@ -300,8 +333,11 @@ class GlyphViewModel @Inject constructor(
             GlyphEvent.OpenSettings -> openSettings()
             GlyphEvent.CloseSettings -> {
                 stopTapSync()
-                _ui.value = _ui.value.copy(screen = GlyphScreen.MENU, tapSync = null)
+                // Opened from Settings › Audio: closing goes back there.
+                val leave = _ui.value.syncFocus
+                _ui.value = _ui.value.copy(screen = GlyphScreen.MENU, tapSync = null, syncFocus = false, leaveRequested = leave)
             }
+            GlyphEvent.LeaveHandled -> _ui.value = _ui.value.copy(leaveRequested = false)
             is GlyphEvent.SetKey -> setKey(event.lane, event.slot, event.code)
             GlyphEvent.ResetKeys -> saveKeys(GlyphKeyBindings.DEFAULT)
             is GlyphEvent.SetAudioOffset -> setAudioOffset(event.ms)
@@ -422,6 +458,8 @@ class GlyphViewModel @Inject constructor(
             is GlyphEvent.RoomChat -> rooms.chat(event.text)
             GlyphEvent.BackToRoom -> backToRoom()
             GlyphEvent.DismissRoomError -> rooms.clearError()
+            GlyphEvent.ShareRoomSong -> shareRoomSong()
+            GlyphEvent.FetchRoomSong -> fetchRoomSong()
             is GlyphEvent.ImportPackUrl -> PackImportWorker.enqueueDownload(context, event.url, event.name)
             is GlyphEvent.ImportPackFile -> PackImportWorker.enqueueFile(context, event.uri)
             is GlyphEvent.ImportPackFolder -> PackImportWorker.enqueueFolder(context, event.tree)
@@ -1104,6 +1142,17 @@ class GlyphViewModel @Inject constructor(
      * found on the wheel and chosen, its chart made first when it has none.
      * A song not on the phone, or not one the mode plays, says why.
      */
+    /** Settings › Audio's Measure: straight to the Sync tab, and out again when it closes. */
+    private fun watchSyncRequests() {
+        viewModelScope.launch {
+            TryptManiaRequests.syncPending.collect { pending ->
+                if (!pending || !TryptManiaRequests.takeSync()) return@collect
+                openSettings()
+                _ui.value = _ui.value.copy(syncFocus = true)
+            }
+        }
+    }
+
     private fun watchPlayRequests() {
         viewModelScope.launch {
             TryptManiaRequests.pending.collect { pending ->
@@ -1801,8 +1850,7 @@ class GlyphViewModel @Inject constructor(
             gameplay = _ui.value.gameplay.copy(modifiers = stored),
             playerName = prefs.getString(PREF_NAME, null).orEmpty(),
             keys = GlyphKeyBindings.decode(prefs.getString(PREF_KEYS, null)),
-            audioOffsetMs = prefs.getInt(PREF_AUDIO_OFFSET, 0)
-                .coerceIn(-GlyphCalibration.MAX_OFFSET_MS, GlyphCalibration.MAX_OFFSET_MS),
+            audioOffsetMs = outputSync.delayMs.value,
             previews = prefs.getBoolean(PREF_PREVIEWS, true),
             wheelSound = prefs.getBoolean(PREF_WHEEL_SOUND, true),
             songSort = GlyphSongSort(
@@ -2023,10 +2071,26 @@ class GlyphViewModel @Inject constructor(
         if (_ui.value.tapSync != null) publishTapSync(playing = false)
     }
 
+    /**
+     * Sets the offset for the output playing now, and so for the whole app:
+     * the lyrics and the visuals wait the same amount on it.
+     */
     private fun setAudioOffset(ms: Int) {
-        val clamped = ms.coerceIn(-GlyphCalibration.MAX_OFFSET_MS, GlyphCalibration.MAX_OFFSET_MS)
-        prefs.edit().putInt(PREF_AUDIO_OFFSET, clamped).apply()
+        val clamped = tf.monochrome.android.audio.sync.OutputSync.clamp(ms)
+        outputSync.setForCurrent(clamped)
         _ui.value = _ui.value.copy(audioOffsetMs = clamped)
+    }
+
+    /** The offset follows the output: other headphones, another delay. */
+    private fun watchOutputSync() {
+        viewModelScope.launch {
+            combine(outputSync.output, outputSync.delayMs) { output, ms -> output to ms }.collect { (output, ms) ->
+                _ui.value = _ui.value.copy(
+                    audioOffsetMs = ms,
+                    syncOutput = output?.let { tf.monochrome.android.audio.eq.label(context, it) },
+                )
+            }
+        }
     }
 
     // ── map editor ──────────────────────────────────────────────────────
@@ -2551,13 +2615,17 @@ class GlyphViewModel @Inject constructor(
     /** Off the rooms screen: the socket closes, and with it any room this phone was in. */
     private fun closeMultiplayer() {
         roomStartJob?.cancel()
+        roomTransferJob?.cancel()
+        clearRoomSongs(keep = null)
         stopRoomFrames()
         roomPlan = null
         rooms.disconnect()
         _ui.value = _ui.value.copy(
             screen = GlyphScreen.MENU,
             inRoomPlay = false,
-            multiplayer = _ui.value.multiplayer.copy(haveSong = null, missing = null, startAtMs = null),
+            multiplayer = _ui.value.multiplayer.copy(
+                haveSong = null, missing = null, startAtMs = null, songTransfer = null, transferError = null,
+            ),
         )
     }
 
@@ -2588,7 +2656,12 @@ class GlyphViewModel @Inject constructor(
      */
     private fun checkRoomChart(chart: RoomChart) {
         roomStartJob?.cancel()
-        _ui.value = _ui.value.copy(multiplayer = _ui.value.multiplayer.copy(haveSong = null, missing = null))
+        // Another chart: whatever was going up or coming down was the last one's song.
+        if (roomPlan?.hash != chart.hash) roomTransferJob?.cancel()
+        clearRoomSongs(keep = chart.hash)
+        _ui.value = _ui.value.copy(
+            multiplayer = _ui.value.multiplayer.copy(haveSong = null, missing = null, songTransfer = null, transferError = null),
+        )
         viewModelScope.launch {
             val plan = planRoomChart(chart)
             roomPlan = plan
@@ -2602,12 +2675,20 @@ class GlyphViewModel @Inject constructor(
         }
     }
 
-    private suspend fun planRoomChart(chart: RoomChart): RoomPlan? {
+    /** The room chart's notes, read: the simfile and the difficulty to play. */
+    private fun parseRoomChart(chart: RoomChart): Pair<tf.monochrome.android.glyph.chart.GlyphSimfile, StepManiaDifficulty>? {
         val simfile = runCatching { SscParser.parse(chart.notes) }.getOrNull() ?: return null
         val difficulty = StepManiaDifficulty.entries.firstOrNull { it.sscName.equals(chart.difficulty, ignoreCase = true) }
             ?: simfile.charts.firstOrNull()?.difficulty
             ?: return null
         if (simfile.chart(difficulty) == null) return null
+        return simfile to difficulty
+    }
+
+    private suspend fun planRoomChart(chart: RoomChart): RoomPlan? {
+        val (simfile, difficulty) = parseRoomChart(chart) ?: return null
+        // Fetched from the host already (the same chart picked again).
+        downloadedRoomSong(chart.hash)?.let { file -> return planFromFile(chart, file) }
         val candidates = _ui.value.songs.filter { it.filePath.isNotBlank() && it.title.equals(chart.title, ignoreCase = true) }
         // The same chart on this phone: its own song, and its scores count.
         for (song in candidates.filter { it.hasChart }) {
@@ -2618,6 +2699,115 @@ class GlyphViewModel @Inject constructor(
             ?: candidates.firstOrNull { it.lengthMatches(chart) }
             ?: return null
         return RoomPlan(song, simfile, difficulty, chart.hash, sameChart = false)
+    }
+
+    /**
+     * A song fetched from the host as the room's: played from the file, not
+     * added to the library, and its runs never count towards local scores,
+     * since the chart is the host's.
+     */
+    private fun planFromFile(chart: RoomChart, file: File): RoomPlan? {
+        val (simfile, difficulty) = parseRoomChart(chart) ?: return null
+        val song = GlyphSong(
+            trackId = "room:${chart.hash}",
+            chartId = chart.hash,
+            title = chart.title,
+            artist = chart.artist,
+            filePath = file.absolutePath,
+            artworkUri = null,
+            durationSeconds = chart.duration.roundToInt(),
+            codec = tf.monochrome.android.domain.model.AudioCodec.UNKNOWN,
+            bpm = chart.bpm.toFloat().takeIf { it > 0f },
+            difficulties = listOf(difficulty),
+            chartState = GlyphChartState.READY,
+        )
+        return RoomPlan(song, simfile, difficulty, chart.hash, sameChart = false)
+    }
+
+    /** Where songs fetched from a host are kept: the cache, as they belong to a room, not the library. */
+    private val roomSongsDir: File get() = File(context.cacheDir, "room-songs")
+
+    private fun roomSongStem(hash: String): String = hash.filter(Char::isLetterOrDigit).take(40)
+
+    /** A fetched song for chart [hash], complete, if one is here. */
+    private fun downloadedRoomSong(hash: String): File? {
+        val stem = roomSongStem(hash)
+        return roomSongsDir.listFiles()?.firstOrNull {
+            it.isFile && it.name.substringBeforeLast('.') == stem && !it.name.endsWith(".part")
+        }
+    }
+
+    /** Every fetched song but [keep]'s chart's: a room keeps only the song it is on. */
+    private fun clearRoomSongs(keep: String?) {
+        val stem = keep?.let(::roomSongStem)
+        roomSongsDir.listFiles()?.forEach { file ->
+            if (stem == null || file.name.substringBefore('.') != stem) file.delete()
+        }
+    }
+
+    /** Progress and the last failure, from the transfer's own thread too. */
+    private fun setRoomTransfer(progress: Float?, error: RoomTransferError? = null) {
+        val step = progress?.let { (it.coerceIn(0f, 1f) * 100f).toInt() / 100f }
+        _ui.update { state ->
+            val mp = state.multiplayer
+            if (mp.songTransfer == step && mp.transferError == error) state
+            else state.copy(multiplayer = mp.copy(songTransfer = step, transferError = error))
+        }
+    }
+
+    /**
+     * Host: this phone's song for the room's chart, up to the rooms server for
+     * the players without it. Streamed from where it is; the room hears it is
+     * there from the server, and their buttons light up.
+     */
+    private fun shareRoomSong() {
+        val plan = roomPlan ?: return
+        if (roomTransferJob?.isActive == true) return
+        val source = plan.song.audioUri
+        val ext = RoomProtocol.songExt(plan.song.audioFileName).takeIf { it != "bin" }
+            ?: context.contentResolver.getType(source)
+                ?.let { android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(it) }
+                ?.let(RoomProtocol::songExt)
+            ?: "bin"
+        roomTransferJob = viewModelScope.launch {
+            setRoomTransfer(0f)
+            val result = rooms.shareSong(plan.hash, source, ext) { setRoomTransfer(it) }
+            setRoomTransfer(null, result.exceptionOrNull()?.let { RoomTransferError(sharing = true, reason = it.message.orEmpty()) })
+        }
+    }
+
+    /**
+     * A player without the song: the one the host shared, fetched, played
+     * from, and readied with, as tapping it says this phone is in.
+     */
+    private fun fetchRoomSong() {
+        val session = rooms.session.value
+        val shared = session.room?.sharedSong ?: return
+        val chart = session.chart?.takeIf { it.hash == shared.hash } ?: return
+        if (roomTransferJob?.isActive == true) return
+        roomTransferJob = viewModelScope.launch {
+            setRoomTransfer(0f)
+            val target = File(roomSongsDir, "${roomSongStem(shared.hash)}.${RoomProtocol.songExt("x." + shared.ext)}")
+            val fetched = rooms.fetchSong(shared, target) { setRoomTransfer(it) }
+            val file = fetched.getOrElse {
+                setRoomTransfer(null, RoomTransferError(sharing = false, reason = it.message.orEmpty()))
+                return@launch
+            }
+            // The room moved on while it came down: it is not this chart's song any more.
+            if (rooms.session.value.chart?.hash != chart.hash) {
+                file.delete()
+                setRoomTransfer(null)
+                return@launch
+            }
+            val plan = planFromFile(chart, file)
+            if (plan == null) {
+                setRoomTransfer(null, RoomTransferError(sharing = false, reason = "the host's chart could not be read"))
+                return@launch
+            }
+            roomPlan = plan
+            _ui.update { it.copy(multiplayer = it.multiplayer.copy(haveSong = true, missing = null, songTransfer = null, transferError = null)) }
+            rooms.haveAndReady()
+        }
     }
 
     private fun GlyphSong.lengthMatches(chart: RoomChart): Boolean =
@@ -2799,7 +2989,6 @@ class GlyphViewModel @Inject constructor(
         const val PREF_PREVIEWS = "previews"
         const val PREF_WHEEL_SOUND = "wheel_sound"
         const val PREF_KEYS = "keys"
-        const val PREF_AUDIO_OFFSET = "audio_offset_ms"
 
         /** Drafts kept for undo. */
         const val MAX_UNDO = 100

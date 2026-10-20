@@ -47,6 +47,8 @@ inline bool hasTail(int32_t type) { return type == kHold || type == kRoll; }
 inline bool continuesCombo(int32_t j) { return j >= kMarvelous && j <= kGreat; }
 inline bool isHit(int32_t j) { return j != kMiss; }
 float judgementWeight(int32_t judgement);
+// A judgement's points before the combo multiplies them. Mirrors GlyphJudgement.points.
+int32_t judgementPoints(int32_t judgement);
 
 struct Windows {
     float marvelous = 0.0225f;
@@ -124,7 +126,9 @@ struct VisibleNote {
 
 class Engine {
 public:
-    static constexpr int32_t kMaxScore = 1'000'000;
+    // osu!'s combo multiplier: a hit earns its points times
+    // 1 + (combo - 1) / kComboStep, the combo counted with the hit itself.
+    static constexpr int64_t kComboStep = 25;
     static constexpr float kDeadZoneSeconds = 0.001f;
 
     // Notes must be in time order, as GlyphChart keeps them.
@@ -209,6 +213,7 @@ private:
     int32_t totalJudgements_ = 0;
     int32_t fullTotalJudgements_ = 0;
     float weightSum_ = 0.0f;
+    int64_t points_ = 0;
     double offsetSum_ = 0.0;
     double offsetSquareSum_ = 0.0;
     int32_t offsetSamples_ = 0;

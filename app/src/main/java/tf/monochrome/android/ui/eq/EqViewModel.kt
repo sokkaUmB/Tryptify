@@ -1392,6 +1392,27 @@ class EqViewModel @Inject constructor(
         }
     }
 
+    // ===== Whole-list band edits (Precision AutoEQ's filter editor) =====
+
+    fun removeBand(bandId: Int) = editActiveBands { StudioBands.without(it, bandId) }
+
+    /**
+     * One edit to the bands of whichever ear is being edited, written through
+     * immediately. Unlike a drag these are single taps, so there is no tail to
+     * coalesce.
+     */
+    private fun editActiveBands(transform: (List<EqBand>) -> List<EqBand>) {
+        if (_stereoMode.value && _editChannel.value == EqChannel.RIGHT) {
+            val bands = transform(_currentBandsR.value)
+            _currentBandsR.value = bands
+            saveBandsRToPreferences(bands)
+        } else {
+            val bands = transform(_currentBands.value)
+            _currentBands.value = bands
+            saveBandsToPreferences(bands)
+        }
+    }
+
     fun runAutoEq() {
         if (_isCalculating.value) return
         launchFit {

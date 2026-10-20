@@ -105,14 +105,17 @@ import tf.monochrome.android.ui.settings.settingsTabIndex
 fun StatsScreen(
     navController: NavController,
     onOpenPage: (String) -> Unit = {},
+    /** 0 Stats, 1 Achievements: the unlocked pill's View opens the second. */
+    initialPage: Int = 0,
     viewModel: StatsViewModel = hiltViewModel(),
 ) {
     val report by viewModel.report.collectAsStateWithLifecycle()
     val achievements by viewModel.achievements.collectAsStateWithLifecycle()
+    val tryptMania by viewModel.tryptMania.collectAsStateWithLifecycle()
     val range by viewModel.range.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val lastSyncedAt by viewModel.lastSyncedAt.collectAsStateWithLifecycle()
-    var page by rememberSaveable { mutableStateOf(0) }
+    var page by rememberSaveable { mutableStateOf(initialPage) }
     val locale = statsLocale()
     val context = LocalContext.current
 
@@ -135,6 +138,7 @@ fun StatsScreen(
             AchievementTarget.MIXER -> navController.navigateTool(Screen.Mixer)
             AchievementTarget.LYRICS_STUDIO -> navController.navigateTool(Screen.LyricsFxStudio)
             AchievementTarget.EQUALIZER -> navController.navigateTool(Screen.Equalizer)
+            AchievementTarget.TRYPT_MANIA -> navController.navigateTool(Screen.Glyph)
         }
     }
 
@@ -195,7 +199,11 @@ fun StatsScreen(
                 }
                 PullToRefreshBox(isRefreshing = isRefreshing, onRefresh = viewModel::refresh, modifier = Modifier.fillMaxSize()) {
                     if (page == 0) {
-                        StatsPage(report, range, lastSyncedAt, haze, viewModel::setRange, openChart, shareText)
+                        StatsPage(
+                            report, range, lastSyncedAt, haze, viewModel::setRange, openChart, shareText,
+                            tryptMania = tryptMania,
+                            openTryptMania = { navController.navigateTool(Screen.Glyph) },
+                        )
                     } else {
                         AchievementsPage(achievements, haze, openTarget)
                     }
@@ -216,8 +224,14 @@ private fun StatsPage(
     onPickRange: (StatsRange) -> Unit,
     openChart: (StatsChart) -> Unit,
     shareText: String?,
+    tryptMania: TryptManiaStats,
+    openTryptMania: () -> Unit,
 ) {
     val context = LocalContext.current
+    // All time, not the range: shown with no plays in the range too.
+    val tryptManiaCard: androidx.compose.foundation.lazy.LazyListScope.() -> Unit = {
+        if (tryptMania.runs > 0) item { TryptManiaCard(tryptMania, haze, openTryptMania) }
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 16.dp + LocalBottomChromeInset.current),
@@ -243,8 +257,9 @@ private fun StatsPage(
             report == null -> item {
                 Box(Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             }
-            report.isEmpty -> item {
-                StatsCard(haze) { Muted(stringResource(R.string.no_plays_for_range)) }
+            report.isEmpty -> {
+                item { StatsCard(haze) { Muted(stringResource(R.string.no_plays_for_range)) } }
+                tryptManiaCard()
             }
             else -> {
                 item { HeroCard(report, haze) { openChart(StatsChart.MINUTES) } }
@@ -254,6 +269,7 @@ private fun StatsPage(
                 item { DiscoveryCard(report, haze) { openChart(StatsChart.DISCOVERY) } }
                 item { StreakCard(report, haze) { openChart(StatsChart.STREAK) } }
                 if (report.quality.isNotEmpty()) item { QualityCard(report, haze) { openChart(StatsChart.QUALITY) } }
+                tryptManiaCard()
                 item { DigDeeperCard(report, haze, openChart) }
                 if (shareText != null) item {
                     Button(
@@ -466,6 +482,49 @@ private fun QualityCard(report: StatsReport, haze: HazeState, onAnalyze: () -> U
             val share = report.quality.first { it.tier == tier }.seconds.toFloat() / total
             LegendDot(stringResource(tierRes(tier)) + " " + percentText(share, locale), colors.getValue(tier).copy(alpha = 0.82f))
         }
+    }
+}
+
+/**
+ * Trypt Mania, all time: whole songs played and on how many charts, the best
+ * grade, full combos and the accuracy of the latest songs against the ones
+ * before. The arrow opens Trypt Mania.
+ */
+@Composable
+private fun TryptManiaCard(tm: TryptManiaStats, haze: HazeState, onOpen: () -> Unit) {
+    val locale = statsLocale()
+    StatsCard(haze) {
+        CardHeader(stringResource(R.string.trypt_mania), onOpen)
+        Row(verticalAlignment = Alignment.Bottom) {
+            BigWords(tm.runs.toString(), scale = 1.4f)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                pluralStringResource(R.plurals.stats_tm_songs, tm.runs).uppercase(locale),
+                style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, modifier = Modifier.padding(bottom = 8.dp),
+            )
+        }
+        Muted(pluralStringResource(R.plurals.stats_tm_on_charts, tm.charts, tm.charts))
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            TryptManiaFigure(tm.bestGrade?.label ?: "–", stringResource(R.string.stats_tm_best_grade), Modifier.weight(1f))
+            TryptManiaFigure(tm.fullCombos.toString(), stringResource(R.string.stats_tm_full_combos), Modifier.weight(1f))
+            val accuracy = tm.recentPercent?.let { p ->
+                val trend = tm.trend?.let { t -> if (t >= 0f) " ▲" else " ▼" }.orEmpty()
+                String.format(locale, "%.1f%%", p * 100f) + trend
+            } ?: "–"
+            TryptManiaFigure(accuracy, stringResource(R.string.stats_tm_accuracy, TryptManiaStats.RECENT), Modifier.weight(1f))
+        }
+        val title = tm.mostPlayedTitle
+        if (title != null && tm.mostPlayedRuns > 1) {
+            Muted(stringResource(R.string.stats_tm_most_played, title, pluralStringResource(R.plurals.plays_count, tm.mostPlayedRuns, tm.mostPlayedRuns.toString())))
+        }
+    }
+}
+
+@Composable
+private fun TryptManiaFigure(value: String, label: String, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
     }
 }
 

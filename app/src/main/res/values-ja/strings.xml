@@ -226,7 +226,6 @@
     <string name="bpm_measure_again">テンポを再検出</string>
     <string name="bpm_type_song_tempo">曲のテンポを入力</string>
     <string name="action_set">設定</string>
-    <string name="unknown_artist">不明なアーティスト</string>
     <string name="dock_mixer_fx">ミキサー/FX</string>
     <string name="lyrics_none_short">この曲の歌詞はありません</string>
     <string name="lyrics_server_sync">サーバーで歌詞を同期</string>
@@ -522,6 +521,7 @@
     <string name="mood_blissed_out">至福</string>
     <string name="mood_deep_cuts">隠れた名曲</string>
     <string name="discover_beta">見つける（ベータ）</string>
+    <string name="trypt_mania_beta">Trypt Mania（ベータ）</string>
     <string name="close_genre_search">ジャンル検索を閉じる</string>
     <string name="search_genres">ジャンルを検索</string>
     <string name="show_something_else">別のものを見せて</string>
@@ -762,8 +762,6 @@
     <string name="range_last_90d">過去90日間</string>
     <string name="range_last_12m">過去12か月</string>
     <string name="synced_when">%1$sに同期</string>
-    <string name="total_plays">総再生回数</string>
-    <string name="music_enthusiast">あなたは音楽好きですね！</string>
     <string name="eq_settings">EQ 設定</string>
     <string name="number_of_bands">バンド数</string>
     <string name="frequency_range_note">周波数範囲：20 Hz～20,000 Hz</string>
@@ -1441,6 +1439,7 @@
     <string name="eq_import_left_measurement_file">左のテスト測定ファイルをインポート</string>
     <string name="eq_import_right_measurement_file">右の測定ファイルをインポート</string>
     <string name="eq_import_measurement_file">測定ファイルをインポート</string>
+    <string name="eq_delete_target">ターゲット %1$s を削除</string>
     <string name="eq_import_custom_target">カスタムターゲットをインポート</string>
     <string name="eq_filter_bands_caps">フィルターバンド</string>
     <string name="eq_max_hz_caps">最大 Hz</string>
@@ -1454,6 +1453,19 @@
     <string name="eq_nothing_save">画像を保存</string>
     <string name="eq_nothing_saved">QR コードを保存しました</string>
     <string name="eq_nothing_save_failed">QR コードを保存できませんでした</string>
+    <string name="eq_studio_import_target">読み込む</string>
+    <string name="eq_studio_on">オン</string>
+    <string name="eq_studio_bypassed">バイパス</string>
+    <string name="eq_studio_delete">削除</string>
+    <string name="eq_studio_no_filters">フィルターはまだありません。ヘッドホンを選んで AutoEQ を実行するか、手動で追加してください。</string>
+    <string name="eq_studio_no_filter_selected">グラフのハンドルか上のフィルターをタップします。ハンドルをドラッグして移動、2 本指のピンチで幅を変更、グラフに触れると値を読み取れます。</string>
+    <string name="eq_studio_filter_n">フィルター %1$d</string>
+    <string name="eq_studio_freq">周波数</string>
+    <string name="eq_studio_gain">ゲイン</string>
+    <string name="eq_studio_q">Q</string>
+    <string name="eq_studio_scrub_hint">横にスワイプで調整、タップで入力</string>
+    <string name="eq_studio_type_value">値を入力</string>
+    <string name="eq_studio_set">設定</string>
     <string name="eq_save_as_preset">プリセットとして保存</string>
     <string name="eq_remove_band">バンドを削除</string>
     <string name="eq_next_sample">次のサンプル</string>
@@ -2344,6 +2356,8 @@
     <string name="theme_part_maps_desc">地球儀とジャンルギャラクシーの見た目</string>
     <string name="theme_part_links">ミュージックリンク</string>
     <string name="theme_part_links_desc">音楽に合わせて動く設定</string>
+    <string name="theme_part_crt">CRT エフェクト</string>
+    <string name="theme_part_crt_desc">CRT の見た目とスライダー、アプリ全体または歌詞のみに</string>
     <string name="theme_preview_panels">パネル</string>
     <string name="theme_preview_player">プレーヤー</string>
     <string name="theme_preview_lyrics">歌詞</string>
@@ -2445,7 +2459,7 @@
     <string name="stats_persona_afternoon">午後リスナー</string>
     <string name="stats_persona_early_bird">朝型リスナー</string>
     <string name="stats_peak_headline">%1$sの%2$sが一番聴く時間</string>
-    <string name="stats_night_share">再生の%1$sが21時以降に始まります。</string>
+    <string name="stats_night_share">再生の%1$sが夜（21時〜5時）です。</string>
     <string name="stats_number_one_artist">No.1アーティスト</string>
     <string name="stats_artist_line">%1$s、全再生の%2$s。</string>
     <string name="stats_top5_share">トップ5が%1$sを占めています</string>
@@ -2520,7 +2534,7 @@
     <string name="stats_ach_golden_what">ハイレゾは24ビットの音源です。サービスが対応していれば、ストリーミング品質をハイレゾにしましょう。</string>
     <string name="stats_ach_night">夜ふかし</string>
     <string name="stats_ach_night_goal">深夜0時以降に%1$d回再生</string>
-    <string name="stats_ach_night_what">0時から4時の間に始まった再生がカウントされます。</string>
+    <string name="stats_ach_night_what">0時から5時の間に始まった再生がカウントされます。</string>
     <string name="stats_ach_chain">シグナルチェーン</string>
     <string name="stats_ach_chain_goal">1つのエフェクトチェーンに%1$d個のプラグイン</string>
     <string name="stats_ach_chain_what">ミキサーの1つのバスにプラグインのチェーンを組みましょう。1バスに最大16個です。</string>
@@ -2557,7 +2571,7 @@
     <string name="stats_of_listening">の再生</string>
     <string name="stats_about_time">この期間で約%1$s</string>
     <string name="stats_hour_rank">1週間%2$d時間のうち%1$d番目</string>
-    <string name="stats_after_nine">21時以降</string>
+    <string name="stats_after_nine">21時〜5時</string>
     <string name="stats_quietest_hour">最も静かな時間</string>
     <string name="stats_busiest_day">一番聴く曜日</string>
     <string name="stats_morning">朝</string>
@@ -2697,6 +2711,9 @@
     <string name="settings_crt_tilt_top_desc">上または下から見た角度</string>
     <string name="settings_crt_bezel">ベゼル: %1$d%%</string>
     <string name="settings_crt_bezel_desc">画面の周りの暗い枠</string>
+    <string name="settings_crt_zoom">ズーム: %1$d%%</string>
+    <string name="settings_crt_zoom_desc" formatted="false">管面に映る画面の大きさ。100% 未満では曲がった縁全体が見え、100% を超えると画面が暗い角まで広がり、画面の端は外へはみ出します。</string>
+    <string name="crt_zoom">ズーム</string>
     <string name="settings_crt_corners">角の丸み: %1$d%%</string>
     <string name="settings_crt_vignette">ビネット: %1$d%%</string>
     <string name="settings_crt_vignette_desc">端に向かって暗くなる画面</string>
@@ -2768,6 +2785,14 @@
     <string name="tm_mp_send">送信</string>
     <string name="tm_mp_spectating">観戦中</string>
     <string name="tm_mp_no_song">曲を持っていません</string>
+    <string name="tm_mp_share_song">曲をルームに共有</string>
+    <string name="tm_mp_sharing_song">曲を共有中… %1$d%%</string>
+    <string name="tm_mp_song_shared">曲はルームに共有されています</string>
+    <string name="tm_mp_get_song">曲を入手（%1$s）</string>
+    <string name="tm_mp_getting_song">曲を入手中… %1$d%%</string>
+    <string name="tm_mp_ask_host_share">ホストに曲の共有を頼んでください。</string>
+    <string name="tm_mp_share_failed">曲を共有できませんでした: %1$s</string>
+    <string name="tm_mp_get_failed">曲を入手できませんでした: %1$s</string>
     <string name="tm_mp_kick">退出させる</string>
     <string name="tm_mp_state_lobby">ロビー</string>
     <string name="tm_mp_state_playing">プレイ中</string>
@@ -2795,4 +2820,48 @@
     <string name="crt_preset_exported">%1$s を書き出しました</string>
     <string name="crt_preset_export_failed">ファイルを書き込めませんでした</string>
     <string name="crt_preset_import_failed">読み込めませんでした：%1$s</string>
+    <string name="settings_bluetooth_sync">Bluetooth 同期</string>
+    <string name="settings_bluetooth_sync_desc">%1$s の再生の遅れです。歌詞、ビジュアル、ビジュアライザ、Trypt Mania がこれに合わせて待ちます。デバイスごとに保存されます。</string>
+    <string name="settings_bluetooth_sync_no_output">今は保存先の出力がありません。</string>
+    <string name="settings_bluetooth_sync_measure">測定</string>
+    <string name="settings_bluetooth_sync_less">遅延を短く</string>
+    <string name="settings_bluetooth_sync_more">遅延を長く</string>
+    <string name="settings_bluetooth_sync_set_there">設定 › オーディオ › Bluetooth 同期 でデバイスごとに設定します。</string>
+    <string name="tm_sync_saved_for">%1$s 用に保存され、アプリ全体で使われます。</string>
+    <string name="stats_ach_unlocked_toast">実績を解除</string>
+    <string name="stats_ach_view">見る</string>
+    <string name="opened_from_app">他のアプリから開きました</string>
+    <string name="opened_add">ライブラリに追加</string>
+    <string name="opened_adding">追加中…</string>
+    <string name="opened_added">ライブラリに追加しました</string>
+    <string name="opened_added_where">Music/%1$s に保存しました</string>
+    <string name="opened_add_failed">ライブラリに追加できませんでした</string>
+    <string name="opened_failed">このファイルを開けませんでした</string>
+    <string name="opened_fail_not_audio">Tryptify で再生できる音声ファイルではありません。</string>
+    <string name="opened_fail_no_access">送信元のアプリが Tryptify の読み取りを許可しませんでした。</string>
+    <string name="opened_fail_not_found">ファイルが見つかりません。</string>
+    <string name="opened_fail_too_big">2 GB を超えています。</string>
+    <string name="opened_fail_empty">ファイルが空です。</string>
+    <string name="opened_fail_no_space">スマートフォンの空き容量が足りません。</string>
+    <string name="opened_fail_unreadable">読み取れませんでした。</string>
+    <string name="opened_fail_no_write">Android が Music への保存を許可しませんでした。</string>
+    <string name="stats_ach_tm_combo">ノーミス</string>
+    <string name="stats_ach_tm_combo_goal">Trypt Mania でフルコンボ</string>
+    <string name="stats_ach_tm_combo_what">1曲を最後まで、ステップを逃さず切らさずにクリア。トレーニングの区間は対象外です。</string>
+    <string name="stats_ach_tm_aa">ダブルA</string>
+    <string name="stats_ach_tm_aa_goal">Trypt Mania で AA 評価</string>
+    <string name="stats_ach_tm_aa_what" formatted="false">1曲を最後まで、失敗せず96%以上でクリア。スコアではなく評価で判定します。</string>
+    <string name="stats_ach_tm_charts">譜面ホッパー</string>
+    <string name="stats_ach_tm_charts_goal">%1$d種類の譜面をプレイ</string>
+    <string name="stats_ach_tm_charts_what">Trypt Mania でその数だけ異なる譜面を最後までプレイ。曲と難易度は問いません。</string>
+    <plurals name="stats_tm_songs">
+        <item quantity="other">曲プレイ</item>
+    </plurals>
+    <plurals name="stats_tm_on_charts">
+        <item quantity="other">%1$d譜面、全期間</item>
+    </plurals>
+    <string name="stats_tm_best_grade">最高評価</string>
+    <string name="stats_tm_full_combos">フルコンボ</string>
+    <string name="stats_tm_accuracy">直近%1$d曲の精度</string>
+    <string name="stats_tm_most_played">最多プレイ：%1$s、%2$s</string>
 </resources>

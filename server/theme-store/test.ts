@@ -183,6 +183,13 @@ async function setUp() {
     assert.equal(typeof res.body.created_at, "string");
   });
 
+  test("a pack of all nine parts, the CRT among them, is taken", async () => {
+    const all = ["COLOURS", "LYRICS", "PLAYER_GLASS", "PANELS", "FONT", "VISUALIZER", "MAPS", "LINKS", "CRT"];
+    const res = await publish(a, { parts: all });
+    assert.equal(res.status, 201);
+    assert.deepEqual(res.body.parts, all);
+  });
+
   test("a pack that is not a pack is refused", async () => {
     const refused = [
       { parts: [] },

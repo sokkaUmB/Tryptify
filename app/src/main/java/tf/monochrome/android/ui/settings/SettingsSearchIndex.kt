@@ -73,9 +73,9 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
     ),
     entry("Theme", R.string.settings_theme, "Appearance", listOf("colour", "color", "dark", "light", "white")),
     entry(
-        "Theme Store", R.string.theme_store_title, "Appearance",
+        "Theme Store", R.string.theme_store_title, "Theme Store",
         listOf("pack", "share", "download", "upload", "community", "look", "skin"),
-    ).at(SettingsDestination.Route("theme_store")),
+    ),
     entry("Light paper", R.string.settings_light_paper, "Appearance", listOf("white", "warm", "crisp", "paper", "glare")),
     entry(
         "Color transition", R.string.settings_color_transition, "Appearance",
@@ -98,7 +98,7 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
     entry("Legacy player", R.string.settings_legacy_player, "Appearance", listOf("old", "flat", "classic", "pre-glass", "design")),
     entry("Remove liquid glass", R.string.settings_remove_liquid_glass, "Appearance", listOf("flat", "opaque", "blur", "performance", "glass")),
     entry("Disable animations", R.string.settings_disable_animations, "Appearance", listOf("motion", "reduce", "still", "accessibility")),
-    entry("CRT effect", R.string.settings_crt_effect, "Appearance", listOf("tv", "television", "retro", "scanlines", "crt", "shader", "monitor", "vintage", "old", "curvature", "curve", "chromatic", "aberration", "rgb", "mask", "glow", "bloom", "royale", "crt-royale", "aperture", "grille", "slot", "halation", "diffusion", "beam")),
+    entry("CRT effect", R.string.settings_crt_effect, "Appearance", listOf("tv", "television", "retro", "scanlines", "crt", "shader", "monitor", "vintage", "old", "curvature", "curve", "zoom", "size", "chromatic", "aberration", "rgb", "mask", "glow", "bloom", "royale", "crt-royale", "aperture", "grille", "slot", "halation", "diffusion", "beam")),
 
     // ── Visual Studio ───────────────────────────────────────────────────
     entry(
@@ -198,6 +198,11 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
         "Exclusive USB DAC (bypass Android audio)", R.string.settings_exclusive_usb_dac_bypass_android_audio,
         "Audio",
         listOf("usb", "dac", "exclusive", "bit perfect", "bitperfect", "libusb", "uapp", "output"),
+    ),
+    entry(
+        "Bluetooth sync", R.string.settings_bluetooth_sync,
+        "Audio",
+        listOf("bluetooth", "latency", "delay", "lag", "offset", "lyrics", "visualizer", "headphones", "calibrate", "trypt mania"),
     ),
     entry(
         "Hi-res output (Bluetooth & speaker)", R.string.settings_hi_res_output_bluetooth_speaker,

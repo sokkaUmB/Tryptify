@@ -122,11 +122,34 @@ class GlyphEngineTest {
     }
 
     @Test
+    fun theComboMultipliesThePointsAndABreakStartsItOver() {
+        val score = GlyphScore(totalJudgements = 28)
+        repeat(26) { score.record(GlyphJudgement.MARVELOUS, 0f) }
+        // Each hit is worth 300 + 12 more than the last; the 26th, twice the first.
+        assertEquals(26 * 300 + 12 * (0 + 25) * 26 / 2, score.score)
+        val beforeBreak = score.score
+        score.record(GlyphJudgement.MISS, null)
+        score.record(GlyphJudgement.MARVELOUS, 0f)
+        assertEquals("after a miss a hit is worth its points once", beforeBreak + 300, score.score)
+
+        val broken = GlyphScore(totalJudgements = 26)
+        repeat(13) { broken.record(GlyphJudgement.MARVELOUS, 0f) }
+        broken.recordMineHit()
+        repeat(13) { broken.record(GlyphJudgement.MARVELOUS, 0f) }
+        assertTrue("the same hits score less in two halves", broken.score < beforeBreak)
+        assertEquals("the percent does not care", 1f, broken.accuracy, 1e-6f)
+
+        score.reset()
+        assertEquals(0, score.score)
+    }
+
+    @Test
     fun accuracyAndGradeFollowTheWeights() {
         val perfectRun = GlyphScore(totalJudgements = 4)
         repeat(4) { perfectRun.record(GlyphJudgement.MARVELOUS, 0f) }
         assertEquals(1f, perfectRun.finalAccuracy, 1e-5f)
-        assertEquals(GlyphScore.MAX_SCORE, perfectRun.score)
+        // Combo 1 to 4: 300 × 25/25, 26/25, 27/25, 28/25.
+        assertEquals(300 + 312 + 324 + 336, perfectRun.score)
         assertEquals(GlyphGrade.SSS, perfectRun.grade)
 
         val mixed = GlyphScore(totalJudgements = 4)
@@ -137,6 +160,9 @@ class GlyphEngineTest {
         // (1.00 + 0.70 + 0.40 + 0.00) / 4
         assertEquals(0.525f, mixed.finalAccuracy, 1e-5f)
         assertEquals(GlyphGrade.D, mixed.grade)
+        // 300, then a Great on a combo of 2 (210 × 26/25, whole points), then
+        // a Good that breaks it (its 120 once) and a Miss.
+        assertEquals(300 + 218 + 120 + 0, mixed.score)
 
         // Live accuracy reads over what has been judged, not the whole chart.
         val partial = GlyphScore(totalJudgements = 100)

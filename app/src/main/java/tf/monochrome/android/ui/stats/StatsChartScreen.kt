@@ -650,7 +650,7 @@ private fun clockChart(r: StatsReport, view: Int, locale: Locale): ChartModel {
     val rank = cells.sortedByDescending { it.third }.mapIndexed { i, c -> (c.first to c.second) to i + 1 }.toMap()
     val hours = (0 until 24).map { h -> days.sumOf { heat.at(it, h) } }
     val dayTotals = days.map { d -> (0 until 24).sumOf { heat.at(d, it) } }
-    fun share(lo: Int, hi: Int) = (0 until 24).filter { h -> val hh = if (h < 5) h + 24 else h; hh in lo until hi }.sumOf { hours[it] }.toFloat() / total
+    fun share(lo: Int, hi: Int) = (0 until 24).filter { h -> val hh = if (h < NIGHT_END_HOUR) h + 24 else h; hh in lo until hi }.sumOf { hours[it] }.toFloat() / total
     val common = @Composable { entries: List<ChartEntry>, kind: ChartKind, default: Int ->
         ChartModel(
             eyebrow = stringResource(R.string.stats_listening_type),
@@ -669,10 +669,10 @@ private fun clockChart(r: StatsReport, view: Int, locale: Locale): ChartModel {
                 Triple(stringResource(R.string.stats_busiest_day), weekdayName(days[dayTotals.indexOf(dayTotals.max())], locale), ""),
             ),
             table = stringResource(R.string.time_of_day) to listOf(
-                Triple(stringResource(R.string.stats_morning), percentText(share(5, 12), locale), ""),
+                Triple(stringResource(R.string.stats_morning), percentText(share(NIGHT_END_HOUR, 12), locale), ""),
                 Triple(stringResource(R.string.stats_afternoon), percentText(share(12, 17), locale), ""),
-                Triple(stringResource(R.string.stats_evening), percentText(share(17, 21), locale), ""),
-                Triple(stringResource(R.string.stats_night), percentText(share(21, 29), locale), ""),
+                Triple(stringResource(R.string.stats_evening), percentText(share(17, NIGHT_START_HOUR), locale), ""),
+                Triple(stringResource(R.string.stats_night), percentText(share(NIGHT_START_HOUR, NIGHT_END_HOUR + 24), locale), ""),
             ),
         )
     }

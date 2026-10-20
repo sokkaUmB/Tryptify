@@ -61,6 +61,14 @@ class PlaybackStateRepository @Inject constructor(
     private var lastWriteAt = 0L
     private var lastPositionMs = -1L
     private var restoreDone = false
+    private val restored = kotlinx.coroutines.CompletableDeferred<Unit>()
+
+    /**
+     * Returns once the last session's queue is back (or there was none). A
+     * queue set before then is replaced by the restore: a song opened from
+     * another app on a cold start waits here first.
+     */
+    suspend fun awaitRestored() = restored.await()
 
     @OptIn(FlowPreview::class)
     fun start(appScope: CoroutineScope) {
@@ -70,6 +78,7 @@ class PlaybackStateRepository @Inject constructor(
             runCatching { restore() }
                 .onFailure { Log.e(TAG, "Could not restore the last session", it) }
             restoreDone = true
+            restored.complete(Unit)
 
             combine(
                 queueManager.queue,

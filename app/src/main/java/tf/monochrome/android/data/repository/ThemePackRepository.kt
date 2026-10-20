@@ -7,6 +7,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import tf.monochrome.android.data.preferences.PreferencesManager
 import tf.monochrome.android.domain.model.ThemeColours
+import tf.monochrome.android.domain.model.ThemeCrt
 import tf.monochrome.android.domain.model.ThemeMaps
 import tf.monochrome.android.domain.model.ThemePack
 import tf.monochrome.android.domain.model.ThemePackCodec
@@ -80,6 +81,11 @@ class ThemePackRepository @Inject constructor(
             ),
             maps = ThemeMaps(globe = p.globeFx.first(), galaxy = p.galaxyVisuals.first()),
             links = musicLinks.visualLinks.first(),
+            crt = ThemeCrt(
+                look = p.appTvShader.first().id,
+                tuning = p.appTvTuning.first().clamped().encode(),
+                target = if (p.appTvOnLyrics.first()) ThemeCrt.TARGET_LYRICS else ThemeCrt.TARGET_APP,
+            ),
         )
     }
 
@@ -128,6 +134,11 @@ class ThemePackRepository @Inject constructor(
             m.galaxy?.let { p.setGalaxyVisuals(it) }
         }
         pack.links?.let { musicLinks.replaceAll(it) }
+        pack.crt?.let { c ->
+            c.look?.let { p.setAppTvShader(tf.monochrome.android.glyph.engine.GlyphTvShader.fromId(it)) }
+            c.tuning?.let { p.setAppTvTuning(tf.monochrome.android.glyph.engine.GlyphTvTuning.decode(it).clamped()) }
+            c.target?.let { p.setAppTvOnLyrics(it == ThemeCrt.TARGET_LYRICS) }
+        }
     }
 
     private fun isBundledFont(id: String): Boolean = BundledFonts.byId(id) != null

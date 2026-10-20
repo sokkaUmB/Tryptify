@@ -47,6 +47,29 @@ fun loadAppFontFamily(context: Context, fontId: String?): FontFamily? {
 }
 
 /**
+ * [fontId] at the one [weight] a sample of it is drawn at, or null as
+ * [loadAppFontFamily] gives it: a font picker's chip needs its name in that
+ * font, not nine weights of it. An imported family is drawn from its upright
+ * cut nearest that weight (a variable one draws it exactly).
+ */
+fun loadSampleFontFamily(context: Context, fontId: String?, weight: FontWeight): FontFamily? {
+    if (fontId.isNullOrBlank()) return null
+    if (fontId == INTER_FONT_ID) return InterFontFamily
+    return runCatching {
+        if (BundledFonts.isBundled(fontId)) {
+            FontFamily(Font(BundledFonts.assetPathOf(fontId), context.assets, weight))
+        } else {
+            val file = File(fontId)
+            if (!file.exists()) return null
+            val cut = FontFamilies.familyOf(file)?.cuts
+                ?.filterNot { it.italic }
+                ?.minByOrNull { if (it.variable) 0 else kotlin.math.abs(it.weight - weight.weight) }
+            FontFamily(Font(cut?.file ?: file, weight))
+        }
+    }.getOrNull()
+}
+
+/**
  * A font as a style draws it at a letter width: [family], already as narrow
  * or wide as its own `wdth` axis can draw, and [scaleX], the squeeze left to
  * apply to its glyphs (1 when the axis reached the width; the whole width

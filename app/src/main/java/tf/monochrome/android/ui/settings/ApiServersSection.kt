@@ -121,15 +121,28 @@ internal fun ApiServersSection(viewModel: SettingsViewModel) {
             modifier = Modifier.padding(vertical = 8.dp),
         )
     }
-    servers.forEachIndexed { index, server ->
-        ApiServerCard(
-            server = server,
-            checking = server.url in checking,
-            canMoveUp = index > 0,
-            onMoveUp = { viewModel.moveApiUp(server.url) },
-            onRecheck = { viewModel.recheckApi(server.url) },
-            onRemove = { confirmRemove = server.url },
+    // Two groups: the catalogs that search and play, and Trypt Mania's
+    // servers (charts, lyric times, rooms). Each keeps its own order; ↑ moves
+    // a server above the one before it in its group.
+    val (game, streaming) = servers.partition { it.isTryptMania }
+    for ((title, group) in listOf(stringResource(R.string.streaming) to streaming, stringResource(R.string.trypt_mania) to game)) {
+        if (group.isEmpty()) continue
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
         )
+        group.forEachIndexed { index, server ->
+            ApiServerCard(
+                server = server,
+                checking = server.url in checking,
+                canMoveUp = index > 0,
+                onMoveUp = { viewModel.moveApiUp(server.url) },
+                onRecheck = { viewModel.recheckApi(server.url) },
+                onRemove = { confirmRemove = server.url },
+            )
+        }
     }
 
     Spacer(Modifier.height(8.dp))

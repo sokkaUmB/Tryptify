@@ -4,7 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.time.Instant
 import java.time.ZoneId
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -23,13 +22,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tf.monochrome.android.R
-import tf.monochrome.android.audio.dsp.SnapinType
-import tf.monochrome.android.data.achievements.AchievementStore
-import tf.monochrome.android.data.achievements.FeatureLog
 import tf.monochrome.android.data.auth.SupabaseAuthManager
 import tf.monochrome.android.data.db.dao.PlayEventDao
 import tf.monochrome.android.data.sync.SupabaseSyncRepository
-import tf.monochrome.android.ui.settings.settingsPageIds
 
 enum class StatsRange(val label: String, val days: Int?) {
     Week("7d", 7),
@@ -54,7 +49,7 @@ class StatsViewModel @Inject constructor(
     private val localMediaDao: tf.monochrome.android.data.local.db.LocalMediaDao,
     private val supabaseSync: SupabaseSyncRepository,
     private val authManager: SupabaseAuthManager,
-    private val achievementStore: AchievementStore,
+    private val achievementWatcher: AchievementWatcher,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -86,9 +81,11 @@ class StatsViewModel @Inject constructor(
         .mapLatest { r -> withContext(Dispatchers.Default) { loadReport(r) } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val achievements: StateFlow<List<AchievementState>> = combine(plays, achievementStore.log) { _, log -> log }
-        .mapLatest { log -> withContext(Dispatchers.Default) { loadAchievements(log) } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    /** Where each achievement stands: the app-wide watcher's, which also stamps and announces them. */
+    val achievements: StateFlow<List<AchievementState>> = achievementWatcher.states
+
+    /** Trypt Mania, all time: the watcher reads the runs for its achievements and keeps the sum. */
+    val tryptMania: StateFlow<TryptManiaStats> = achievementWatcher.tryptMania
 
     init {
         // Pick up plays made on other devices. A no-op when signed out.
@@ -126,26 +123,6 @@ class StatsViewModel @Inject constructor(
         // before local ones said so are still counted as local (sourceOf).
         val localPlayIds = localMediaDao.allTrackIds().mapTo(HashSet(), ::localPlayIdOf)
         return StatsReportBuilder.build(range, window, zone, rows, prev, firstPlays, history, localPlayIds)
-    }
-
-    private suspend fun loadAchievements(log: FeatureLog): List<AchievementState> {
-        val now = System.currentTimeMillis()
-        val zone = ZoneId.systemDefault()
-        val month = StatsReportBuilder.window(StatsRange.Month, now, zone, null)
-        val newArtists = playEventDao.artistFirstPlays().count { it.firstPlayed >= month.from }
-        val since = month.today.minusDays(400).atStartOfDay(zone).toInstant().toEpochMilli()
-        val days = playEventDao.momentsSince(since).mapTo(HashSet()) { Instant.ofEpochMilli(it.playedAt).atZone(zone).toLocalDate() }
-        val facts = AchievementFacts(
-            newArtistsLast30Days = newArtists,
-            currentStreak = StatsReportBuilder.currentStreak({ it in days }, month.today),
-            hiResSeconds = playEventDao.hiResSeconds(),
-            playsAfterMidnight = playEventDao.playsAfterMidnight(),
-            log = log,
-        )
-        val states = Achievements.evaluate(facts, settingsPageIds, SnapinType.availableTypes().map { it.name }, now)
-        val fresh = Achievements.newlyUnlocked(states, log.unlockedAt)
-        if (fresh.isNotEmpty()) achievementStore.markUnlocked(fresh)
-        return states
     }
 
     private suspend fun refreshFromCloudInternal(r: StatsRange) {

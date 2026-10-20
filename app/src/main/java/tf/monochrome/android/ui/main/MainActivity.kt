@@ -65,7 +65,9 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var libusbDriver: tf.monochrome.android.audio.usb.LibusbUacDriver
     @Inject lateinit var bypassVolumeController: tf.monochrome.android.audio.usb.BypassVolumeController
     @Inject lateinit var musicLinks: tf.monochrome.android.data.repository.MusicLinksRepository
+    @Inject lateinit var outputSync: tf.monochrome.android.audio.sync.OutputSyncRepository
     @Inject lateinit var spectrumAnalyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap
+    @Inject lateinit var openedAudio: tf.monochrome.android.data.opened.OpenedAudioRepository
 
     /** Set once the onboarding flag has been read; releases the splash screen. */
     @Volatile private var onboardingGateLoaded = false
@@ -142,7 +144,13 @@ class MainActivity : ComponentActivity() {
         // A cold start triggered by the OAuth redirect delivers the callback as
         // the launch intent (onNewIntent never fires) — handle it here too so
         // login completes instead of silently failing.
-        handleDeepLinkIntent(intent)
+        // Re-created after a rotation or from Recents, the activity is handed
+        // the same intent again: a song opened once must not start over.
+        handleDeepLinkIntent(
+            intent,
+            openFiles = savedInstanceState == null &&
+                intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0,
+        )
 
         FrequencyTargets.init(applicationContext)
 
@@ -218,8 +226,10 @@ class MainActivity : ComponentActivity() {
             val appLinks = remember(runningLinks) {
                 runningLinks.filter { it.target.startsWith("panels.") || it.target.startsWith("tv.") }
             }
-            val linkDelayMs by remember { preferences.lyricsFx.map { it.bluetoothDelayMs } }
-                .collectAsStateWithLifecycle(initialValue = 0f)
+            // How late the output playing now plays (Settings › Audio ›
+            // Bluetooth sync): the lyrics and every visual link wait for it.
+            val outputSyncMs by outputSync.delayMs.collectAsStateWithLifecycle()
+            val linkDelayMs = outputSyncMs.toFloat()
             val appLive = tf.monochrome.android.ui.player.rememberVisualLinkDriver(
                 tap = spectrumAnalyzer,
                 links = appLinks,
@@ -252,14 +262,18 @@ class MainActivity : ComponentActivity() {
             // cross-fade, recomposing the root and every provider under it for
             // the length of the fade. MonochromeTheme passes it down and only
             // the surfaces that paint with it read it.
+            // One palette for the whole app, from the playing track's cover or
+            // from the song a screen like Trypt Mania has picked in its place
+            // (DynamicColorSource): two at once coloured the screen from two
+            // covers.
             val dynamicPalette = rememberDynamicPalette(
-                coverUrl = currentTrack?.coverUrl,
+                coverUrl = tf.monochrome.android.ui.theme.DynamicColorSource.coverFor(currentTrack?.coverUrl),
                 enabled = dynamicColorsEnabled,
                 // Instant colour change with animations off: the palette is a
                 // continuous cross-fade rather than a one-off transition, so it
                 // goes on producing values for the whole blend window.
                 blendMillis = if (lowPerformance.disableAnimations) 0
-                else ColorBlend.millisFor(colorTransitionMs),
+                else tf.monochrome.android.ui.theme.DynamicColorSource.blendFor(ColorBlend.millisFor(colorTransitionMs)),
             )
 
             // Handles both a bundled `asset:` font and an imported file path —
@@ -300,6 +314,7 @@ class MainActivity : ComponentActivity() {
                 tf.monochrome.android.ui.theme.LocalShowExplicitBadges provides showExplicitBadges,
                 tf.monochrome.android.ui.theme.LocalRowBadges provides rowBadges,
                 LocalImmersiveFullScreen provides immersiveFullScreen,
+                tf.monochrome.android.ui.player.LocalOutputSyncMs provides linkDelayMs,
                 // Every list row's source tag reads its catalog from here.
                 tf.monochrome.android.ui.components.LocalTrackSource provides trackSourceResolver::of,
             ) {
@@ -508,21 +523,32 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Route auth callback deep-links: Spotify (tryptify://spotify-callback),
+     * Route what other apps send: an audio file opened with Tryptify, and the
+     * auth callback deep-links, Spotify (tryptify://spotify-callback),
      * Last.fm (tryptify://lastfm-callback) and Supabase
      * (tf.monotrypt.android://login-callback). Handled from BOTH
      * onNewIntent (app already running) and onCreate (cold start after process
      * death, where the redirect delivers the callback as the launch intent —
      * previously dropped, so login silently failed).
+     *
+     * Anything else is dropped. It all used to go to Supabase, so a song
+     * opened from a file manager showed as a failed sign-in.
      */
-    private fun handleDeepLinkIntent(intent: Intent?) {
+    private fun handleDeepLinkIntent(intent: Intent?, openFiles: Boolean = true) {
         val uri = intent?.data ?: return
+        if (intent.action != Intent.ACTION_VIEW) return
+        val scheme = uri.scheme?.lowercase()
+        if (scheme == "content" || scheme == "file") {
+            // Taken now, while this activity holds the permission to read it.
+            if (openFiles) openedAudio.open(uri, intent.type)
+            return
+        }
         lifecycleScope.launch {
-            if (uri.scheme == "tryptify" && uri.host == "spotify-callback") {
+            if (scheme == "tryptify" && uri.host == "spotify-callback") {
                 spotifyAuthManager.handleCallback(uri)
-            } else if (uri.scheme == "tryptify" && uri.host == "lastfm-callback") {
+            } else if (scheme == "tryptify" && uri.host == "lastfm-callback") {
                 lastFmAuthManager.handleCallback(uri)
-            } else {
+            } else if (scheme == "tf.monotrypt.android") {
                 supabaseAuthManager.handleDeepLink(uri)
             }
         }

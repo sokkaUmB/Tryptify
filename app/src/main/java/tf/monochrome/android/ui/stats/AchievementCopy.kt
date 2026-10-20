@@ -3,11 +3,14 @@ package tf.monochrome.android.ui.stats
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Hearing
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TextFields
@@ -21,7 +24,7 @@ import tf.monochrome.android.audio.dsp.SnapinType
 import tf.monochrome.android.ui.settings.settingsTabLabelRes
 
 /** Where an achievement's button goes. */
-internal enum class AchievementTarget { DISCOVER, RADIO, SETTINGS_MISSING_TAB, SETTINGS_AUDIO, MIXER, LYRICS_STUDIO, EQUALIZER }
+internal enum class AchievementTarget { DISCOVER, RADIO, SETTINGS_MISSING_TAB, SETTINGS_AUDIO, MIXER, LYRICS_STUDIO, EQUALIZER, TRYPT_MANIA }
 
 /**
  * The words around an achievement. The path is the app's own labels for the
@@ -84,7 +87,22 @@ internal fun copyFor(a: Achievement): AchievementCopy = when (a) {
         listOf(R.string.settings_now_playing, R.string.status_sound, R.string.eq_select_headphone, R.string.stats_path_autoeq),
         Icons.Default.GraphicEq, R.string.settings_equalizer, AchievementTarget.EQUALIZER,
     )
+    Achievement.TM_FULL_COMBO -> AchievementCopy(
+        R.string.stats_ach_tm_combo, R.string.stats_ach_tm_combo_goal, R.string.stats_ach_tm_combo_what,
+        TRYPT_MANIA_PATH, Icons.Default.Bolt, R.string.trypt_mania, AchievementTarget.TRYPT_MANIA,
+    )
+    Achievement.TM_DOUBLE_A -> AchievementCopy(
+        R.string.stats_ach_tm_aa, R.string.stats_ach_tm_aa_goal, R.string.stats_ach_tm_aa_what,
+        TRYPT_MANIA_PATH, Icons.Default.MilitaryTech, R.string.trypt_mania, AchievementTarget.TRYPT_MANIA,
+    )
+    Achievement.TM_CHART_HOPPER -> AchievementCopy(
+        R.string.stats_ach_tm_charts, R.string.stats_ach_tm_charts_goal, R.string.stats_ach_tm_charts_what,
+        TRYPT_MANIA_PATH, Icons.Default.LibraryMusic, R.string.trypt_mania, AchievementTarget.TRYPT_MANIA,
+    )
 }
+
+/** Where Trypt Mania is: Library › Local › Trypt Mania. */
+private val TRYPT_MANIA_PATH = listOf(R.string.tab_library, R.string.page_local, R.string.trypt_mania)
 
 /** The goal line, with the goal's number where the sentence has one. */
 @Composable

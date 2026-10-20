@@ -146,6 +146,9 @@ object WhatsNew {
     /** The account button and page, listening stats and achievements. */
     private const val STATS = "Account and stats"
 
+    /** How late each output plays, and everything that waits for it. */
+    private const val BLUETOOTH_SYNC = "Bluetooth sync"
+
     /** Newest first. */
     val releases: List<WhatsNewRelease> = listOf(
         WhatsNewRelease(
@@ -166,15 +169,39 @@ object WhatsNew {
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
+                    section = TRYPT_MANIA,
+                    title = "Points that grow with your combo",
+                    body = "Each step is worth more the longer your combo, as in osu!: the 26th is worth twice the first, and a miss starts it over. The game plays over your player's own background.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = TRYPT_MANIA,
+                    title = "A live scoreboard and a shared song",
+                    body = "In a room, everyone's score runs down the side, cards sliding as places change, and the host can send the song to anyone who doesn't have it.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
                     section = CRT_EFFECT,
                     title = "The app through an old TV",
                     body = "Settings › Appearance › CRT effect draws every screen, or only the lyrics, as Scanlines, CRT, CRT-Royale and more, with a curved tube, a bezel and presets of your own. Android 13 and later.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
+                    section = CRT_EFFECT,
+                    title = "Zoom, and themes that carry it",
+                    body = "A Zoom slider from 60% to 120% sizes the picture on the tube, to frame the curve or fill the corners. A theme can carry your CRT effect too.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
                     section = FONTS,
                     title = "A typography table",
                     body = "Settings › Fonts gives each of 15 kinds of text its own font, weight, size, width and spacing. The Width slider makes every letter narrower or wider, and a font imported as several files is one font with all its weights.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = FONTS,
+                    title = "Orbitron",
+                    body = "A wide, squared-off display font is built in, every weight from Regular to Black. Latin letters only.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
@@ -198,7 +225,7 @@ object WhatsNew {
                     kind = WhatsNewKind.NEW,
                     section = THEME_STORE,
                     title = "Share your look",
-                    body = "Settings › Appearance › Theme Store. Share your colours, lyrics, glass, font, visualizers, maps and music links as one theme, in the store or only by its code. Nothing personal goes with it. Needs an account.",
+                    body = "Settings › Theme Store. Share your colours, lyrics, glass, font, visualizers, maps and music links as one theme, in the store or only by its code. Nothing personal goes with it. Needs an account.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
@@ -211,6 +238,18 @@ object WhatsNew {
                     section = EQUALIZER,
                     title = "Your EQ on a Nothing Ear",
                     body = "Export to Nothing Ear, on the EQ screen, fits your EQ into the earbuds' eight bands as a QR code. Scan it in Nothing X under Equalizer › Advanced, and the earbuds play it without the app.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = BLUETOOTH_SYNC,
+                    title = "Bluetooth sync for the whole app",
+                    body = "Settings › Audio › Bluetooth sync. Measure it once per device with Trypt Mania's tap test, and the lyrics, the visuals, the visualizer and the game all wait for your headphones.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Open songs from other apps",
+                    body = "Pick Tryptify to open an audio file from a file manager, a chat or Downloads and it plays. Add to library, on the pill or in the player's menu, keeps it in Music/Tryptify.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.NEW,
@@ -378,7 +417,7 @@ object WhatsNew {
                     kind = WhatsNewKind.NEW,
                     section = STATS,
                     title = "Listening stats and achievements",
-                    body = "Account › Listening stats: glass cards and fourteen charts of how you listen, and ten achievements to chase. The account button shows your own picture, and you pick your own username.",
+                    body = "Account › Listening stats: glass cards, charts of how you listen, your Trypt Mania play and achievements to chase. The account button shows your own picture, and you pick your own username.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.CHANGED,
@@ -389,8 +428,20 @@ object WhatsNew {
                 WhatsNewEntry(
                     kind = WhatsNewKind.CHANGED,
                     section = EQUALIZER,
+                    title = "Precision AutoEQ's targets and filters",
+                    body = "Targets are pills under its graph, and under them each filter has a chip and pills for its type, frequency, gain and Q. Drag a dot on the graph to pick it.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = EQUALIZER,
                     title = "The preamp turns bass and treble down too",
                     body = "With the AutoEQ correction off, the Preamp did nothing and a bass boost played at full level. It now applies whenever the correction or a tone knob changes the sound.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.REMOVED,
+                    section = BLUETOOTH_SYNC,
+                    title = "Separate delay sliders",
+                    body = "The lyrics' Bluetooth delay and the visualizer's audio delay are the one Bluetooth sync now. Your value carried over.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.REMOVED,

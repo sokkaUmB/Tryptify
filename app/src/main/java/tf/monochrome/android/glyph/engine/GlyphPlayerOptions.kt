@@ -243,6 +243,14 @@ data class GlyphTvTuning(
     val tiltTopDeg: Float = 0f,
     /** The dark frame around the picture, 0 to 1: the picture drawn smaller inside it. */
     val bezel: Float = 0f,
+    /**
+     * The picture's size on the tube, [ZOOM_MIN] to [ZOOM_MAX], 1 as it is: a
+     * TV's picture-size knob. It scales the picture after the bow, so the
+     * glass keeps its curve while the picture inside it grows or shrinks.
+     * Under 1 the whole bowed edge shows inside the tube; over 1 the picture
+     * fills the corners a curve leaves dark, and its own edges go off it.
+     */
+    val zoom: Float = 1f,
     /** How round the picture's corners are, 0 to 1. */
     val corners: Float = 0f,
     /** The picture darkening toward its edges, 0 to 1. */
@@ -323,9 +331,19 @@ data class GlyphTvTuning(
 
     /**
      * Whether anything moves the picture off the screen's own pixels (a bow,
-     * a tilt, a frame), so taps on it have to follow ([tubeSource]).
+     * a tilt, a frame, a zoom), so taps on it have to follow ([tubeSource]).
      */
-    val reshaped: Boolean get() = curved || tilted || bezel >= TUBE_MIN
+    val reshaped: Boolean get() = curved || tilted || bezel >= TUBE_MIN || zoomed
+
+    /** Whether the picture is drawn at any size but its own. */
+    val zoomed: Boolean get() = abs(zoomScale - 1f) >= TUBE_MIN
+
+    /**
+     * [zoom] held to its range: what the tube shader is handed and what
+     * [tubeSource] divides by, so the two always agree and neither divides
+     * by an unclamped 0.
+     */
+    val zoomScale: Float get() = (if (zoom.isFinite()) zoom else 1f).coerceIn(ZOOM_MIN, ZOOM_MAX)
 
     /** Whether the picture has an edge of its own to soften: reshaped, or its corners rounded. */
     val framed: Boolean get() = reshaped || corners >= TUBE_MIN
@@ -396,8 +414,9 @@ data class GlyphTvTuning(
         val plane = view.plane((x / width * 2f - 1f), (y / height * 2f - 1f))
         val px = plane?.first ?: 2f * kotlin.math.sign(x / width - 0.5f)
         val py = plane?.second ?: 2f * kotlin.math.sign(y / height - 0.5f)
-        val sx = px * (1f + py * py * warpX)
-        val sy = py * (1f + px * px * warpY)
+        // The zoom scales the bowed picture, as the shader's `uZoom` does.
+        val sx = px * (1f + py * py * warpX) / zoomScale
+        val sy = py * (1f + px * px * warpY) / zoomScale
         out[0] = ((sx * 0.5f + 0.5f) * width).coerceIn(0f, width)
         out[1] = ((sy * 0.5f + 0.5f) * height).coerceIn(0f, height)
     }
@@ -417,6 +436,7 @@ data class GlyphTvTuning(
         tiltSideDeg = tiltSideDeg.tilt(),
         tiltTopDeg = tiltTopDeg.tilt(),
         bezel = bezel.unit(0f),
+        zoom = zoomScale,
         corners = corners.unit(0f),
         vignette = vignette.unit(0f),
         glare = glare.unit(0f),
@@ -457,6 +477,7 @@ data class GlyphTvTuning(
         add("tiltSide=$tiltSideDeg")
         add("tiltTop=$tiltTopDeg")
         add("bezel=$bezel")
+        add("zoom=$zoom")
         add("corners=$corners")
         add("vignette=$vignette")
         add("glare=$glare")
@@ -500,6 +521,14 @@ data class GlyphTvTuning(
 
         /** The frame's widest: the picture drawn at 1 / 1.3 of the screen. */
         const val BEZEL_MOST = 0.3f
+
+        /**
+         * Zoom's range. Out to 60% shows the whole bowed picture with room
+         * round it. In to 120% fills the corners of a classic curve; further
+         * in, the app's own edges (its tab bar) would leave the screen.
+         */
+        const val ZOOM_MIN = 0.6f
+        const val ZOOM_MAX = 1.2f
 
         /** The roundest corner, as a share of the short side. */
         const val CORNER_MOST = 0.12f
@@ -589,6 +618,8 @@ data class GlyphTvTuning(
                 tiltSideDeg = float("tiltSide", 0f),
                 tiltTopDeg = float("tiltTop", 0f),
                 bezel = float("bezel", 0f),
+                // A line from before Zoom has none, and is the picture at its own size.
+                zoom = float("zoom", 1f),
                 corners = float("corners", 0f),
                 vignette = float("vignette", 0f),
                 glare = float("glare", 0f),

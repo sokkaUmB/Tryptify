@@ -68,6 +68,8 @@ class PlayerViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val downloadManager: DownloadManager,
     private val preferences: PreferencesManager,
+    /** How late the output plays: the lyrics poll wakes for the word as heard. */
+    private val outputSync: tf.monochrome.android.audio.sync.OutputSyncRepository,
     private val projectMEngineRepository: ProjectMEngineRepository,
     private val unifiedTrackRegistry: tf.monochrome.android.player.UnifiedTrackRegistry,
     private val qobuzIdRegistry: tf.monochrome.android.data.api.QobuzIdRegistry,
@@ -86,6 +88,7 @@ class PlayerViewModel @Inject constructor(
     private val sourceConsent: tf.monochrome.android.player.SourceConsent,
     private val audioPipelineMonitor: tf.monochrome.android.audio.pipeline.AudioPipelineMonitor,
     private val playbackPositions: tf.monochrome.android.player.PlaybackPositionSource,
+    private val openedAudio: tf.monochrome.android.data.opened.OpenedAudioRepository,
 ) : ViewModel() {
 
     /**
@@ -816,7 +819,7 @@ class PlayerViewModel @Inject constructor(
                     LyricClock.nextPollDelayMs(
                         positionMs = position,
                         speed = _liveSpeed.value,
-                        delayMs = lyricsFx.value.bluetoothDelayMs,
+                        delayMs = outputSync.delayMs.value.toFloat(),
                         lyrics = _currentLyrics.value,
                     ),
                 )
@@ -870,6 +873,39 @@ class PlayerViewModel @Inject constructor(
         val legacyTrack = track.toLegacyTrack()
         queueManager.playTrackInQueue(legacyTrack, legacyTracks)
         resolveAndPlay()
+    }
+
+    /**
+     * Play a song another app opened with Tryptify, as a queue of one. Song
+     * radio is stopped first, or it would add its picks behind it.
+     */
+    fun playOpenedFile(track: UnifiedTrack) {
+        radioQueueManager.stopRadio()
+        playUnifiedTrack(track, listOf(track))
+    }
+
+    /** The latest file opened with Tryptify, until [takeOpenedFile] plays it. */
+    val openedFile: StateFlow<tf.monochrome.android.data.opened.OpenedAudioRepository.Opened?> = openedAudio.opened
+
+    /** Ids of opened songs already added to the library. */
+    val openedSaved: StateFlow<Set<String>> = openedAudio.saved
+
+    /** Plays [item] when it is ready, and marks it taken either way. */
+    fun takeOpenedFile(item: tf.monochrome.android.data.opened.OpenedAudioRepository.Opened) {
+        openedAudio.taken(item)
+        if (item is tf.monochrome.android.data.opened.OpenedAudioRepository.Opened.Ready) playOpenedFile(item.track)
+    }
+
+    /** True when [track] plays from a file another app opened, not from the library. */
+    fun isOpenedFile(track: Track?): Boolean =
+        unifiedFor(track)?.id?.startsWith(tf.monochrome.android.data.opened.OpenedAudio.ID_PREFIX) == true
+
+    /** Copies the opened song [track] into Music/Tryptify and hands the outcome to [onDone]. */
+    fun addOpenedToLibrary(
+        track: UnifiedTrack,
+        onDone: (tf.monochrome.android.data.opened.OpenedAudioRepository.Added) -> Unit,
+    ) {
+        viewModelScope.launch { onDone(openedAudio.addToLibrary(track)) }
     }
 
     /**

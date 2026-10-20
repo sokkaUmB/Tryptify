@@ -233,7 +233,7 @@ fun ProfileScreen(
                         isSyncing = isSyncing,
                         syncStatus = syncStatus?.resolve(context),
                         onSync = { viewModel.syncNow() },
-                        onOpenStats = { navController.navigateTool(Screen.Stats) },
+                        onOpenStats = { navController.navigateTool(Screen.Stats, Screen.Stats.createRoute()) },
                         onSignOut = { showSignOutDialog = true }
                     )
                 } else {

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.ViewQuilt
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -75,6 +76,7 @@ fun partLabel(part: ThemePart): String = stringResource(
         ThemePart.VISUALIZER -> R.string.theme_part_visualizer
         ThemePart.MAPS -> R.string.theme_part_maps
         ThemePart.LINKS -> R.string.theme_part_links
+        ThemePart.CRT -> R.string.theme_part_crt
     },
 )
 
@@ -89,6 +91,7 @@ fun partDescription(part: ThemePart): String = stringResource(
         ThemePart.VISUALIZER -> R.string.theme_part_visualizer_desc
         ThemePart.MAPS -> R.string.theme_part_maps_desc
         ThemePart.LINKS -> R.string.theme_part_links_desc
+        ThemePart.CRT -> R.string.theme_part_crt_desc
     },
 )
 
@@ -101,6 +104,7 @@ fun partIcon(part: ThemePart): ImageVector = when (part) {
     ThemePart.VISUALIZER -> Icons.Default.GraphicEq
     ThemePart.MAPS -> Icons.Default.Public
     ThemePart.LINKS -> Icons.Default.MusicNote
+    ThemePart.CRT -> Icons.Default.Tv
 }
 
 /**
@@ -185,7 +189,7 @@ fun PackPreview(
                         tap = analyzer,
                         links = pack.links.orEmpty(),
                         active = true,
-                        delayMs = fx.bluetoothDelayMs,
+                        delayMs = tf.monochrome.android.ui.player.LocalOutputSyncMs.current,
                     )
                     val position = remember { MutableStateFlow(0L) }
                     CompositionLocalProvider(LocalVisualLinks provides live) {
