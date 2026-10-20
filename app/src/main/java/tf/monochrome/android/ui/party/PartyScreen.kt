@@ -5,7 +5,6 @@ package tf.monochrome.android.ui.party
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -72,8 +71,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -101,14 +98,12 @@ import tf.monochrome.android.party.PartyMember
 import tf.monochrome.android.party.PartyStatus
 import tf.monochrome.android.party.PartyUi
 import tf.monochrome.android.party.PartyView
-import tf.monochrome.android.ui.components.GlassPanel
 import tf.monochrome.android.ui.components.GlassPill
 import tf.monochrome.android.ui.components.LocalGlassBackdrop
 import tf.monochrome.android.ui.components.PressableGlass
 import tf.monochrome.android.ui.components.SearchOverlay
 import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
-import tf.monochrome.android.ui.navigation.LocalMiniPlayerGlass
 import tf.monochrome.android.ui.theme.MonoDimens
 
 /**
@@ -277,15 +272,9 @@ private fun PartyLobby(
 private fun PartyRoom(ui: PartyUi, viewModel: PartyViewModel, onBack: () -> Unit, onAdd: () -> Unit, invite: String?) {
     val party = ui.party ?: return
     val context = LocalContext.current
-    var chatOpen by rememberSaveable { mutableStateOf(false) }
-    BackHandler(enabled = chatOpen) { chatOpen = false }
-    var sheetHeight by remember { mutableStateOf(0.dp) }
-    val density = LocalDensity.current
-    // The chat sheet frosts the page it floats over, a sibling of it.
-    val page = rememberHazeState()
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().hazeSource(page)) {
+        Column(Modifier.fillMaxSize()) {
             val host = party.host
             PartyTopBar(
                 title = party.name,
@@ -305,6 +294,7 @@ private fun PartyRoom(ui: PartyUi, viewModel: PartyViewModel, onBack: () -> Unit
             Column(
                 modifier = Modifier
                     .weight(1f)
+                    .imePadding()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = MonoDimens.spacingLg),
                 verticalArrangement = Arrangement.spacedBy(MonoDimens.spacingMd),
@@ -342,25 +332,13 @@ private fun PartyRoom(ui: PartyUi, viewModel: PartyViewModel, onBack: () -> Unit
                 }
                 NowPlaying(ui, party, viewModel)
                 UpNext(ui, party, viewModel, onAdd)
+                Chat(lines = ui.client.lines, myId = ui.myId, onSend = viewModel::chat)
                 ThisPhone(ui, viewModel)
                 PillButton(stringResource(R.string.party_leave), danger = true, onClick = viewModel::leave)
                 if (ui.client.isHost) EndForEveryone(onEnd = viewModel::endParty)
-                Spacer(Modifier.height(sheetHeight + LocalBottomChromeInset.current + MonoDimens.spacingLg))
+                Spacer(Modifier.height(LocalBottomChromeInset.current + MonoDimens.spacingLg))
             }
         }
-        ChatSheet(
-            lines = ui.client.lines,
-            myId = ui.myId,
-            open = chatOpen,
-            onToggle = { chatOpen = !chatOpen },
-            onSend = viewModel::chat,
-            hazeState = page,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = LocalBottomChromeInset.current)
-                .imePadding()
-                .onSizeChanged { sheetHeight = with(density) { it.height.toDp() } },
-        )
     }
 }
 
@@ -743,20 +721,12 @@ private fun SwitchRow(title: String, description: String?, on: Boolean, onChange
 }
 
 /**
- * The chat, as a sheet at the bottom of the screen: the latest line and the
- * field, and with a tap on it the whole chat. Glass over the page it floats
- * on, drawn in this window beside it, so it frosts what scrolls under it.
+ * The chat, a panel of the page under Up next: every line, newest at the
+ * bottom (a long chat scrolls inside the panel), and the field to say
+ * something. Part of the page, as the owner asked, never a sheet over it.
  */
 @Composable
-private fun ChatSheet(
-    lines: List<PartyLine>,
-    myId: String?,
-    open: Boolean,
-    onToggle: () -> Unit,
-    onSend: (String) -> Unit,
-    hazeState: dev.chrisbanes.haze.HazeState,
-    modifier: Modifier = Modifier,
-) {
+private fun Chat(lines: List<PartyLine>, myId: String?, onSend: (String) -> Unit) {
     var draft by rememberSaveable { mutableStateOf("") }
     val send = {
         if (draft.isNotBlank()) {
@@ -764,61 +734,41 @@ private fun ChatSheet(
             draft = ""
         }
     }
-    GlassPanel(
-        hazeState = hazeState,
-        glass = LocalMiniPlayerGlass.current,
-        modifier = modifier.fillMaxWidth().padding(horizontal = MonoDimens.spacingSm),
-        avoidNavigationBar = false,
-        fallbackMinAlpha = 0.9f,
-    ) {
-        Column(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp).animateContentSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Box(
-                Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .clickable(onClickLabel = stringResource(R.string.party_chat_title), onClick = onToggle)
-                    .padding(vertical = 4.dp, horizontal = 24.dp),
+    Panel {
+        Title(stringResource(R.string.party_chat_title))
+        if (lines.isEmpty()) {
+            Text(stringResource(R.string.party_chat_empty), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            val listState = rememberLazyListState()
+            LaunchedEffect(lines.size) { listState.animateScrollToItem(lines.lastIndex) }
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Box(Modifier.width(36.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)))
+                items(lines) { line -> ChatLine(line, myId) }
             }
-            if (open) {
-                val listState = rememberLazyListState()
-                LaunchedEffect(lines.size) { if (lines.isNotEmpty()) listState.animateScrollToItem(lines.lastIndex) }
-                if (lines.isEmpty()) {
-                    Text(stringResource(R.string.party_chat_empty), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                LazyColumn(state = listState, modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items(lines) { line -> ChatLine(line, myId) }
-                }
-            } else {
-                val last = lines.lastOrNull()
-                Box(Modifier.fillMaxWidth().clickable(onClick = onToggle)) {
-                    if (last != null) ChatLine(last, myId, oneLine = true)
-                    else Text(stringResource(R.string.party_chat_empty), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = draft,
-                    onValueChange = { draft = it.take(300) },
-                    placeholder = { Text(stringResource(R.string.party_chat_hint)) },
-                    singleLine = true,
-                    shape = MonoDimens.shapePill,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send, capitalization = KeyboardCapitalization.Sentences),
-                    keyboardActions = KeyboardActions(onSend = { send() }),
-                    modifier = Modifier.weight(1f),
-                )
-                PressableGlass(
-                    onClick = { send() },
-                    modifier = Modifier.size(48.dp),
-                    shape = CircleShape,
-                    hazeState = hazeState,
-                    onClickLabel = stringResource(R.string.party_send),
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.party_send), modifier = Modifier.size(20.dp))
-                }
+        }
+        Spacer(Modifier.height(MonoDimens.spacingSm))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = draft,
+                onValueChange = { draft = it.take(300) },
+                placeholder = { Text(stringResource(R.string.party_chat_hint)) },
+                singleLine = true,
+                shape = MonoDimens.shapePill,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send, capitalization = KeyboardCapitalization.Sentences),
+                keyboardActions = KeyboardActions(onSend = { send() }),
+                modifier = Modifier.weight(1f),
+            )
+            PressableGlass(
+                onClick = { send() },
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                hazeState = LocalGlassBackdrop.current,
+                onClickLabel = stringResource(R.string.party_send),
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.party_send), modifier = Modifier.size(20.dp))
             }
         }
     }

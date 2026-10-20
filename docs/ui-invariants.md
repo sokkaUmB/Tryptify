@@ -2049,16 +2049,18 @@ host's Play/Pause for everyone and Skip, everyone else's Vote skip with the
 count; Up next with who added each song and Shared or Uploading N%, and
 Add song; the switches for this phone (Share songs, and which goings-on are
 notified); Leave the party, and for the host End the party for everyone.
-The chat is a sheet at the bottom with the latest line and the field, and a
-tap opens the whole chat in it.
+The chat is a panel of the page right under Up next: every line, newest at
+the bottom, and the field to say something.
 
 * Colours, type and glass are the listener's own. The demos' purple and
   their Orbitron were placeholders; the website (demo D, served by the rooms
   server) keeps its own look, and the app's screen never copies it.
-* The chat sheet is a `GlassPanel` drawn in the screen beside the page it
-  floats over, which is its haze source; never a `ModalBottomSheet`, which
-  is another window and would be a solid slab. The pills on the page frost
-  the page's ground, a source of their own, never the page they are on.
+* The chat is part of the page, a Material 3 panel under Up next like the
+  other panels (the owner's call, replacing a glass sheet floating at the
+  bottom, which covered Up next and the switches). Never a sheet over the
+  page, glass or `ModalBottomSheet`. A long chat scrolls inside its panel
+  (at most 280 dp tall), held at the newest line. The pills on the page
+  frost the page's ground, a source of their own, never the page they are on.
 * Up next's rows are list rows: Material 3, `MonoDimens.listRowHeight`. The
   Add song page is `SearchOverlay` + `GlassSearchBar` over its results, as
   every search bar is: songs on this phone first, then the catalogue.
