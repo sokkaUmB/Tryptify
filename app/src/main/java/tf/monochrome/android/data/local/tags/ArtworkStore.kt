@@ -79,6 +79,54 @@ class ArtworkStore @Inject constructor(
     }
 
     /**
+     * Covers "Find album art" found online for songs without one, by song.
+     * Kept apart from the scanned covers and never written into the music
+     * folder: the listener's files are not touched. The scanner reads it
+     * after a song's own embedded picture and before any sidecar image, so a
+     * found cover lasts through rescans and beats a stray cover.jpg.
+     */
+    private val foundRoot: File by lazy { File(root, FOUND_DIR).also { it.mkdirs() } }
+
+    /** The found cover of the song at [audioPath], or null. */
+    fun foundFor(audioPath: String): String? {
+        val prefix = foundPrefix(audioPath)
+        return foundRoot.listFiles { f -> f.name.startsWith(prefix) && f.name.endsWith(".jpg") }
+            ?.maxByOrNull { it.lastModified() }?.absolutePath
+    }
+
+    /**
+     * Keeps [artworkBytes] as the found cover of the song at [audioPath],
+     * replacing any found before; its path, or null when the bytes are no
+     * image or could not be written. Each cover's name carries its content,
+     * so a replaced cover is a new name and no image cache shows the old one.
+     */
+    fun putFound(artworkBytes: ByteArray, audioPath: String): String? = try {
+        val encoded = encode(artworkBytes)
+        if (encoded == null) null else {
+            foundRoot.mkdirs()
+            val prefix = foundPrefix(audioPath)
+            val file = File(foundRoot, prefix + ArtworkKeys.nameFor(encoded))
+            if (!file.exists()) {
+                val tmp = File(foundRoot, file.name + ".tmp")
+                FileOutputStream(tmp).use { it.write(encoded) }
+                if (!tmp.renameTo(file)) {
+                    tmp.delete()
+                    throw java.io.IOException("could not keep the cover")
+                }
+            }
+            foundRoot.listFiles { f -> f.name.startsWith(prefix) && f.name != file.name }?.forEach { it.delete() }
+            file.absolutePath
+        }
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun foundPrefix(audioPath: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(audioPath.toByteArray(Charsets.UTF_8))
+        return digest.take(12).joinToString("") { "%02x".format(it) } + "-"
+    }
+
+    /**
      * Decode, downscale to [MAX_EDGE_PX] on the longest edge, re-encode as JPEG.
      * Null when the bytes are not a decodable image — the one case the caller
      * must read as "no art" rather than a write failure.
@@ -141,6 +189,9 @@ class ArtworkStore @Inject constructor(
     }
 
     companion object {
+        /** Under [root]: the covers "Find album art" found, by song. */
+        const val FOUND_DIR = "found"
+
         /**
          * Longest edge of a stored cover. The player hero is the largest
          * surface art is drawn on and remote art is fetched at 640 px for the

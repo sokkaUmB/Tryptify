@@ -3082,4 +3082,20 @@
     <string name="party_error_host_only">Solo el anfitrión puede hacerlo.</string>
     <string name="party_cd_more">Más para %1$s</string>
     <string name="party_cd_avatar">%1$s, en la fiesta</string>
+    <string name="settings_music_folders">Carpetas de música</string>
+    <string name="settings_music_folders_desc">Las carpetas desde las que se escanea tu biblioteca. Quitar una saca sus canciones de la biblioteca; los archivos siguen en tu teléfono.</string>
+    <string name="settings_music_folders_whole_phone">No hay ninguna carpeta elegida, así que se escanea todo el teléfono. Añade una carpeta para escanear solo las que elijas.</string>
+    <string name="settings_rescan_library_now">Volver a escanear la biblioteca</string>
+    <string name="settings_spotify_browse_needs_connect">Para elegir entre tus playlists y tus Canciones que te gustan, conecta Spotify en la pestaña Conexiones.</string>
+    <string name="settings_hide_unmatched">Ocultar canciones sin coincidencia</string>
+    <string name="action_find_album_art">Buscar portada</string>
+    <string name="art_looking">Buscando la portada…</string>
+    <string name="art_found_one">Portada encontrada</string>
+    <string name="art_none_one">No hay una coincidencia segura para esta canción, así que no se añadió portada.</string>
+    <string name="art_own_one">Esta canción ya tiene su propia portada.</string>
+    <plurals name="art_found_many">
+        <item quantity="one">Se encontró portada para %1$d de %2$d canción</item>
+        <item quantity="many">Se encontró portada para %1$d de %2$d canciones</item>
+        <item quantity="other">Se encontró portada para %1$d de %2$d canciones</item>
+    </plurals>
 </resources>

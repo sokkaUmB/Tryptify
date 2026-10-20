@@ -2940,4 +2940,18 @@
     <string name="party_error_host_only">それができるのはホストだけです。</string>
     <string name="party_cd_more">%1$s のその他</string>
     <string name="party_cd_avatar">%1$s（パーティーに参加中）</string>
+    <string name="settings_music_folders">音楽フォルダ</string>
+    <string name="settings_music_folders_desc">ライブラリはこれらのフォルダからスキャンされます。フォルダを削除すると曲はライブラリから外れますが、ファイルは端末に残ります。</string>
+    <string name="settings_music_folders_whole_phone">フォルダが選ばれていないため、端末全体をスキャンします。フォルダを追加すると、選んだフォルダだけをスキャンします。</string>
+    <string name="settings_rescan_library_now">今すぐライブラリを再スキャン</string>
+    <string name="settings_spotify_browse_needs_connect">自分のプレイリストや「お気に入りの曲」から選ぶには、「接続」タブで Spotify を接続してください。</string>
+    <string name="settings_hide_unmatched">一致しなかった曲を隠す</string>
+    <string name="action_find_album_art">アルバムアートを探す</string>
+    <string name="art_looking">アルバムアートを探しています…</string>
+    <string name="art_found_one">アルバムアートが見つかりました</string>
+    <string name="art_none_one">この曲に確かな一致がないため、カバーは追加されませんでした。</string>
+    <string name="art_own_one">この曲にはすでにカバーがあります。</string>
+    <plurals name="art_found_many">
+        <item quantity="other">%2$d 曲中 %1$d 曲のアルバムアートが見つかりました</item>
+    </plurals>
 </resources>

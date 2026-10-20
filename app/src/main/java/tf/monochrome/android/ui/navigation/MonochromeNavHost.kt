@@ -614,6 +614,30 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 tf.monochrome.android.player.preview.SongPreviewEntryPoint::class.java,
             ).songPreview()
         }
+        // Every song menu's and selection's "Find album art", and how it went.
+        val albumArt = remember(appContext) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                appContext,
+                tf.monochrome.android.data.local.art.AlbumArtEntryPoint::class.java,
+            ).albumArtFinder()
+        }
+        val findAlbumArt: (List<tf.monochrome.android.data.local.art.ArtRequest>) -> Unit = remember(albumArt) {
+            { songs ->
+                albumArt.find(songs)
+                android.widget.Toast.makeText(appContext, appContext.getString(R.string.art_looking), android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+        androidx.compose.runtime.LaunchedEffect(albumArt) {
+            albumArt.outcomes.collect { o ->
+                val text = when {
+                    o.total > 1 -> appContext.resources.getQuantityString(R.plurals.art_found_many, o.total, o.found, o.total)
+                    o.found == 1 -> appContext.getString(R.string.art_found_one)
+                    o.ownCover == 1 -> appContext.getString(R.string.art_own_one)
+                    else -> appContext.getString(R.string.art_none_one)
+                }
+                android.widget.Toast.makeText(appContext, text, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
         // Every song menu's "Add to party", while a party is on.
         val party = remember(appContext) {
             dagger.hilt.android.EntryPointAccessors.fromApplication(
@@ -654,6 +678,7 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             // and the mode opened to take it.
             tf.monochrome.android.ui.components.LocalPlayInTryptMania provides playInTryptMania,
             tf.monochrome.android.ui.party.LocalAddToParty provides addToParty,
+            tf.monochrome.android.ui.components.LocalFindAlbumArt provides findAlbumArt,
             tf.monochrome.android.ui.components.LocalSongPreview provides songPreview,
         ) {
         Box(modifier = Modifier.fillMaxSize().hazeSource(hazeState).nestedScroll(collapseOnScroll)) {

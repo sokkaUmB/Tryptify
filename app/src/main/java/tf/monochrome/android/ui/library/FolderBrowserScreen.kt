@@ -145,13 +145,49 @@ fun FolderBrowserScreen(
     // The subfolder whose long-press menu is open, by path.
     var menuFolder by remember { mutableStateOf<String?>(null) }
 
+    // Multi-select, begun from a song's menu ("Select"): taps then add and
+    // remove songs, and the bar acts on all of them at once.
+    val selection = tf.monochrome.android.ui.components.rememberTrackSelectionState<String>()
+    androidx.activity.compose.BackHandler(enabled = selection.active) { selection.clear() }
+    val selectedTracks = { tracks.filter { it.id in selection.selectedIds } }
+    var addSelectionToPlaylist by remember { mutableStateOf(false) }
+    var createPlaylistForSelection by remember { mutableStateOf(false) }
+    val findAlbumArt = tf.monochrome.android.ui.components.LocalFindAlbumArt.current
+
     var menuTrack by remember { mutableStateOf<UnifiedTrack?>(null) }
     UnifiedTrackContextMenuHost(
         track = menuTrack,
         onDismissRequest = { menuTrack = null },
         navController = navController,
         playerViewModel = playerViewModel,
+        onSelect = menuTrack?.let { t -> { selection.toggle(t.id) } },
     )
+    if (addSelectionToPlaylist) {
+        val playlists by playerViewModel.playlists.collectAsStateWithLifecycle()
+        tf.monochrome.android.ui.components.AddToPlaylistSheet(
+            playlists = playlists,
+            onDismiss = { addSelectionToPlaylist = false },
+            onPlaylistSelected = { playlist ->
+                selectedTracks().forEach { playerViewModel.addTrackToPlaylist(playlist.id, it.toLegacyTrack()) }
+                addSelectionToPlaylist = false
+                selection.clear()
+            },
+            onCreateNew = {
+                addSelectionToPlaylist = false
+                createPlaylistForSelection = true
+            },
+        )
+    }
+    if (createPlaylistForSelection) {
+        tf.monochrome.android.ui.components.CreatePlaylistDialog(
+            onDismiss = { createPlaylistForSelection = false },
+            onSubmit = { name, description ->
+                playerViewModel.createPlaylist(name, description, selectedTracks().map { it.toLegacyTrack() })
+                createPlaylistForSelection = false
+                selection.clear()
+            },
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -185,6 +221,29 @@ fun FolderBrowserScreen(
             )
         )
         FolderCrumbBar(crumbs = crumbs, onOpen = { navController.openAncestorFolder(it) })
+        androidx.compose.animation.AnimatedVisibility(visible = selection.active) {
+            tf.monochrome.android.ui.components.TrackSelectionBar(
+                selectedCount = selection.count,
+                onClose = { selection.clear() },
+                onAddToQueue = {
+                    playerViewModel.addUnifiedToQueue(selectedTracks())
+                    selection.clear()
+                },
+                onAddToPlaylist = { addSelectionToPlaylist = true },
+                onFindAlbumArt = findAlbumArt?.let { find ->
+                    {
+                        find(
+                            selectedTracks().mapNotNull { t ->
+                                val path = (t.source as? tf.monochrome.android.domain.model.PlaybackSource.LocalFile)?.filePath
+                                    ?: return@mapNotNull null
+                                tf.monochrome.android.data.local.art.ArtRequest(t.title, t.artistName, t.albumTitle, t.durationSeconds, path)
+                            },
+                        )
+                        selection.clear()
+                    }
+                },
+            )
+        }
 
         SearchOverlay(
             open = searchOpen,
@@ -281,17 +340,24 @@ fun FolderBrowserScreen(
                 // legacyId, not id: the queue holds legacy Tracks, so that is
                 // what LocalNowPlayingTrackId carries.
                 val nowPlaying = track.legacyId == LocalNowPlayingTrackId.current
+                val selected = track.id in selection.selectedIds
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(MonoDimens.listRowHeight)
                         .background(
-                            if (nowPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                            else Color.Transparent
+                            when {
+                                selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
+                                nowPlaying -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                else -> Color.Transparent
+                            }
                         )
                         // Holding plays the song's preview until the finger lifts.
+                        // While songs are selected, a tap adds or removes one.
                         .combinedClickable(
-                            onClick = { onPlayTrack(track, visibleTracks) },
+                            onClick = {
+                                if (selection.active) selection.toggle(track.id) else onPlayTrack(track, visibleTracks)
+                            },
                             onLongClick = rememberHoldToPreview(track),
                         )
                         .songPreviewHold(SongPreview.keyOf(track), RectangleShape)

@@ -802,6 +802,24 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The folders the library is scanned from, as Library › Local keeps them:
+     * one list, read and written in both places, so the two never disagree.
+     * Empty means the whole phone is scanned.
+     */
+    val musicFolders: StateFlow<List<String>> = preferences.userFolderRoots
+        .map { it.sorted() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Adds a folder and scans it in; a picker location with no file path still scans. */
+    fun addMusicFolder(path: String?) {
+        if (path.isNullOrBlank()) scanCoordinator.requestFullScanAfterCurrent()
+        else scanCoordinator.addFolderAndScan(path)
+    }
+
+    /** Takes a folder out of the library, as Library › Local's remove does. The files stay. */
+    fun removeMusicFolder(path: String) = scanCoordinator.excludeFolder(path)
+
     fun rescanLibrary() {
         // Route through the shared ScanCoordinator (the same guard the Library
         // tab uses), so the button actually scans instead of no-op'ing, and

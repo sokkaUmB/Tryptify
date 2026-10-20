@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlaylistAdd
@@ -97,6 +98,7 @@ fun TrackContextMenu(
     // overlay host may sit outside what the app's root provides.
     val playInTryptMania = LocalPlayInTryptMania.current
     val addToParty = tf.monochrome.android.ui.party.LocalAddToParty.current
+    val findAlbumArt = LocalFindAlbumArt.current
 
     GlassOverlay(onDismiss = onDismiss, alignment = Alignment.BottomCenter) {
         // "Disable animations": the pages swap at once, at their own heights.
@@ -183,6 +185,26 @@ fun TrackContextMenu(
                             icon = Icons.Default.CheckCircle,
                             label = stringResource(R.string.action_select),
                             onClick = { onSelect(); onDismiss() }
+                        )
+                    }
+                    if (findAlbumArt != null && filePath != null) {
+                        ContextMenuItem(
+                            icon = Icons.Default.ImageSearch,
+                            label = stringResource(R.string.action_find_album_art),
+                            onClick = {
+                                findAlbumArt(
+                                    listOf(
+                                        tf.monochrome.android.data.local.art.ArtRequest(
+                                            title = track.title,
+                                            artist = track.artist?.name ?: track.artists.firstOrNull()?.name.orEmpty(),
+                                            album = track.album?.title,
+                                            durationSeconds = track.duration,
+                                            filePath = filePath,
+                                        ),
+                                    ),
+                                )
+                                onDismiss()
+                            }
                         )
                     }
                     if (addToParty != null) {

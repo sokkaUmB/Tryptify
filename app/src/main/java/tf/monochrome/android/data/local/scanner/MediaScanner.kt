@@ -446,9 +446,17 @@ class MediaScanner @Inject constructor(
                 // ends up branded with one stray file's cover). So: never
                 // store album art for the synthetic bucket, and never
                 // propagate it down to its tracks.
-                val isSyntheticAlbum = representative.album.isNullOrBlank()
+                // So is a catch-all tag ("Various Artists", "Unknown Album",
+                // "Singles"): files from every folder share it and are no album
+                // together either. And a real album's cover reaches only the
+                // tracks in the folder it came from (AlbumArtShare).
+                val isSyntheticAlbum = AlbumArtShare.isPlaceholder(representative.album)
                 val albumArt = if (isSyntheticAlbum) null
                     else albumTracks.firstOrNull { it.hasEmbeddedArt }?.artworkCacheKey
+                val sharedCovers = AlbumArtShare.coversByPath(
+                    albumTracks.map { AlbumArtShare.Member(it.filePath, it.hasEmbeddedArt, it.artworkCacheKey) },
+                    placeholder = isSyntheticAlbum,
+                )
                 val albumEntity = LocalAlbumEntity(
                     title = representative.album ?: "Unknown Album",
                     artist = representative.albumArtist ?: representative.artist ?: "Unknown Artist",
@@ -465,7 +473,7 @@ class MediaScanner @Inject constructor(
                 val albumId = localMediaDao.upsertAlbum(albumEntity)
                 for (track in albumTracks) {
                     albumIdByTrackPath[track.filePath] = albumId
-                    albumArtByTrackPath[track.filePath] = albumArt
+                    albumArtByTrackPath[track.filePath] = sharedCovers[track.filePath]
                 }
             }
 
@@ -498,8 +506,9 @@ class MediaScanner @Inject constructor(
             // transaction. Trust hasEmbeddedArt (set by TagReader; covers both
             // an embedded picture atom and a folder sidecar) to decide
             // ownership. Tracks with their own art keep its path. Tracks
-            // without get the album-propagated path — or null if the album is
-            // synthetic (Unknown Album bucket). Recomputing every row on
+            // without get the cover of their album in their own folder — or
+            // null if the album is synthetic or a catch-all tag, or that folder
+            // has no cover (AlbumArtShare). Recomputing every row on
             // rebuild ensures stale propagation from a previous scan gets
             // cleaned up.
             //

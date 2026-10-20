@@ -767,6 +767,23 @@ read as on whatever was stored, so nobody is left with one off and no way
 back. A copy of a setting in a second place is not a convenience; it is two
 switches that can disagree.
 
+**The music folders are one list shown in two places, never two lists.**
+Settings › Library › Music folders (the owner asked for it there, with +)
+and Library › Local's Folders both read and write the user's folder roots
+(`PreferencesManager.userFolderRoots`), add through
+`ScanCoordinator.addFolderAndScan` and remove through `excludeFolder` behind
+the same `ExcludeFolderDialog`, so a folder added or removed in one is gone
+from or there in the other at once. A second store of folders for Settings
+would be exactly the two switches above. An empty list scans the whole
+phone, and the row says so.
+
+**Playlist Import in Settings is the link import.** No account needed: the
+link is looked up as it is pasted (`rememberSpotifyLinkPreview`,
+`LinkPreviewCard`, the same pieces as Library › Playlists › New playlist),
+and Import Playlist reads the public playlist when the account cannot.
+Browse My Playlists, for your own playlists and Liked Songs, shows only with
+Spotify connected; the field is never greyed out behind a sign-in again.
+
 **An imported font is a family, not a file.** Fonts arrive as a file per
 weight; the library groups the files that name the same family
 (`FontFamilies`: the typographic family, else the legacy one without its
@@ -907,6 +924,25 @@ that multiplies with the system font scale. 64dp is correct at 1.0x and clips th
 subtitle above it. `ListRowHeightTest` walks both scales and checks every row
 shape against the budget; if you raise a line height in `Type.kt` or add a taller
 row, that test is where it surfaces.
+
+**A song's cover is its own, its album's in its own folder, or none.**
+Albums are grouped by tags across every folder, so the scanner gives a
+coverless song the cover of another song of its album only from the same
+folder, and never inside a catch-all album ("Various Artists", "Unknown
+Album", "Singles"; `AlbumArtShare`). Before, a coverless song tagged
+"Various Artists" took the first cover of any unrelated file with that tag
+anywhere: a random picture. A song with no rightful cover shows the note.
+
+**"Find album art" asks, and takes only the same song.** In a song's ⋮
+menu for a file on the phone, and on the selection bar of a folder (Select
+from a song's menu, then tap to add songs). `AlbumArtFinder` searches the
+catalogue, then iTunes; `ArtMatch` takes a result only with the same title
+and the same artist within 5 s, or, for an artist tag that names nobody,
+within 3 s, and none is better than a guess. The cover goes in the app's
+artwork store (`ArtworkStore.putFound`), never into the music file, and the
+scanner reads it back after the file's own picture and before any sidecar,
+so it lasts through rescans. A song with its own embedded picture is left
+alone.
 
 **The subtitle is capped at one line** in both `ClickableArtists` and
 `TrackArtistAlbumLine` — the outer `FlowRow` too, not just the inner one. The

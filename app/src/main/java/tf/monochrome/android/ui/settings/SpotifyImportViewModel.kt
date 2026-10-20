@@ -97,8 +97,9 @@ class SpotifyImportViewModel @Inject constructor(
         }
     }
 
-    fun importByUrl(context: Context, url: String, strictAlbumMatch: Boolean = false, onResult: (Boolean, UiText) -> Unit) {
-        runImport(onResult) { SpotifyImportForegroundService.importUrl(context, url, strictAlbumMatch) }
+    /** [name] is the playlist's own, from the link's preview, when it was found. */
+    fun importByUrl(context: Context, url: String, strictAlbumMatch: Boolean = false, name: String? = null, onResult: (Boolean, UiText) -> Unit) {
+        runImport(onResult) { SpotifyImportForegroundService.importUrl(context, url, strictAlbumMatch, name) }
     }
 
     fun importPlaylist(context: Context, playlistId: String, name: String, strictAlbumMatch: Boolean = false, onResult: (Boolean, UiText) -> Unit) {

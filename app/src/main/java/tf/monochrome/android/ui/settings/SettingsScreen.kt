@@ -59,7 +59,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Cloud
@@ -3699,8 +3701,10 @@ private fun LibrarySettingsTab(viewModel: SettingsViewModel) {
         ) {
             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(if (isScanning) "Scanning…" else "Rescan Library Now")
+            Text(stringResource(if (isScanning) R.string.settings_scanning_library else R.string.settings_rescan_library_now))
         }
+
+        MusicFolders(viewModel)
 
         val titleFromFileName by viewModel.localTitleFromFileName.collectAsStateWithLifecycle()
         SettingSwitchItem(
@@ -3913,7 +3917,85 @@ private fun WhatsNewPanel(highlight: Boolean) {
 }
 
 /**
- * Import playlists from a connected Spotify account.
+ * The folders the library is scanned from, with + to add one and a remove on
+ * each: the same list Library › Local shows and changes (the user's folder
+ * roots), so the two places cannot disagree. Removing asks first, as there,
+ * and says the files stay; an empty list scans the whole phone, and says so.
+ */
+@Composable
+private fun MusicFolders(viewModel: SettingsViewModel) {
+    val context = LocalContext.current
+    val folders by viewModel.musicFolders.collectAsStateWithLifecycle()
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree(),
+    ) { uri ->
+        if (uri != null) {
+            // Kept across restarts, as Library › Local's picker keeps it.
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val path = tf.monochrome.android.util.safTreeUriToPath(uri)
+            if (path == null) {
+                android.widget.Toast.makeText(context, context.getString(R.string.folder_unscannable), android.widget.Toast.LENGTH_LONG).show()
+            } else {
+                viewModel.addMusicFolder(path)
+            }
+        }
+    }
+    var removing by remember { mutableStateOf<tf.monochrome.android.ui.library.FolderToExclude?>(null) }
+    removing?.let { folder ->
+        tf.monochrome.android.ui.library.ExcludeFolderDialog(
+            folder = folder,
+            onDismiss = { removing = null },
+            onConfirm = { viewModel.removeMusicFolder(folder.path) },
+        )
+    }
+
+    val title = stringResource(R.string.settings_music_folders)
+    Spacer(modifier = Modifier.height(12.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth().settingsAnchor(title),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                stringResource(if (folders.isEmpty()) R.string.settings_music_folders_whole_phone else R.string.settings_music_folders_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = { picker.launch(null) }) {
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_folder), tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+    folders.forEach { path ->
+        val name = path.trimEnd('/').substringAfterLast('/').ifBlank { path }
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.Folder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text(path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            }
+            IconButton(onClick = { removing = tf.monochrome.android.ui.library.FolderToExclude(path, name) }) {
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove_folder))
+            }
+        }
+    }
+}
+
+/**
+ * Import a Spotify playlist from its link, with or without an account, and
+ * with one, from your own playlists and Liked Songs.
  *
  * Was a group on the System tab, between the app sign-in and the backup
  * controls. It produces playlists, so it belongs with the library — and
@@ -3938,58 +4020,73 @@ private fun PlaylistImportSection() {
             if (success) importUrl = ""
         }
 
-        // Connect / disconnect lives on the Connections tab with every other
-        // account; this section keeps only the import it feeds. Both read the
-        // same SpotifyImportViewModel, so linking there lights this up without
-        // leaving Settings.
-        Text(
-            if (spotifyConnected) {
-                "Connected as ${spotifyUserName ?: "…"}. Paste a playlist link, or pick from your library."
-            } else {
-                "Connect Spotify on the Connections tab to import your playlists."
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
+        // The link import, as Library › Playlists › New playlist has it: no
+        // account needed, a public playlist read from its link, looked up as
+        // it is pasted so its cover, name and length show before anything is
+        // imported. The account (Connections tab) adds browsing your own
+        // playlists and Liked Songs, and lists past the public 100 songs.
+        var strictAlbumMatch by remember { mutableStateOf(false) }
+        val preview = tf.monochrome.android.ui.components.rememberSpotifyLinkPreview(importUrl.ifBlank { null })
+        tf.monochrome.android.ui.components.SpotifyLinkField(link = importUrl, onLinkChange = { importUrl = it }) { trailing ->
+            androidx.compose.material3.OutlinedTextField(
+                value = importUrl,
+                onValueChange = { importUrl = it },
+                label = { Text(stringResource(R.string.settings_spotify_playlist_url)) },
+                placeholder = { Text(stringResource(R.string.import_spotify_link_hint)) },
+                trailingIcon = trailing,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        tf.monochrome.android.ui.components.LinkPreviewCard(preview)
+        SettingSwitchItem(
+            title = stringResource(R.string.strict_album_matching),
+            subtitle = stringResource(R.string.strict_album_matching_detail),
+            checked = strictAlbumMatch,
+            onCheckedChange = { strictAlbumMatch = it },
         )
-
-        Spacer(modifier = Modifier.height(12.dp))
-        androidx.compose.material3.OutlinedTextField(
-            value = importUrl,
-            onValueChange = { importUrl = it },
-            label = { Text(stringResource(R.string.settings_spotify_playlist_url)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            enabled = spotifyConnected,
-            supportingText = if (!spotifyConnected) {
-                { Text(stringResource(R.string.settings_connect_spotify_on_the_connections_tab_to_enable)) }
-            } else null
-        )
+        // A playlist Spotify could not be asked about may still import; one
+        // it says is not there, or text that is no link, will not.
+        val linkReady = preview is tf.monochrome.android.ui.components.LinkPreview.Found ||
+            preview is tf.monochrome.android.ui.components.LinkPreview.Unreachable
         Spacer(modifier = Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
-                onClick = { spotifyViewModel.importByUrl(context, importUrl, onResult = onImportResult) },
-                enabled = spotifyConnected && importUrl.isNotBlank() && !isImporting
+                onClick = {
+                    val name = (preview as? tf.monochrome.android.ui.components.LinkPreview.Found)?.name
+                    spotifyViewModel.importByUrl(context, importUrl.trim(), strictAlbumMatch, name, onImportResult)
+                },
+                enabled = linkReady && !isImporting
             ) {
                 Text(stringResource(R.string.settings_import_playlist))
             }
-            OutlinedButton(
-                onClick = {
-                    spotifyViewModel.loadMyPlaylists()
-                    showSpotifyPicker = true
-                },
-                enabled = spotifyConnected && !isImporting
-            ) {
-                Text(stringResource(R.string.settings_browse_my_playlists))
+            if (spotifyConnected) {
+                OutlinedButton(
+                    onClick = {
+                        spotifyViewModel.loadMyPlaylists()
+                        showSpotifyPicker = true
+                    },
+                    enabled = !isImporting
+                ) {
+                    Text(stringResource(R.string.settings_browse_my_playlists))
+                }
             }
         }
+        Text(
+            if (spotifyConnected) stringResource(R.string.settings_connected_as, spotifyUserName ?: "…")
+            else stringResource(R.string.settings_spotify_browse_needs_connect),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp)
+        )
 
         when (val progress = importProgress) {
             is tf.monochrome.android.data.import_.ImportProgress.Fetching -> {
                 Spacer(modifier = Modifier.height(8.dp))
                 androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 Text(
-                    "Fetching playlist from ${progress.source}…",
+                    stringResource(R.string.import_fetching, progress.source),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -4001,7 +4098,7 @@ private fun PlaylistImportSection() {
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "Matching ${progress.current}/${progress.total}, ${progress.matched} found",
+                    stringResource(R.string.import_matching, progress.current, progress.total, progress.matched),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -4009,14 +4106,18 @@ private fun PlaylistImportSection() {
             is tf.monochrome.android.data.import_.ImportProgress.Done -> {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Imported ${progress.matched} of ${progress.total} tracks into '${progress.playlistName}'",
+                    stringResource(
+                        R.string.import_done_toast,
+                        androidx.compose.ui.res.pluralStringResource(R.plurals.tracks_of_total, progress.total, progress.matched, progress.total),
+                        progress.playlistName,
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 if (progress.unmatched.isNotEmpty()) {
                     var showUnmatched by remember { mutableStateOf(false) }
                     TextButton(onClick = { showUnmatched = !showUnmatched }) {
-                        Text(if (showUnmatched) "Hide unmatched tracks" else "Show ${progress.unmatched.size} unmatched tracks")
+                        Text(stringResource(if (showUnmatched) R.string.settings_hide_unmatched else R.string.playlist_fix_show_unmatched))
                     }
                     if (showUnmatched) {
                         progress.unmatched.forEach { line ->

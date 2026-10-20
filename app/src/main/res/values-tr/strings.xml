@@ -3011,4 +3011,19 @@
     <string name="party_error_host_only">Bunu yalnızca ev sahibi yapabilir.</string>
     <string name="party_cd_more">%1$s için diğer</string>
     <string name="party_cd_avatar">%1$s, partide</string>
+    <string name="settings_music_folders">Müzik klasörleri</string>
+    <string name="settings_music_folders_desc">Kitaplığınızın tarandığı klasörler. Birini kaldırmak parçalarını kitaplıktan çıkarır; dosyalar telefonunuzda kalır.</string>
+    <string name="settings_music_folders_whole_phone">Klasör seçilmedi, bu yüzden tüm telefon taranıyor. Yalnızca seçtiğiniz klasörleri taramak için bir klasör ekleyin.</string>
+    <string name="settings_rescan_library_now">Kitaplığı şimdi yeniden tara</string>
+    <string name="settings_spotify_browse_needs_connect">Kendi çalma listelerinizden ve Beğenilen Şarkılar’dan seçmek için Bağlantılar sekmesinde Spotify’ı bağlayın.</string>
+    <string name="settings_hide_unmatched">Eşleşmeyen parçaları gizle</string>
+    <string name="action_find_album_art">Albüm kapağı bul</string>
+    <string name="art_looking">Albüm kapağı aranıyor…</string>
+    <string name="art_found_one">Albüm kapağı bulundu</string>
+    <string name="art_none_one">Bu parça için kesin bir eşleşme yok, bu yüzden kapak eklenmedi.</string>
+    <string name="art_own_one">Bu parçanın zaten kendi kapağı var.</string>
+    <plurals name="art_found_many">
+        <item quantity="one">%2$d parçanın %1$d tanesi için albüm kapağı bulundu</item>
+        <item quantity="other">%2$d parçanın %1$d tanesi için albüm kapağı bulundu</item>
+    </plurals>
 </resources>

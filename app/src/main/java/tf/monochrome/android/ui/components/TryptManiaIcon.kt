@@ -53,3 +53,11 @@ private const val ARROW_HOLLOW = "M32 14 L50 32 L43 39 L35 31 V51 H29 V31 L21 39
  * Null where nothing provides it, and the menu then leaves the item out.
  */
 val LocalPlayInTryptMania = staticCompositionLocalOf<((TryptManiaRequest) -> Unit)?> { null }
+
+/**
+ * "Find album art" from a song's menu and from a selection: songs that are
+ * files on the phone, looked up online for a cover (AlbumArtFinder). Given at
+ * the app's root like "Play in Trypt Mania"; a menu offers it only for a song
+ * whose file it knows.
+ */
+val LocalFindAlbumArt = staticCompositionLocalOf<((List<tf.monochrome.android.data.local.art.ArtRequest>) -> Unit)?> { null }

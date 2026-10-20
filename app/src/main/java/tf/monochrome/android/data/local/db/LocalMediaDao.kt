@@ -289,6 +289,13 @@ interface LocalMediaDao {
     @Query("UPDATE local_tracks SET albumId = :albumId, artistId = :artistId, artworkCacheKey = :artworkCacheKey WHERE id = :id")
     suspend fun updateTrackGrouping(id: Long, albumId: Long?, artistId: Long?, artworkCacheKey: String?)
 
+    /**
+     * A cover "Find album art" found for the song at [filePath]: its own from
+     * now on, as the scanner will read it back (ArtworkStore.foundFor).
+     */
+    @Query("UPDATE local_tracks SET artworkCacheKey = :artworkCacheKey, hasEmbeddedArt = 1 WHERE filePath = :filePath")
+    suspend fun setFoundArtwork(filePath: String, artworkCacheKey: String)
+
     @Query("SELECT * FROM local_tracks")
     suspend fun getAllTracksSnapshot(): List<LocalTrackEntity>
 

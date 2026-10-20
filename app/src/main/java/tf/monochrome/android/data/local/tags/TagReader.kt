@@ -202,7 +202,10 @@ class TagReader @Inject constructor(
             // same stem (e.g. "song.flac" + "song.jpg"). yt-dlp, Bandcamp,
             // and rip workflows all produce this convention. Checked before
             // folder-level cover.* / albumart.* fallback.
-            else -> findPerTrackSidecar(filePath)
+            // A cover "Find album art" found for this song, which the
+            // listener asked for: it beats a sidecar, a stray cover.jpg most of all.
+            else -> artworkStore.foundFor(filePath)
+                ?: findPerTrackSidecar(filePath)
                 ?: findFolderCoverArt(filePath, folderArtCache)
         }
         val hasArtOrSidecar = artworkCacheKey != null

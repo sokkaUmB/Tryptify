@@ -2940,4 +2940,18 @@
     <string name="party_error_host_only">只有主持人可以这样做。</string>
     <string name="party_cd_more">%1$s 的更多选项</string>
     <string name="party_cd_avatar">%1$s，在派对中</string>
+    <string name="settings_music_folders">音乐文件夹</string>
+    <string name="settings_music_folders_desc">音乐库从这些文件夹扫描。移除一个文件夹会把其中的歌曲移出音乐库，文件仍留在手机上。</string>
+    <string name="settings_music_folders_whole_phone">尚未选择文件夹，因此会扫描整部手机。添加文件夹后只扫描你选择的文件夹。</string>
+    <string name="settings_rescan_library_now">立即重新扫描音乐库</string>
+    <string name="settings_spotify_browse_needs_connect">要从你自己的歌单和“已点赞的歌曲”中选择，请在“连接”标签页连接 Spotify。</string>
+    <string name="settings_hide_unmatched">隐藏没有匹配的歌曲</string>
+    <string name="action_find_album_art">查找专辑封面</string>
+    <string name="art_looking">正在查找专辑封面…</string>
+    <string name="art_found_one">已找到专辑封面</string>
+    <string name="art_none_one">这首歌曲没有可靠的匹配，因此未添加封面。</string>
+    <string name="art_own_one">这首歌曲已经有自己的封面。</string>
+    <plurals name="art_found_many">
+        <item quantity="other">为 %2$d 首歌曲中的 %1$d 首找到了专辑封面</item>
+    </plurals>
 </resources>

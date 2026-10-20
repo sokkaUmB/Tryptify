@@ -3013,4 +3013,19 @@
     <string name="party_error_host_only">Only the host can do that.</string>
     <string name="party_cd_more">More for %1$s</string>
     <string name="party_cd_avatar">%1$s, at the party</string>
+    <string name="settings_music_folders">Music folders</string>
+    <string name="settings_music_folders_desc">The folders your library is scanned from. Removing one takes its songs out of the library; the files stay on your phone.</string>
+    <string name="settings_music_folders_whole_phone">No folder picked, so the whole phone is scanned. Add a folder to scan only the folders you pick.</string>
+    <string name="settings_rescan_library_now">Rescan library now</string>
+    <string name="settings_spotify_browse_needs_connect">To pick from your own playlists and Liked Songs, connect Spotify on the Connections tab.</string>
+    <string name="settings_hide_unmatched">Hide songs with no match</string>
+    <string name="action_find_album_art">Find album art</string>
+    <string name="art_looking">Looking for album art…</string>
+    <string name="art_found_one">Album art found</string>
+    <string name="art_none_one">No sure match for this song, so no cover was added.</string>
+    <string name="art_own_one">This song already has its own cover.</string>
+    <plurals name="art_found_many">
+        <item quantity="one">Found album art for %1$d of %2$d song</item>
+        <item quantity="other">Found album art for %1$d of %2$d songs</item>
+    </plurals>
 </resources>

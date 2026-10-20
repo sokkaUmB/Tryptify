@@ -3082,4 +3082,20 @@
     <string name="party_error_host_only">Seul l’hôte peut le faire.</string>
     <string name="party_cd_more">Plus pour %1$s</string>
     <string name="party_cd_avatar">%1$s, à la soirée</string>
+    <string name="settings_music_folders">Dossiers de musique</string>
+    <string name="settings_music_folders_desc">Les dossiers d’où votre bibliothèque est analysée. En retirer un enlève ses titres de la bibliothèque ; les fichiers restent sur votre téléphone.</string>
+    <string name="settings_music_folders_whole_phone">Aucun dossier choisi : tout le téléphone est analysé. Ajoutez un dossier pour n’analyser que ceux que vous choisissez.</string>
+    <string name="settings_rescan_library_now">Réanalyser la bibliothèque</string>
+    <string name="settings_spotify_browse_needs_connect">Pour choisir parmi vos playlists et vos Titres likés, connectez Spotify dans l’onglet Connexions.</string>
+    <string name="settings_hide_unmatched">Masquer les titres sans correspondance</string>
+    <string name="action_find_album_art">Trouver la pochette</string>
+    <string name="art_looking">Recherche de la pochette…</string>
+    <string name="art_found_one">Pochette trouvée</string>
+    <string name="art_none_one">Aucune correspondance sûre pour ce titre : aucune pochette ajoutée.</string>
+    <string name="art_own_one">Ce titre a déjà sa propre pochette.</string>
+    <plurals name="art_found_many">
+        <item quantity="one">Pochette trouvée pour %1$d titre sur %2$d</item>
+        <item quantity="many">Pochette trouvée pour %1$d titres sur %2$d</item>
+        <item quantity="other">Pochette trouvée pour %1$d titres sur %2$d</item>
+    </plurals>
 </resources>

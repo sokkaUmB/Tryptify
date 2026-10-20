@@ -3011,4 +3011,19 @@
     <string name="party_error_host_only">Das kann nur der Gastgeber.</string>
     <string name="party_cd_more">Mehr zu %1$s</string>
     <string name="party_cd_avatar">%1$s, auf der Party</string>
+    <string name="settings_music_folders">Musikordner</string>
+    <string name="settings_music_folders_desc">Die Ordner, aus denen deine Bibliothek gescannt wird. Entfernst du einen, verschwinden seine Titel aus der Bibliothek; die Dateien bleiben auf deinem Handy.</string>
+    <string name="settings_music_folders_whole_phone">Kein Ordner gewählt, also wird das ganze Handy gescannt. Füge einen Ordner hinzu, um nur deine gewählten Ordner zu scannen.</string>
+    <string name="settings_rescan_library_now">Bibliothek jetzt neu scannen</string>
+    <string name="settings_spotify_browse_needs_connect">Um aus deinen eigenen Playlists und Lieblingssongs zu wählen, verbinde Spotify im Tab „Verbindungen“.</string>
+    <string name="settings_hide_unmatched">Titel ohne Treffer ausblenden</string>
+    <string name="action_find_album_art">Albumcover suchen</string>
+    <string name="art_looking">Albumcover wird gesucht…</string>
+    <string name="art_found_one">Albumcover gefunden</string>
+    <string name="art_none_one">Kein sicherer Treffer für diesen Titel, daher wurde kein Cover hinzugefügt.</string>
+    <string name="art_own_one">Dieser Titel hat schon ein eigenes Cover.</string>
+    <plurals name="art_found_many">
+        <item quantity="one">Albumcover für %1$d von %2$d Titel gefunden</item>
+        <item quantity="other">Albumcover für %1$d von %2$d Titeln gefunden</item>
+    </plurals>
 </resources>
