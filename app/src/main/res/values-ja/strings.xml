@@ -2724,6 +2724,9 @@
     <string name="settings_crt_tilt_top_desc">上または下から見た角度</string>
     <string name="settings_crt_bezel">ベゼル: %1$d%%</string>
     <string name="settings_crt_bezel_desc">画面の周りの暗い枠</string>
+    <string name="settings_crt_zoom">ズーム: %1$d%%</string>
+    <string name="settings_crt_zoom_desc" formatted="false">管面に映る画面の大きさ。100% 未満では曲がった縁全体が見え、100% を超えると画面が暗い角まで広がり、画面の端は外へはみ出します。</string>
+    <string name="crt_zoom">ズーム</string>
     <string name="settings_crt_corners">角の丸み: %1$d%%</string>
     <string name="settings_crt_vignette">ビネット: %1$d%%</string>
     <string name="settings_crt_vignette_desc">端に向かって暗くなる画面</string>

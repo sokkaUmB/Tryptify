@@ -1584,6 +1584,19 @@ the corners go dark. A line saved with the one Curvature slider of before is
 read as the two angles that draw the same tube. Chromatic shift reads red and
 blue up to 3 dp either side of green.
 
+**Zoom is the tube's picture-size knob, scaled after the bow** (`zoom`, 60% to
+120%, 100% by default; `uZoom` in `TUBE_SHADER`, `zoomScale` in
+`tubeSource`). The glass keeps its curve and the picture inside it grows or
+shrinks: under 100% the whole bowed edge shows inside the screen with the frame
+round it, over 100% the picture fills the corners a curve leaves dark. It is
+not Bezel, which shrinks the picture before the bow, as if the tube stood
+further off. At 100% the shader's sum is unchanged, and a line saved before
+Zoom reads as 100%, never 0; the built-in looks leave it at 100%, so picking
+one never resizes the picture. Zoom-in stops at 120%, enough to fill a
+classic curve's corners: past that the app's own edges, its tab bar first,
+leave the screen. Off 100% it counts as reshaping, so taps follow it, and like
+the curves and tilts it cannot be linked to the music.
+
 **CRT presets are one panel, in every place the CRT is set.**
 `CrtPresetsPanel` sits in Settings › Appearance › CRT effect, the Lyrics FX
 tab and Trypt Mania's Graphics, all reading one store (`CrtPresetStore`), so

@@ -123,6 +123,7 @@ class GlyphTvTuningTest {
             chromatic = 0.35f,
             curveTopDeg = 16.3f,
             curveSideDeg = 14.1f,
+            zoom = 0.85f,
             royaleMask = GlyphTvTuning.ROYALE_SHADOW,
             royaleTriad = 11,
             royaleMaskStrength = 0.6f,
@@ -244,6 +245,68 @@ class GlyphTvTuningTest {
         framed.tubeSource(500f, 1000f, 1000f, 2000f, out)
         assertEquals(500f, out[0], 1e-3f)
         assertEquals(1000f, out[1], 1e-3f)
+    }
+
+    @Test
+    fun zoomStartsAtThePicturesOwnSizeAndOldLinesKeepIt() {
+        assertEquals(1f, defaults.zoom, 0f)
+        assertFalse(defaults.zoomed)
+        // A line saved before Zoom existed has no zoom key: its own size, not 0.
+        assertEquals(1f, GlyphTvTuning.decode("bezel=0.2;curveTop=16").zoom, 0f)
+        assertEquals(1f, GlyphTvTuning.decode(null).zoom, 0f)
+        // At its own size a zoom is the identity: nothing for taps to follow.
+        assertFalse(defaults.copy(zoom = 1f).reshaped)
+        assertTrue(defaults.copy(zoom = 0.9f).reshaped)
+        assertTrue(defaults.copy(zoom = 0.9f).hasTube)
+    }
+
+    @Test
+    fun zoomScalesThePictureAndTapsFollowIt() {
+        val out = FloatArray(2)
+        // Flat tube at 80%: the picture's right edge is seen at 0.8 of the
+        // way out from the middle, and a tap there reaches that edge.
+        val small = defaults.copy(zoom = 0.8f)
+        small.tubeSource(900f, 1000f, 1000f, 2000f, out)
+        assertEquals(1000f, out[0], 1e-2f)
+        // The middle still taps the middle.
+        small.tubeSource(500f, 1000f, 1000f, 2000f, out)
+        assertEquals(500f, out[0], 1e-3f)
+        assertEquals(1000f, out[1], 1e-3f)
+        // At 120% the screen's edge shows the picture short of its own edge.
+        defaults.copy(zoom = 1.2f).tubeSource(1000f, 1000f, 1000f, 2000f, out)
+        assertEquals((1f / 1.2f * 0.5f + 0.5f) * 1000f, out[0], 1e-2f)
+    }
+
+    @Test
+    fun zoomFramesTheBowedEdgeOrFillsTheDarkCorners() {
+        val out = FloatArray(2)
+        val classic = defaults.copy(curveTopDeg = 16f, curveSideDeg = 14f)
+        // As it is, a curve pushes the screen's corner off the picture: dark.
+        classic.tubeSource(1000f, 2000f, 1000f, 2000f, out)
+        assertEquals(1000f, out[0], 0f)
+        assertEquals(2000f, out[1], 0f)
+        // Zoomed in, the corner lands inside the picture: no dark corner.
+        classic.copy(zoom = GlyphTvTuning.ZOOM_MAX).tubeSource(1000f, 2000f, 1000f, 2000f, out)
+        assertTrue("x ${out[0]}", out[0] < 1000f)
+        assertTrue("y ${out[1]}", out[1] < 2000f)
+        // Zoomed out, even the middle of an edge is off the picture, so the
+        // whole bowed edge shows inside the screen with the frame round it.
+        classic.copy(zoom = 0.8f).tubeSource(1000f, 1000f, 1000f, 2000f, out)
+        assertEquals(1000f, out[0], 0f)
+    }
+
+    @Test
+    fun zoomIsHeldToItsRange() {
+        assertEquals(GlyphTvTuning.ZOOM_MAX, GlyphTvTuning.decode("zoom=5").zoom, 0f)
+        assertEquals(GlyphTvTuning.ZOOM_MIN, GlyphTvTuning.decode("zoom=0").zoom, 0f)
+        assertEquals(1f, GlyphTvTuning.decode("zoom=NaN").zoom, 0f)
+        // Unclamped, a 0 is still never divided by: taps read the clamped scale.
+        val zero = defaults.copy(zoom = 0f)
+        assertEquals(GlyphTvTuning.ZOOM_MIN, zero.zoomScale, 0f)
+        val out = FloatArray(2)
+        zero.tubeSource(500f, 1000f, 1000f, 2000f, out)
+        assertTrue(out[0].isFinite() && out[1].isFinite())
+        assertEquals(GlyphTvTuning.ZOOM_MIN, zero.clamped().zoom, 0f)
     }
 
     @Test

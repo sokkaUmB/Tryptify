@@ -2792,6 +2792,9 @@
     <string name="settings_crt_tilt_top_desc">Dasselbe von oben oder unten</string>
     <string name="settings_crt_bezel">Rahmen: %1$d %%</string>
     <string name="settings_crt_bezel_desc">Ein dunkler Rahmen um das Bild</string>
+    <string name="settings_crt_zoom">Zoom: %1$d %%</string>
+    <string name="settings_crt_zoom_desc" formatted="false">Die Größe des Bildes auf der Röhre. Unter 100 % ist der ganze gewölbte Rand zu sehen; darüber füllt das Bild die dunklen Ecken, und seine eigenen Ränder verlassen den Bildschirm.</string>
+    <string name="crt_zoom">Zoom</string>
     <string name="settings_crt_corners">Runde Ecken: %1$d %%</string>
     <string name="settings_crt_vignette">Vignette: %1$d %%</string>
     <string name="settings_crt_vignette_desc">Das Bild wird zu den Rändern dunkler</string>

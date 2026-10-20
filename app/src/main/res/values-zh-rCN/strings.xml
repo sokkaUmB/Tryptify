@@ -2724,6 +2724,9 @@
     <string name="settings_crt_tilt_top_desc">从上方或下方看</string>
     <string name="settings_crt_bezel">边框：%1$d%%</string>
     <string name="settings_crt_bezel_desc">画面四周的深色边框</string>
+    <string name="settings_crt_zoom">缩放：%1$d%%</string>
+    <string name="settings_crt_zoom_desc" formatted="false">画面在显像管上的大小。低于 100% 时可看到完整的弧形边缘；高于 100% 时画面会填满暗角，自身的边缘则移出屏幕。</string>
+    <string name="crt_zoom">缩放</string>
     <string name="settings_crt_corners">圆角：%1$d%%</string>
     <string name="settings_crt_vignette">暗角：%1$d%%</string>
     <string name="settings_crt_vignette_desc">画面越靠边越暗</string>

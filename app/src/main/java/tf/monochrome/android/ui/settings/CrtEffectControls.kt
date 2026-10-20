@@ -314,6 +314,17 @@ private fun CrtSliders(prefs: CrtEffectPrefs, shader: GlyphTvShader, indent: Dp)
             linkKey = "tv.bezel",
             onDone = commit,
         )
+        // No music link, like the curves and tilts: taps are mapped through
+        // the zoom, so a picture that grew with the beat would move them.
+        CrtSlider(
+            label = stringResource(R.string.settings_crt_zoom, percent(tv.zoom)),
+            subtitle = stringResource(R.string.settings_crt_zoom_desc),
+            value = tv.zoom,
+            default = TV_DEFAULTS.zoom,
+            range = GlyphTvTuning.ZOOM_MIN..GlyphTvTuning.ZOOM_MAX,
+            onChange = { drag(tv.copy(zoom = it)) },
+            onDone = commit,
+        )
         CrtSlider(
             label = stringResource(R.string.settings_crt_corners, percent(tv.corners)),
             subtitle = null,

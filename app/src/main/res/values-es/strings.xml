@@ -2860,6 +2860,9 @@
     <string name="settings_crt_tilt_top_desc">Lo mismo desde arriba o desde abajo</string>
     <string name="settings_crt_bezel">Marco: %1$d %%</string>
     <string name="settings_crt_bezel_desc">Un marco oscuro alrededor de la imagen</string>
+    <string name="settings_crt_zoom">Zoom: %1$d %%</string>
+    <string name="settings_crt_zoom_desc" formatted="false">El tamaño de la imagen en el tubo. Por debajo del 100 % se ve todo el borde curvo; por encima, la imagen llena las esquinas oscuras y sus propios bordes salen de la pantalla.</string>
+    <string name="crt_zoom">Zoom</string>
     <string name="settings_crt_corners">Esquinas redondeadas: %1$d %%</string>
     <string name="settings_crt_vignette">Viñeta: %1$d %%</string>
     <string name="settings_crt_vignette_desc">La imagen más oscura hacia los bordes</string>

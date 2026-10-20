@@ -4,6 +4,12 @@
 
 ### Added
 
+#### Zoom for the CRT effect
+- **A Zoom slider sets the picture's size on the tube**, from 60% to 120%, in Settings › Appearance › CRT effect, the Lyrics FX tab and Trypt Mania's Graphics. It works like a TV's picture-size knob: the glass keeps its curve while the picture inside it grows or shrinks.
+- **Zoom out to frame the curve.** Under 100% the whole bowed edge of the picture shows inside the screen, with the frame round it.
+- **Zoom in to fill the corners.** Over 100% the picture fills the dark corners a curve leaves. It stops at 120% so the tab bar stays on screen.
+- **Taps follow the zoom**, as they follow the curve. Your looks and saved presets keep their size: anything saved before reads as 100%.
+
 #### EQ Studio
 - **A new way to tune the equalizer, built around its graph**, after peqdb.com's studio: open it from the top of the Equalizer screen, or search Settings for "EQ Studio". It runs on the app's own EQ — the same filters, AutoEQ, headphone database and targets as the classic screen, so what you tune is what plays, and the two screens always show the same bands.
 - **Every filter has its own colour**, on its handle, its curve on the graph and its chip in the list, so you can see which filter is shaping which part of the sound.

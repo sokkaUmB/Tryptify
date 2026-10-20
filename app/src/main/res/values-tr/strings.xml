@@ -2792,6 +2792,9 @@
     <string name="settings_crt_tilt_top_desc">Aynısı yukarıdan ya da aşağıdan</string>
     <string name="settings_crt_bezel">Çerçeve: %%%1$d</string>
     <string name="settings_crt_bezel_desc">Görüntünün çevresinde koyu bir çerçeve</string>
+    <string name="settings_crt_zoom">Yakınlaştırma: %%%1$d</string>
+    <string name="settings_crt_zoom_desc" formatted="false">Resmin tüpteki boyutu. %100’ün altında kavisli kenarın tamamı görünür; üstünde resim karanlık köşeleri doldurur ve kendi kenarları ekrandan taşar.</string>
+    <string name="crt_zoom">Yakınlaştırma</string>
     <string name="settings_crt_corners">Yuvarlak köşeler: %%%1$d</string>
     <string name="settings_crt_vignette">Vinyet: %%%1$d</string>
     <string name="settings_crt_vignette_desc">Görüntü kenarlara doğru kararır</string>

@@ -923,6 +923,15 @@ private fun TvShaderControls(
         onChange = { setTv(tv.copy(bezel = it)) },
     )
     GlyphSlider(
+        label = stringResource(R.string.crt_zoom),
+        value = tv.zoom,
+        default = TV_DEFAULTS.zoom,
+        reading = percent(tv.zoom),
+        range = GlyphTvTuning.ZOOM_MIN..GlyphTvTuning.ZOOM_MAX,
+        note = stringResource(R.string.settings_crt_zoom_desc),
+        onChange = { setTv(tv.copy(zoom = it)) },
+    )
+    GlyphSlider(
         label = "Rounded corners",
         value = tv.corners,
         default = TV_DEFAULTS.corners,

@@ -54,6 +54,8 @@ class CrtPresetTest {
         presets.forEach { preset ->
             assertNotEquals(GlyphTvShader.OFF, preset.shader)
             assertEquals(preset.tuning, preset.tuning.clamped())
+            // Picking a look never resizes the picture: zoom is the listener's.
+            assertEquals(1f, preset.tuning.zoom)
         }
         // Five different looks, not one look five times.
         assertEquals(5, presets.map { it.shader to it.tuning }.toSet().size)
@@ -89,13 +91,14 @@ class CrtPresetTest {
     @Test
     fun anImportIsHeldToEverySlidersRange() {
         val text = """{"type":"tryptify-crt-preset","version":1,"name":"Wild","look":"crt",
-            "tuning":"strength=9;brightness=-4;curveTop=500;tiltSide=-999;vignette=3"}"""
+            "tuning":"strength=9;brightness=-4;curveTop=500;tiltSide=-999;vignette=3;zoom=9"}"""
         val preset = CrtPresets.import(text).getOrThrow()
         assertEquals(1f, preset.tuning.strength)
         assertEquals(GlyphTvTuning.MIN_BRIGHTNESS, preset.tuning.brightness)
         assertEquals(GlyphTvTuning.MAX_CURVE_DEG, preset.tuning.curveTopDeg)
         assertEquals(-GlyphTvTuning.MAX_TILT_DEG, preset.tuning.tiltSideDeg)
         assertEquals(1f, preset.tuning.vignette)
+        assertEquals(GlyphTvTuning.ZOOM_MAX, preset.tuning.zoom)
     }
 
     @Test

@@ -2860,6 +2860,9 @@
     <string name="settings_crt_tilt_top_desc">La même chose vue d\'en haut ou d\'en bas</string>
     <string name="settings_crt_bezel">Cadre : %1$d %%</string>
     <string name="settings_crt_bezel_desc">Un cadre sombre autour de l\'image</string>
+    <string name="settings_crt_zoom">Zoom : %1$d %%</string>
+    <string name="settings_crt_zoom_desc" formatted="false">La taille de l’image sur le tube. Sous 100 % tout le bord courbé se voit ; au-delà, l’image remplit les coins sombres et ses propres bords sortent de l’écran.</string>
+    <string name="crt_zoom">Zoom</string>
     <string name="settings_crt_corners">Coins arrondis : %1$d %%</string>
     <string name="settings_crt_vignette">Vignettage : %1$d %%</string>
     <string name="settings_crt_vignette_desc">L\'image plus sombre vers les bords</string>

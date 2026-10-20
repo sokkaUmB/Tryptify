@@ -2794,6 +2794,9 @@
     <string name="settings_crt_tilt_top_desc">The same from above or below</string>
     <string name="settings_crt_bezel">Bezel: %1$d%%</string>
     <string name="settings_crt_bezel_desc">A dark frame around the picture</string>
+    <string name="settings_crt_zoom">Zoom: %1$d%%</string>
+    <string name="settings_crt_zoom_desc" formatted="false">The picture\'s size on the tube. Under 100% the whole curved edge shows; over 100% the picture fills the dark corners, and its own edges leave the screen.</string>
+    <string name="crt_zoom">Zoom</string>
     <string name="settings_crt_corners">Rounded corners: %1$d%%</string>
     <string name="settings_crt_vignette">Vignette: %1$d%%</string>
     <string name="settings_crt_vignette_desc">The picture darker toward its edges</string>

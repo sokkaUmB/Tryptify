@@ -51,8 +51,9 @@ enum class LinkArea(@StringRes val title: Int, val prefix: String) {
  *    composition, and moving them every frame would rebuild the lyric list.
  *  - Stepped quality (sample rings, ray quality, the CRT's pixel size and mask
  *    size): each step rebuilds what the GPU draws with.
- *  - The CRT's curve and tilt: the app maps every touch through the tube's
- *    shape, so a tube that bent with the beat would move where taps land.
+ *  - The CRT's curve, tilt and zoom: the app maps every touch through the
+ *    tube's shape, so a tube that bent or a picture that grew with the beat
+ *    would move where taps land.
  *  - The visualizer engine's own settings (mesh, frame rate, delay, preset
  *    timer, sensitivity, brightness): they configure projectM, which already
  *    follows the music, and sensitivity carries a flashing-light warning.
