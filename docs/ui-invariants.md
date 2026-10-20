@@ -1882,9 +1882,18 @@ Ready, the host's Start, Leave, and a line of chat.
   that is. A room's song waits for nobody: the pause panel opens over the
   running song, for Quit (to the room, as it says), and offers no Restart.
   An empty bar is a fail in the ranking, never a stop.
-* The HUD carries one more line while a room plays: rank, name and score of
-  everyone, best first, this phone in the HUD's ink and the rest muted,
-  scrolling past eight.
+* A room's run has a live board down the left, as osu! has it
+  (`RoomLeaderboard`, `roomBoardRows`): a card per player with place, name,
+  score and combo, best first, a failed run under every live one, a tie kept
+  in the room's order so cards do not swap back and forth. This phone's card
+  is lit and outlined; past the cards shown (five upright, where the lanes
+  take the whole width, eight in landscape) it is pinned last with its real
+  place. Centred on the left edge, where arrows are in flight, never at the
+  receptors. When a place changes the cards slide to their new order and the
+  one that climbed glows green with a rising mark; the slide and the glow
+  are a layer's translation and a drawn fill, so the board recomposes only
+  as scores arrive (four times a second), each score rolling up in its own
+  scope. Reduced motion: the cards jump, nothing glows or rolls.
 * The results page of a room's run has the room's panel (the ranking once
   everyone has finished, the scores as they stand until then) and one way
   on, Back to room. A run of a chart this phone does not have is sent to

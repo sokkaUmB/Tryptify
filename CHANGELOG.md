@@ -4,6 +4,10 @@
 
 ### Added
 
+#### A live board while a room plays
+- **Everyone's score is on a board down the left side while a room plays**, as in osu!: place, name, score and combo, best first, with your own card lit. If you're further down than the cards shown, you stay pinned at the bottom with your real place.
+- **Overtakes animate.** When someone moves up, the cards slide into their new order and the climber glows green with a ▲; scores roll up as they arrive. With reduced motion on, the cards just move.
+
 #### Share the song with your room
 - **A player without the song no longer has to sit it out.** In a Trypt Mania room, the host gets Share the song with the room while someone is missing it, and once it's up they get Get the song, with its size: one tap downloads it, plays from it and readies them. The chart already came with the pick, so that's everything they need.
 - **Progress shows as it goes**, and a failure says why. A shared song is kept only while the room is on that chart, and runs on it don't count towards your own scores, since the chart is the host's.
