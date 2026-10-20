@@ -1973,7 +1973,50 @@ Ready, the host's Start, Leave, and a line of chat.
   the room and not saved against the local scores.
 * Back in a room leaves it; Back from the rooms screen closes the socket,
   and with it any room this phone was in, as the server forgets a dropped
-  phone's seat.
+  phone's seat. **A listening party is the exception** (below): its socket is
+  its own (`PartyClient`, never `RoomClient`), Back from the party screen
+  leaves the party on, and only Leave the party ends it.
+
+### Listening party
+
+**A listening party is the song first** (direction A, the owner's pick from
+the demos; `docs/plans/listening-parties.md`). `PartyScreen` is a pushed
+screen, reached from the Account page's "Listening party" row (its mark is
+`ListeningPartyIcon`, two listeners and a note) and kept with the tab bar
+and the mini player like any pushed screen. At a party it is, top to
+bottom: a top bar with Back, the party's name, "Hosted by … · code …" and
+Invite; the listeners' avatars, "N listening · N on the web" and the dot
+that says how this phone is doing (In sync, Catching up, Paused by the host,
+…); the cover large, the title, the artist and who added it, the progress
+(a Slider for the host, who seeks for everyone; a bar for the rest); the
+host's Play/Pause for everyone and Skip, everyone else's Vote skip with the
+count; Up next with who added each song and Shared or Uploading N%, and
+Add song; the switches for this phone (Share songs, and which goings-on are
+notified); Leave the party. The chat is a sheet at the bottom with the
+latest line and the field, and a tap opens the whole chat in it.
+
+* Colours, type and glass are the listener's own. The demos' purple and
+  their Orbitron were placeholders; the website (demo D, served by the rooms
+  server) keeps its own look, and the app's screen never copies it.
+* The chat sheet is a `GlassPanel` drawn in the screen beside the page it
+  floats over, which is its haze source; never a `ModalBottomSheet`, which
+  is another window and would be a solid slab. The pills on the page frost
+  the page's ground, a source of their own, never the page they are on.
+* Up next's rows are list rows: Material 3, `MonoDimens.listRowHeight`. The
+  Add song page is `SearchOverlay` + `GlassSearchBar` over its results, as
+  every search bar is: songs on this phone first, then the catalogue.
+* Back from the party screen leaves the party playing, in the background
+  too; the notification and the lock screen are the player's own, because
+  the party plays through it (`PartyController`, a MediaController and
+  QueueManager). The host's pause from the notification pauses the party;
+  anyone else's pauses only their phone, and the screen offers Back to the
+  party. A song played from elsewhere in the app leaves the party playing
+  without this phone, said the same way.
+* "Add to party" is in every song menu while a party is on, given at the
+  root (`LocalAddToParty`) as "Play in Trypt Mania" is, and absent otherwise.
+* The server's own chat lines (joined, left, added, skipped) arrive as kinds
+  and names and are said in the listener's language; only what people type
+  is shown as typed.
 
 ### Discord presence
 

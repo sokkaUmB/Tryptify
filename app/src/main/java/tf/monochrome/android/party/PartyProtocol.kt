@@ -1,0 +1,274 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package tf.monochrome.android.party
+
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
+import java.net.URLEncoder
+
+/*
+ * A listening party on the rooms server, as the wire has it: JSON, one object
+ * per WebSocket text frame, tagged by `t`, the same socket and hello as Trypt
+ * Mania's rooms (`tryptmania-parser/multiplayer/src/protocol.rs` is the other
+ * side). Times are ms; the server's clock is UNIX time, and [ClockSync] gives
+ * this phone's gap to it.
+ */
+
+/** A song shared with the party: uploading until [ready], then fetched by whoever has no copy. */
+@Serializable
+data class PartySong(
+    val ready: Boolean = false,
+    val bytes: Long = 0,
+    val received: Long = 0,
+    val ext: String = "",
+) {
+    /** How far the upload is, 0 to 1; 0 while its size is not known. */
+    val progress: Float get() = if (bytes > 0) (received.toFloat() / bytes).coerceIn(0f, 1f) else 0f
+}
+
+/** A song in the party's queue, or the one playing. */
+@Serializable
+data class PartyItem(
+    val id: String,
+    val title: String,
+    val artist: String = "",
+    val album: String = "",
+    val durationMs: Long = 0,
+    val addedBy: String = "",
+    val addedByName: String = "",
+    val isrc: String? = null,
+    val catalogId: String? = null,
+    val audioHash: String? = null,
+    val cover: String? = null,
+    /** Null: not shared; every phone plays its own copy or sits it out. */
+    val shared: PartySong? = null,
+)
+
+/**
+ * Where the party is in its song: at server time [atServerMs] the song
+ * [itemId] was at [positionMs], and it runs on from there unless paused.
+ */
+@Serializable
+data class PartyPlayback(
+    val itemId: String? = null,
+    val positionMs: Long = 0,
+    val atServerMs: Long = 0,
+    val paused: Boolean = false,
+) {
+    /** The song's position at server time [serverNowMs]. */
+    fun positionAt(serverNowMs: Long): Long =
+        if (paused) positionMs else positionMs + (serverNowMs - atServerMs).coerceAtLeast(0)
+}
+
+@Serializable
+data class PartyMember(
+    val id: String,
+    val name: String,
+    val user: String? = null,
+    /** A website guest: listens and chats, adds nothing. */
+    val guest: Boolean = false,
+    /** Listening in a browser. */
+    val web: Boolean = false,
+    /** Lost their connection and has a minute to come back. */
+    val away: Boolean = false,
+)
+
+@Serializable
+data class PartySkip(val votes: List<String> = emptyList(), val needed: Int = 1)
+
+@Serializable
+data class PartyView(
+    val code: String,
+    val name: String,
+    /** Empty while only website guests are left. */
+    val hostId: String = "",
+    val members: List<PartyMember> = emptyList(),
+    val now: PartyItem? = null,
+    val queue: List<PartyItem> = emptyList(),
+    val playback: PartyPlayback = PartyPlayback(),
+    val skip: PartySkip = PartySkip(),
+    val sharedBytes: Long = 0,
+    val sharedLimit: Long = 0,
+) {
+    val host: PartyMember? get() = members.firstOrNull { it.id == hostId }
+
+    /** Everyone here now, the away left out. */
+    val listening: Int get() = members.count { !it.away }
+
+    /** Of those, how many are in a browser. */
+    val onTheWeb: Int get() = members.count { !it.away && it.web }
+}
+
+enum class PartyLineKind { SAY, JOIN, LEAVE, ADD, SKIP }
+
+/**
+ * A line of the party's chat. The server's own lines (joins, songs added,
+ * skips) carry their [kind] and the names in them; the app says them in the
+ * listener's language.
+ */
+data class PartyLine(
+    val kind: PartyLineKind,
+    val id: String?,
+    val name: String,
+    val text: String,
+    val at: Long,
+)
+
+sealed interface PartyMsg {
+    data class Welcome(val id: String, val serverTime: Long, val key: String, val resumed: Boolean) : PartyMsg
+    data class Pong(val c: Long, val s: Long) : PartyMsg
+    data class Joined(val code: String, val songToken: String) : PartyMsg
+    data class Party(val party: PartyView) : PartyMsg
+    data class History(val lines: List<PartyLine>) : PartyMsg
+    data class Line(val line: PartyLine) : PartyMsg
+    data class Added(val ref: String, val itemId: String) : PartyMsg
+    data class Left(val reason: String) : PartyMsg
+    data class Error(val message: String) : PartyMsg
+    data object Ignored : PartyMsg
+}
+
+/** What a phone puts in the queue: enough for every other phone to find its own copy. */
+data class PartyAdd(
+    val title: String,
+    val artist: String,
+    val album: String,
+    val durationMs: Long,
+    val isrc: String? = null,
+    val catalogId: String? = null,
+    val audioHash: String? = null,
+    val cover: String? = null,
+    val share: Boolean = false,
+)
+
+object PartyProtocol {
+    /** The server's words for a party code nobody holds any more. */
+    const val NO_PARTY = "no party with that code"
+
+    fun parse(json: Json, text: String): PartyMsg {
+        val root = runCatching { json.parseToJsonElement(text).jsonObject }.getOrNull() ?: return PartyMsg.Ignored
+        fun str(key: String) = root[key]?.jsonPrimitive?.contentOrNull.orEmpty()
+        fun long(key: String) = root[key]?.jsonPrimitive?.longOrNull ?: 0L
+        return runCatching {
+            when (str("t")) {
+                "welcome" -> PartyMsg.Welcome(
+                    str("id"), long("serverTime"), str("key"),
+                    root["resumed"]?.jsonPrimitive?.booleanOrNull ?: false,
+                )
+                "pong" -> PartyMsg.Pong(long("c"), long("s"))
+                "joined" -> PartyMsg.Joined(str("code"), str("songToken"))
+                "party" -> PartyMsg.Party(json.decodeFromJsonElement(root.getValue("party")))
+                "history" -> PartyMsg.History(
+                    (root["lines"] as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull { line(it) },
+                )
+                "line" -> line(root.getValue("line"))?.let { PartyMsg.Line(it) } ?: PartyMsg.Ignored
+                "added" -> PartyMsg.Added(str("ref"), str("itemId"))
+                "left" -> PartyMsg.Left(str("reason"))
+                "error" -> PartyMsg.Error(str("message"))
+                else -> PartyMsg.Ignored
+            }
+        }.getOrElse { PartyMsg.Error("unreadable message: ${it.message}") }
+    }
+
+    private fun line(element: JsonElement): PartyLine? {
+        val o = element as? JsonObject ?: return null
+        fun str(key: String) = o[key]?.jsonPrimitive?.contentOrNull
+        val kind = when (str("kind")) {
+            "say" -> PartyLineKind.SAY
+            "join" -> PartyLineKind.JOIN
+            "leave" -> PartyLineKind.LEAVE
+            "add" -> PartyLineKind.ADD
+            "skip" -> PartyLineKind.SKIP
+            else -> return null
+        }
+        return PartyLine(kind, str("id"), str("name").orEmpty(), str("text").orEmpty(), o["at"]?.jsonPrimitive?.longOrNull ?: 0L)
+    }
+
+    private fun msg(t: String, vararg fields: Pair<String, JsonElement>): String =
+        JsonObject(mapOf("t" to JsonPrimitive(t)) + fields.toMap()).toString()
+
+    private fun opt(value: String?): JsonElement = value?.let(::JsonPrimitive) ?: JsonNull
+
+    /** [resume] is the key an earlier welcome gave this phone: within a minute it gets the seat back. */
+    fun hello(name: String, client: String, token: String, resume: String = ""): String =
+        msg(
+            "hello",
+            "name" to JsonPrimitive(name), "client" to JsonPrimitive(client),
+            "token" to JsonPrimitive(token), "resume" to JsonPrimitive(resume),
+        )
+    fun ping(clientMs: Long): String = msg("ping", "c" to JsonPrimitive(clientMs))
+    fun create(name: String): String = msg("create", "name" to JsonPrimitive(name), "kind" to JsonPrimitive("party"))
+    fun join(code: String): String = msg("join", "code" to JsonPrimitive(code.trim().uppercase()))
+    fun leave(): String = msg("leave")
+    fun chat(text: String): String = msg("chat", "text" to JsonPrimitive(text))
+    fun add(item: PartyAdd, ref: String): String = msg(
+        "queueAdd",
+        "ref" to JsonPrimitive(ref),
+        "item" to JsonObject(
+            mapOf(
+                "title" to JsonPrimitive(item.title),
+                "artist" to JsonPrimitive(item.artist),
+                "album" to JsonPrimitive(item.album),
+                "durationMs" to JsonPrimitive(item.durationMs),
+                "isrc" to opt(item.isrc),
+                "catalogId" to opt(item.catalogId),
+                "audioHash" to opt(item.audioHash),
+                "cover" to opt(item.cover),
+                "share" to JsonPrimitive(item.share),
+            ),
+        ),
+    )
+    fun remove(itemId: String): String = msg("queueRemove", "id" to JsonPrimitive(itemId))
+    fun move(itemId: String, to: Int): String = msg("queueMove", "id" to JsonPrimitive(itemId), "to" to JsonPrimitive(to))
+    fun pause(): String = msg("pause")
+    fun resume(): String = msg("resume")
+    fun seek(positionMs: Long): String = msg("seek", "positionMs" to JsonPrimitive(positionMs))
+    fun skip(itemId: String): String = msg("skip", "itemId" to JsonPrimitive(itemId))
+    fun skipVote(itemId: String, vote: Boolean): String =
+        msg("skipVote", "itemId" to JsonPrimitive(itemId), "vote" to JsonPrimitive(vote))
+    fun kick(id: String): String = msg("kick", "id" to JsonPrimitive(id))
+
+    /** Song [itemId]'s address on [server] (`https://host/secret`); with [ext] when uploading. */
+    fun songUrl(server: String, itemId: String, ext: String? = null): String {
+        val base = "${server.trimEnd('/')}/api/party/song?item=${URLEncoder.encode(itemId, "UTF-8")}"
+        return if (ext.isNullOrBlank()) base else "$base&ext=${URLEncoder.encode(ext, "UTF-8")}"
+    }
+
+    /** The link a guest opens in a browser: the server's party page for [code]. */
+    fun inviteLink(server: String, code: String): String = "${server.trimEnd('/')}/party/${code.uppercase()}"
+
+    /** Whether a rooms server's info (`/api/multiplayer/info`) says it holds parties. */
+    fun supportsParties(json: Json, info: String): Boolean = runCatching {
+        val data = json.parseToJsonElement(info).jsonObject["data"]?.jsonObject ?: return false
+        (data["features"] as? kotlinx.serialization.json.JsonArray).orEmpty()
+            .any { it.jsonPrimitive.contentOrNull == "party" }
+    }.getOrDefault(false)
+}
+
+/**
+ * What following the party's clock asks of the player, given where it is
+ * ([localMs]) and where the party is ([targetMs]): nothing within
+ * [toleranceMs], else a seek. A player more than the tolerance out is heard
+ * as out of step; a quarter second is about where a room starts to notice.
+ */
+object PartySync {
+    const val TOLERANCE_MS = 250L
+
+    fun needsSeek(localMs: Long, targetMs: Long, toleranceMs: Long = TOLERANCE_MS): Boolean =
+        kotlin.math.abs(localMs - targetMs) > toleranceMs
+
+    /** The party's moment as a position in a song of [durationMs] (0: not known). */
+    fun target(playback: PartyPlayback, serverNowMs: Long, durationMs: Long): Long {
+        val at = playback.positionAt(serverNowMs)
+        return if (durationMs > 0) at.coerceIn(0, durationMs) else at.coerceAtLeast(0)
+    }
+}

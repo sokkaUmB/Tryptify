@@ -234,6 +234,7 @@ fun ProfileScreen(
                         syncStatus = syncStatus?.resolve(context),
                         onSync = { viewModel.syncNow() },
                         onOpenStats = { navController.navigateTool(Screen.Stats, Screen.Stats.createRoute()) },
+                        onOpenParty = { navController.navigateTool(Screen.ListeningParty) },
                         onSignOut = { showSignOutDialog = true }
                     )
                 } else {
@@ -282,6 +283,7 @@ private fun SignedInView(
     syncStatus: String?,
     onSync: () -> Unit,
     onOpenStats: () -> Unit,
+    onOpenParty: () -> Unit,
     onSignOut: () -> Unit
 ) {
     var editingName by rememberSaveable { mutableStateOf(false) }
@@ -404,6 +406,15 @@ private fun SignedInView(
         icon = Icons.Default.BarChart,
         title = stringResource(R.string.listening_stats),
         onClick = onOpenStats,
+    )
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    GlassActionRow(
+        icon = tf.monochrome.android.ui.party.ListeningPartyIcon,
+        title = stringResource(R.string.listening_party),
+        subtitle = stringResource(R.string.party_profile_subtitle),
+        onClick = onOpenParty,
     )
 
     Spacer(modifier = Modifier.height(28.dp))

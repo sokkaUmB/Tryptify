@@ -1,7 +1,10 @@
 # Listening parties: plan
 
-Agreed with the owner on 2026-10-20. Not started. Build it in a fresh session,
-server first, then the app, then the website.
+Agreed with the owner on 2026-10-20. Built the same day: the server and the
+website on the TryptMania-Parser branch `tryptz/listening-parties` (the
+party's rules in C++, `multiplayer/cpp/`, at the owner's word; sockets,
+songs and the website in Rust), the app here (`party/`, `ui/party/`). Not yet
+deployed to Railway (ask first, below) and not yet tried on a phone.
 
 ## What it is
 

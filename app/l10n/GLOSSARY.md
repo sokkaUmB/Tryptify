@@ -38,6 +38,10 @@ not Spain-only), Turkish, German.
 | queue | 播放队列 | キュー | file d’attente | cola | sıra | Warteschlange |
 | like / unlike | 喜欢 / 取消喜欢 | お気に入りに追加 / お気に入りから削除 | J’aime / Je n’aime plus | Me gusta / Ya no me gusta | Beğen / Beğenmekten vazgeç | Gefällt mir / Gefällt mir nicht mehr |
 | Now playing | 正在播放 | 再生中 | En cours de lecture | Reproduciendo | Şimdi çalıyor | Wird gespielt |
+| listening party | 听歌派对 | リスニングパーティー | soirée d’écoute | fiesta de escucha | dinleme partisi | Hörparty |
+| host (of a party) | 主持人 | ホスト | hôte | anfitrión | ev sahibi | Gastgeber |
+| guest (on the party website) | 访客 | ゲスト | invité | invitado | misafir | Gast |
+| Up next (a party's queue) | 接下来 | 次に再生 | À suivre | A continuación | Sıradakiler | Als Nächstes |
 | nav bar (Home · … · Library, Search) | 导航栏 | ナビゲーションバー | barre de navigation | barra de navegación | gezinme çubuğu | Navigationsleiste |
 | Liquid glass | 液态玻璃 | リキッドグラス | verre liquide | cristal líquido | sıvı cam | Liquid Glass |
 | preset | 预设 | プリセット | préréglage | preset | ön ayar | Preset |

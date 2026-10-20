@@ -2885,3 +2885,79 @@ stats_tm_best_grade	Best grade	最佳评级	最高評価	Meilleure note	Mejor no
 stats_tm_full_combos	Full combos	全连	フルコンボ	Full combos	Full combos	Full combo	Full Combos
 stats_tm_accuracy	Accuracy, last %1$d	最近 %1$d 首的准确率	直近%1$d曲の精度	Précision, %1$d dernières	Precisión, últimas %1$d	Doğruluk, son %1$d	Genauigkeit, letzte %1$d
 stats_tm_most_played	Most played: %1$s, %2$s	玩得最多：%1$s，%2$s	最多プレイ：%1$s、%2$s	La plus jouée : %1$s, %2$s	La más jugada: %1$s, %2$s	En çok oynanan: %1$s, %2$s	Am meisten gespielt: %1$s, %2$s
+listening_party	Listening party	听歌派对	リスニングパーティー	Soirée d’écoute	Fiesta de escucha	Dinleme partisi	Hörparty
+party_profile_subtitle	Listen together, in the app or on the web	一起听，在应用里或网页上	アプリでもウェブでも、一緒に聴く	Écoutez ensemble, dans l’app ou sur le web	Escuchen juntos, en la app o en la web	Birlikte dinleyin, uygulamada veya web’de	Zusammen hören, in der App oder im Web
+party_sign_in	A party plays as your Tryptify account. Sign in to start or join one.	派对使用你的 Tryptify 账号。登录后才能开始或加入派对。	パーティーには Tryptify アカウントで参加します。始めるか参加するにはログインしてください。	Une soirée se fait avec votre compte Tryptify. Connectez-vous pour en lancer ou en rejoindre une.	Una fiesta usa tu cuenta de Tryptify. Inicia sesión para empezar o unirte a una.	Parti Tryptify hesabınızla yapılır. Başlatmak veya katılmak için giriş yapın.	Eine Party läuft über dein Tryptify-Konto. Melde dich an, um eine zu starten oder beizutreten.
+party_not_supported	This rooms server is from before listening parties. Update it to hold one.	这个房间服务器不支持听歌派对，请先更新它。	このルームサーバーはリスニングパーティーに対応していません。更新してください。	Ce serveur de salons date d’avant les soirées d’écoute. Mettez-le à jour pour en accueillir une.	Este servidor de salas es anterior a las fiestas de escucha. Actualízalo para alojar una.	Bu oda sunucusu dinleme partilerinden eski. Parti açmak için güncelleyin.	Dieser Raumserver ist älter als Hörpartys. Aktualisiere ihn, um eine zu veranstalten.
+party_start_title	Start a party	开一个派对	パーティーを始める	Lancer une soirée	Empezar una fiesta	Parti başlat	Party starten
+party_name_hint	Party name (optional)	派对名称（可选）	パーティー名（任意）	Nom de la soirée (facultatif)	Nombre de la fiesta (opcional)	Parti adı (isteğe bağlı)	Name der Party (optional)
+party_start	Start	开始	始める	Lancer	Empezar	Başlat	Starten
+party_join_title	Join a party	加入派对	パーティーに参加	Rejoindre une soirée	Unirse a una fiesta	Partiye katıl	Party beitreten
+party_code_hint	Party code	派对代码	パーティーコード	Code de la soirée	Código de la fiesta	Parti kodu	Party-Code
+party_join	Join	加入	参加	Rejoindre	Unirse	Katıl	Beitreten
+party_hosted_by	Hosted by %1$s · code %2$s	主持人 %1$s · 代码 %2$s	ホスト：%1$s · コード %2$s	Animée par %1$s · code %2$s	Organiza %1$s · código %2$s	Ev sahibi %1$s · kod %2$s	Gastgeber %1$s · Code %2$s
+party_no_host	No host · code %1$s	无主持人 · 代码 %1$s	ホストなし · コード %1$s	Pas d’hôte · code %1$s	Sin anfitrión · código %1$s	Ev sahibi yok · kod %1$s	Kein Gastgeber · Code %1$s
+party_invite	Invite	邀请	招待	Inviter	Invitar	Davet et	Einladen
+party_invite_text	Listen along with me on Tryptify: %1$s (party code %2$s)	来 Tryptify 和我一起听：%1$s（派对代码 %2$s）	Tryptify で一緒に聴こう：%1$s（パーティーコード %2$s）	Écoutez avec moi sur Tryptify : %1$s (code de la soirée %2$s)	Escucha conmigo en Tryptify: %1$s (código de la fiesta %2$s)	Tryptify’da benimle dinleyin: %1$s (parti kodu %2$s)	Hör mit mir auf Tryptify: %1$s (Party-Code %2$s)
+party_listening#one	%1$d listening	%1$d 人在听	%1$d 人が視聴中	%1$d à l’écoute	%1$d escuchando	%1$d kişi dinliyor	%1$d hört zu
+party_listening#many	%1$d listening	%1$d 人在听	%1$d 人が視聴中	%1$d à l’écoute	%1$d escuchando	%1$d kişi dinliyor	%1$d hören zu
+party_listening#other	%1$d listening	%1$d 人在听	%1$d 人が視聴中	%1$d à l’écoute	%1$d escuchando	%1$d kişi dinliyor	%1$d hören zu
+party_on_web	%1$d on the web	网页上 %1$d 人	ウェブで %1$d 人	%1$d sur le web	%1$d en la web	web’de %1$d	%1$d im Web
+party_hearing_in_sync	In sync	已同步	同期中	Synchronisé	Sincronizado	Senkronize	Synchron
+party_hearing_catching_up	Catching up	正在追上	追いついています	Rattrapage	Poniéndose al día	Yetişiyor	Holt auf
+party_hearing_loading	Loading the song	正在加载歌曲	曲を読み込み中	Chargement du titre	Cargando la canción	Parça yükleniyor	Titel wird geladen
+party_hearing_fetching	Fetching the shared song %1$d%%	正在获取共享的歌曲 %1$d%%	共有された曲を取得中 %1$d%%	Réception du titre partagé : %1$d %%	Recibiendo la canción compartida: %1$d %%	Paylaşılan parça alınıyor %%%1$d	Geteilter Titel wird geladen: %1$d %%
+party_hearing_paused	Paused by the host	主持人已暂停	ホストが一時停止中	Mis en pause par l’hôte	En pausa por el anfitrión	Ev sahibi duraklattı	Vom Gastgeber pausiert
+party_hearing_paused_here	Paused on this phone	已在本机暂停	この端末で一時停止中	En pause sur ce téléphone	En pausa en este teléfono	Bu telefonda duraklatıldı	Auf diesem Handy pausiert
+party_hearing_elsewhere	Playing something else here	本机正在播放别的歌曲	この端末では別の曲を再生中	Autre chose est en lecture ici	Aquí suena otra cosa	Burada başka bir şey çalıyor	Hier läuft etwas anderes
+party_hearing_waiting	Waiting for the upload	等待上传完成	アップロード待ち	En attente de l’envoi	Esperando la subida	Yükleme bekleniyor	Warte auf den Upload
+party_hearing_cant_play	Can't play this one here	本机无法播放这首歌曲	この端末ではこの曲を再生できません	Impossible de lire ce titre ici	No se puede reproducir aquí	Bu parça burada çalınamıyor	Dieser Titel lässt sich hier nicht abspielen
+party_hearing_idle	Nothing playing	没有在播放	再生していません	Rien en lecture	Nada sonando	Hiçbir şey çalmıyor	Nichts läuft
+party_back_to_party	Back to the party	回到派对	パーティーに戻る	Revenir à la soirée	Volver a la fiesta	Partiye dön	Zurück zur Party
+party_reconnecting	Reconnecting…	正在重新连接…	再接続中…	Reconnexion…	Reconectando…	Yeniden bağlanılıyor…	Verbinde neu…
+party_added_by	%1$s · added by %2$s	%1$s · 由 %2$s 添加	%1$s · %2$s が追加	%1$s · ajouté par %2$s	%1$s · añadida por %2$s	%1$s · %2$s ekledi	%1$s · hinzugefügt von %2$s
+party_added_by_you	%1$s · added by you	%1$s · 由你添加	%1$s · あなたが追加	%1$s · ajouté par vous	%1$s · añadida por ti	%1$s · siz eklediniz	%1$s · von dir hinzugefügt
+party_you	you	你	あなた	vous	tú	siz	du
+party_nothing_playing	Nothing playing yet	还没有在播放	まだ何も再生していません	Rien en lecture pour l’instant	Todavía no suena nada	Henüz bir şey çalmıyor	Noch läuft nichts
+party_add_first	Add the first song.	添加第一首歌曲。	最初の曲を追加しましょう。	Ajoutez le premier titre.	Añade la primera canción.	İlk parçayı ekleyin.	Füge den ersten Titel hinzu.
+party_play_for_everyone	Play for everyone	为所有人播放	全員で再生	Lire pour tout le monde	Reproducir para todos	Herkes için çal	Für alle abspielen
+party_pause_for_everyone	Pause for everyone	为所有人暂停	全員で一時停止	Mettre en pause pour tout le monde	Pausar para todos	Herkes için duraklat	Für alle pausieren
+party_skip	Skip	跳过	スキップ	Passer	Saltar	Atla	Überspringen
+party_vote_skip	Vote skip %1$d/%2$d	投票跳过 %1$d/%2$d	スキップに投票 %1$d/%2$d	Voter pour passer %1$d/%2$d	Votar saltar %1$d/%2$d	Atlamaya oy ver %1$d/%2$d	Fürs Überspringen stimmen %1$d/%2$d
+party_voted_skip	Voted to skip %1$d/%2$d	已投票跳过 %1$d/%2$d	スキップに投票済み %1$d/%2$d	Vote pour passer %1$d/%2$d	Votaste saltar %1$d/%2$d	Atlama oyu verildi %1$d/%2$d	Fürs Überspringen gestimmt %1$d/%2$d
+party_up_next	Up next	接下来	次に再生	À suivre	A continuación	Sıradakiler	Als Nächstes
+party_add_song	Add song	添加歌曲	曲を追加	Ajouter un titre	Añadir canción	Parça ekle	Titel hinzufügen
+party_nothing_queued	Nothing queued.	播放队列是空的。	キューは空です。	La file d’attente est vide.	La cola está vacía.	Sıra boş.	Die Warteschlange ist leer.
+party_shared	Shared	已共享	共有済み	Partagé	Compartida	Paylaşıldı	Geteilt
+party_uploading	Uploading %1$d%%	正在上传 %1$d%%	アップロード中 %1$d%%	Envoi : %1$d %%	Subiendo: %1$d %%	Yükleniyor %%%1$d	Wird hochgeladen: %1$d %%
+party_share_songs	Share songs	共享歌曲	曲を共有	Partager les titres	Compartir canciones	Parçaları paylaş	Titel teilen
+party_share_songs_desc	Songs you add from files on this phone or your downloads are streamed to those without them while they're in the queue. Nobody keeps them.	你从本机文件或下载中添加的歌曲，在播放队列中时会传给没有这首歌的人。没有人能保留它们。	この端末のファイルやダウンロードから追加した曲は、キューにある間だけ、持っていない人に配信されます。誰にも保存されません。	Les titres que vous ajoutez depuis les fichiers de ce téléphone ou vos téléchargements sont diffusés à ceux qui ne les ont pas, tant qu’ils sont dans la file d’attente. Personne ne les garde.	Las canciones que añades desde archivos de este teléfono o tus descargas se transmiten a quien no las tiene mientras están en la cola. Nadie las conserva.	Bu telefondaki dosyalardan veya indirilenlerden eklediğiniz parçalar, sırada oldukları sürece onlara sahip olmayanlara aktarılır. Kimse saklayamaz.	Titel, die du aus Dateien auf diesem Handy oder deinen Downloads hinzufügst, werden an alle ohne sie gestreamt, solange sie in der Warteschlange sind. Niemand behält sie.
+party_notify_title	Notify me of	通知我	通知する内容	Me prévenir pour	Avisarme de	Bildirim al	Benachrichtige mich bei
+party_notify_chat	Chat messages	聊天消息	チャットのメッセージ	Messages du chat	Mensajes del chat	Sohbet mesajları	Chatnachrichten
+party_notify_joins	People joining	有人加入	参加した人	Arrivées	Gente que se une	Katılanlar	Neue Leute
+party_notify_songs	Songs added	添加的歌曲	追加された曲	Titres ajoutés	Canciones añadidas	Eklenen parçalar	Hinzugefügte Titel
+party_leave	Leave the party	离开派对	パーティーを抜ける	Quitter la soirée	Salir de la fiesta	Partiden ayrıl	Party verlassen
+party_chat_title	Chat	聊天	チャット	Chat	Chat	Sohbet	Chat
+party_chat_hint	Say something…	说点什么…	メッセージを入力…	Dites quelque chose…	Di algo…	Bir şey söyleyin…	Sag etwas…
+party_send	Send	发送	送信	Envoyer	Enviar	Gönder	Senden
+party_chat_empty	No messages yet.	还没有消息。	まだメッセージはありません。	Pas encore de message.	Aún no hay mensajes.	Henüz mesaj yok.	Noch keine Nachrichten.
+party_line_joined	%1$s joined	%1$s 加入了	%1$s が参加しました	%1$s a rejoint la soirée	%1$s se unió	%1$s katıldı	%1$s ist dabei
+party_line_joined_web	%1$s joined from the web	%1$s 从网页加入了	%1$s がウェブから参加しました	%1$s a rejoint la soirée depuis le web	%1$s se unió desde la web	%1$s web’den katıldı	%1$s ist übers Web dabei
+party_line_left	%1$s left	%1$s 离开了	%1$s が退出しました	%1$s a quitté la soirée	%1$s se fue	%1$s ayrıldı	%1$s ist gegangen
+party_line_added	%1$s added %2$s	%1$s 添加了 %2$s	%1$s が %2$s を追加しました	%1$s a ajouté %2$s	%1$s añadió %2$s	%1$s, %2$s parçasını ekledi	%1$s hat %2$s hinzugefügt
+party_line_skipped	Skipped %1$s	已跳过 %1$s	%1$s をスキップしました	Titre passé : %1$s	Se saltó %1$s	%1$s atlandı	%1$s übersprungen
+party_line_host_skipped	%1$s skipped %2$s	%1$s 跳过了 %2$s	%1$s が %2$s をスキップしました	%1$s a passé %2$s	%1$s saltó %2$s	%1$s, %2$s parçasını atladı	%1$s hat %2$s übersprungen
+party_notify_said	%1$s: %2$s	%1$s：%2$s	%1$s：%2$s	%1$s : %2$s	%1$s: %2$s	%1$s: %2$s	%1$s: %2$s
+party_ended	The party ended.	派对已结束。	パーティーは終了しました。	La soirée est terminée.	La fiesta terminó.	Parti sona erdi.	Die Party ist vorbei.
+party_kicked	The host took you out of the party.	主持人把你移出了派对。	ホストによってパーティーから外されました。	L’hôte vous a retiré de la soirée.	El anfitrión te sacó de la fiesta.	Ev sahibi sizi partiden çıkardı.	Der Gastgeber hat dich aus der Party genommen.
+party_left	You left the party.	你已离开派对。	パーティーを抜けました。	Vous avez quitté la soirée.	Saliste de la fiesta.	Partiden ayrıldınız.	Du hast die Party verlassen.
+party_search_hint	Search songs	搜索歌曲	曲を検索	Rechercher des titres	Buscar canciones	Parça ara	Titel suchen
+party_search_none	No songs found.	没有找到歌曲。	曲が見つかりません。	Aucun titre trouvé.	No se encontraron canciones.	Parça bulunamadı.	Keine Titel gefunden.
+party_added_toast	Added to the party	已添加到派对	パーティーに追加しました	Ajouté à la soirée	Añadida a la fiesta	Partiye eklendi	Zur Party hinzugefügt
+action_add_to_party	Add to party	添加到派对	パーティーに追加	Ajouter à la soirée	Añadir a la fiesta	Partiye ekle	Zur Party hinzufügen
+party_error_full	The party is full.	派对已满。	パーティーは満員です。	La soirée est complète.	La fiesta está llena.	Parti dolu.	Die Party ist voll.
+party_error_no_party	No party with that code.	没有这个代码的派对。	そのコードのパーティーはありません。	Aucune soirée avec ce code.	No hay ninguna fiesta con ese código.	Bu kodla bir parti yok.	Keine Party mit diesem Code.
+party_error_slow_down	Slow down a little.	慢一点。	少しゆっくりお願いします。	Doucement.	Ve más despacio.	Biraz yavaşlayın.	Etwas langsamer.
+party_error_host_only	Only the host can do that.	只有主持人可以这样做。	それができるのはホストだけです。	Seul l’hôte peut le faire.	Solo el anfitrión puede hacerlo.	Bunu yalnızca ev sahibi yapabilir.	Das kann nur der Gastgeber.
+party_cd_more	More for %1$s	%1$s 的更多选项	%1$s のその他	Plus pour %1$s	Más para %1$s	%1$s için diğer	Mehr zu %1$s
+party_cd_avatar	%1$s, at the party	%1$s，在派对中	%1$s（パーティーに参加中）	%1$s, à la soirée	%1$s, en la fiesta	%1$s, partide	%1$s, auf der Party

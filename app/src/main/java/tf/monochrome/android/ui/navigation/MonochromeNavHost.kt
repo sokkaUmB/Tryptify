@@ -154,6 +154,9 @@ sealed class Screen(val route: String) {
     data object ParametricEq : Screen("parametric_eq")
     data object ParametricEqEdit : Screen("parametric_eq_edit")
     data object Profile : Screen("profile")
+
+    /** A listening party: everyone queues songs and hears the same moment. */
+    data object ListeningParty : Screen("listening_party")
     data object Stats : Screen("stats?page={page}") {
         /** page: 0 = Stats, 1 = Achievements (the unlocked pill's View). */
         fun createRoute(page: Int = 0) = "stats?page=$page"
@@ -611,6 +614,16 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 tf.monochrome.android.player.preview.SongPreviewEntryPoint::class.java,
             ).songPreview()
         }
+        // Every song menu's "Add to party", while a party is on.
+        val party = remember(appContext) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                appContext,
+                tf.monochrome.android.party.PartyEntryPoint::class.java,
+            ).partyController()
+        }
+        val partyOn by party.active.collectAsStateWithLifecycle()
+        val addToParty: ((tf.monochrome.android.domain.model.Track, String?) -> Unit)? =
+            if (partyOn) remember(party) { { track, file -> party.add(track, file) } } else null
         val playInTryptMania: (tf.monochrome.android.glyph.data.TryptManiaRequest) -> Unit =
             remember(navController) {
                 { request ->
@@ -640,6 +653,7 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             // Every song menu's "Play in Trypt Mania": the request handed over,
             // and the mode opened to take it.
             tf.monochrome.android.ui.components.LocalPlayInTryptMania provides playInTryptMania,
+            tf.monochrome.android.ui.party.LocalAddToParty provides addToParty,
             tf.monochrome.android.ui.components.LocalSongPreview provides songPreview,
         ) {
         Box(modifier = Modifier.fillMaxSize().hazeSource(hazeState).nestedScroll(collapseOnScroll)) {
@@ -956,6 +970,14 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 composable(Screen.Profile.route) {
                     tf.monochrome.android.devedit.DevEditScreen("profile") {
                         ProfileScreen(navController = navController)
+                    }
+                }
+                composable(Screen.ListeningParty.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("listening_party") {
+                        tf.monochrome.android.ui.party.PartyScreen(
+                            onBack = { navController.popBackStack() },
+                            onSignIn = { navController.navigate(Screen.Profile.route) },
+                        )
                     }
                 }
                 composable(

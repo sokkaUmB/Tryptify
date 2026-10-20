@@ -1,0 +1,607 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package tf.monochrome.android.party
+
+import android.content.ComponentName
+import android.content.Context
+import android.util.Log
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.MoreExecutors
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import tf.monochrome.android.data.auth.SupabaseAuthManager
+import tf.monochrome.android.data.repository.MusicRepository
+import tf.monochrome.android.domain.model.AudioCodec
+import tf.monochrome.android.domain.model.PlaybackSource
+import tf.monochrome.android.domain.model.SourceType
+import tf.monochrome.android.domain.model.Track
+import tf.monochrome.android.domain.model.UnifiedTrack
+import tf.monochrome.android.domain.model.buildCoverUrl
+import tf.monochrome.android.glyph.multiplayer.RoomProtocol
+import tf.monochrome.android.player.LocalTrackLocator
+import tf.monochrome.android.player.PlaybackService
+import tf.monochrome.android.player.QueueManager
+import tf.monochrome.android.player.StreamResolver
+import tf.monochrome.android.player.UnifiedTrackRegistry
+import tf.monochrome.android.radio.RadioQueueManager
+
+/** How this phone is doing with the party's song. */
+enum class PartyHearing {
+    /** No song at the party. */
+    IDLE,
+
+    /** Finding this phone's copy of the song, or fetching the shared one. */
+    LOADING,
+
+    /** Playing, within a quarter second of everyone else. */
+    IN_SYNC,
+
+    /** Playing, but catching up after a seek, a stall or a late start. */
+    CATCHING_UP,
+
+    /** The host paused the party. */
+    PAUSED,
+
+    /** Paused on this phone alone; the party plays on. */
+    PAUSED_HERE,
+
+    /** The listener picked something else to play; the party plays on without this phone. */
+    ELSEWHERE,
+
+    /** The song is still uploading; it starts here when it is all there. */
+    WAITING_FOR_UPLOAD,
+
+    /** No copy here, none shared, and the account's catalogue has no match. */
+    CANT_PLAY,
+}
+
+/** Everything the party screen draws, as it stands. */
+data class PartyUi(
+    val client: PartyState = PartyState(),
+    val hearing: PartyHearing = PartyHearing.IDLE,
+    /** A shared song's download, 0 to 1, while it is fetched. */
+    val fetching: Float? = null,
+    val shareSongs: Boolean = true,
+) {
+    val party: PartyView? get() = client.party
+    val myId: String? get() = client.myId
+    val isHost: Boolean get() = client.isHost
+}
+
+/**
+ * Owns the listening party while one is on, and plays it through the app's
+ * own player: a MediaController on the PlaybackService, as the widget and the
+ * player screen drive it, and QueueManager holding the one song, so the
+ * notification, the lock screen and playing in the background are the
+ * player's own, and the song counts as a play like any other.
+ *
+ * Each song the party plays is looked for in this order: the copy the phone
+ * that added it said it had, a copy on this phone (the library or a download,
+ * by catalogue id, ISRC, then title, artist and length), the song shared with
+ * the party (fetched into the cache, deleted when the party ends), and last
+ * the listener's own catalogue by id or by search. A song none of those finds
+ * is sat out in silence, and the screen says so.
+ *
+ * The party's clock is followed every second: a player more than
+ * [PartySync.TOLERANCE_MS] from the party's moment is moved to it. The host's
+ * pause from the notification pauses the party; anyone else's pauses only
+ * their phone. Playing another song from the app leaves the party playing
+ * without this phone, until the listener goes back to it.
+ */
+@Singleton
+class PartyController @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val client: PartyClient,
+    private val auth: SupabaseAuthManager,
+    private val queueManager: QueueManager,
+    private val radioQueueManager: RadioQueueManager,
+    private val registry: UnifiedTrackRegistry,
+    private val streamResolver: StreamResolver,
+    private val localTrackLocator: LocalTrackLocator,
+    private val repository: MusicRepository,
+    private val prefs: PartyPrefs,
+    private val notifier: PartyNotifier,
+) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val hearing = MutableStateFlow(PartyHearing.IDLE)
+    private val fetching = MutableStateFlow<Float?>(null)
+
+    val state: StateFlow<PartyUi> =
+        combine(client.state, hearing, fetching, prefs.shareSongs) { c, h, f, share -> PartyUi(c, h, f, share) }
+            .stateIn(scope, SharingStarted.Eagerly, PartyUi())
+
+    /** Whether a party is on: the song menus offer "Add to party" only then. */
+    val active: StateFlow<Boolean> = client.state.map { it.active }.distinctUntilChanged()
+        .stateIn(scope, SharingStarted.Eagerly, false)
+
+    private var controller: MediaController? = null
+    private var work: Job? = null
+
+    /** The party song now in the player, and the queue's Track for it. */
+    private var loadedItem: String? = null
+    private var loadedTrackId: Long? = null
+    private var resolving: Job? = null
+
+    /** Our own play and pause, told apart from the notification's and the app's. */
+    private var selfChange = false
+    private var pausedHere = false
+
+    /** Songs this phone added, by the id the server gave them: where its copy is. */
+    private val mine = mutableMapOf<String, Mine>()
+
+    /** Songs on their way to the server, by the phone's own ref, until it names their id. */
+    private val pending = mutableMapOf<String, Mine>()
+
+    /** Shared songs fetched into the cache for this party, by item id. */
+    private val fetched = mutableMapOf<String, File>()
+
+    private data class Mine(val unified: UnifiedTrack?, val legacy: Track?, val file: File?)
+
+    private val cacheDir: File get() = File(context.cacheDir, "party")
+
+    fun start(partyName: String) {
+        val (name, token) = me() ?: return
+        begin()
+        client.start(name, token, partyName)
+    }
+
+    fun join(code: String) {
+        val (name, token) = me() ?: return
+        begin()
+        client.join(name, token, code)
+    }
+
+    /** Whether the listener is signed in, which a party needs as rooms do. */
+    fun signedIn(): Boolean = auth.accessToken() != null
+
+    private fun me(): Pair<String, String>? {
+        val token = auth.accessToken() ?: return null
+        return (auth.playerName() ?: "Listener") to token
+    }
+
+    private fun begin() {
+        stop()
+        cacheDir.deleteRecursively()
+        work = scope.launch {
+            radioQueueManager.stopRadio()
+            controller = connect()
+            launch { followSong() }
+            launch { followClock() }
+            launch { followEvents() }
+            // Over, by the server's word or a seat lost for good: the party's
+            // song stops with it, and everyone sees why on the party screen.
+            client.state.first { it.status == PartyStatus.ENDED || it.status == PartyStatus.FAILED }
+            runCatching { controller?.pause() }
+            cacheDir.deleteRecursively()
+            coroutineContext.cancelChildren()
+        }
+    }
+
+    /** Leaves the party; the song playing stops with it. */
+    fun leave() {
+        client.leave()
+        runCatching { controller?.pause() }
+        finish()
+    }
+
+    /** A party that is over, put away: back to no party. */
+    fun dismiss() {
+        client.reset()
+        finish()
+    }
+
+    private fun finish() {
+        stop()
+        cacheDir.deleteRecursively()
+        notifier.clear()
+    }
+
+    private fun stop() {
+        work?.cancel()
+        work = null
+        resolving?.cancel()
+        controller?.release()
+        controller = null
+        loadedItem = null
+        loadedTrackId = null
+        pausedHere = false
+        mine.clear()
+        pending.clear()
+        fetched.clear()
+        hearing.value = PartyHearing.IDLE
+        fetching.value = null
+    }
+
+    private suspend fun connect(): MediaController? {
+        val token = SessionToken(context, ComponentName(context, PlaybackService::class.java))
+        val future = MediaController.Builder(context, token).buildAsync()
+        val mc = withTimeoutOrNull(CONNECT_TIMEOUT_MS) {
+            suspendCancellableCoroutine { cont ->
+                future.addListener(
+                    { cont.resume(runCatching { future.get() }.getOrNull()) { _, _, _ -> } },
+                    MoreExecutors.directExecutor(),
+                )
+            }
+        }
+        mc?.addListener(object : Player.Listener {
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                if (selfChange || !partySongPlaying()) return
+                val party = client.state.value.party ?: return
+                // Only a change the party has not made: our own play and
+                // pause, coming back from the session, match it already.
+                if (playWhenReady == !party.playback.paused) {
+                    if (playWhenReady) pausedHere = false
+                    return
+                }
+                // The notification, the lock screen or the app's own button.
+                if (client.state.value.isHost) {
+                    if (playWhenReady) client.resume() else client.pause()
+                } else if (!party.playback.paused) {
+                    pausedHere = !playWhenReady
+                }
+            }
+        })
+        if (mc == null) Log.w(TAG, "no player to play the party through")
+        return mc
+    }
+
+    // The song.
+
+    private suspend fun followSong() {
+        client.state.map { it.party?.now }.distinctUntilChanged().collect { item ->
+            if (item == null) {
+                resolving?.cancel()
+                loadedItem = null
+                hearing.value = PartyHearing.IDLE
+                return@collect
+            }
+            val shareTurnedReady = item.id == loadedItem && loadedTrackId == null && item.shared?.ready == true
+            if (item.id == loadedItem && !shareTurnedReady) return@collect
+            loadedItem = item.id
+            loadedTrackId = null
+            pausedHere = false
+            resolving?.cancel()
+            resolving = scope.launch { load(item) }
+        }
+    }
+
+    /** Whether the player holds the party's song, not one picked elsewhere in the app. */
+    private fun partySongPlaying(): Boolean {
+        val id = loadedTrackId ?: return false
+        return queueManager.currentTrack.value?.id == id
+    }
+
+    private suspend fun load(item: PartyItem) {
+        hearing.value = PartyHearing.LOADING
+        val media = runCatching { resolve(item) }.onFailure { Log.w(TAG, "party song: ${it.message}") }.getOrNull()
+        if (loadedItem != item.id) return
+        if (media == null) {
+            val uploading = item.shared?.ready == false
+            hearing.value = if (uploading) PartyHearing.WAITING_FOR_UPLOAD else PartyHearing.CANT_PLAY
+            runCatching { controller?.pause() }
+            return
+        }
+        val (mediaItem, legacy) = media
+        val mc = controller ?: run {
+            hearing.value = PartyHearing.CANT_PLAY
+            return
+        }
+        queueManager.setQueue(listOf(legacy), 0)
+        val party = client.state.value.party ?: return
+        val target = PartySync.target(party.playback, client.serverNowMs(), item.durationMs)
+        selfChange = true
+        try {
+            mc.setMediaItem(mediaItem, target)
+            mc.prepare()
+            if (party.playback.paused) mc.pause() else mc.play()
+        } finally {
+            selfChange = false
+        }
+        loadedTrackId = legacy.id
+        hearing.value = PartyHearing.CATCHING_UP
+    }
+
+    /** This phone's way to play [item], and the Track the queue shows, or null for none. */
+    private suspend fun resolve(item: PartyItem): Pair<MediaItem, Track>? {
+        mine[item.id]?.let { own ->
+            own.unified?.let { return playable(it) }
+            own.legacy?.let { return playableLegacy(it) }
+        }
+        val catalogId = item.catalogId?.takeIf { it.startsWith("tidal:") }?.removePrefix("tidal:")?.toLongOrNull()
+        val local = withContext(Dispatchers.IO) {
+            localTrackLocator.findLocalSource(
+                title = item.title, artist = item.artist, albumTitle = item.album.ifBlank { null },
+                durationSeconds = (item.durationMs / 1000).toInt(), catalogTrackId = catalogId, isrc = item.isrc,
+            )
+        }
+        if (local != null) return playable(unifiedFor(item, local))
+        val shared = item.shared
+        if (shared != null) {
+            if (!shared.ready) return null
+            val file = fetched[item.id] ?: fetch(item) ?: return null
+            return playable(unifiedFor(item, PlaybackSource.LocalFile(file.absolutePath, codecFor(shared.ext), 0)))
+        }
+        val track = withContext(Dispatchers.IO) {
+            catalogId?.let { runCatching { repository.getTidalTrack(it) }.getOrNull() }
+                ?: search(item)
+        } ?: return null
+        return playableLegacy(track)
+    }
+
+    private suspend fun playable(track: UnifiedTrack): Pair<MediaItem, Track>? {
+        val resolved = withContext(Dispatchers.IO) { streamResolver.resolveUnifiedTrack(track) }
+        if (!resolved.isPlayable) return null
+        val legacy = track.toLegacyTrack()
+        registry.put(legacy.id, track)
+        return resolved.mediaItem to legacy
+    }
+
+    private suspend fun playableLegacy(track: Track): Pair<MediaItem, Track>? {
+        val (media, _) = withContext(Dispatchers.IO) { streamResolver.resolveMediaItem(track) }
+        return media?.let { it to track }
+    }
+
+    /** The listener's own catalogue, searched by artist and title, a match within 3 s of the length. */
+    private suspend fun search(item: PartyItem): Track? {
+        val query = listOf(item.artist, item.title).filter { it.isNotBlank() }.joinToString(" ")
+        val found = repository.searchTracks(query, limit = 10).getOrNull().orEmpty()
+        return PartyMatch.best(item, found)
+    }
+
+    private suspend fun fetch(item: PartyItem): File? {
+        val ext = RoomProtocol.songExt("song." + (item.shared?.ext ?: "bin"))
+        val into = File(cacheDir, "${item.id.filter(Char::isLetterOrDigit)}.$ext")
+        fetching.value = 0f
+        val result = client.fetch(item, into) { p -> fetching.value = p }
+        fetching.value = null
+        return result.getOrNull()?.also { fetched[item.id] = it }
+    }
+
+    private fun unifiedFor(item: PartyItem, source: PlaybackSource.LocalFile) = UnifiedTrack(
+        id = "party_${item.id}_${item.title.hashCode()}",
+        title = item.title,
+        durationSeconds = (item.durationMs / 1000).toInt(),
+        artistName = item.artist.ifBlank { "Unknown Artist" },
+        albumTitle = item.album.ifBlank { null },
+        artworkUri = item.cover,
+        isrc = item.isrc,
+        source = source,
+        sourceType = SourceType.LOCAL,
+    )
+
+    // The clock.
+
+    private suspend fun followClock() {
+        while (scope.isActive) {
+            delay(SYNC_EVERY_MS)
+            val mc = controller ?: continue
+            val party = client.state.value.party ?: continue
+            val item = party.now
+            if (item == null || item.id != loadedItem || loadedTrackId == null) continue
+            if (!partySongPlaying()) {
+                hearing.value = PartyHearing.ELSEWHERE
+                continue
+            }
+            if (party.playback.paused) {
+                if (mc.playWhenReady) self { mc.pause() }
+                val target = PartySync.target(party.playback, client.serverNowMs(), item.durationMs)
+                if (PartySync.needsSeek(mc.currentPosition, target)) self { mc.seekTo(target) }
+                hearing.value = PartyHearing.PAUSED
+                continue
+            }
+            if (pausedHere) {
+                hearing.value = PartyHearing.PAUSED_HERE
+                continue
+            }
+            if (!mc.playWhenReady) self { mc.play() }
+            if (mc.playbackState != Player.STATE_READY) {
+                hearing.value = PartyHearing.CATCHING_UP
+                continue
+            }
+            val target = PartySync.target(party.playback, client.serverNowMs(), item.durationMs)
+            if (PartySync.needsSeek(mc.currentPosition, target)) {
+                self { mc.seekTo(target) }
+                hearing.value = PartyHearing.CATCHING_UP
+            } else {
+                hearing.value = PartyHearing.IN_SYNC
+            }
+        }
+    }
+
+    private inline fun self(block: () -> Unit) {
+        selfChange = true
+        try {
+            block()
+        } finally {
+            selfChange = false
+        }
+    }
+
+    /** Back to the party after playing something else, or after pausing here. */
+    fun rejoinPlayback() {
+        pausedHere = false
+        val item = client.state.value.party?.now ?: return
+        loadedItem = item.id
+        loadedTrackId = null
+        resolving?.cancel()
+        resolving = scope.launch { load(item) }
+    }
+
+    // What happens once.
+
+    private suspend fun followEvents() {
+        client.events.collect { msg ->
+            when (msg) {
+                is PartyMsg.Added -> {
+                    val own = pending.remove(msg.ref) ?: return@collect
+                    mine[msg.itemId] = own
+                    val file = own.file
+                    if (file != null && prefs.shareSongs.value) {
+                        scope.launch {
+                            client.upload(msg.itemId, file, RoomProtocol.songExt(file.name)) { }
+                                .onFailure { Log.w(TAG, "share: ${it.message}") }
+                        }
+                    }
+                }
+                is PartyMsg.Line -> notifier.line(msg.line, client.state.value.myId)
+                else -> Unit
+            }
+        }
+    }
+
+    // Adding songs.
+
+    /** A song from a menu: [filePath] is its file where the list knows one. */
+    fun add(track: Track, filePath: String? = null) {
+        scope.launch {
+            val file = filePath?.let(::File)?.takeIf { it.isFile }
+                ?: withContext(Dispatchers.IO) {
+                    localTrackLocator.findLocalSource(
+                        title = track.title, artist = track.displayArtist, albumTitle = track.album?.title,
+                        durationSeconds = track.duration, catalogTrackId = track.id,
+                    )?.filePath?.let(::File)?.takeIf { it.isFile }
+                }
+            val local = file != null && filePath != null
+            val isrc = if (local || track.appleId != null || track.deezerId != null) null
+            else withContext(Dispatchers.IO) { runCatching { repository.getTidalIsrc(track.id) }.getOrNull() }
+            val item = PartyAdd(
+                title = track.title,
+                artist = track.displayArtist,
+                album = track.album?.title.orEmpty(),
+                durationMs = track.duration * 1000L,
+                isrc = isrc,
+                catalogId = PartyMatch.catalogId(track, local),
+                cover = track.album?.cover?.let { buildCoverUrl(it, 640) }?.takeIf { it.startsWith("https://") },
+                share = file != null && prefs.shareSongs.value,
+            )
+            send(item, Mine(unified = null, legacy = track, file = file))
+        }
+    }
+
+    /** A song that is a file on this phone: the library, or one opened with Tryptify. */
+    fun add(track: UnifiedTrack) {
+        val file = (track.source as? PlaybackSource.LocalFile)?.filePath?.let(::File)?.takeIf { it.isFile }
+        val item = PartyAdd(
+            title = track.title,
+            artist = track.artistName,
+            album = track.albumTitle.orEmpty(),
+            durationMs = track.durationSeconds * 1000L,
+            isrc = track.isrc,
+            cover = track.artworkUri?.takeIf { it.startsWith("https://") },
+            share = file != null && prefs.shareSongs.value,
+        )
+        send(item, Mine(unified = track, legacy = null, file = file))
+    }
+
+    private fun send(item: PartyAdd, own: Mine) {
+        if (item.durationMs <= 0) return
+        val ref = UUID.randomUUID().toString()
+        pending[ref] = own
+        client.add(item, ref)
+    }
+
+    fun setShareSongs(on: Boolean) = prefs.setShareSongs(on)
+
+    // The host's moves, and everyone's.
+
+    fun togglePlay() {
+        val party = client.state.value.party ?: return
+        if (party.playback.paused) client.resume() else client.pause()
+    }
+
+    fun seek(positionMs: Long) = client.seek(positionMs)
+    fun skip() = client.state.value.party?.now?.let { client.skip(it.id) }
+    fun vote() {
+        val s = client.state.value
+        val item = s.party?.now ?: return
+        client.vote(item.id, s.myId !in s.party.skip.votes)
+    }
+    fun remove(itemId: String) = client.remove(itemId)
+    fun playNext(itemId: String) = client.move(itemId, 0)
+    fun chat(text: String) = text.trim().takeIf { it.isNotEmpty() }?.let { client.chat(it) }
+    fun clearError() = client.clearError()
+    fun inviteLink(): String? = client.inviteLink()
+
+    /** The party's moment in its song, for the progress bar. */
+    fun positionNow(): Long {
+        val party = client.state.value.party ?: return 0
+        return PartySync.target(party.playback, client.serverNowMs(), party.now?.durationMs ?: 0)
+    }
+
+    /** Whether the party screen is on show; its chat is then not notified. */
+    fun screenShown(shown: Boolean) = notifier.screenShown(shown)
+
+    companion object {
+        private const val TAG = "PartyController"
+        private const val CONNECT_TIMEOUT_MS = 10_000L
+        private const val SYNC_EVERY_MS = 1_000L
+
+        fun codecFor(ext: String): AudioCodec = when (ext.lowercase()) {
+            "flac" -> AudioCodec.FLAC
+            "mp3" -> AudioCodec.MP3
+            "m4a", "aac", "mp4" -> AudioCodec.AAC
+            "alac" -> AudioCodec.ALAC
+            "ogg", "oga" -> AudioCodec.OGG_VORBIS
+            "opus" -> AudioCodec.OPUS
+            "wav" -> AudioCodec.WAV
+            "aif", "aiff" -> AudioCodec.AIFF
+            else -> AudioCodec.UNKNOWN
+        }
+    }
+}
+
+/**
+ * How a party's song is matched to a song in this listener's catalogue, and
+ * how a song is named for the others to match.
+ */
+object PartyMatch {
+    /** Lengths within this much are the same recording, as the rooms' own match has it. */
+    const val LENGTH_SLACK_MS = 3_000L
+
+    /** [track]'s id in its catalogue as the party carries it; none for a file of the listener's own. */
+    fun catalogId(track: Track, localFile: Boolean): String? = when {
+        localFile -> null
+        track.appleId != null -> "apple:${track.appleId}"
+        track.deezerId != null -> "deezer:${track.deezerId}"
+        track.id > 0 -> "tidal:${track.id}"
+        else -> null
+    }
+
+    /** Of [found], the one that is [item]: the same title and artist, near enough the same length. */
+    fun best(item: PartyItem, found: List<Track>): Track? {
+        fun norm(s: String) = s.lowercase().filter { it.isLetterOrDigit() }
+        val title = norm(item.title)
+        val artist = norm(item.artist)
+        return found
+            .filter { norm(it.title) == title || norm(it.title).startsWith(title) }
+            .filter { artist.isEmpty() || norm(it.displayArtist).contains(artist) || artist.contains(norm(it.displayArtist)) }
+            .filter { item.durationMs <= 0 || it.duration <= 0 || kotlin.math.abs(it.duration * 1000L - item.durationMs) <= LENGTH_SLACK_MS }
+            .minByOrNull { kotlin.math.abs(it.duration * 1000L - item.durationMs) }
+    }
+}

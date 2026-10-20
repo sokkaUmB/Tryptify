@@ -96,6 +96,7 @@ fun TrackContextMenu(
     // Read here, where the menu is asked for, for the same reason: the
     // overlay host may sit outside what the app's root provides.
     val playInTryptMania = LocalPlayInTryptMania.current
+    val addToParty = tf.monochrome.android.ui.party.LocalAddToParty.current
 
     GlassOverlay(onDismiss = onDismiss, alignment = Alignment.BottomCenter) {
         // "Disable animations": the pages swap at once, at their own heights.
@@ -182,6 +183,13 @@ fun TrackContextMenu(
                             icon = Icons.Default.CheckCircle,
                             label = stringResource(R.string.action_select),
                             onClick = { onSelect(); onDismiss() }
+                        )
+                    }
+                    if (addToParty != null) {
+                        ContextMenuItem(
+                            icon = tf.monochrome.android.ui.party.ListeningPartyIcon,
+                            label = stringResource(R.string.action_add_to_party),
+                            onClick = { addToParty(track, filePath); onDismiss() }
                         )
                     }
                     if (playInTryptMania != null) {
