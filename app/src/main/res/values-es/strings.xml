@@ -1530,6 +1530,7 @@
     <string name="eq_import_left_measurement_file">Importar archivo de medición izquierdo</string>
     <string name="eq_import_right_measurement_file">Importar archivo de medición derecho</string>
     <string name="eq_import_measurement_file">Importar archivo de medición</string>
+    <string name="eq_delete_target">Eliminar el objetivo %1$s</string>
     <string name="eq_import_custom_target">Importar objetivo personalizado</string>
     <string name="eq_filter_bands_caps">BANDAS DE FILTRO</string>
     <string name="eq_max_hz_caps">HZ MÁX.</string>

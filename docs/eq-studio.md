@@ -24,6 +24,18 @@ deleting another filter must not repaint the one being tuned. `addBand` takes
 not a tonal one. With it, the result sat a few dB under the target everywhere and
 a perfect fit read as a bad one.
 
+**Precision AutoEQ draws with the Studio's parts** (`EqualizerScreen`): the same
+graph (`EqStudioGraph`) and legend, the targets as pills under it
+(`TargetStrip`, an imported target deleted by the × on its pill), and under
+those the filters placed as the Studio places them (`FilterChipsRow`,
+`FilterInspector`, typed values through `StudioFieldDialog`). Everything else
+on that page stays as it was: smoothing, the ear chips, preamp, algorithm,
+AutoEq, tone, automatic preamp, headphone model, export, saved profiles and
+the band list. While each ear is corrected on its own, the graph draws the
+other ear's measurement and result faintly (`secondaryMeasurement`,
+`secondaryBands`), as the old graph did. Its graph is not fixed: that page is
+one long list, and it scrolls with it.
+
 **The graph is fixed and only the panel scrolls** (phone layout). The point of the
 screen is watching the curve move while tuning. peqdb's own phone layout lets its
 panel cover the graph, which is the thing this was built to avoid.

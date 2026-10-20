@@ -70,6 +70,10 @@ internal fun EqStudioGraph(
     targetColor: Color,
     description: String,
     modifier: Modifier = Modifier,
+    /** The other ear's measurement while each ear is corrected on its own, drawn faintly. */
+    secondaryMeasurement: List<FrequencyPoint> = emptyList(),
+    /** ...and the other ear's filters, whose result is drawn faintly beside it. */
+    secondaryBands: List<EqBand> = emptyList(),
 ) {
     val cs = MaterialTheme.colorScheme
     val resultColor = cs.onSurface
@@ -106,6 +110,12 @@ internal fun EqStudioGraph(
     }
     val resultCurve = remember(measCurve, eqSum, zero) {
         FloatArray(freqs.size) { i -> (if (measCurve.isEmpty()) zero else measCurve[i]) + eqSum[i] }
+    }
+    // The other ear, on the same scale, for comparing the two corrections.
+    val otherMeasCurve = remember(secondaryMeasurement, freqs) { StudioAxis.resample(secondaryMeasurement, freqs) }
+    val otherResultCurve = remember(otherMeasCurve, secondaryBands, grid) {
+        if (otherMeasCurve.isEmpty()) FloatArray(0)
+        else grid.sum(secondaryBands).also { out -> for (i in out.indices) out[i] += otherMeasCurve[i] }
     }
 
     // Read through updated state so the gesture coroutine, started once, sees
@@ -215,6 +225,10 @@ internal fun EqStudioGraph(
             }
         }
 
+        if (otherMeasCurve.isNotEmpty()) {
+            drawCurve(plot, freqs, otherMeasCurve, 0f, zero, measurementColor.copy(alpha = 0.3f), 1.5.dp.toPx())
+            drawCurve(plot, freqs, otherResultCurve, 0f, zero, resultColor.copy(alpha = 0.3f), 1.5.dp.toPx())
+        }
         if (targetCurve.isNotEmpty()) {
             drawCurve(plot, freqs, targetCurve, 0f, zero, targetColor, 2.5.dp.toPx())
         }

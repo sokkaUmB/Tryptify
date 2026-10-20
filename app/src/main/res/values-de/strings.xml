@@ -1486,6 +1486,7 @@
     <string name="eq_import_left_measurement_file">Linke Messdatei importieren</string>
     <string name="eq_import_right_measurement_file">Rechte Messdatei importieren</string>
     <string name="eq_import_measurement_file">Messdatei importieren</string>
+    <string name="eq_delete_target">Zielkurve %1$s löschen</string>
     <string name="eq_import_custom_target">Eigene Zielkurve importieren</string>
     <string name="eq_filter_bands_caps">FILTERBÄNDER</string>
     <string name="eq_max_hz_caps">MAX. HZ</string>

@@ -33,6 +33,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Save
@@ -84,13 +85,16 @@ import kotlin.math.log2
 import kotlin.math.roundToInt
 
 /** Red and green read on the graph in both themes, as on peqdb's. */
-private val MeasurementColor = Color(0xFFE5484D)
-private val TargetColor = Color(0xFF30A46C)
+internal val MeasurementColor = Color(0xFFE5484D)
+internal val TargetColor = Color(0xFF30A46C)
 
 private enum class StudioTab { FILTERS, HEADPHONE, OUTPUT }
 
 /** Which value the exact-entry dialog is open for. */
-private enum class StudioField { FREQ, GAIN, Q, PREAMP }
+/** How an imported target's id starts (EqViewModel.importCustomTarget). */
+private const val CUSTOM_TARGET_PREFIX = "custom_"
+
+internal enum class StudioField { FREQ, GAIN, Q, PREAMP }
 
 /**
  * The EQ Studio: the equalizer as one screen built around its graph, after
@@ -284,26 +288,7 @@ fun EqStudioScreen(
     }
 
     editing?.let { field ->
-        val band = selected
-        val (title, initial) = when (field) {
-            StudioField.FREQ -> stringResource(R.string.eq_studio_freq) to (band?.freq?.roundToInt()?.toString() ?: "")
-            StudioField.GAIN -> stringResource(R.string.eq_studio_gain) to (band?.let { String.format(java.util.Locale.US, "%.1f", it.gain) } ?: "")
-            StudioField.Q -> stringResource(R.string.eq_studio_q) to (band?.let { formatStudioQ(it.q) } ?: "")
-            StudioField.PREAMP -> stringResource(R.string.eq_preamp) to String.format(java.util.Locale.US, "%.1f", viewModel.currentPreamp.value)
-        }
-        StudioValueDialog(
-            title = title,
-            initial = initial,
-            onDismiss = { editing = null },
-            onConfirm = { v ->
-                when (field) {
-                    StudioField.FREQ -> band?.let { viewModel.updateBand(it.id, it.copy(freq = v.coerceIn(StudioAxis.MIN_FREQ, StudioAxis.MAX_FREQ))) }
-                    StudioField.GAIN -> band?.let { viewModel.updateBand(it.id, it.copy(gain = StudioBands.clampGain(v))) }
-                    StudioField.Q -> band?.let { viewModel.updateBand(it.id, it.copy(q = v.coerceIn(StudioBands.MIN_Q, StudioBands.MAX_Q))) }
-                    StudioField.PREAMP -> viewModel.setPreamp(v)
-                }
-            },
-        )
+        StudioFieldDialog(field = field, band = selected, viewModel = viewModel, onDismiss = { editing = null })
     }
     if (namingPreset) {
         StudioNameDialog(
@@ -321,6 +306,30 @@ fun EqStudioScreen(
             onConfirm = { viewModel.importCustomTarget(raw, it) },
         )
     }
+}
+
+/** Typing a value in: the selected filter's frequency, gain or Q, or the preamp. */
+@Composable
+internal fun StudioFieldDialog(field: StudioField, band: EqBand?, viewModel: EqViewModel, onDismiss: () -> Unit) {
+    val (title, initial) = when (field) {
+        StudioField.FREQ -> stringResource(R.string.eq_studio_freq) to (band?.freq?.roundToInt()?.toString() ?: "")
+        StudioField.GAIN -> stringResource(R.string.eq_studio_gain) to (band?.let { String.format(java.util.Locale.US, "%.1f", it.gain) } ?: "")
+        StudioField.Q -> stringResource(R.string.eq_studio_q) to (band?.let { formatStudioQ(it.q) } ?: "")
+        StudioField.PREAMP -> stringResource(R.string.eq_preamp) to String.format(java.util.Locale.US, "%.1f", viewModel.currentPreamp.value)
+    }
+    StudioValueDialog(
+        title = title,
+        initial = initial,
+        onDismiss = onDismiss,
+        onConfirm = { v ->
+            when (field) {
+                StudioField.FREQ -> band?.let { viewModel.updateBand(it.id, it.copy(freq = v.coerceIn(StudioAxis.MIN_FREQ, StudioAxis.MAX_FREQ))) }
+                StudioField.GAIN -> band?.let { viewModel.updateBand(it.id, it.copy(gain = StudioBands.clampGain(v))) }
+                StudioField.Q -> band?.let { viewModel.updateBand(it.id, it.copy(q = v.coerceIn(StudioBands.MIN_Q, StudioBands.MAX_Q))) }
+                StudioField.PREAMP -> viewModel.setPreamp(v)
+            }
+        },
+    )
 }
 
 @Composable
@@ -370,7 +379,7 @@ private fun StudioHeader(
 }
 
 @Composable
-private fun StudioLegend(measurementName: String?, targetName: String?, modifier: Modifier = Modifier) {
+internal fun StudioLegend(measurementName: String?, targetName: String?, modifier: Modifier = Modifier) {
     Column(modifier) {
         if (measurementName != null) LegendLine(measurementName, MeasurementColor)
         if (targetName != null) LegendLine(targetName, TargetColor)
@@ -397,22 +406,38 @@ private fun LegendLine(text: String, color: Color) {
  * behind a dropdown.
  */
 @Composable
-private fun TargetStrip(
+internal fun TargetStrip(
     targets: List<EqTarget>,
     selectedId: String,
     onSelect: (String) -> Unit,
     onImport: () -> Unit,
+    /** Removes an imported target; offered on the one selected, as a small × on its pill. */
+    onDelete: ((String) -> Unit)? = null,
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(targets, key = { it.id }) { target ->
+            val deletable = onDelete != null && target.id == selectedId && target.id.startsWith(CUSTOM_TARGET_PREFIX)
+            val deleteLabel = stringResource(R.string.eq_delete_target, target.label)
             GlassChoiceChip(
                 label = target.label,
                 selected = target.id == selectedId,
                 accent = TargetColor,
                 onClick = { onSelect(target.id) },
+                trailingContent = if (!deletable) null else {
+                    {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = deleteLabel,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clip(CircleShape)
+                                .clickable { onDelete?.invoke(target.id) },
+                        )
+                    }
+                },
             )
         }
         item(key = "import") {
@@ -530,25 +555,7 @@ private fun FiltersPanel(
         }
 
         item(key = "chips") {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                itemsIndexed(bands, key = { _, b -> b.id }) { index, band ->
-                    val color = studioFilterColor(band.id)
-                    GlassChoiceChip(
-                        label = "${index + 1} · ${band.type.studioCode()} ${formatStudioFreq(band.freq)}",
-                        selected = band.id == selected?.id,
-                        accent = color,
-                        onClick = { onSelect(band.id) },
-                        leadingContent = {
-                            Box(
-                                Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(if (band.enabled) color else color.copy(alpha = 0.3f)),
-                            )
-                        },
-                    )
-                }
-            }
+            FilterChipsRow(bands = bands, selectedId = selected?.id, onSelect = onSelect)
         }
 
         item(key = "inspector") {
@@ -567,8 +574,37 @@ private fun FiltersPanel(
     }
 }
 
+/** Every filter as a chip in its own colour, numbered as on the graph; a tap selects it. */
 @Composable
-private fun Hint(text: String) {
+internal fun FilterChipsRow(
+    bands: List<EqBand>,
+    selectedId: Int?,
+    onSelect: (Int) -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = contentPadding) {
+        itemsIndexed(bands, key = { _, b -> b.id }) { index, band ->
+            val color = studioFilterColor(band.id)
+            GlassChoiceChip(
+                label = "${index + 1} · ${band.type.studioCode()} ${formatStudioFreq(band.freq)}",
+                selected = band.id == selectedId,
+                accent = color,
+                onClick = { onSelect(band.id) },
+                leadingContent = {
+                    Box(
+                        Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(if (band.enabled) color else color.copy(alpha = 0.3f)),
+                    )
+                },
+            )
+        }
+    }
+}
+
+@Composable
+internal fun Hint(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,
@@ -579,7 +615,7 @@ private fun Hint(text: String) {
 
 /** The selected filter: its type, its three values as scrub pills, on/off and delete. */
 @Composable
-private fun FilterInspector(
+internal fun FilterInspector(
     band: EqBand,
     number: Int,
     onChange: (EqBand) -> Unit,

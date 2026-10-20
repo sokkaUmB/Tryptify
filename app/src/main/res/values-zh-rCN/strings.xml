@@ -1442,6 +1442,7 @@
     <string name="eq_import_left_measurement_file">导入左声道测量文件</string>
     <string name="eq_import_right_measurement_file">导入右声道测量文件</string>
     <string name="eq_import_measurement_file">导入测量文件</string>
+    <string name="eq_delete_target">删除目标曲线 %1$s</string>
     <string name="eq_import_custom_target">导入自定义目标曲线</string>
     <string name="eq_filter_bands_caps">滤波频段</string>
     <string name="eq_max_hz_caps">最高 Hz</string>

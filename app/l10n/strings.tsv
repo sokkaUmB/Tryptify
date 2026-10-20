@@ -1462,6 +1462,7 @@ eq_help	Help	帮助	ヘルプ	Aide	Ayuda	Yardım	Hilfe
 eq_import_left_measurement_file	Import left measurement file	导入左声道测量文件	左のテスト測定ファイルをインポート	Importer le fichier de mesure gauche	Importar archivo de medición izquierdo	Sol ölçüm dosyasını içe aktar	Linke Messdatei importieren
 eq_import_right_measurement_file	Import right measurement file	导入右声道测量文件	右の測定ファイルをインポート	Importer le fichier de mesure droit	Importar archivo de medición derecho	Sağ ölçüm dosyasını içe aktar	Rechte Messdatei importieren
 eq_import_measurement_file	Import measurement file	导入测量文件	測定ファイルをインポート	Importer un fichier de mesure	Importar archivo de medición	Ölçüm dosyasını içe aktar	Messdatei importieren
+eq_delete_target	Delete target %1$s	删除目标曲线 %1$s	ターゲット %1$s を削除	Supprimer la cible %1$s	Eliminar el objetivo %1$s	%1$s hedefini sil	Zielkurve %1$s löschen
 eq_import_custom_target	Import custom target	导入自定义目标曲线	カスタムターゲットをインポート	Importer une cible personnalisée	Importar objetivo personalizado	Özel hedef içe aktar	Eigene Zielkurve importieren
 eq_filter_bands_caps	FILTER BANDS	滤波频段	フィルターバンド	BANDES DE FILTRE	BANDAS DE FILTRO	FİLTRE BANTLARI	FILTERBÄNDER
 eq_max_hz_caps	MAX HZ	最高 Hz	最大 Hz	HZ MAX	HZ MÁX.	MAKS. HZ	MAX. HZ

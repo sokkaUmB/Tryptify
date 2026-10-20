@@ -59,6 +59,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -123,6 +124,10 @@ fun EqualizerScreen(
     // always the left/mono channel, so everything below reduces to the old UI.
     val editRight = stereoMode && editChannel == EqChannel.RIGHT
     val activeBands = if (editRight) currentBandsR else currentBands
+    // The filter picked on the graph or its chip, as in the Studio.
+    var selectedBandId by rememberSaveable { mutableIntStateOf(-1) }
+    var editingField by rememberSaveable { mutableStateOf<StudioField?>(null) }
+    val selectedBand = activeBands.firstOrNull { it.id == selectedBandId }
     val activeMeasurement =
         if (editRight) originalMeasurementR.ifEmpty { originalMeasurement }
         else originalMeasurement
@@ -135,7 +140,6 @@ fun EqualizerScreen(
     // process death (e.g. while a SAF picker is up) doesn't drop a half-filled
     // save/target dialog or reset the expanded sections.
     var showSaveDialog by rememberSaveable { mutableStateOf(false) }
-    var showTargetMenu by remember { mutableStateOf(false) }
     var showHeadphoneSelect by remember { mutableStateOf(false) }
     var showBandsExpanded by rememberSaveable { mutableStateOf(true) }
     var showProfilesExpanded by rememberSaveable { mutableStateOf(true) }
@@ -226,6 +230,11 @@ fun EqualizerScreen(
                 android.widget.Toast.LENGTH_SHORT
             ).show()
         }
+    }
+
+    // Typing a filter's frequency, gain or Q in, from its scrub pill.
+    editingField?.let { field ->
+        StudioFieldDialog(field = field, band = selectedBand, viewModel = viewModel, onDismiss = { editingField = null })
     }
 
     // AutoEQ tutorial dialog (first visit)
@@ -408,24 +417,88 @@ fun EqualizerScreen(
                     val displayOther = remember(otherMeasurement, smoothing) {
                         AutoEqEngine.smoothCurve(otherMeasurement, smoothing)
                     }
-                    FrequencyResponseGraph(
-                        originalCurve = displayMeasurement,
-                        targetCurve = selectedTarget.data,
-                        eqBands = activeBands,
-                        preamp = currentPreamp,
-                        onBandDragged = { bandId, freq, gain ->
-                            viewModel.updateBandByDrag(bandId, freq, gain)
-                        },
-                        modifier = Modifier.padding(horizontal = 12.dp),
-                        secondaryMeasurement = if (stereoMode) displayOther else emptyList(),
-                        secondaryBands =
-                            if (stereoMode) {
-                                if (editRight) currentBands else currentBandsR
-                            } else null,
-                        primaryIsRight = editRight,
-                    )
+                    // The Studio's graph: drag a handle to move a filter, pinch
+                    // for its Q, touch anywhere else for a readout. The other
+                    // ear is drawn faintly beside the one being edited.
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(320.dp)
+                            .padding(horizontal = 12.dp),
+                    ) {
+                        EqStudioGraph(
+                            measurement = displayMeasurement,
+                            target = selectedTarget.data,
+                            bands = activeBands,
+                            selectedId = selectedBandId,
+                            onSelect = { selectedBandId = it },
+                            onMove = { id, freq, gain -> viewModel.updateBandByDrag(id, freq, gain) },
+                            onQ = { id, q ->
+                                activeBands.firstOrNull { it.id == id }?.let { viewModel.updateBand(id, it.copy(q = q)) }
+                            },
+                            measurementColor = MeasurementColor,
+                            targetColor = TargetColor,
+                            description = stringResource(R.string.eq_studio_graph_description),
+                            modifier = Modifier.fillMaxSize(),
+                            secondaryMeasurement = if (stereoMode) displayOther else emptyList(),
+                            secondaryBands = if (!stereoMode) emptyList() else if (editRight) currentBands else currentBandsR,
+                        )
+                        StudioLegend(
+                            measurementName = (measurementLabelText(if (editRight) measurementLabelR else measurementLabelL)
+                                ?: selectedHeadphone?.name)
+                                ?.takeIf { activeMeasurement.isNotEmpty() },
+                            targetName = selectedTarget.label.takeIf { selectedTarget.data.isNotEmpty() },
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(start = 38.dp, bottom = 26.dp),
+                        )
+                    }
                 }
               }
+            }
+
+            // ─── Targets, one tap each, under the graph (as the Studio's) ───
+            item(key = "targets") {
+                TargetStrip(
+                    targets = availableTargets,
+                    selectedId = selectedTarget.id,
+                    onSelect = viewModel::selectTarget,
+                    onImport = { targetFilePicker.launch("*/*") },
+                    onDelete = viewModel::deleteCustomTarget,
+                )
+            }
+
+            // ─── The filters as the Studio places them: a chip each, and the
+            // selected one's type, frequency, gain and Q as scrub pills ───
+            item(key = "nodes") {
+                Column(
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    if (activeBands.isEmpty()) {
+                        Box(Modifier.padding(horizontal = 12.dp)) { Hint(stringResource(R.string.eq_studio_no_filters)) }
+                    } else {
+                        FilterChipsRow(
+                            bands = activeBands,
+                            selectedId = selectedBand?.id,
+                            onSelect = { selectedBandId = it },
+                            contentPadding = PaddingValues(horizontal = 12.dp),
+                        )
+                        Box(Modifier.padding(horizontal = 12.dp)) {
+                            if (selectedBand == null) {
+                                Hint(stringResource(R.string.eq_studio_no_filter_selected))
+                            } else {
+                                FilterInspector(
+                                    band = selectedBand,
+                                    number = activeBands.indexOfFirst { it.id == selectedBand.id } + 1,
+                                    onChange = { viewModel.updateBand(it.id, it) },
+                                    onDelete = { viewModel.removeBand(selectedBand.id) },
+                                    onType = { editingField = it },
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             // ─── Preamp (right under the graph it applies to) ───
@@ -712,77 +785,6 @@ fun EqualizerScreen(
               }
             }
 
-            // ─── Target Curve Selector ───
-            item {
-              tf.monochrome.android.devedit.DevEditable("eq_target_selector", Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    SectionLabel(stringResource(R.string.eq_target_caps))
-                    Box {
-                        SelectorRow(
-                            value = selectedTarget.label,
-                            onClick = { showTargetMenu = true },
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = { targetFilePicker.launch("text/*") },
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .materialSurface(
-                                            shape = RoundedCornerShape(8.dp),
-                                        )
-                                ) {
-                                    Icon(
-                                        Icons.Default.UploadFile,
-                                        contentDescription = stringResource(R.string.eq_import_custom_target),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        )
-                        DropdownMenu(
-                            expanded = showTargetMenu,
-                            onDismissRequest = { showTargetMenu = false }
-                        ) {
-                            availableTargets.forEach { target ->
-                                val isCustom = target.id.startsWith("custom_")
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(target.label, modifier = Modifier.weight(1f))
-                                            if (isCustom) {
-                                                IconButton(
-                                                    onClick = {
-                                                        viewModel.deleteCustomTarget(target.id)
-                                                        showTargetMenu = false
-                                                    },
-                                                    modifier = Modifier.size(24.dp)
-                                                ) {
-                                                    Icon(
-                                                        Icons.Default.Delete,
-                                                        contentDescription = stringResource(R.string.action_delete),
-                                                        modifier = Modifier.size(16.dp),
-                                                        tint = MaterialTheme.colorScheme.error
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    },
-                                    onClick = {
-                                        viewModel.selectTarget(target.id)
-                                        showTargetMenu = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-              }
-            }
-
-            // ─── Parameters Row (Filter Bands / Max Hz / Sample Rate) ───
             item {
               tf.monochrome.android.devedit.DevEditable("eq_parameters_row", Modifier.fillMaxWidth()) {
                 Row(
