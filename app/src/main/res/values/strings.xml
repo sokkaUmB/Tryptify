@@ -231,7 +231,6 @@
     <string name="bpm_measure_again">Measure the tempo again</string>
     <string name="bpm_type_song_tempo">Type the song\'s tempo</string>
     <string name="action_set">Set</string>
-    <string name="unknown_artist">Unknown artist</string>
     <string name="dock_mixer_fx">Mixer/FX</string>
     <string name="lyrics_none_short">No lyrics available for this track</string>
     <string name="lyrics_server_sync">Time lyrics on the server</string>
@@ -796,8 +795,6 @@
     <string name="range_last_90d">Last 90 days</string>
     <string name="range_last_12m">Last 12 months</string>
     <string name="synced_when">Synced %1$s</string>
-    <string name="total_plays">Total plays</string>
-    <string name="music_enthusiast">You’re a music enthusiast!</string>
     <string name="eq_settings">EQ settings</string>
     <string name="number_of_bands">Number of bands</string>
     <string name="frequency_range_note">Frequency range: 20 Hz – 20,000 Hz</string>
@@ -2517,7 +2514,7 @@
     <string name="stats_persona_afternoon">Afternoon drifter</string>
     <string name="stats_persona_early_bird">Early bird</string>
     <string name="stats_peak_headline">%1$s at %2$s is your busiest hour</string>
-    <string name="stats_night_share">%1$s of your listening starts after 9 pm.</string>
+    <string name="stats_night_share">%1$s of your listening is at night, between 9 pm and 5 am.</string>
     <string name="stats_number_one_artist">Number one artist</string>
     <string name="stats_artist_line">%1$s, %2$s of everything you played.</string>
     <string name="stats_top5_share">Your top 5 are %1$s of it</string>
@@ -2592,7 +2589,7 @@
     <string name="stats_ach_golden_what">Hi-Res tracks are 24-bit. Choose Hi-Res as your streaming quality where your service offers it.</string>
     <string name="stats_ach_night">Night Owl</string>
     <string name="stats_ach_night_goal">%1$d plays after midnight</string>
-    <string name="stats_ach_night_what">Plays that start between midnight and 4 am count.</string>
+    <string name="stats_ach_night_what">Plays that start between midnight and 5 am count.</string>
     <string name="stats_ach_chain">Signal Chain</string>
     <string name="stats_ach_chain_goal">Put %1$d plugins in one effect chain</string>
     <string name="stats_ach_chain_what">Build a chain of plugins on one mixer bus. A bus holds up to 16.</string>
@@ -2629,7 +2626,7 @@
     <string name="stats_of_listening">of your listening</string>
     <string name="stats_about_time">About %1$s in this range</string>
     <string name="stats_hour_rank">Number %1$d of the %2$d hours in your week</string>
-    <string name="stats_after_nine">After 9 pm</string>
+    <string name="stats_after_nine">9 pm to 5 am</string>
     <string name="stats_quietest_hour">Quietest hour</string>
     <string name="stats_busiest_day">Busiest day</string>
     <string name="stats_morning">Morning</string>
@@ -2911,4 +2908,25 @@
     <string name="opened_fail_no_space">There isn\'t enough free space on the phone.</string>
     <string name="opened_fail_unreadable">It couldn\'t be read.</string>
     <string name="opened_fail_no_write">Android didn\'t let Tryptify save to Music.</string>
+    <string name="stats_ach_tm_combo">Unbroken</string>
+    <string name="stats_ach_tm_combo_goal">A full combo in Trypt Mania</string>
+    <string name="stats_ach_tm_combo_what">Finish a whole song without missing or dropping a step. Training segments don\'t count.</string>
+    <string name="stats_ach_tm_aa">Double A</string>
+    <string name="stats_ach_tm_aa_goal">An AA grade in Trypt Mania</string>
+    <string name="stats_ach_tm_aa_what" formatted="false">Finish a whole song at 96% or more without failing. Grades count, not scores.</string>
+    <string name="stats_ach_tm_charts">Chart Hopper</string>
+    <string name="stats_ach_tm_charts_goal">%1$d different charts played</string>
+    <string name="stats_ach_tm_charts_what">Play a whole song on that many different charts in Trypt Mania. Any song and difficulty counts.</string>
+    <plurals name="stats_tm_songs">
+        <item quantity="one">song played</item>
+        <item quantity="other">songs played</item>
+    </plurals>
+    <plurals name="stats_tm_on_charts">
+        <item quantity="one">On %1$d chart, all time</item>
+        <item quantity="other">On %1$d charts, all time</item>
+    </plurals>
+    <string name="stats_tm_best_grade">Best grade</string>
+    <string name="stats_tm_full_combos">Full combos</string>
+    <string name="stats_tm_accuracy">Accuracy, last %1$d</string>
+    <string name="stats_tm_most_played">Most played: %1$s, %2$s</string>
 </resources>

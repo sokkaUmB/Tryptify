@@ -39,6 +39,11 @@ class GlyphAttemptStore @Inject constructor(
 
     private val writeLock = Mutex()
 
+    private val _revision = kotlinx.coroutines.flow.MutableStateFlow(0L)
+
+    /** Bumped after every save and clear: what the stats and achievements re-read on. */
+    val revision: kotlinx.coroutines.flow.StateFlow<Long> = _revision
+
     private val root: File
         get() = File(context.filesDir, DIRECTORY).apply { mkdirs() }
 
@@ -170,10 +175,13 @@ class GlyphAttemptStore @Inject constructor(
                 Log.w(TAG, "could not save attempt for ${attempt.chartId}: ${it.message}")
             }
         }
+        _revision.value++
+        Unit
     }
 
     suspend fun clear(chartId: String): Unit = writeLock.withLock {
         withContext(Dispatchers.IO) { fileFor(chartId).delete() }
+        _revision.value++
         Unit
     }
 

@@ -417,7 +417,7 @@ object WhatsNew {
                     kind = WhatsNewKind.NEW,
                     section = STATS,
                     title = "Listening stats and achievements",
-                    body = "Account › Listening stats: glass cards and fourteen charts of how you listen, and ten achievements to chase. The account button shows your own picture, and you pick your own username.",
+                    body = "Account › Listening stats: glass cards, charts of how you listen, your Trypt Mania play and achievements to chase. The account button shows your own picture, and you pick your own username.",
                 ),
                 WhatsNewEntry(
                     kind = WhatsNewKind.CHANGED,

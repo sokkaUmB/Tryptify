@@ -1381,6 +1381,18 @@ screen reading its states, so none is stamped without its pill; the first check
 after the pill arrived stamps what was already done quietly. Gold is for the
 ring and the icon only: as text it does not read on light glass.
 
+**Trypt Mania has a card of its own on the Stats page** (`TryptManiaCard`),
+after Quality, and also under "no plays" when the range is empty: it counts
+all time, from the saved runs (`TryptManiaStats`, read once by
+`AchievementWatcher`), not the range. Whole songs only, and runs compare by
+grade or percent, never score: score grows with the combo, so an older run's
+score reads as worse play.
+
+**Night is one window, 9 pm to 5 am** (`NIGHT_START_HOUR`, `NIGHT_END_HOUR`):
+the Night owl listening type, the night share, the clock chart's Night row
+and, for its after-midnight part, the Night Owl achievement. A stat with its
+own hours says a different thing under the same word.
+
 **A song opened from another app ("Open with") plays at once and is offered,
 not added** (`OpenedFilePill`): a glass pill from the top, the same chrome as
 the achievement pill, with "Opened from another app", the title and Add to

@@ -84,6 +84,9 @@ class StatsViewModel @Inject constructor(
     /** Where each achievement stands: the app-wide watcher's, which also stamps and announces them. */
     val achievements: StateFlow<List<AchievementState>> = achievementWatcher.states
 
+    /** Trypt Mania, all time: the watcher reads the runs for its achievements and keeps the sum. */
+    val tryptMania: StateFlow<TryptManiaStats> = achievementWatcher.tryptMania
+
     init {
         // Pick up plays made on other devices. A no-op when signed out.
         viewModelScope.launch { refreshFromCloudInternal(_range.value) }

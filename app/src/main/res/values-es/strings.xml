@@ -234,7 +234,6 @@
     <string name="bpm_measure_again">Volver a medir el tempo</string>
     <string name="bpm_type_song_tempo">Escribir el tempo de la canción</string>
     <string name="action_set">Establecer</string>
-    <string name="unknown_artist">Artista desconocido</string>
     <string name="dock_mixer_fx">Mezclador/FX</string>
     <string name="lyrics_none_short">No hay letra disponible para esta canción</string>
     <string name="lyrics_server_sync">Sincronizar la letra en el servidor</string>
@@ -827,8 +826,6 @@
     <string name="range_last_90d">Últimos 90 días</string>
     <string name="range_last_12m">Últimos 12 meses</string>
     <string name="synced_when">Sincronizado %1$s</string>
-    <string name="total_plays">Reproducciones totales</string>
-    <string name="music_enthusiast">¡Eres un amante de la música!</string>
     <string name="eq_settings">Ajustes del ecualizador</string>
     <string name="number_of_bands">Número de bandas</string>
     <string name="frequency_range_note">Rango de frecuencias: 20 Hz – 20.000 Hz</string>
@@ -2575,7 +2572,7 @@
     <string name="stats_persona_afternoon">Soñador de la tarde</string>
     <string name="stats_persona_early_bird">Madrugador</string>
     <string name="stats_peak_headline">El %1$s a las %2$s es tu hora punta</string>
-    <string name="stats_night_share">El %1$s de lo que escuchas empieza después de las 21:00.</string>
+    <string name="stats_night_share">El %1$s de lo que escuchas es de noche, entre las 21:00 y las 5:00.</string>
     <string name="stats_number_one_artist">Artista número uno</string>
     <string name="stats_artist_line">%1$s, el %2$s de todo lo que escuchaste.</string>
     <string name="stats_top5_share">Tu top 5 es el %1$s</string>
@@ -2650,7 +2647,7 @@
     <string name="stats_ach_golden_what">Las canciones Hi-Res son de 24 bits. Elige Hi-Res como calidad de streaming si tu servicio la ofrece.</string>
     <string name="stats_ach_night">Ave nocturna</string>
     <string name="stats_ach_night_goal">%1$d reproducciones después de medianoche</string>
-    <string name="stats_ach_night_what">Cuentan las reproducciones que empiezan entre la medianoche y las 4:00.</string>
+    <string name="stats_ach_night_what">Cuentan las reproducciones que empiezan entre la medianoche y las 5:00.</string>
     <string name="stats_ach_chain">Cadena de señal</string>
     <string name="stats_ach_chain_goal">Pon %1$d plugins en una cadena de efectos</string>
     <string name="stats_ach_chain_what">Crea una cadena de plugins en un bus del mezclador. Un bus admite hasta 16.</string>
@@ -2687,7 +2684,7 @@
     <string name="stats_of_listening">de lo que escuchas</string>
     <string name="stats_about_time">Unos %1$s en este periodo</string>
     <string name="stats_hour_rank">Número %1$d de las %2$d horas de tu semana</string>
-    <string name="stats_after_nine">Después de las 21:00</string>
+    <string name="stats_after_nine">De 21:00 a 5:00</string>
     <string name="stats_quietest_hour">Hora más tranquila</string>
     <string name="stats_busiest_day">Día más intenso</string>
     <string name="stats_morning">Mañana</string>
@@ -2977,4 +2974,27 @@
     <string name="opened_fail_no_space">No hay suficiente espacio libre en el teléfono.</string>
     <string name="opened_fail_unreadable">No se pudo leer.</string>
     <string name="opened_fail_no_write">Android no permitió que Tryptify guardara en Music.</string>
+    <string name="stats_ach_tm_combo">Sin fallos</string>
+    <string name="stats_ach_tm_combo_goal">Un full combo en Trypt Mania</string>
+    <string name="stats_ach_tm_combo_what">Termina una canción entera sin fallar ni soltar un paso. Los fragmentos de entrenamiento no cuentan.</string>
+    <string name="stats_ach_tm_aa">Doble A</string>
+    <string name="stats_ach_tm_aa_goal">Una nota AA en Trypt Mania</string>
+    <string name="stats_ach_tm_aa_what" formatted="false">Termina una canción entera con un 96 % o más sin fallar. Cuenta la nota, no la puntuación.</string>
+    <string name="stats_ach_tm_charts">Saltacharts</string>
+    <string name="stats_ach_tm_charts_goal">%1$d charts distintos jugados</string>
+    <string name="stats_ach_tm_charts_what">Juega una canción entera en esa cantidad de charts distintos en Trypt Mania. Cuenta cualquier canción y dificultad.</string>
+    <plurals name="stats_tm_songs">
+        <item quantity="one">canción jugada</item>
+        <item quantity="many">canciones jugadas</item>
+        <item quantity="other">canciones jugadas</item>
+    </plurals>
+    <plurals name="stats_tm_on_charts">
+        <item quantity="one">En %1$d chart, desde siempre</item>
+        <item quantity="many">En %1$d charts, desde siempre</item>
+        <item quantity="other">En %1$d charts, desde siempre</item>
+    </plurals>
+    <string name="stats_tm_best_grade">Mejor nota</string>
+    <string name="stats_tm_full_combos">Full combos</string>
+    <string name="stats_tm_accuracy">Precisión, últimas %1$d</string>
+    <string name="stats_tm_most_played">La más jugada: %1$s, %2$s</string>
 </resources>

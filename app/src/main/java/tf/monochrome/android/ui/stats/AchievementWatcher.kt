@@ -22,6 +22,7 @@ import tf.monochrome.android.audio.dsp.SnapinType
 import tf.monochrome.android.data.achievements.AchievementStore
 import tf.monochrome.android.data.achievements.FeatureLog
 import tf.monochrome.android.data.db.dao.PlayEventDao
+import tf.monochrome.android.glyph.data.GlyphAttemptStore
 import tf.monochrome.android.ui.settings.settingsPageIds
 
 /**
@@ -34,14 +35,16 @@ import tf.monochrome.android.ui.settings.settingsPageIds
  * watching is announced the next time the app is up ([pending] is kept until
  * the pill has shown it).
  *
- * Checked again on each play and on each entry in the achievement log (a
- * settings page opened, a plugin added, a country heard), off the main thread.
+ * Checked again on each play, on each entry in the achievement log (a
+ * settings page opened, a plugin added, a country heard) and on each saved
+ * Trypt Mania run, off the main thread.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class AchievementWatcher @Inject constructor(
     private val playEventDao: PlayEventDao,
     private val achievementStore: AchievementStore,
+    private val glyphAttempts: GlyphAttemptStore,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -50,8 +53,17 @@ class AchievementWatcher @Inject constructor(
     /** Completed and not yet shown, oldest first; the pill takes them one at a time. */
     val pending: StateFlow<List<Achievement>> = _pending.asStateFlow()
 
+    private val _tryptMania = MutableStateFlow(TryptManiaStats.EMPTY)
+
+    /** Trypt Mania's saved runs, summed up: the Stats card, read here once for both. */
+    val tryptMania: StateFlow<TryptManiaStats> = _tryptMania.asStateFlow()
+
     val states: StateFlow<List<AchievementState>> =
-        combine(playEventDao.playCount().distinctUntilChanged(), achievementStore.log) { _, log -> log }
+        combine(
+            playEventDao.playCount().distinctUntilChanged(),
+            achievementStore.log,
+            glyphAttempts.revision,
+        ) { _, log, _ -> log }
             .mapLatest { log -> evaluate(log) }
             .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
@@ -73,6 +85,7 @@ class AchievementWatcher @Inject constructor(
             hiResSeconds = playEventDao.hiResSeconds(),
             playsAfterMidnight = playEventDao.playsAfterMidnight(),
             log = log,
+            tryptMania = TryptManiaStats.from(glyphAttempts.recentRuns(Int.MAX_VALUE)).also { _tryptMania.value = it },
         )
         val states = Achievements.evaluate(facts, settingsPageIds, SnapinType.availableTypes().map { it.name }, now)
         val fresh = Achievements.newlyUnlocked(states, log.unlockedAt)

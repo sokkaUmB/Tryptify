@@ -97,7 +97,6 @@ import tf.monochrome.android.ui.player.NowPlayingScreen
 import tf.monochrome.android.ui.player.PlayerViewModel
 import tf.monochrome.android.ui.library.FolderBrowserScreen
 import tf.monochrome.android.ui.profile.ProfileScreen
-import tf.monochrome.android.ui.stats.ListeningStatsScreen
 import tf.monochrome.android.ui.stats.StatsScreen
 import tf.monochrome.android.ui.stats.StatsChartScreen
 import tf.monochrome.android.ui.search.SearchScreen
@@ -161,7 +160,6 @@ sealed class Screen(val route: String) {
     }
     /** One Stats chart, opened to be looked at closely; see statsChartRoute. */
     data object StatsChart : Screen("stats_chart/{chart}?range={range}")
-    data object ListeningStats : Screen("listening_stats")
     data object FolderBrowser : Screen("folder/{folderPath}") {
         // Uri.encode (not URLEncoder) so spaces become %20 not '+', and every
         // reserved char (incl. '/' and '%') is percent-encoded. Navigation
@@ -984,11 +982,6 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                         ?: tf.monochrome.android.ui.stats.StatsChart.MINUTES
                     tf.monochrome.android.devedit.DevEditScreen("stats_chart") {
                         StatsChartScreen(navController = navController, chart = chart)
-                    }
-                }
-                composable(Screen.ListeningStats.route) {
-                    tf.monochrome.android.devedit.DevEditScreen("listening_stats") {
-                        ListeningStatsScreen(onBack = { navController.popBackStackSafe() })
                     }
                 }
                 composable(

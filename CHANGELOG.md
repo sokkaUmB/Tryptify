@@ -4,6 +4,11 @@
 
 ### Added
 
+#### Trypt Mania in your stats
+- **A Trypt Mania card on Account › Listening stats**: whole songs played and on how many charts, your best grade, full combos, and the accuracy of your last ten songs with an arrow for better or worse than the ten before. It counts all time, so it shows even when the range you picked has no plays. Its arrow opens Trypt Mania.
+- **Grades, not scores.** Points grow with your combo now, so an older run's score would look worse than it was. The card and the achievements compare grades and accuracy only. Training Ground segments don't count as songs.
+- **Three Trypt Mania achievements**: Unbroken (a full combo), Double A (an AA grade) and Chart Hopper (25 different charts). The achievement pill announces them like the others.
+
 #### Open songs from other apps
 - **Tryptify can now be the app that plays a song.** Open an audio file from a file manager, a chat or Downloads, pick Tryptify, and it plays straight away.
 - **It isn't added to your library unless you ask.** A pill at the top shows the song with Add to library, and the same option is in Now Playing's ⋮ menu while it plays. Adding copies it to Music/Tryptify, where the library finds it. Until then it plays from a temporary copy that Tryptify clears by itself.
@@ -77,6 +82,8 @@
 - **Trypt Mania takes the colour of the song you pick.** Choose a song on the wheel and the app's dynamic colours fade to its album colour within half a second, whatever your "Blend between tracks" length is (a shorter one is kept). The whole app follows that one song while the mode is open, tab bar and "Tint the menus too" included, so two songs never colour the screen at once; when you leave, the playing track takes over again. The colours stay readable on every menu.
 
 ### Fixed
+- **Golden Ears and the Quality card agree on what Hi-Res is.** The achievement counted "HI-RES" or "HI RES" tags the card called lossy, and missed "HIRES", which the card counted.
+- **Night means one thing in your stats: 9 pm to 5 am.** The Night owl listening type, the share of night listening, the clock chart's Night row and the Night Owl achievement used four different windows, so a 4 am peak made you an "Early bird". Night Owl now counts plays from midnight to 5 am.
 
 #### The Fonts page no longer freezes the app with many fonts
 - **Each font chip reads its font in the background now**, at the one weight it shows, and the chip shows in the normal font for the moment it takes. Before, every chip read its font in the frame that drew it, and every imported one read your whole font library again to find its family, so with a lot of fonts installed the page froze the app.
@@ -178,8 +185,8 @@
 
 #### Account and stats
 - **Your own picture and name.** The account button in the top bar is glass: your picture (or initials) when you're signed in, a Sign in pill when you're not. The Account page picks a picture from your photos, cropped to 512 px and kept on this phone, or goes back to your Google one, and you choose a username of your own instead of showing your Google name. The username is kept in the account's own metadata, which Google does not rewrite on sign-in, so it follows you to every device.
-- **Listening stats, rebuilt.** Account › Listening stats is a column of glass cards: time listened against the period before, your listening type from an hour-by-weekday grid, top artist, on repeat, discovery, a streak calendar and audio quality. Dig deeper opens fourteen charts of sessions, months, variety, track lengths, sources, weekdays, albums and tracks; tap a bar and it says what it holds. Every chart reads one report built from the plays themselves, on local days, so they agree on what a day, a session or a new artist is, and a play of a local file counts as local, not as a stream.
-- **Achievements.** Ten goals beside your stats, from 25 new artists in 30 days and a 30-day streak to trying every settings page and every plugin. Tap one to see what is left to do and a button that takes you there. They stay on your phone in a log of their own, so clearing settings keeps them, and an unlock is kept even if its count later falls.
+- **Listening stats, rebuilt.** Account › Listening stats is a column of glass cards: time listened against the period before, your listening type from an hour-by-weekday grid, top artist, on repeat, discovery, a streak calendar and audio quality. Dig deeper opens charts of sessions, months, variety, track lengths, sources, weekdays, albums and tracks; tap a bar and it says what it holds. Every chart reads one report built from the plays themselves, on local days, so they agree on what a day, a session or a new artist is, and a play of a local file counts as local, not as a stream.
+- **Achievements.** Goals beside your stats, from 25 new artists in 30 days and a 30-day streak to trying every settings page and every plugin. Tap one to see what is left to do and a button that takes you there. They stay on your phone in a log of their own, so clearing settings keeps them, and an unlock is kept even if its count later falls.
 
 ### Changed
 

@@ -35,6 +35,17 @@ enum class Persona { NIGHT_OWL, EVENING, AFTERNOON, EARLY_BIRD }
 
 enum class BucketUnit { DAY, WEEK, MONTH }
 
+/**
+ * Night is 9 pm to 5 am, the one window every stat uses: the Night owl
+ * listening type, the night share, the clock chart's Night row and, for its
+ * after-midnight part, the Night Owl achievement (PlayEventDao). They used
+ * to be four different windows, so a 4 am peak made an "Early bird".
+ */
+const val NIGHT_START_HOUR = 21
+const val NIGHT_END_HOUR = 5
+
+fun isNightHour(hour: Int): Boolean = hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR
+
 private val LOSSLESS_NAMES = setOf("LOSSLESS", "FLAC", "ALAC", "WAV", "AIFF", "APE")
 
 /** Catalogue tiers ("HI_RES_LOSSLESS", "LOSSLESS", "HIGH") and local codec names ("FLAC", "MP3"). */
@@ -164,7 +175,7 @@ data class HeatStat(
     val seconds: List<List<Long>>,
     val peakDay: DayOfWeek,
     val peakHour: Int,
-    /** Share of listening that starts between 9 pm and 3 am. */
+    /** Share of listening that starts at night, [NIGHT_START_HOUR] to [NIGHT_END_HOUR]. */
     val nightShare: Float,
     val persona: Persona,
 ) {
@@ -274,7 +285,7 @@ object StatsReportBuilder {
             var bestH = 0
             for (d in 0 until 7) for (h in 0 until 24) if (heatGrid[d][h] > heatGrid[bestD][bestH]) { bestD = d; bestH = h }
             val total = heatGrid.sumOf { it.sum() }.coerceAtLeast(1)
-            val night = heatGrid.sumOf { row -> (0 until 24).filter { it >= 21 || it < 3 }.sumOf { row[it] } }
+            val night = heatGrid.sumOf { row -> (0 until 24).filter(::isNightHour).sumOf { row[it] } }
             HeatStat(
                 seconds = heatGrid.map { it.toList() },
                 peakDay = DayOfWeek.of(bestD + 1),
@@ -382,7 +393,7 @@ object StatsReportBuilder {
     }
 
     fun personaFor(hour: Int): Persona = when {
-        hour >= 21 || hour < 3 -> Persona.NIGHT_OWL
+        isNightHour(hour) -> Persona.NIGHT_OWL
         hour >= 17 -> Persona.EVENING
         hour >= 12 -> Persona.AFTERNOON
         else -> Persona.EARLY_BIRD

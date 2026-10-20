@@ -86,6 +86,17 @@ class StatsReportBuilderTest {
     }
 
     @Test
+    fun `night is one window, 9 pm to 5 am`() {
+        assertEquals(Persona.NIGHT_OWL, StatsReportBuilder.personaFor(21))
+        // A 4 am peak used to make an early bird.
+        assertEquals(Persona.NIGHT_OWL, StatsReportBuilder.personaFor(4))
+        assertEquals(Persona.EARLY_BIRD, StatsReportBuilder.personaFor(5))
+        assertEquals(Persona.EVENING, StatsReportBuilder.personaFor(20))
+        val r = report(listOf(play(today, 4), play(today, 6)))
+        assertEquals(0.5f, r.heat!!.nightShare, 0.001f)
+    }
+
+    @Test
     fun `an artist is new when first played inside the window`() {
         val old = at(today.minusDays(200), 9)
         val r = report(

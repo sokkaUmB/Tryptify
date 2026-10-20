@@ -230,7 +230,6 @@
     <string name="bpm_measure_again">Tempoyu yeniden ölç</string>
     <string name="bpm_type_song_tempo">Şarkının temposunu yaz</string>
     <string name="action_set">Ayarla</string>
-    <string name="unknown_artist">Bilinmeyen sanatçı</string>
     <string name="dock_mixer_fx">Mikser/FX</string>
     <string name="lyrics_none_short">Bu parça için şarkı sözü yok</string>
     <string name="lyrics_server_sync">Şarkı sözünü sunucuda zamanla</string>
@@ -795,8 +794,6 @@
     <string name="range_last_90d">Son 90 gün</string>
     <string name="range_last_12m">Son 12 ay</string>
     <string name="synced_when">%1$s eşitlendi</string>
-    <string name="total_plays">Toplam dinlenme</string>
-    <string name="music_enthusiast">Tam bir müzik tutkunusunuz!</string>
     <string name="eq_settings">EQ ayarları</string>
     <string name="number_of_bands">Bant sayısı</string>
     <string name="frequency_range_note">Frekans aralığı: 20 Hz – 20.000 Hz</string>
@@ -2515,7 +2512,7 @@
     <string name="stats_persona_afternoon">Öğleden sonra gezgini</string>
     <string name="stats_persona_early_bird">Erken kuş</string>
     <string name="stats_peak_headline">En yoğun saatin: %1$s, %2$s</string>
-    <string name="stats_night_share">Dinlemenin %1$s kadarı 21.00’den sonra başlıyor.</string>
+    <string name="stats_night_share">Dinlemenin %1$s kadarı gece, 21.00 ile 05.00 arasında.</string>
     <string name="stats_number_one_artist">Bir numaralı sanatçı</string>
     <string name="stats_artist_line">%1$s, dinlediğin her şeyin %2$s kadarı.</string>
     <string name="stats_top5_share">İlk 5 sanatçın bunun %1$s kadarı</string>
@@ -2590,7 +2587,7 @@
     <string name="stats_ach_golden_what">Hi-Res parçalar 24 bittir. Hizmetin sunuyorsa akış kalitesi olarak Hi-Res’i seç.</string>
     <string name="stats_ach_night">Gece kuşu</string>
     <string name="stats_ach_night_goal">Gece yarısından sonra %1$d dinleme</string>
-    <string name="stats_ach_night_what">Gece yarısı ile 04.00 arasında başlayan dinlemeler sayılır.</string>
+    <string name="stats_ach_night_what">Gece yarısı ile 05.00 arasında başlayan dinlemeler sayılır.</string>
     <string name="stats_ach_chain">Sinyal zinciri</string>
     <string name="stats_ach_chain_goal">Bir efekt zincirine %1$d eklenti koy</string>
     <string name="stats_ach_chain_what">Bir mikser veriyolunda eklenti zinciri kur. Bir veriyolu en fazla 16 alır.</string>
@@ -2627,7 +2624,7 @@
     <string name="stats_of_listening">dinlemenin</string>
     <string name="stats_about_time">Bu aralıkta yaklaşık %1$s</string>
     <string name="stats_hour_rank">Haftandaki %2$d saatin %1$d. sırada olanı</string>
-    <string name="stats_after_nine">21.00’den sonra</string>
+    <string name="stats_after_nine">21.00–05.00</string>
     <string name="stats_quietest_hour">En sessiz saat</string>
     <string name="stats_busiest_day">En yoğun gün</string>
     <string name="stats_morning">Sabah</string>
@@ -2909,4 +2906,25 @@
     <string name="opened_fail_no_space">Telefonda yeterli boş alan yok.</string>
     <string name="opened_fail_unreadable">Okunamadı.</string>
     <string name="opened_fail_no_write">Android, Tryptify\'ın Music klasörüne kaydetmesine izin vermedi.</string>
+    <string name="stats_ach_tm_combo">Kusursuz</string>
+    <string name="stats_ach_tm_combo_goal">Trypt Mania\'da bir full combo</string>
+    <string name="stats_ach_tm_combo_what">Bir şarkıyı hiçbir adımı kaçırmadan ve bırakmadan bitirin. Antrenman bölümleri sayılmaz.</string>
+    <string name="stats_ach_tm_aa">Çift A</string>
+    <string name="stats_ach_tm_aa_goal">Trypt Mania\'da AA notu</string>
+    <string name="stats_ach_tm_aa_what" formatted="false">Bir şarkıyı başarısız olmadan %96 veya üzeriyle bitirin. Puan değil, not sayılır.</string>
+    <string name="stats_ach_tm_charts">Chart Avcısı</string>
+    <string name="stats_ach_tm_charts_goal">%1$d farklı chart oynandı</string>
+    <string name="stats_ach_tm_charts_what">Trypt Mania\'da o kadar farklı chart\'ta bir şarkıyı baştan sona oynayın. Her şarkı ve zorluk sayılır.</string>
+    <plurals name="stats_tm_songs">
+        <item quantity="one">şarkı oynandı</item>
+        <item quantity="other">şarkı oynandı</item>
+    </plurals>
+    <plurals name="stats_tm_on_charts">
+        <item quantity="one">%1$d chart\'ta, tüm zamanlar</item>
+        <item quantity="other">%1$d chart\'ta, tüm zamanlar</item>
+    </plurals>
+    <string name="stats_tm_best_grade">En iyi not</string>
+    <string name="stats_tm_full_combos">Full combo</string>
+    <string name="stats_tm_accuracy">Doğruluk, son %1$d</string>
+    <string name="stats_tm_most_played">En çok oynanan: %1$s, %2$s</string>
 </resources>

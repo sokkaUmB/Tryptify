@@ -3,7 +3,7 @@ package tf.monochrome.android.ui.stats
 import tf.monochrome.android.data.achievements.FeatureLog
 
 /**
- * The ten achievements. Each is a count towards a goal; [goal] is null where
+ * The achievements. Each is a count towards a goal; [goal] is null where
  * the goal is the size of something that can change between releases (the
  * settings tabs, the mixer's plugins), which [Achievements.evaluate] is given.
  */
@@ -18,15 +18,20 @@ enum class Achievement(val goal: Int?) {
     NIGHT_OWL(50),
     SIGNAL_CHAIN(5),
     ROOM_TUNED(1),
+    // Trypt Mania: whole songs only, compared by grade, never by score.
+    TM_FULL_COMBO(1),
+    TM_DOUBLE_A(1),
+    TM_CHART_HOPPER(25),
 }
 
-/** The listening side of the achievements, read from play_events. */
+/** The listening side of the achievements, read from play_events, and Trypt Mania's saved runs. */
 data class AchievementFacts(
     val newArtistsLast30Days: Int,
     val currentStreak: Int,
     val hiResSeconds: Long,
     val playsAfterMidnight: Int,
     val log: FeatureLog,
+    val tryptMania: TryptManiaStats = TryptManiaStats.EMPTY,
 )
 
 data class AchievementState(
@@ -80,6 +85,9 @@ object Achievements {
                 Achievement.NIGHT_OWL -> facts.playsAfterMidnight to a.goal!!
                 Achievement.SIGNAL_CHAIN -> log.longestChain to a.goal!!
                 Achievement.ROOM_TUNED -> log.autoEqRuns to a.goal!!
+                Achievement.TM_FULL_COMBO -> facts.tryptMania.fullCombos.coerceAtMost(1) to a.goal!!
+                Achievement.TM_DOUBLE_A -> (if (facts.tryptMania.reachedAa) 1 else 0) to a.goal!!
+                Achievement.TM_CHART_HOPPER -> facts.tryptMania.charts to a.goal!!
             }
             val stamped = log.unlockedAt[a.name]
             val unlockedAt = stamped ?: if (goal > 0 && count >= goal) now else null

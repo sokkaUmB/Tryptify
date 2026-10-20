@@ -232,7 +232,6 @@ bpm_song_tempo_hint	The song's own BPM, before speed. Playback speed stays the s
 bpm_measure_again	Measure the tempo again	重新检测速度	テンポを再検出	Mesurer à nouveau le tempo	Volver a medir el tempo	Tempoyu yeniden ölç	Tempo neu messen
 bpm_type_song_tempo	Type the song's tempo	输入歌曲速度	曲のテンポを入力	Saisir le tempo du morceau	Escribir el tempo de la canción	Şarkının temposunu yaz	Tempo des Songs eingeben
 action_set	Set	设置	設定	Définir	Establecer	Ayarla	Festlegen
-unknown_artist	Unknown artist	未知艺人	不明なアーティスト	Artiste inconnu	Artista desconocido	Bilinmeyen sanatçı	Unbekannter Künstler
 dock_mixer_fx	Mixer/FX	混音/效果	ミキサー/FX	Mixeur/FX	Mezclador/FX	Mikser/FX	Mixer/FX
 lyrics_none_short	No lyrics available for this track	这首歌暂无歌词	この曲の歌詞はありません	Aucunes paroles disponibles pour ce titre	No hay letra disponible para esta canción	Bu parça için şarkı sözü yok	Für diesen Titel ist kein Songtext verfügbar
 lyrics_server_sync	Time lyrics on the server	在服务器上同步歌词	サーバーで歌詞を同期	Synchroniser les paroles sur le serveur	Sincronizar la letra en el servidor	Şarkı sözünü sunucuda zamanla	Songtext auf dem Server timen
@@ -769,8 +768,6 @@ range_last_30d	Last 30 days	最近 30 天	過去30日間	30 derniers jours	Últi
 range_last_90d	Last 90 days	最近 90 天	過去90日間	90 derniers jours	Últimos 90 días	Son 90 gün	Letzte 90 Tage
 range_last_12m	Last 12 months	最近 12 个月	過去12か月	12 derniers mois	Últimos 12 meses	Son 12 ay	Letzte 12 Monate
 synced_when	Synced %1$s	%1$s已同步	%1$sに同期	Synchronisé %1$s	Sincronizado %1$s	%1$s eşitlendi	Synchronisiert %1$s
-total_plays	Total plays	总播放次数	総再生回数	Écoutes au total	Reproducciones totales	Toplam dinlenme	Wiedergaben insgesamt
-music_enthusiast	You’re a music enthusiast!	你是个音乐爱好者！	あなたは音楽好きですね！	Vous êtes un vrai passionné de musique !	¡Eres un amante de la música!	Tam bir müzik tutkunusunuz!	Du bist ein echter Musikfan!
 eq_settings	EQ settings	均衡器设置	EQ 設定	Réglages de l’égaliseur	Ajustes del ecualizador	EQ ayarları	EQ-Einstellungen
 number_of_bands	Number of bands	频段数	バンド数	Nombre de bandes	Número de bandas	Bant sayısı	Anzahl der Bänder
 frequency_range_note	Frequency range: 20 Hz – 20,000 Hz	频率范围：20 Hz – 20,000 Hz	周波数範囲：20 Hz～20,000 Hz	Plage de fréquences : 20 Hz – 20 000 Hz	Rango de frecuencias: 20 Hz – 20.000 Hz	Frekans aralığı: 20 Hz – 20.000 Hz	Frequenzbereich: 20 Hz – 20.000 Hz
@@ -2476,7 +2473,7 @@ stats_persona_evening	Evening regular	傍晚常客	夕方リスナー	Habitué d
 stats_persona_afternoon	Afternoon drifter	午后漫游者	午後リスナー	Rêveur d’après-midi	Soñador de la tarde	Öğleden sonra gezgini	Nachmittagsträumer
 stats_persona_early_bird	Early bird	早起鸟	朝型リスナー	Lève-tôt	Madrugador	Erken kuş	Frühaufsteher
 stats_peak_headline	%1$s at %2$s is your busiest hour	%1$s %2$s 是你最常听的时段	%1$sの%2$sが一番聴く時間	Le %1$s à %2$s est votre heure de pointe	El %1$s a las %2$s es tu hora punta	En yoğun saatin: %1$s, %2$s	%1$s um %2$s ist deine Spitzenstunde
-stats_night_share	%1$s of your listening starts after 9 pm.	你有 %1$s 的收听开始于晚上 9 点之后。	再生の%1$sが21時以降に始まります。	%1$s de votre écoute commence après 21 h.	El %1$s de lo que escuchas empieza después de las 21:00.	Dinlemenin %1$s kadarı 21.00’den sonra başlıyor.	%1$s deines Hörens beginnt nach 21 Uhr.
+stats_night_share	%1$s of your listening is at night, between 9 pm and 5 am.	你有 %1$s 的收听在夜里，晚上 9 点到凌晨 5 点之间。	再生の%1$sが夜（21時〜5時）です。	%1$s de votre écoute a lieu la nuit, entre 21 h et 5 h.	El %1$s de lo que escuchas es de noche, entre las 21:00 y las 5:00.	Dinlemenin %1$s kadarı gece, 21.00 ile 05.00 arasında.	%1$s deines Hörens ist nachts, zwischen 21 und 5 Uhr.
 stats_number_one_artist	Number one artist	头号艺人	No.1アーティスト	Artiste n° 1	Artista número uno	Bir numaralı sanatçı	Top-Künstler
 stats_artist_line	%1$s, %2$s of everything you played.	%1$s，占你全部播放的 %2$s。	%1$s、全再生の%2$s。	%1$s, soit %2$s de tout ce que vous avez écouté.	%1$s, el %2$s de todo lo que escuchaste.	%1$s, dinlediğin her şeyin %2$s kadarı.	%1$s, %2$s von allem, was du gehört hast.
 stats_top5_share	Your top 5 are %1$s of it	你的前 5 名占 %1$s	トップ5が%1$sを占めています	Votre top 5 en représente %1$s	Tu top 5 es el %1$s	İlk 5 sanatçın bunun %1$s kadarı	Deine Top 5 machen %1$s aus
@@ -2551,7 +2548,7 @@ stats_ach_golden_goal	Listen to %1$d hours of Hi-Res	收听 %1$d 小时高解析
 stats_ach_golden_what	Hi-Res tracks are 24-bit. Choose Hi-Res as your streaming quality where your service offers it.	高解析曲目为 24 位。服务支持时，把串流音质设为高解析。	ハイレゾは24ビットの音源です。サービスが対応していれば、ストリーミング品質をハイレゾにしましょう。	Les titres Hi-Res sont en 24 bits. Choisissez la qualité Hi-Res lorsque votre service la propose.	Las canciones Hi-Res son de 24 bits. Elige Hi-Res como calidad de streaming si tu servicio la ofrece.	Hi-Res parçalar 24 bittir. Hizmetin sunuyorsa akış kalitesi olarak Hi-Res’i seç.	Hi-Res-Titel haben 24 Bit. Wähle Hi-Res als Streaming-Qualität, wo dein Dienst es anbietet.
 stats_ach_night	Night Owl	夜猫子	夜ふかし	Oiseau de nuit	Ave nocturna	Gece kuşu	Nachteule
 stats_ach_night_goal	%1$d plays after midnight	午夜后播放 %1$d 次	深夜0時以降に%1$d回再生	%1$d écoutes après minuit	%1$d reproducciones después de medianoche	Gece yarısından sonra %1$d dinleme	%1$d Wiedergaben nach Mitternacht
-stats_ach_night_what	Plays that start between midnight and 4 am count.	午夜到凌晨 4 点之间开始的播放都算。	0時から4時の間に始まった再生がカウントされます。	Les écoutes qui commencent entre minuit et 4 h comptent.	Cuentan las reproducciones que empiezan entre la medianoche y las 4:00.	Gece yarısı ile 04.00 arasında başlayan dinlemeler sayılır.	Es zählen Wiedergaben, die zwischen Mitternacht und 4 Uhr beginnen.
+stats_ach_night_what	Plays that start between midnight and 5 am count.	午夜到凌晨 5 点之间开始的播放都算。	0時から5時の間に始まった再生がカウントされます。	Les écoutes qui commencent entre minuit et 5 h comptent.	Cuentan las reproducciones que empiezan entre la medianoche y las 5:00.	Gece yarısı ile 05.00 arasında başlayan dinlemeler sayılır.	Es zählen Wiedergaben, die zwischen Mitternacht und 5 Uhr beginnen.
 stats_ach_chain	Signal Chain	信号链	シグナルチェーン	Chaîne de signal	Cadena de señal	Sinyal zinciri	Signalkette
 stats_ach_chain_goal	Put %1$d plugins in one effect chain	在一条效果链中放入 %1$d 个插件	1つのエフェクトチェーンに%1$d個のプラグイン	Placez %1$d plugins dans une chaîne d’effets	Pon %1$d plugins en una cadena de efectos	Bir efekt zincirine %1$d eklenti koy	Setze %1$d Plugins in eine Effektkette
 stats_ach_chain_what	Build a chain of plugins on one mixer bus. A bus holds up to 16.	在一条混音器总线上搭建插件链。每条总线最多 16 个。	ミキサーの1つのバスにプラグインのチェーンを組みましょう。1バスに最大16個です。	Construisez une chaîne de plugins sur un bus du mixeur. Un bus en accepte jusqu’à 16.	Crea una cadena de plugins en un bus del mezclador. Un bus admite hasta 16.	Bir mikser veriyolunda eklenti zinciri kur. Bir veriyolu en fazla 16 alır.	Baue auf einem Mixer-Bus eine Kette aus Plugins. Ein Bus fasst bis zu 16.
@@ -2588,7 +2585,7 @@ stats_view_tracks	Tracks	曲目	トラック	Titres	Canciones	Parçalar	Titel
 stats_of_listening	of your listening	的收听	の再生	de votre écoute	de lo que escuchas	dinlemenin	deines Hörens
 stats_about_time	About %1$s in this range	此时段约 %1$s	この期間で約%1$s	Environ %1$s sur cette période	Unos %1$s en este periodo	Bu aralıkta yaklaşık %1$s	Etwa %1$s in diesem Zeitraum
 stats_hour_rank	Number %1$d of the %2$d hours in your week	一周 %2$d 个小时中的第 %1$d 名	1週間%2$d時間のうち%1$d番目	N° %1$d des %2$d heures de votre semaine	Número %1$d de las %2$d horas de tu semana	Haftandaki %2$d saatin %1$d. sırada olanı	Platz %1$d der %2$d Stunden deiner Woche
-stats_after_nine	After 9 pm	晚上 9 点后	21時以降	Après 21 h	Después de las 21:00	21.00’den sonra	Nach 21 Uhr
+stats_after_nine	9 pm to 5 am	晚上 9 点至凌晨 5 点	21時〜5時	21 h à 5 h	De 21:00 a 5:00	21.00–05.00	21 bis 5 Uhr
 stats_quietest_hour	Quietest hour	最安静的时段	最も静かな時間	Heure la plus calme	Hora más tranquila	En sessiz saat	Ruhigste Stunde
 stats_busiest_day	Busiest day	最忙的一天	一番聴く曜日	Jour le plus chargé	Día más intenso	En yoğun gün	Aktivster Tag
 stats_morning	Morning	早上	朝	Matin	Mañana	Sabah	Morgen
@@ -2862,3 +2859,22 @@ opened_fail_empty	The file is empty.	文件为空。	ファイルが空です。
 opened_fail_no_space	There isn't enough free space on the phone.	手机可用空间不足。	スマートフォンの空き容量が足りません。	Pas assez d'espace libre sur le téléphone.	No hay suficiente espacio libre en el teléfono.	Telefonda yeterli boş alan yok.	Auf dem Telefon ist nicht genug Speicher frei.
 opened_fail_unreadable	It couldn't be read.	无法读取。	読み取れませんでした。	Il n'a pas pu être lu.	No se pudo leer.	Okunamadı.	Sie konnte nicht gelesen werden.
 opened_fail_no_write	Android didn't let Tryptify save to Music.	Android 不允许 Tryptify 保存到 Music。	Android が Music への保存を許可しませんでした。	Android n'a pas autorisé Tryptify à enregistrer dans Music.	Android no permitió que Tryptify guardara en Music.	Android, Tryptify'ın Music klasörüne kaydetmesine izin vermedi.	Android hat Tryptify das Speichern in Music nicht erlaubt.
+stats_ach_tm_combo	Unbroken	一气呵成	ノーミス	Sans faute	Sin fallos	Kusursuz	Ungebrochen
+stats_ach_tm_combo_goal	A full combo in Trypt Mania	在 Trypt Mania 中打出全连	Trypt Mania でフルコンボ	Un full combo dans Trypt Mania	Un full combo en Trypt Mania	Trypt Mania'da bir full combo	Ein Full Combo in Trypt Mania
+stats_ach_tm_combo_what	Finish a whole song without missing or dropping a step. Training segments don't count.	完整打完一首歌，不漏掉也不断掉任何一步。训练片段不算。	1曲を最後まで、ステップを逃さず切らさずにクリア。トレーニングの区間は対象外です。	Terminez une chanson entière sans rater ni lâcher un pas. Les segments d'entraînement ne comptent pas.	Termina una canción entera sin fallar ni soltar un paso. Los fragmentos de entrenamiento no cuentan.	Bir şarkıyı hiçbir adımı kaçırmadan ve bırakmadan bitirin. Antrenman bölümleri sayılmaz.	Spiele einen ganzen Song, ohne einen Schritt zu verpassen oder loszulassen. Trainingsabschnitte zählen nicht.
+stats_ach_tm_aa	Double A	双 A	ダブルA	Double A	Doble A	Çift A	Doppel-A
+stats_ach_tm_aa_goal	An AA grade in Trypt Mania	在 Trypt Mania 中拿到 AA 评级	Trypt Mania で AA 評価	Une note AA dans Trypt Mania	Una nota AA en Trypt Mania	Trypt Mania'da AA notu	Eine AA-Note in Trypt Mania
+stats_ach_tm_aa_what	Finish a whole song at 96% or more without failing. Grades count, not scores.	完整打完一首歌，得分率 96% 或以上且未失败。按评级计算，不看分数。	1曲を最後まで、失敗せず96%以上でクリア。スコアではなく評価で判定します。	Terminez une chanson entière à 96 % ou plus sans échouer. Ce sont les notes qui comptent, pas les scores.	Termina una canción entera con un 96 % o más sin fallar. Cuenta la nota, no la puntuación.	Bir şarkıyı başarısız olmadan %96 veya üzeriyle bitirin. Puan değil, not sayılır.	Spiele einen ganzen Song mit 96 % oder mehr, ohne zu scheitern. Es zählt die Note, nicht die Punkte.
+stats_ach_tm_charts	Chart Hopper	谱面达人	譜面ホッパー	Touche-à-tout	Saltacharts	Chart Avcısı	Chart-Hopper
+stats_ach_tm_charts_goal	%1$d different charts played	玩过 %1$d 张不同的谱面	%1$d種類の譜面をプレイ	%1$d charts différents joués	%1$d charts distintos jugados	%1$d farklı chart oynandı	%1$d verschiedene Charts gespielt
+stats_ach_tm_charts_what	Play a whole song on that many different charts in Trypt Mania. Any song and difficulty counts.	在 Trypt Mania 中完整玩过这么多张不同的谱面。任何歌曲和难度都算。	Trypt Mania でその数だけ異なる譜面を最後までプレイ。曲と難易度は問いません。	Jouez une chanson entière sur autant de charts différents dans Trypt Mania. Toute chanson et toute difficulté comptent.	Juega una canción entera en esa cantidad de charts distintos en Trypt Mania. Cuenta cualquier canción y dificultad.	Trypt Mania'da o kadar farklı chart'ta bir şarkıyı baştan sona oynayın. Her şarkı ve zorluk sayılır.	Spiele in Trypt Mania so viele verschiedene Charts einen ganzen Song lang. Jeder Song und jede Schwierigkeit zählt.
+stats_tm_songs#one	song played	首歌曲	曲プレイ	chanson jouée	canción jugada	şarkı oynandı	Song gespielt
+stats_tm_songs#many	songs played	首歌曲	曲プレイ	chansons jouées	canciones jugadas	şarkı oynandı	Songs gespielt
+stats_tm_songs#other	songs played	首歌曲	曲プレイ	chansons jouées	canciones jugadas	şarkı oynandı	Songs gespielt
+stats_tm_on_charts#one	On %1$d chart, all time	共 %1$d 张谱面，全部时间	%1$d譜面、全期間	Sur %1$d chart, depuis le début	En %1$d chart, desde siempre	%1$d chart'ta, tüm zamanlar	Auf %1$d Chart, insgesamt
+stats_tm_on_charts#many	On %1$d charts, all time	共 %1$d 张谱面，全部时间	%1$d譜面、全期間	Sur %1$d charts, depuis le début	En %1$d charts, desde siempre	%1$d chart'ta, tüm zamanlar	Auf %1$d Charts, insgesamt
+stats_tm_on_charts#other	On %1$d charts, all time	共 %1$d 张谱面，全部时间	%1$d譜面、全期間	Sur %1$d charts, depuis le début	En %1$d charts, desde siempre	%1$d chart'ta, tüm zamanlar	Auf %1$d Charts, insgesamt
+stats_tm_best_grade	Best grade	最佳评级	最高評価	Meilleure note	Mejor nota	En iyi not	Beste Note
+stats_tm_full_combos	Full combos	全连	フルコンボ	Full combos	Full combos	Full combo	Full Combos
+stats_tm_accuracy	Accuracy, last %1$d	最近 %1$d 首的准确率	直近%1$d曲の精度	Précision, %1$d dernières	Precisión, últimas %1$d	Doğruluk, son %1$d	Genauigkeit, letzte %1$d
+stats_tm_most_played	Most played: %1$s, %2$s	玩得最多：%1$s，%2$s	最多プレイ：%1$s、%2$s	La plus jouée : %1$s, %2$s	La más jugada: %1$s, %2$s	En çok oynanan: %1$s, %2$s	Am meisten gespielt: %1$s, %2$s

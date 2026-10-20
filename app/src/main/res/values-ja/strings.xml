@@ -226,7 +226,6 @@
     <string name="bpm_measure_again">テンポを再検出</string>
     <string name="bpm_type_song_tempo">曲のテンポを入力</string>
     <string name="action_set">設定</string>
-    <string name="unknown_artist">不明なアーティスト</string>
     <string name="dock_mixer_fx">ミキサー/FX</string>
     <string name="lyrics_none_short">この曲の歌詞はありません</string>
     <string name="lyrics_server_sync">サーバーで歌詞を同期</string>
@@ -763,8 +762,6 @@
     <string name="range_last_90d">過去90日間</string>
     <string name="range_last_12m">過去12か月</string>
     <string name="synced_when">%1$sに同期</string>
-    <string name="total_plays">総再生回数</string>
-    <string name="music_enthusiast">あなたは音楽好きですね！</string>
     <string name="eq_settings">EQ 設定</string>
     <string name="number_of_bands">バンド数</string>
     <string name="frequency_range_note">周波数範囲：20 Hz～20,000 Hz</string>
@@ -2455,7 +2452,7 @@
     <string name="stats_persona_afternoon">午後リスナー</string>
     <string name="stats_persona_early_bird">朝型リスナー</string>
     <string name="stats_peak_headline">%1$sの%2$sが一番聴く時間</string>
-    <string name="stats_night_share">再生の%1$sが21時以降に始まります。</string>
+    <string name="stats_night_share">再生の%1$sが夜（21時〜5時）です。</string>
     <string name="stats_number_one_artist">No.1アーティスト</string>
     <string name="stats_artist_line">%1$s、全再生の%2$s。</string>
     <string name="stats_top5_share">トップ5が%1$sを占めています</string>
@@ -2530,7 +2527,7 @@
     <string name="stats_ach_golden_what">ハイレゾは24ビットの音源です。サービスが対応していれば、ストリーミング品質をハイレゾにしましょう。</string>
     <string name="stats_ach_night">夜ふかし</string>
     <string name="stats_ach_night_goal">深夜0時以降に%1$d回再生</string>
-    <string name="stats_ach_night_what">0時から4時の間に始まった再生がカウントされます。</string>
+    <string name="stats_ach_night_what">0時から5時の間に始まった再生がカウントされます。</string>
     <string name="stats_ach_chain">シグナルチェーン</string>
     <string name="stats_ach_chain_goal">1つのエフェクトチェーンに%1$d個のプラグイン</string>
     <string name="stats_ach_chain_what">ミキサーの1つのバスにプラグインのチェーンを組みましょう。1バスに最大16個です。</string>
@@ -2567,7 +2564,7 @@
     <string name="stats_of_listening">の再生</string>
     <string name="stats_about_time">この期間で約%1$s</string>
     <string name="stats_hour_rank">1週間%2$d時間のうち%1$d番目</string>
-    <string name="stats_after_nine">21時以降</string>
+    <string name="stats_after_nine">21時〜5時</string>
     <string name="stats_quietest_hour">最も静かな時間</string>
     <string name="stats_busiest_day">一番聴く曜日</string>
     <string name="stats_morning">朝</string>
@@ -2841,4 +2838,23 @@
     <string name="opened_fail_no_space">スマートフォンの空き容量が足りません。</string>
     <string name="opened_fail_unreadable">読み取れませんでした。</string>
     <string name="opened_fail_no_write">Android が Music への保存を許可しませんでした。</string>
+    <string name="stats_ach_tm_combo">ノーミス</string>
+    <string name="stats_ach_tm_combo_goal">Trypt Mania でフルコンボ</string>
+    <string name="stats_ach_tm_combo_what">1曲を最後まで、ステップを逃さず切らさずにクリア。トレーニングの区間は対象外です。</string>
+    <string name="stats_ach_tm_aa">ダブルA</string>
+    <string name="stats_ach_tm_aa_goal">Trypt Mania で AA 評価</string>
+    <string name="stats_ach_tm_aa_what" formatted="false">1曲を最後まで、失敗せず96%以上でクリア。スコアではなく評価で判定します。</string>
+    <string name="stats_ach_tm_charts">譜面ホッパー</string>
+    <string name="stats_ach_tm_charts_goal">%1$d種類の譜面をプレイ</string>
+    <string name="stats_ach_tm_charts_what">Trypt Mania でその数だけ異なる譜面を最後までプレイ。曲と難易度は問いません。</string>
+    <plurals name="stats_tm_songs">
+        <item quantity="other">曲プレイ</item>
+    </plurals>
+    <plurals name="stats_tm_on_charts">
+        <item quantity="other">%1$d譜面、全期間</item>
+    </plurals>
+    <string name="stats_tm_best_grade">最高評価</string>
+    <string name="stats_tm_full_combos">フルコンボ</string>
+    <string name="stats_tm_accuracy">直近%1$d曲の精度</string>
+    <string name="stats_tm_most_played">最多プレイ：%1$s、%2$s</string>
 </resources>

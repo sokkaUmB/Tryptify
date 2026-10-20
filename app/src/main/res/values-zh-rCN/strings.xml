@@ -226,7 +226,6 @@
     <string name="bpm_measure_again">重新检测速度</string>
     <string name="bpm_type_song_tempo">输入歌曲速度</string>
     <string name="action_set">设置</string>
-    <string name="unknown_artist">未知艺人</string>
     <string name="dock_mixer_fx">混音/效果</string>
     <string name="lyrics_none_short">这首歌暂无歌词</string>
     <string name="lyrics_server_sync">在服务器上同步歌词</string>
@@ -763,8 +762,6 @@
     <string name="range_last_90d">最近 90 天</string>
     <string name="range_last_12m">最近 12 个月</string>
     <string name="synced_when">%1$s已同步</string>
-    <string name="total_plays">总播放次数</string>
-    <string name="music_enthusiast">你是个音乐爱好者！</string>
     <string name="eq_settings">均衡器设置</string>
     <string name="number_of_bands">频段数</string>
     <string name="frequency_range_note">频率范围：20 Hz – 20,000 Hz</string>
@@ -2455,7 +2452,7 @@
     <string name="stats_persona_afternoon">午后漫游者</string>
     <string name="stats_persona_early_bird">早起鸟</string>
     <string name="stats_peak_headline">%1$s %2$s 是你最常听的时段</string>
-    <string name="stats_night_share">你有 %1$s 的收听开始于晚上 9 点之后。</string>
+    <string name="stats_night_share">你有 %1$s 的收听在夜里，晚上 9 点到凌晨 5 点之间。</string>
     <string name="stats_number_one_artist">头号艺人</string>
     <string name="stats_artist_line">%1$s，占你全部播放的 %2$s。</string>
     <string name="stats_top5_share">你的前 5 名占 %1$s</string>
@@ -2530,7 +2527,7 @@
     <string name="stats_ach_golden_what">高解析曲目为 24 位。服务支持时，把串流音质设为高解析。</string>
     <string name="stats_ach_night">夜猫子</string>
     <string name="stats_ach_night_goal">午夜后播放 %1$d 次</string>
-    <string name="stats_ach_night_what">午夜到凌晨 4 点之间开始的播放都算。</string>
+    <string name="stats_ach_night_what">午夜到凌晨 5 点之间开始的播放都算。</string>
     <string name="stats_ach_chain">信号链</string>
     <string name="stats_ach_chain_goal">在一条效果链中放入 %1$d 个插件</string>
     <string name="stats_ach_chain_what">在一条混音器总线上搭建插件链。每条总线最多 16 个。</string>
@@ -2567,7 +2564,7 @@
     <string name="stats_of_listening">的收听</string>
     <string name="stats_about_time">此时段约 %1$s</string>
     <string name="stats_hour_rank">一周 %2$d 个小时中的第 %1$d 名</string>
-    <string name="stats_after_nine">晚上 9 点后</string>
+    <string name="stats_after_nine">晚上 9 点至凌晨 5 点</string>
     <string name="stats_quietest_hour">最安静的时段</string>
     <string name="stats_busiest_day">最忙的一天</string>
     <string name="stats_morning">早上</string>
@@ -2841,4 +2838,23 @@
     <string name="opened_fail_no_space">手机可用空间不足。</string>
     <string name="opened_fail_unreadable">无法读取。</string>
     <string name="opened_fail_no_write">Android 不允许 Tryptify 保存到 Music。</string>
+    <string name="stats_ach_tm_combo">一气呵成</string>
+    <string name="stats_ach_tm_combo_goal">在 Trypt Mania 中打出全连</string>
+    <string name="stats_ach_tm_combo_what">完整打完一首歌，不漏掉也不断掉任何一步。训练片段不算。</string>
+    <string name="stats_ach_tm_aa">双 A</string>
+    <string name="stats_ach_tm_aa_goal">在 Trypt Mania 中拿到 AA 评级</string>
+    <string name="stats_ach_tm_aa_what" formatted="false">完整打完一首歌，得分率 96% 或以上且未失败。按评级计算，不看分数。</string>
+    <string name="stats_ach_tm_charts">谱面达人</string>
+    <string name="stats_ach_tm_charts_goal">玩过 %1$d 张不同的谱面</string>
+    <string name="stats_ach_tm_charts_what">在 Trypt Mania 中完整玩过这么多张不同的谱面。任何歌曲和难度都算。</string>
+    <plurals name="stats_tm_songs">
+        <item quantity="other">首歌曲</item>
+    </plurals>
+    <plurals name="stats_tm_on_charts">
+        <item quantity="other">共 %1$d 张谱面，全部时间</item>
+    </plurals>
+    <string name="stats_tm_best_grade">最佳评级</string>
+    <string name="stats_tm_full_combos">全连</string>
+    <string name="stats_tm_accuracy">最近 %1$d 首的准确率</string>
+    <string name="stats_tm_most_played">玩得最多：%1$s，%2$s</string>
 </resources>
