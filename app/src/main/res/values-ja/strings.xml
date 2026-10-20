@@ -2826,4 +2826,19 @@
     <string name="tm_sync_saved_for">%1$s 用に保存され、アプリ全体で使われます。</string>
     <string name="stats_ach_unlocked_toast">実績を解除</string>
     <string name="stats_ach_view">見る</string>
+    <string name="opened_from_app">他のアプリから開きました</string>
+    <string name="opened_add">ライブラリに追加</string>
+    <string name="opened_adding">追加中…</string>
+    <string name="opened_added">ライブラリに追加しました</string>
+    <string name="opened_added_where">Music/%1$s に保存しました</string>
+    <string name="opened_add_failed">ライブラリに追加できませんでした</string>
+    <string name="opened_failed">このファイルを開けませんでした</string>
+    <string name="opened_fail_not_audio">Tryptify で再生できる音声ファイルではありません。</string>
+    <string name="opened_fail_no_access">送信元のアプリが Tryptify の読み取りを許可しませんでした。</string>
+    <string name="opened_fail_not_found">ファイルが見つかりません。</string>
+    <string name="opened_fail_too_big">2 GB を超えています。</string>
+    <string name="opened_fail_empty">ファイルが空です。</string>
+    <string name="opened_fail_no_space">スマートフォンの空き容量が足りません。</string>
+    <string name="opened_fail_unreadable">読み取れませんでした。</string>
+    <string name="opened_fail_no_write">Android が Music への保存を許可しませんでした。</string>
 </resources>

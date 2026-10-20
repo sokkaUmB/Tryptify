@@ -1381,6 +1381,17 @@ screen reading its states, so none is stamped without its pill; the first check
 after the pill arrived stamps what was already done quietly. Gold is for the
 ring and the icon only: as text it does not read on light glass.
 
+**A song opened from another app ("Open with") plays at once and is offered,
+not added** (`OpenedFilePill`): a glass pill from the top, the same chrome as
+the achievement pill, with "Opened from another app", the title and Add to
+library; a file that could not be opened says why on the same pill. The song
+plays from a copy in the cache and stays out of the library until Add (on the
+pill, or in Now Playing's ⋮ menu while it plays) copies it to Music/Tryptify.
+A file that is already a library song plays as that song, with no pill.
+Never route an unknown VIEW link to the sign-in callback: `MainActivity` hands
+content and file links to `OpenedAudioRepository`, and only
+`tf.monotrypt.android` links to Supabase.
+
 ### Trypt Mania
 
 **The playfield is the mode's own; the menus are the app's.** `GlyphTheme`'s

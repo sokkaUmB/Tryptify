@@ -2962,4 +2962,19 @@
     <string name="tm_sync_saved_for">Enregistré pour %1$s et utilisé dans toute l’app.</string>
     <string name="stats_ach_unlocked_toast">Succès débloqué</string>
     <string name="stats_ach_view">Voir</string>
+    <string name="opened_from_app">Ouvert depuis une autre app</string>
+    <string name="opened_add">Ajouter à la bibliothèque</string>
+    <string name="opened_adding">Ajout…</string>
+    <string name="opened_added">Ajouté à la bibliothèque</string>
+    <string name="opened_added_where">Enregistré dans Music/%1$s</string>
+    <string name="opened_add_failed">Impossible de l\'ajouter à la bibliothèque</string>
+    <string name="opened_failed">Impossible d\'ouvrir ce fichier</string>
+    <string name="opened_fail_not_audio">Ce n\'est pas un fichier audio que Tryptify peut lire.</string>
+    <string name="opened_fail_no_access">L\'app qui l\'a envoyé n\'a pas autorisé Tryptify à le lire.</string>
+    <string name="opened_fail_not_found">Le fichier n\'existe plus.</string>
+    <string name="opened_fail_too_big">Il dépasse 2 Go.</string>
+    <string name="opened_fail_empty">Le fichier est vide.</string>
+    <string name="opened_fail_no_space">Pas assez d\'espace libre sur le téléphone.</string>
+    <string name="opened_fail_unreadable">Il n\'a pas pu être lu.</string>
+    <string name="opened_fail_no_write">Android n\'a pas autorisé Tryptify à enregistrer dans Music.</string>
 </resources>

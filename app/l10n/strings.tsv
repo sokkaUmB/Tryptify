@@ -2847,3 +2847,18 @@ settings_bluetooth_sync_set_there	Set for each device in Settings › Audio › 
 tm_sync_saved_for	Saved for %1$s and used across the app.	已为 %1$s 保存，并在整个应用中使用。	%1$s 用に保存され、アプリ全体で使われます。	Enregistré pour %1$s et utilisé dans toute l’app.	Guardado para %1$s y usado en toda la app.	%1$s için kaydedilir ve tüm uygulamada kullanılır.	Für %1$s gespeichert und in der ganzen App verwendet.
 stats_ach_unlocked_toast	Achievement unlocked	成就已解锁	実績を解除	Succès débloqué	Logro desbloqueado	Başarı açıldı	Erfolg freigeschaltet
 stats_ach_view	View	查看	見る	Voir	Ver	Gör	Ansehen
+opened_from_app	Opened from another app	从其他应用打开	他のアプリから開きました	Ouvert depuis une autre app	Abierto desde otra app	Başka bir uygulamadan açıldı	Aus einer anderen App geöffnet
+opened_add	Add to library	添加到资料库	ライブラリに追加	Ajouter à la bibliothèque	Añadir a la biblioteca	Kitaplığa ekle	Zur Mediathek hinzufügen
+opened_adding	Adding…	正在添加…	追加中…	Ajout…	Añadiendo…	Ekleniyor…	Wird hinzugefügt…
+opened_added	Added to library	已添加到资料库	ライブラリに追加しました	Ajouté à la bibliothèque	Añadido a la biblioteca	Kitaplığa eklendi	Zur Mediathek hinzugefügt
+opened_added_where	Saved in Music/%1$s	已保存到 Music/%1$s	Music/%1$s に保存しました	Enregistré dans Music/%1$s	Guardado en Music/%1$s	Music/%1$s klasörüne kaydedildi	In Music/%1$s gespeichert
+opened_add_failed	Couldn't add it to the library	无法添加到资料库	ライブラリに追加できませんでした	Impossible de l'ajouter à la bibliothèque	No se pudo añadir a la biblioteca	Kitaplığa eklenemedi	Konnte nicht zur Mediathek hinzugefügt werden
+opened_failed	Couldn't open this file	无法打开此文件	このファイルを開けませんでした	Impossible d'ouvrir ce fichier	No se pudo abrir este archivo	Bu dosya açılamadı	Diese Datei konnte nicht geöffnet werden
+opened_fail_not_audio	It isn't an audio file Tryptify can play.	这不是 Tryptify 能播放的音频文件。	Tryptify で再生できる音声ファイルではありません。	Ce n'est pas un fichier audio que Tryptify peut lire.	No es un archivo de audio que Tryptify pueda reproducir.	Tryptify'ın çalabileceği bir ses dosyası değil.	Das ist keine Audiodatei, die Tryptify abspielen kann.
+opened_fail_no_access	The app that sent it didn't let Tryptify read it.	发送它的应用不允许 Tryptify 读取。	送信元のアプリが Tryptify の読み取りを許可しませんでした。	L'app qui l'a envoyé n'a pas autorisé Tryptify à le lire.	La app que lo envió no permitió que Tryptify lo leyera.	Gönderen uygulama Tryptify'ın okumasına izin vermedi.	Die sendende App hat Tryptify das Lesen nicht erlaubt.
+opened_fail_not_found	The file isn't there any more.	文件已不存在。	ファイルが見つかりません。	Le fichier n'existe plus.	El archivo ya no existe.	Dosya artık orada değil.	Die Datei ist nicht mehr vorhanden.
+opened_fail_too_big	It's larger than 2 GB.	文件超过 2 GB。	2 GB を超えています。	Il dépasse 2 Go.	Supera los 2 GB.	2 GB'tan büyük.	Sie ist größer als 2 GB.
+opened_fail_empty	The file is empty.	文件为空。	ファイルが空です。	Le fichier est vide.	El archivo está vacío.	Dosya boş.	Die Datei ist leer.
+opened_fail_no_space	There isn't enough free space on the phone.	手机可用空间不足。	スマートフォンの空き容量が足りません。	Pas assez d'espace libre sur le téléphone.	No hay suficiente espacio libre en el teléfono.	Telefonda yeterli boş alan yok.	Auf dem Telefon ist nicht genug Speicher frei.
+opened_fail_unreadable	It couldn't be read.	无法读取。	読み取れませんでした。	Il n'a pas pu être lu.	No se pudo leer.	Okunamadı.	Sie konnte nicht gelesen werden.
+opened_fail_no_write	Android didn't let Tryptify save to Music.	Android 不允许 Tryptify 保存到 Music。	Android が Music への保存を許可しませんでした。	Android n'a pas autorisé Tryptify à enregistrer dans Music.	Android no permitió que Tryptify guardara en Music.	Android, Tryptify'ın Music klasörüne kaydetmesine izin vermedi.	Android hat Tryptify das Speichern in Music nicht erlaubt.

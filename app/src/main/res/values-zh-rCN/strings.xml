@@ -2826,4 +2826,19 @@
     <string name="tm_sync_saved_for">已为 %1$s 保存，并在整个应用中使用。</string>
     <string name="stats_ach_unlocked_toast">成就已解锁</string>
     <string name="stats_ach_view">查看</string>
+    <string name="opened_from_app">从其他应用打开</string>
+    <string name="opened_add">添加到资料库</string>
+    <string name="opened_adding">正在添加…</string>
+    <string name="opened_added">已添加到资料库</string>
+    <string name="opened_added_where">已保存到 Music/%1$s</string>
+    <string name="opened_add_failed">无法添加到资料库</string>
+    <string name="opened_failed">无法打开此文件</string>
+    <string name="opened_fail_not_audio">这不是 Tryptify 能播放的音频文件。</string>
+    <string name="opened_fail_no_access">发送它的应用不允许 Tryptify 读取。</string>
+    <string name="opened_fail_not_found">文件已不存在。</string>
+    <string name="opened_fail_too_big">文件超过 2 GB。</string>
+    <string name="opened_fail_empty">文件为空。</string>
+    <string name="opened_fail_no_space">手机可用空间不足。</string>
+    <string name="opened_fail_unreadable">无法读取。</string>
+    <string name="opened_fail_no_write">Android 不允许 Tryptify 保存到 Music。</string>
 </resources>

@@ -670,6 +670,9 @@ fun MainPlayerRoute(
     // visualizer are the same whichever layout is drawing around them. Hoisted
     // into slots so both the current and the legacy screen are handed one copy
     // instead of the hero being forked along with the chrome.
+    val openedSaved by playerViewModel.openedSaved.collectAsStateWithLifecycle()
+    val openedUnified = playerViewModel.unifiedFor(currentTrack)?.takeIf { playerViewModel.isOpenedFile(currentTrack) }
+    val context = androidx.compose.ui.platform.LocalContext.current
     val topBarSlot: @Composable () -> Unit = {
         PlayerTopBar(
             speedLabel = state.speedLabel,
@@ -691,6 +694,20 @@ fun MainPlayerRoute(
             onEditLyrics = { navController.navigateTool(Screen.LyricsEditor) },
             onGoToArtist = navController.trackArtistAction(currentTrack, playerViewModel.unifiedFor(currentTrack)),
             onGoToAlbum = navController.trackAlbumAction(currentTrack, playerViewModel.unifiedFor(currentTrack)),
+            onAddToLibrary = openedUnified?.takeIf { it.id !in openedSaved }?.let { track ->
+                {
+                    playerViewModel.addOpenedToLibrary(track) { outcome ->
+                        val message = when (outcome) {
+                            is tf.monochrome.android.data.opened.OpenedAudioRepository.Added.Saved ->
+                                context.getString(R.string.opened_added_where, outcome.folder)
+                            is tf.monochrome.android.data.opened.OpenedAudioRepository.Added.Failed ->
+                                context.getString(R.string.opened_add_failed) + " · " +
+                                    context.getString(tf.monochrome.android.ui.opened.reasonFor(outcome.failure))
+                        }
+                        android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
+            },
         )
     }
     // Ambient › "Remove album cover": the preset row fades itself out after a

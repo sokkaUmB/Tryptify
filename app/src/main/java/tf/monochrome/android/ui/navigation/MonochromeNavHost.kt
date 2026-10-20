@@ -1270,6 +1270,18 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 modifier = Modifier.align(Alignment.TopCenter),
             )
         }
+        // A song opened from another app: it plays at once, and this pill
+        // offers to keep it in the library (or says why it could not open).
+        val openedFile by playerViewModel.openedFile.collectAsStateWithLifecycle()
+        tf.monochrome.android.ui.opened.OpenedFilePill(
+            opened = openedFile,
+            onTake = playerViewModel::takeOpenedFile,
+            onAdd = playerViewModel::addOpenedToLibrary,
+            hazeState = hazeState,
+            glass = miniPlayerGlass,
+            reducedMotion = tf.monochrome.android.ui.theme.reduceMotion(),
+            modifier = Modifier.align(Alignment.TopCenter),
+        )
     }
 }
 

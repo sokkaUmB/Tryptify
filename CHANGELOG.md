@@ -4,6 +4,12 @@
 
 ### Added
 
+#### Open songs from other apps
+- **Tryptify can now be the app that plays a song.** Open an audio file from a file manager, a chat or Downloads, pick Tryptify, and it plays straight away.
+- **It isn't added to your library unless you ask.** A pill at the top shows the song with Add to library, and the same option is in Now Playing's ⋮ menu while it plays. Adding copies it to Music/Tryptify, where the library finds it. Until then it plays from a temporary copy that Tryptify clears by itself.
+- **A song already in your library plays as that song**, so its plays and likes stay together.
+- **When a file can't be opened, the pill says why**: not audio, no permission from the app that sent it, missing, empty, larger than 2 GB, or not enough free space.
+
 #### A pill when you complete an achievement
 - **Finish an achievement and a glass pill drops in at the top**, over whatever is open: its icon in a gold ring that fills, "Achievement unlocked" and its name, and View, which opens it in Account › Listening stats › Achievements. It goes away by itself after four seconds.
 - **Each one shows once.** One finished while the app was closed shows the next time it's open, and the ones you'd finished before this update don't all pop up at once.

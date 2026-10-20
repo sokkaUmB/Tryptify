@@ -2894,4 +2894,19 @@
     <string name="tm_sync_saved_for">%1$s için kaydedilir ve tüm uygulamada kullanılır.</string>
     <string name="stats_ach_unlocked_toast">Başarı açıldı</string>
     <string name="stats_ach_view">Gör</string>
+    <string name="opened_from_app">Başka bir uygulamadan açıldı</string>
+    <string name="opened_add">Kitaplığa ekle</string>
+    <string name="opened_adding">Ekleniyor…</string>
+    <string name="opened_added">Kitaplığa eklendi</string>
+    <string name="opened_added_where">Music/%1$s klasörüne kaydedildi</string>
+    <string name="opened_add_failed">Kitaplığa eklenemedi</string>
+    <string name="opened_failed">Bu dosya açılamadı</string>
+    <string name="opened_fail_not_audio">Tryptify\'ın çalabileceği bir ses dosyası değil.</string>
+    <string name="opened_fail_no_access">Gönderen uygulama Tryptify\'ın okumasına izin vermedi.</string>
+    <string name="opened_fail_not_found">Dosya artık orada değil.</string>
+    <string name="opened_fail_too_big">2 GB\'tan büyük.</string>
+    <string name="opened_fail_empty">Dosya boş.</string>
+    <string name="opened_fail_no_space">Telefonda yeterli boş alan yok.</string>
+    <string name="opened_fail_unreadable">Okunamadı.</string>
+    <string name="opened_fail_no_write">Android, Tryptify\'ın Music klasörüne kaydetmesine izin vermedi.</string>
 </resources>
