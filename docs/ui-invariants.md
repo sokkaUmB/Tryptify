@@ -947,7 +947,9 @@ tint stronger.
 
 Trypt Mania is the one exception, and on request: its accent follows the song
 picked on its wheel (`AlbumTintScope`, see "### Trypt Mania"), the accent
-only, by the same safe path.
+only, by the same safe path. It does not add a second palette: while the mode
+is open the app's one palette is built from the picked song
+(`DynamicColorSource`).
 
 The tint goes through `customScheme` rather than swapping slots the way
 `DynamicColorScope` does. Slot-swapping works on the player, whose foregrounds
@@ -1369,17 +1371,22 @@ only dark screen in a light theme, and fixed white text on the app's glass is
 the wrong ink wherever the glass is light. An accent written as text on the
 page goes through `menuAccent`, which keeps its hue and moves it until it reads.
 
-**The mode takes the accent of the song picked on the wheel.** `GlyphRoute`
-wraps every screen of the mode in `AlbumTintScope` with the selected song's
-palette (`rememberDynamicPalette` of `gameplayCoverUri`), as the player follows
-the playing track: the accent moves, the ground stays, through `tintedByAlbum`
-and never a slot swap, so it keeps the contrast floors on the menus. It is the
-player's rule (Dynamic Colors and the player's own switch, read through
-`backdropLook`) and the listener's blend length, capped at
-`GLYPH_COLOR_BLEND_MAX_MS` (0.5 s, `glyphBlendMillis`): songs are skipped
-through on the wheel, and at the player's longer blends a colour was still
-arriving two picks later. The gameplay background's cover dissolves at the
-same capped speed. The playfield's own palette is untouched.
+**While the mode is open, the app's colours are the picked song's.** The
+wheel picks a song the player is not playing (previews play through the
+game's own player), and when the mode followed the picked song while the rest
+followed the playing track, two covers coloured one screen: the tab bar and,
+with "Tint the menus too", the ground from one, the accent from the other.
+There is one palette: `GlyphRoute` makes the selected song's cover
+(`gameplayCoverUri`) the app's colour source (`OverrideDynamicColorSource`,
+read in `MainActivity` through `DynamicColorSource`) for as long as the mode
+is open, and the playing track takes over again when it closes. The mode's
+screens take that palette's accent through `AlbumTintScope` (`tintedByAlbum`,
+never a slot swap, so the menus keep their contrast floors; the ground is the
+theme's, or the menus tint's when that is on). The fade is the listener's
+blend capped at `GLYPH_COLOR_BLEND_MAX_MS` (0.5 s): songs are skipped through
+on the wheel, and at longer blends a colour was still arriving two picks
+later. The gameplay background's cover dissolves at the same capped speed
+(`glyphBlendMillis`). The playfield's own palette is untouched.
 
 **The home panels' haze source is the page in every state**, the loading and
 empty messages included, not the list alone. While the list was the source,

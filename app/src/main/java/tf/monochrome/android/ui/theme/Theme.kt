@@ -765,9 +765,9 @@ private fun tintedByAlbum(
 }
 
 /**
- * [content] in the accent of [palette], for a part of the app that follows a
- * cover other than the playing track's: Trypt Mania, whose wheel picks a song
- * the player is not playing.
+ * [content] in the accent of [palette] (the app's, [LocalDynamicColorPalette]),
+ * for the menus of a mode that follows the music: Trypt Mania, whose picked
+ * song is the palette's source while it is open ([DynamicColorSource]).
  *
  * Through [tintedByAlbum], never [DynamicColorScope]'s slot swap: this covers
  * menus, where a swapped accent can land under 4.5:1. The ground is kept, as the
@@ -779,8 +779,8 @@ private fun tintedByAlbum(
  * content and nothing above it. A passthrough while there is no palette.
  */
 @Composable
-fun AlbumTintScope(palette: State<DynamicPalette?>, content: @Composable () -> Unit) {
-    val value = palette.value
+fun AlbumTintScope(palette: State<DynamicPalette?>?, content: @Composable () -> Unit) {
+    val value = palette?.value
     if (value == null) {
         content()
         return

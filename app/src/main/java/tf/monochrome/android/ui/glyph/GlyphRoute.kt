@@ -148,19 +148,19 @@ fun GlyphRoute(
     val lastResults = remember { arrayOfNulls<GlyphResultsUi>(1) }
     state.results?.let { lastResults[0] = it }
 
-    // The mode follows the song picked on the wheel, as the player follows the
-    // one playing: that song's album colour becomes the accent here, the wheel
-    // and the menus as well as the play, through the contrast-safe tint
-    // (AlbumTintScope). It is the player's rule (Dynamic Colors and the
-    // player's own switch) and the listener's blend length, but never slower
-    // than GLYPH_COLOR_BLEND_MAX_MS: songs are skipped through here, and a
-    // colour still arriving two picks later is a lag, not a fade.
-    val songPalette = tf.monochrome.android.ui.theme.rememberDynamicPalette(
+    // The app's colours follow the song picked on the wheel while the mode is
+    // open, as they follow the playing track everywhere else: one source, so
+    // the tab bar, the ground and the accent are one song's, never two
+    // (DynamicColorSource). The fade is capped at GLYPH_COLOR_BLEND_MAX_MS:
+    // songs are skipped through here, and a colour still arriving two picks
+    // later is a lag, not a fade. The mode's own screens then take that
+    // palette's accent through the contrast-safe tint (AlbumTintScope), as the
+    // player takes it, menus or not.
+    tf.monochrome.android.ui.theme.OverrideDynamicColorSource(
         coverUrl = gameplayCoverUri(state.selectedSong),
-        enabled = backdropLook.albumColored,
-        blendMillis = tf.monochrome.android.ui.theme.motionMillis(glyphBlendMillis(backdropLook.colorTransitionMs)),
+        maxBlendMillis = GLYPH_COLOR_BLEND_MAX_MS,
     )
-    tf.monochrome.android.ui.theme.AlbumTintScope(songPalette) {
+    tf.monochrome.android.ui.theme.AlbumTintScope(tf.monochrome.android.ui.theme.LocalDynamicColorPalette.current) {
     AnimatedContent(
         targetState = state.screen,
         modifier = modifier.fillMaxSize(),

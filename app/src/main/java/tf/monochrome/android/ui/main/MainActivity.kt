@@ -244,14 +244,18 @@ class MainActivity : ComponentActivity() {
             // cross-fade, recomposing the root and every provider under it for
             // the length of the fade. MonochromeTheme passes it down and only
             // the surfaces that paint with it read it.
+            // One palette for the whole app, from the playing track's cover or
+            // from the song a screen like Trypt Mania has picked in its place
+            // (DynamicColorSource): two at once coloured the screen from two
+            // covers.
             val dynamicPalette = rememberDynamicPalette(
-                coverUrl = currentTrack?.coverUrl,
+                coverUrl = tf.monochrome.android.ui.theme.DynamicColorSource.coverFor(currentTrack?.coverUrl),
                 enabled = dynamicColorsEnabled,
                 // Instant colour change with animations off: the palette is a
                 // continuous cross-fade rather than a one-off transition, so it
                 // goes on producing values for the whole blend window.
                 blendMillis = if (lowPerformance.disableAnimations) 0
-                else ColorBlend.millisFor(colorTransitionMs),
+                else tf.monochrome.android.ui.theme.DynamicColorSource.blendFor(ColorBlend.millisFor(colorTransitionMs)),
             )
 
             // Handles both a bundled `asset:` font and an imported file path —
