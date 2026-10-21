@@ -5,9 +5,8 @@ Cloud's plans and prices, Terms, Privacy, Refunds and Contact. Creem (the
 payment provider) reviews it before the store can take live payments.
 
 Plain static files in `public/`, served by Cloudflare (Workers static assets,
-no code). It goes on `tryptify.seapengine.lol` once the `seapengine.lol` zone is
-active on Cloudflare; until then it is at the `workers.dev` address the deploy
-prints.
+no code), at https://tryptify.com (and www). Support mail to
+support@tryptify.com is forwarded by Cloudflare Email Routing.
 
 ```
 cd site

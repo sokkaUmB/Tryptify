@@ -4,6 +4,12 @@ name = "tryptify-site"
 compatibility_date = "2026-10-01"
 workers_dev = true
 
+# tryptify.com and www.tryptify.com (a zone on this Cloudflare account).
+routes = [
+  { pattern = "tryptify.com", custom_domain = true },
+  { pattern = "www.tryptify.com", custom_domain = true },
+]
+
 [assets]
 directory = "./public"
 # /cloud serves cloud.html, /terms serves terms.html, and so on.

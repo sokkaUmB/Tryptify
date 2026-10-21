@@ -83,7 +83,7 @@ android {
         buildConfigField(
             "String",
             "TRYPTIFY_CLOUD_URL",
-            "\"${localProperties.getProperty("tryptifyCloud.url") ?: "https://tryptify-cloud.tryptify-cloud.workers.dev"}\"",
+            "\"${localProperties.getProperty("tryptifyCloud.url") ?: "https://cloud.tryptify.com"}\"",
         )
 
         // Last.fm application key, shared by every install — CHARTS ONLY.

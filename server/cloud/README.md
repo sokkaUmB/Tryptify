@@ -18,8 +18,10 @@ permission.
 
 ## Status
 
-**Live, in Creem test mode**, at
-`https://tryptify-cloud.tryptify-cloud.workers.dev` (2026-10-21). Accounts,
+**Live, in Creem test mode**, at `https://cloud.tryptify.com` (the app's
+default since 2026-10-21) and still at
+`https://tryptify-cloud.tryptify-cloud.workers.dev`, where the test webhook
+points (2026-10-21). Accounts,
 billing and the trial work end to end there: a test-card payment for Plus
 reached the Worker as Creem's signed webhook and gave the account Plus for one
 month in D1, recorded once. Phase 1's server is live too: uploads into R2 within the

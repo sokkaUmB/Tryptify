@@ -5,6 +5,9 @@ name = "tryptify-cloud"
 main = "src/worker.ts"
 compatibility_date = "2026-10-01"
 workers_dev = true
+# Its address on the product's own domain. The workers.dev address keeps
+# working, for app builds made before it.
+routes = [{ pattern = "cloud.tryptify.com", custom_domain = true }]
 
 [observability]
 enabled = true
