@@ -281,6 +281,13 @@ class PartyController @Inject constructor(
         mc?.addListener(object : Player.Listener {
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 if (selfChange || !partySongPlaying()) return
+                // Only the listener's own press is the party's play or pause.
+                // The player also stops when this phone leaves, when the app
+                // is swiped away, for a call or for headphones pulled out; on
+                // the host's phone each of those paused the party for
+                // everyone, which looked like everyone quitting with the host.
+                if (reason != Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST) return
+                if (client.state.value.status != PartyStatus.IN_PARTY) return
                 val party = client.state.value.party ?: return
                 // Only a change the party has not made: our own play and
                 // pause, coming back from the session, match it already.
