@@ -16,7 +16,7 @@ routes = [
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = ["/download/tryptify.apk"]
+run_worker_first = ["/download/tryptify.apk", "/video/*"]
 # /cloud serves cloud.html, /terms serves terms.html, and so on.
 html_handling = "drop-trailing-slash"
 not_found_handling = "404-page"

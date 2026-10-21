@@ -26,7 +26,11 @@ The screenshots in `public/img/` are WebP copies (540 px wide for a phone
 screen, 1000 px for a wide one) of the app's own pictures in
 `docs/screenshots/` and `docs/releases/`, except the listening party's two
 (`party-app.webp`, `party-web.webp`), which the owner took, with the status
-bar and a screen recorder's button removed. Trypt Mania multiplayer has no
+bar and a screen recorder's button removed, and the three themes-and-fonts
+screens (`typography`, `theme-store`, `share-my-look`), also the owner's. The
+CRT clip in `public/video/` is the owner's screen recording, silent, as WebM
+(VP9, played first) and MP4 (H.264, for Safari) with a poster frame; the same
+MP4 is in `docs/releases/1.9.4/`. Trypt Mania multiplayer has no
 screenshot yet, so it is a drawing (`.diagram.multi`) with made-up players;
 swap in a real room when there is one. The numbers and the signal path
 repeat the app, so check them when it changes:
