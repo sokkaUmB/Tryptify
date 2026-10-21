@@ -275,4 +275,15 @@ class PartyProtocolTest {
         assertEquals("deezer:9", PartyMatch.catalogId(track(42, "T", "A", 1).copy(deezerId = 9), localFile = false))
         assertNull(PartyMatch.catalogId(track(42, "T", "A", 1), localFile = true))
     }
+
+    @Test
+    fun `a catalogue id is read back as its catalogue and number`() {
+        assertEquals("qobuz" to 1068442L, PartyMatch.catalogKey("qobuz:1068442"))
+        assertEquals("deezer" to 3135553L, PartyMatch.catalogKey("deezer:3135553"))
+        assertEquals("tidal" to 7L, PartyMatch.catalogKey("tidal:7"))
+        assertNull(PartyMatch.catalogKey(null))
+        assertNull(PartyMatch.catalogKey("1068442"))
+        assertNull(PartyMatch.catalogKey("qobuz:"))
+        assertNull(PartyMatch.catalogKey("qobuz:abc"))
+    }
 }

@@ -380,7 +380,7 @@ class PartyController @Inject constructor(
             own.unified?.let { return playable(it) }
             own.legacy?.let { return playableLegacy(it) }
         }
-        val catalogId = item.catalogId?.takeIf { it.startsWith("tidal:") }?.removePrefix("tidal:")?.toLongOrNull()
+        val catalogId = PartyMatch.catalogKey(item.catalogId)?.takeIf { it.first == "tidal" }?.second
         val local = withContext(Dispatchers.IO) {
             localTrackLocator.findLocalSource(
                 title = item.title, artist = item.artist, albumTitle = item.album.ifBlank { null },
@@ -394,14 +394,34 @@ class PartyController @Inject constructor(
             val file = fetched[item.id] ?: fetch(item) ?: return null
             return playable(unifiedFor(item, PlaybackSource.LocalFile(file.absolutePath, codecFor(shared.ext), 0)))
         }
-        val track = withContext(Dispatchers.IO) {
-            // A TIDAL id is believed only when TIDAL names the same song: a
-            // Qobuz id sent as a TIDAL one played whatever TIDAL has under it.
-            catalogId?.let { runCatching { repository.getTidalTrack(it) }.getOrNull() }
-                ?.takeIf { PartyMatch.sameTitle(it.title, item.title) }
-                ?: search(item)
-        } ?: return null
+        exact(item)?.let { return it }
+        // Last resort, for a song the host sent with no catalogue id (an older
+        // app) or one its own catalogue refused: the same song by name.
+        val track = withContext(Dispatchers.IO) { search(item) } ?: return null
         return playableLegacy(track)
+    }
+
+    /**
+     * [item] from the very catalogue and id the host played it from, through
+     * trypt-hifi, as the host's own phone plays it: a Qobuz song from Qobuz,
+     * a Deezer song from Deezer, a TIDAL song from TIDAL. Null when it has no
+     * catalogue id, or that catalogue cannot serve it here.
+     */
+    private suspend fun exact(item: PartyItem): Pair<MediaItem, Track>? {
+        val (kind, id) = PartyMatch.catalogKey(item.catalogId) ?: return null
+        return when (kind) {
+            "qobuz" -> playable(unifiedFor(item, "qobuz_$id", PlaybackSource.QobuzCached(id), SourceType.QOBUZ))
+            "deezer" -> playable(
+                unifiedFor(item, "deezer_$id", PlaybackSource.DeezerPreview(id, isrc = item.isrc), SourceType.DEEZER),
+            )
+            "tidal" -> withContext(Dispatchers.IO) {
+                // An older app sent Qobuz ids as TIDAL ones, so a TIDAL id is
+                // believed only when TIDAL names the same song under it.
+                runCatching { repository.getTidalTrack(id) }.getOrNull()
+                    ?.takeIf { PartyMatch.sameTitle(it.title, item.title) }
+            }?.let { playableLegacy(it) }
+            else -> null
+        }
     }
 
     /**
@@ -441,8 +461,13 @@ class PartyController @Inject constructor(
         return result.getOrNull()?.also { fetched[item.id] = it }
     }
 
-    private fun unifiedFor(item: PartyItem, source: PlaybackSource.LocalFile) = UnifiedTrack(
-        id = "party_${item.id}_${item.title.hashCode()}",
+    private fun unifiedFor(
+        item: PartyItem,
+        source: PlaybackSource.LocalFile,
+    ) = unifiedFor(item, "party_${item.id}_${item.title.hashCode()}", source, SourceType.LOCAL)
+
+    private fun unifiedFor(item: PartyItem, id: String, source: PlaybackSource, type: SourceType) = UnifiedTrack(
+        id = id,
         title = item.title,
         durationSeconds = (item.durationMs / 1000).toInt(),
         artistName = item.artist.ifBlank { "Unknown Artist" },
@@ -450,7 +475,7 @@ class PartyController @Inject constructor(
         artworkUri = item.cover,
         isrc = item.isrc,
         source = source,
-        sourceType = SourceType.LOCAL,
+        sourceType = type,
     )
 
     // The clock.
@@ -750,7 +775,6 @@ object PartyMatch {
     /** Lengths within this much are the same recording, as the rooms' own match has it. */
     const val LENGTH_SLACK_MS = 3_000L
 
-    /** [track]'s id in its catalogue as the party carries it; none for a file of the listener's own. */
     /** Two titles for one song: the same letters, one maybe with a version on (as the server judges). */
     fun sameTitle(a: String, b: String): Boolean {
         fun norm(s: String) = s.lowercase().filter { it.isLetterOrDigit() }
@@ -767,6 +791,14 @@ object PartyMatch {
         else -> null
     }
 
+    /** A party catalogue id split into its catalogue and number: "qobuz:12" is ("qobuz", 12). */
+    fun catalogKey(catalogId: String?): Pair<String, Long>? {
+        val kind = catalogId?.substringBefore(':', "")?.takeIf { it.isNotEmpty() } ?: return null
+        val id = catalogId.substringAfter(':').toLongOrNull()?.takeIf { it > 0 } ?: return null
+        return kind to id
+    }
+
+    /** [track]'s id in its catalogue as the party carries it; none for a file of the listener's own. */
     fun catalogId(track: Track, localFile: Boolean): String? = when {
         localFile -> null
         track.appleId != null -> "apple:${track.appleId}"
