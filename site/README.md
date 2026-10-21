@@ -1,6 +1,7 @@
 # Tryptify website
 
 The public site for the Tryptify app and Tryptify Cloud: what they are, the
+AutoEQ ranking (SeapEngine's Rankings tab, embedded from seapengine.lol), the
 Cloud's plans and prices, Terms, Privacy, Refunds and Contact. Creem (the
 payment provider) reviews it before the store can take live payments.
 

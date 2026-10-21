@@ -148,3 +148,11 @@ footer a { color: var(--muted); }
   .hero { padding: 44px 0 24px; }
   .shots { grid-template-columns: 1fr 1fr; }
 }
+
+/* An embedded tool (the AutoEQ ranking): tall enough to use without
+   scrolling inside it on a laptop, and never wider than the page. */
+.embed {
+  display: block; width: 100%; height: max(900px, calc(100vh - 120px));
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); margin-bottom: 10px;
+}
