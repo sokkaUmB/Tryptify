@@ -248,6 +248,20 @@ class PartyProtocolTest {
     }
 
     @Test
+    fun aSongFromSearchIsNamedByWhereItPlaysFrom() {
+        assertEquals("tidal:7", PartyMatch.catalogId(tf.monochrome.android.domain.model.PlaybackSource.HiFiApi(tidalId = 7)))
+        assertEquals("qobuz:8", PartyMatch.catalogId(tf.monochrome.android.domain.model.PlaybackSource.QobuzCached(qobuzId = 8)))
+        assertEquals("apple:9", PartyMatch.catalogId(tf.monochrome.android.domain.model.PlaybackSource.AppleCached(appleId = 9)))
+        assertNull(
+            PartyMatch.catalogId(
+                tf.monochrome.android.domain.model.PlaybackSource.LocalFile(
+                    "/sdcard/a.flac", tf.monochrome.android.domain.model.AudioCodec.FLAC, 44_100,
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun aSongIsNamedInItsCatalogue() {
         assertEquals("tidal:42", PartyMatch.catalogId(track(42, "T", "A", 1), localFile = false))
         assertEquals("deezer:9", PartyMatch.catalogId(track(42, "T", "A", 1).copy(deezerId = 9), localFile = false))

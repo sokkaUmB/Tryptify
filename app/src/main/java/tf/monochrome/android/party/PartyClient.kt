@@ -96,9 +96,11 @@ data class PartyState(
  *
  * Hello, then `create` or `join`; a ping every two seconds for the clock; and
  * when the socket drops, back with `hello.resume` and this phone's key, which
- * gets the seat back if the server still keeps it (a minute). A server that
- * has forgotten it (restarted, deployed, or the minute gone) says so with a
- * welcome that is not `resumed`, and the party is over: "The party ended".
+ * gets the seat back if the server still keeps it (five minutes). Away longer,
+ * the seat is gone but the party may not be: the phone joins it again by its
+ * code, as anyone would, and stays at the party it was at. Only when the
+ * party itself is gone (a restart, a deploy, everyone left) is it over: "The
+ * party ended". It never lands at another party.
  */
 @Singleton
 class PartyClient @Inject constructor(
@@ -192,6 +194,8 @@ class PartyClient @Inject constructor(
 
     private suspend fun runSession(url: String, name: String, token: String, intent: Intent, again: Boolean): Outcome {
         var outcome = Outcome.UNREACHED
+        // Back at the party by its code, the seat having gone while away.
+        var rejoining = false
         val ws = httpClient.webSocketSession(url)
         var pinger: Job? = null
         try {
@@ -216,11 +220,17 @@ class PartyClient @Inject constructor(
                         outcome = Outcome.WELCOMED
                         _state.update { it.copy(myId = msg.id, error = null) }
                         if (again && !msg.resumed) {
-                            // The server no longer keeps this phone's seat.
-                            ended(PartyEnd.ENDED)
-                            outcome = Outcome.DONE
-                            ws.close()
-                            return@consumeEach
+                            // The server no longer keeps this phone's seat, but
+                            // the party may be on still: in again by its code.
+                            val code = _state.value.party?.code
+                            if (code == null) {
+                                ended(PartyEnd.ENDED)
+                                outcome = Outcome.DONE
+                                ws.close()
+                                return@consumeEach
+                            }
+                            rejoining = true
+                            ws.send(Frame.Text(PartyProtocol.join(code)))
                         }
                         if (!again) {
                             ws.send(
@@ -233,11 +243,14 @@ class PartyClient @Inject constructor(
                             )
                         }
                     }
-                    // Turned away: not signed in, or no party with that code.
-                    msg is PartyMsg.Error && _state.value.party == null -> {
+                    msg is PartyMsg.Joined -> rejoining = false
+                    // Turned away: not signed in, or no party with that code
+                    // (the party it was at has ended while this phone was away).
+                    msg is PartyMsg.Error && (_state.value.party == null || rejoining) -> {
                         _state.update {
                             it.copy(
-                                status = if (msg.message == PartyProtocol.NO_PARTY && again) PartyStatus.ENDED else PartyStatus.FAILED,
+                                status = if ((msg.message == PartyProtocol.NO_PARTY && again) || rejoining) PartyStatus.ENDED
+                                else PartyStatus.FAILED,
                                 end = if (again) PartyEnd.ENDED else null,
                                 error = msg.message,
                             )

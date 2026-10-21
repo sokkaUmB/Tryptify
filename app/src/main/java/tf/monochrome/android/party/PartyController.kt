@@ -36,6 +36,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import tf.monochrome.android.data.auth.SupabaseAuthManager
@@ -548,18 +550,38 @@ class PartyController @Inject constructor(
                     (own.unified?.let { coverOf(it.toLegacyTrack()) } ?: own.legacy?.let(::coverOf))
                         ?.let { art -> covers.value = covers.value + (msg.itemId to art) }
                     val file = own.file
-                    if (file != null && prefs.shareSongs.value) {
-                        scope.launch {
-                            client.upload(msg.itemId, file, RoomProtocol.songExt(file.name)) { }
-                                .onFailure { Log.w(TAG, "share: ${it.message}") }
-                        }
-                    }
+                    if (file != null && prefs.shareSongs.value) share(msg.itemId, file)
                 }
                 is PartyMsg.Line -> notifier.line(msg.line, client.state.value.myId)
                 else -> Unit
             }
         }
     }
+
+    /**
+     * One of this phone's songs shared with the party, so every phone without
+     * it and the website play this very file. One upload at a time, in the
+     * order the songs went in (a whole playlist added at once used to upload
+     * every song together, the playing one starved by the rest), and tried
+     * up to three times: a dropped connection used to leave it "Uploading"
+     * for good. A song no longer in the queue is not uploaded at all.
+     */
+    private fun share(itemId: String, file: File) {
+        scope.launch {
+            uploads.withLock {
+                repeat(UPLOAD_TRIES) { attempt ->
+                    val party = client.state.value.party ?: return@withLock
+                    if (party.now?.id != itemId && party.queue.none { it.id == itemId }) return@withLock
+                    val done = client.upload(itemId, file, RoomProtocol.songExt(file.name)) { }
+                        .onFailure { Log.w(TAG, "share, try ${attempt + 1}: ${it.message}") }
+                    if (done.isSuccess) return@withLock
+                    delay(2_000L shl attempt)
+                }
+            }
+        }
+    }
+
+    private val uploads = Mutex()
 
     // Adding songs.
 
@@ -614,7 +636,12 @@ class PartyController @Inject constructor(
             album = track.albumTitle.orEmpty(),
             durationMs = track.durationSeconds * 1000L,
             isrc = track.isrc,
-            cover = track.artworkUri?.takeIf { it.startsWith("https://") },
+            // Which catalogue song it is, so every phone and the website find
+            // the same recording; search results are UnifiedTracks, and
+            // without it a song added from search was found by name alone.
+            catalogId = PartyMatch.catalogId(track.source),
+            // A TIDAL cover comes as its id: made an address, as the lists do.
+            cover = track.artworkUri?.let { buildCoverUrl(it, 640) }?.takeIf { it.startsWith("https://") },
             share = file != null && prefs.shareSongs.value,
         )
         send(item, Mine(unified = track, legacy = null, file = file))
@@ -663,6 +690,7 @@ class PartyController @Inject constructor(
 
     companion object {
         private const val TAG = "PartyController"
+        private const val UPLOAD_TRIES = 3
         private const val CONNECT_TIMEOUT_MS = 10_000L
         private const val SYNC_EVERY_MS = 1_000L
 
@@ -689,6 +717,15 @@ object PartyMatch {
     const val LENGTH_SLACK_MS = 3_000L
 
     /** [track]'s id in its catalogue as the party carries it; none for a file of the listener's own. */
+    /** A song's catalogue id from where it plays from; null for a file or a collection. */
+    fun catalogId(source: PlaybackSource): String? = when (source) {
+        is PlaybackSource.HiFiApi -> "tidal:${source.tidalId}"
+        is PlaybackSource.QobuzCached -> "qobuz:${source.qobuzId}"
+        is PlaybackSource.AppleCached -> "apple:${source.appleId}"
+        is PlaybackSource.DeezerPreview -> "deezer:${source.deezerId}"
+        else -> null
+    }
+
     fun catalogId(track: Track, localFile: Boolean): String? = when {
         localFile -> null
         track.appleId != null -> "apple:${track.appleId}"

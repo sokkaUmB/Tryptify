@@ -2111,6 +2111,13 @@ the bottom, and the field to say something.
   action row (`LocalPartyAdder`, null without a party, like
   `LocalAddToParty`). They join the queue in the order given
   (`PartyController.addAll`), one after another, never racing each other.
+* Anyone at the party with the app shares their own songs that are files on
+  their phone (Share songs, on by default): one upload at a time, in queue
+  order, tried three times. A song that came from search says which
+  catalogue song it is (`PartyMatch.catalogId(source)`) and carries its
+  cover, so other phones and the website find that very recording. Away
+  longer than the seat is kept, a phone joins its party again by its code;
+  it never lands at another party.
 * Website guests can add songs from the catalogue (the rooms server's
   `TRYPT_HIFI_URL`); a song a guest added says so like any other, with
   "added by" the guest's name.
