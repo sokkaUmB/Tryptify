@@ -69,6 +69,17 @@
     const [, , , higher, desc] = MEASURES[state.by];
     document.getElementById("rank-desc").textContent = desc; // kept for reading without the explainer
     document.dispatchEvent(new CustomEvent("rank-change", { detail: { limit: state.limit, bands: state.bands, by: state.by } }));
+    // Where Tryptify places in this exact view, said plainly either way.
+    const place = document.getElementById("explain-place");
+    if (place) {
+      const ranked = Object.keys(values).sort((a, b) =>
+        higher ? values[b][state.by] - values[a][state.by] : values[a][state.by] - values[b][state.by]);
+      const best = ranked.findIndex((e) => ENGINES[e][1] === "Tryptify");
+      place.textContent = best === 0
+        ? `In this view: ${ENGINES[ranked[0]][0]} is #1${ENGINES[ranked[1]][1] === "Tryptify" ? `, and ${ENGINES[ranked[1]][0]} #2` : ""}.`
+        : `In this view: ${ENGINES[ranked[0]][0]} leads; the best Tryptify fit is #${best + 1}.`;
+      place.classList.toggle("wins", best === 0);
+    }
     const order = Object.keys(values).sort((a, b) =>
       higher ? values[b][state.by] - values[a][state.by] : values[a][state.by] - values[b][state.by]);
     const nums = order.map((e) => values[e][state.by]);
@@ -133,6 +144,10 @@
     document.getElementById("explain-what").textContent = t.what;
     document.getElementById("explain-why").textContent = t.why;
     document.getElementById("explain-good").textContent = t.good;
+    document.getElementById("explain-tryptify").textContent = t.tryptify || "";
+    const loses = document.getElementById("explain-loses");
+    loses.textContent = t.loses ? `Where it doesn't win: ${t.loses}` : "";
+    loses.hidden = !t.loses;
     X.draw(state.by, document.getElementById("explain-visual"), moving ? M : null);
     if (moving) M.animate("#explain .explain-text > *", { opacity: [0, 1], y: [8, 0] }, { duration: 0.4, delay: M.stagger(0.05) });
     document.querySelectorAll(".measure").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.measure === state.by)));

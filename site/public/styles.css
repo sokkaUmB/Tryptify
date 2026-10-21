@@ -731,3 +731,7 @@ footer { font-size: 13.5px; }
 #try-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
 #try-table td { padding: 7px 8px; border-bottom: 1px solid color-mix(in srgb, var(--text) 6%, transparent); }
 .acct-auth #discord { margin-top: 8px; }
+.explain-tryptify { margin-top: 14px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
+.explain-tryptify p { font-size: 14.5px !important; }
+.explain-place { font-weight: 600; color: var(--text); }
+.explain-place.wins { color: var(--c-ts); }
