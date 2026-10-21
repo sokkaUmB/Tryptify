@@ -30,7 +30,8 @@ bar and a screen recorder's button removed, and the three themes-and-fonts
 screens (`typography`, `theme-store`, `share-my-look`), also the owner's. The
 music links clip in `public/video/` is the owner's screen recording, silent, as WebM
 (VP9, played first) and MP4 (H.264, for Safari) with a poster frame; the same
-MP4 is in `docs/releases/1.9.4/`. Trypt Mania multiplayer has no
+MP4 is in `docs/releases/1.9.4/`. The Trypt Mania clip (`trypt-mania-play`)
+is the first 20 seconds of the owner's recording, made the same way. Trypt Mania multiplayer has no
 screenshot yet, so it is a drawing (`.diagram.multi`) with made-up players;
 swap in a real room when there is one. The numbers and the signal path
 repeat the app, so check them when it changes:
