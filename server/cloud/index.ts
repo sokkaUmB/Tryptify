@@ -47,6 +47,15 @@ export const READ_ONLY_DAYS = 7;
 export const REFUND_EXPORT_DAYS = 2;
 
 /**
+ * The free trial: TRIAL_DAYS with TRIAL_GB, once per account, card required.
+ * The card is Creem's (the trial products carry the 7 days); this service only
+ * holds a trial to its smaller quota and gives a trial that ends unpaid the
+ * refund's short export window, so one costs at most about $0.10.
+ */
+export const TRIAL_DAYS = 7;
+export const TRIAL_GB = 20;
+
+/**
  * The plans, from docs/plans/tryptify-cloud.md ("Pricing"). Each quota is the
  * largest that is still a profit in the worst case; change one only by
  * rerunning that check. Prices are what the listener is shown; what they are
@@ -75,7 +84,12 @@ export interface Account {
   plan: PlanId | null;
   paidUntil: Date | null;
   usedBytes: number;
+  /** The paid-until date is a free trial's end, not a payment's. */
+  trial?: boolean;
 }
+
+/** Whether [a] may start a free trial: only an account that has never had a plan or a trial. */
+export const mayStartTrial = (a: Account): boolean => a.plan === null;
 
 /**
  * Pure, so it is the one place the rule lives and the test can hold it. Only
@@ -84,8 +98,9 @@ export interface Account {
  */
 export function accessOf(a: Account, now: Date): { access: Access; quotaBytes: number; deleteAfter: Date | null } {
   if (!a.plan || !a.paidUntil) return { access: "none", quotaBytes: 0, deleteAfter: null };
-  const quotaBytes = PLANS[a.plan].storageGb * GB;
-  const deleteAfter = new Date(a.paidUntil.getTime() + READ_ONLY_DAYS * DAY_MS);
+  const quotaBytes = (a.trial ? TRIAL_GB : PLANS[a.plan].storageGb) * GB;
+  const graceDays = a.trial ? REFUND_EXPORT_DAYS : READ_ONLY_DAYS;
+  const deleteAfter = new Date(a.paidUntil.getTime() + graceDays * DAY_MS);
   if (now >= deleteAfter) return { access: "none", quotaBytes: 0, deleteAfter };
   if (now >= a.paidUntil) return { access: "read_only", quotaBytes, deleteAfter };
   return { access: a.usedBytes >= quotaBytes ? "read_only" : "full", quotaBytes, deleteAfter: null };
@@ -108,7 +123,17 @@ export function mayUpload(a: Account, bytes: number, now: Date): boolean {
  * renewal arrives, and access lapses on its own at the date already stored.
  */
 export type BillingEvent =
-  | { kind: "paid"; eventId: string; userId: string | null; plan: PlanId; paidUntil: Date; customerId?: string; subscriptionId?: string }
+  | {
+      kind: "paid";
+      eventId: string;
+      userId: string | null;
+      plan: PlanId;
+      paidUntil: Date;
+      /** A free trial starting (Creem reports it as a $0 payment with status "trialing"). */
+      trial?: boolean;
+      customerId?: string;
+      subscriptionId?: string;
+    }
   | { kind: "refunded"; eventId: string; userId: string | null; subscriptionId?: string };
 
 /** The account after [e]. Pure. The paid-until date only ever moves forward on a payment. */
@@ -117,8 +142,15 @@ export function applyEvent(a: Account, e: BillingEvent, now: Date): Account {
   if (e.kind === "refunded") {
     return { ...a, paidUntil: new Date(now.getTime() - (READ_ONLY_DAYS - REFUND_EXPORT_DAYS) * DAY_MS) };
   }
+  if (e.trial) {
+    // A trial never takes the place of time someone paid for, and comes once.
+    const paidUp = a.paidUntil !== null && !a.trial && a.paidUntil > now;
+    if (paidUp || (!mayStartTrial(a) && !a.trial)) return a;
+    const later = !a.paidUntil || e.paidUntil > a.paidUntil ? e.paidUntil : a.paidUntil;
+    return { ...a, plan: e.plan, paidUntil: later, trial: true };
+  }
   const later = !a.paidUntil || e.paidUntil > a.paidUntil ? e.paidUntil : a.paidUntil;
-  return { ...a, plan: e.plan, paidUntil: later };
+  return { ...a, plan: e.plan, paidUntil: later, trial: false };
 }
 
 // ── Storage of accounts ──────────────────────────────────────────────────────
@@ -136,6 +168,7 @@ const SCHEMA = [
      subscription_id  text,
      updated_at       timestamptz not null default now()
    )`,
+  `alter table cloud_accounts add column if not exists trial boolean not null default false`,
   // Each provider event is applied once, however often it is delivered.
   `create table if not exists cloud_billing_events (
      provider     text        not null,
@@ -161,9 +194,9 @@ if (db) {
 }
 
 async function loadAccount(uid: string): Promise<Account> {
-  const [row] = await db!`select plan, paid_until, used_bytes from cloud_accounts where user_id = ${uid}`;
+  const [row] = await db!`select plan, paid_until, used_bytes, trial from cloud_accounts where user_id = ${uid}`;
   return row
-    ? { plan: row.plan, paidUntil: row.paid_until ? new Date(row.paid_until) : null, usedBytes: Number(row.used_bytes) }
+    ? { plan: row.plan, paidUntil: row.paid_until ? new Date(row.paid_until) : null, usedBytes: Number(row.used_bytes), trial: row.trial }
     : { plan: null, paidUntil: null, usedBytes: 0 };
 }
 
@@ -191,19 +224,20 @@ async function record(provider: string, e: BillingEvent): Promise<boolean> {
       on conflict do nothing
       returning event_id`;
     if (inserted.length === 0) return false;
-    const [row] = await tx`select plan, paid_until, used_bytes from cloud_accounts where user_id = ${userId} for update`;
+    const [row] = await tx`select plan, paid_until, used_bytes, trial from cloud_accounts where user_id = ${userId} for update`;
     const before: Account = row
-      ? { plan: row.plan, paidUntil: row.paid_until ? new Date(row.paid_until) : null, usedBytes: Number(row.used_bytes) }
+      ? { plan: row.plan, paidUntil: row.paid_until ? new Date(row.paid_until) : null, usedBytes: Number(row.used_bytes), trial: row.trial }
       : { plan: null, paidUntil: null, usedBytes: 0 };
     const after = applyEvent(before, e, new Date());
     const customer = e.kind === "paid" ? e.customerId ?? null : null;
     const subscription = e.kind === "paid" ? e.subscriptionId ?? null : null;
     await tx`
-      insert into cloud_accounts (user_id, plan, paid_until, provider, customer_id, subscription_id, updated_at)
-      values (${userId}, ${after.plan}, ${after.paidUntil}, ${provider}, ${customer}, ${subscription}, now())
+      insert into cloud_accounts (user_id, plan, paid_until, trial, provider, customer_id, subscription_id, updated_at)
+      values (${userId}, ${after.plan}, ${after.paidUntil}, ${after.trial ?? false}, ${provider}, ${customer}, ${subscription}, now())
       on conflict (user_id) do update set
         plan = excluded.plan,
         paid_until = excluded.paid_until,
+        trial = excluded.trial,
         provider = excluded.provider,
         customer_id = coalesce(excluded.customer_id, cloud_accounts.customer_id),
         subscription_id = coalesce(excluded.subscription_id, cloud_accounts.subscription_id),
@@ -277,6 +311,7 @@ app.get("/health", health);
 app.get("/plans", (c) =>
   c.json({
     readOnlyDays: READ_ONLY_DAYS,
+    trial: { days: TRIAL_DAYS, storageGb: TRIAL_GB, periods: ["monthly"] },
     plans: Object.entries(PLANS).map(([id, p]) => ({ id, ...p })),
   }),
 );
@@ -307,17 +342,23 @@ app.get("/v1/account", async (c) => {
     deleteAfter: deleteAfter?.toISOString() ?? null,
     usedBytes: a.usedBytes,
     quotaBytes,
+    trial: a.trial ?? false,
+    trialAvailable: mayStartTrial(a),
   });
 });
 
 /** A checkout link for [plan] and [period], carrying the person's id so the webhook knows who paid. */
 app.post("/v1/checkout", async (c) => {
   if (!billing) return fail(503, "billing_not_set_up");
-  const body = (await c.req.json().catch(() => null)) as { plan?: unknown; period?: unknown } | null;
+  const body = (await c.req.json().catch(() => null)) as { plan?: unknown; period?: unknown; trial?: unknown } | null;
   const plan = body?.plan;
   const period = body?.period;
+  const trial = body?.trial === true;
   if (!isPlan(plan) || (period !== "monthly" && period !== "yearly")) return fail(400, "bad_request");
-  const url = await billing.checkoutUrl(plan, period, c.get("uid"));
+  // Trials come with the monthly plans only, and once per account.
+  if (trial && period !== "monthly") return fail(400, "bad_request");
+  if (trial && !mayStartTrial(await loadAccount(c.get("uid")))) return fail(409, "trial_used");
+  const url = await billing.checkoutUrl(plan, period, c.get("uid"), trial);
   return url ? c.json({ url }) : fail(503, "billing_not_set_up");
 });
 
@@ -339,7 +380,7 @@ app.post("/webhooks/billing", async (c) => {
 
 export interface Billing {
   name: string;
-  checkoutUrl(plan: PlanId, period: Period, userId: string): Promise<string | null>;
+  checkoutUrl(plan: PlanId, period: Period, userId: string, trial?: boolean): Promise<string | null>;
   /** The events in a verified webhook, or null when its signature does not check out. */
   parseWebhook(headers: Headers, raw: string): Promise<BillingEvent[] | null>;
 }
@@ -354,7 +395,8 @@ export interface Billing {
 // Webhook URL to register at Creem: <this service>/webhooks/billing, with at
 // least subscription.paid, refund.created and dispute.created.
 
-const productKey = (plan: PlanId, period: Period) => `CREEM_PRODUCT_${plan.toUpperCase()}_${period.toUpperCase()}`;
+const productKey = (plan: PlanId, period: Period, trial = false) =>
+  `CREEM_PRODUCT_${plan.toUpperCase()}_${period.toUpperCase()}${trial ? "_TRIAL" : ""}`;
 
 /** Constant-time comparison of two hex strings. */
 function sameHex(a: string, b: string): boolean {
@@ -371,8 +413,8 @@ export function creemBilling(env: Record<string, string | undefined>, http: type
   const base = (env.CREEM_API_BASE ?? "https://api.creem.io").replace(/\/+$/, "");
   const planOf = new Map<string, PlanId>();
   for (const plan of Object.keys(PLANS) as PlanId[]) {
-    for (const period of ["monthly", "yearly"] as const) {
-      const id = env[productKey(plan, period)];
+    for (const key of [productKey(plan, "monthly"), productKey(plan, "yearly"), productKey(plan, "monthly", true)]) {
+      const id = env[key];
       if (id) planOf.set(id, plan);
     }
   }
@@ -388,8 +430,8 @@ export function creemBilling(env: Record<string, string | undefined>, http: type
   return {
     name: "creem",
 
-    async checkoutUrl(plan, period, userId) {
-      const product = env[productKey(plan, period)];
+    async checkoutUrl(plan, period, userId, trial = false) {
+      const product = env[productKey(plan, period, trial)];
       if (!product) return null;
       const res = await http(`${base}/v1/checkouts`, {
         method: "POST",
@@ -424,8 +466,11 @@ export function creemBilling(env: Record<string, string | undefined>, http: type
       const o = event?.object;
       if (!eventId || !o) return [];
       switch (event.eventType) {
-        // The one event that grants anything: a payment for a period.
-        case "subscription.paid": {
+        // The one event that grants anything: a payment for a period. A trial
+        // arrives as one too, for $0 with status "trialing" (seen in test mode,
+        // next to subscription.trialing), and grants only the trial.
+        case "subscription.paid":
+        case "subscription.trialing": {
           const plan = planOf.get(idOf(o.product) ?? "");
           const until = new Date(o.current_period_end_date);
           if (!plan || Number.isNaN(until.getTime())) {
@@ -438,6 +483,7 @@ export function creemBilling(env: Record<string, string | undefined>, http: type
             userId: metaUser(o),
             plan,
             paidUntil: until,
+            trial: o.status === "trialing",
             customerId: idOf(o.customer),
             subscriptionId: idOf(o),
           }];

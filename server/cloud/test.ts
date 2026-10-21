@@ -110,6 +110,7 @@ async function setUp() {
     CREEM_PRODUCT_PLUS_MONTHLY: "prod_plus_m",
     CREEM_PRODUCT_PLUS_YEARLY: "prod_plus_y",
     CREEM_PRODUCT_MAX_MONTHLY: "prod_max_m",
+    CREEM_PRODUCT_LITE_MONTHLY_TRIAL: "prod_lite_trial",
     // MAX_YEARLY left unset on purpose: that checkout must say not set up.
   });
   Bun.env.DATABASE_URL = url;
@@ -195,6 +196,47 @@ test("every plan is a profit in the worst case (the pricing check, kept)", async
   }
 });
 
+test("a trial gets 20 GB until it ends, never the plan's full quota", async () => {
+  const t = cloud.applyEvent(
+    { plan: null, paidUntil: null, usedBytes: 0 },
+    { kind: "paid", eventId: "t", userId: A, plan: "max", paidUntil: days(7), trial: true },
+    now,
+  );
+  const r = cloud.accessOf(t, now);
+  assert.equal(r.access, "full");
+  assert.equal(r.quotaBytes, cloud.TRIAL_GB * GB);
+  assert.equal(cloud.mayUpload({ ...t, usedBytes: 19 * GB }, 2 * GB, now), false);
+});
+
+test("a trial that ends unpaid leaves only the short export window", async () => {
+  const t = { plan: "lite" as const, paidUntil: days(-1), usedBytes: GB, trial: true };
+  assert.equal(cloud.accessOf(t, now).access, "read_only");
+  assert.deepEqual(cloud.accessOf(t, now).deleteAfter, days(cloud.REFUND_EXPORT_DAYS - 1));
+  assert.equal(cloud.accessOf(t, days(cloud.REFUND_EXPORT_DAYS)).access, "none");
+});
+
+test("the first real payment after a trial gives the whole plan", async () => {
+  const t = { plan: "plus" as const, paidUntil: days(7), usedBytes: 0, trial: true };
+  const paid = cloud.applyEvent(t, { kind: "paid", eventId: "p", userId: A, plan: "plus", paidUntil: days(37) }, now);
+  assert.equal(paid.trial, false);
+  assert.equal(cloud.accessOf(paid, now).quotaBytes, 250 * GB);
+});
+
+test("a trial never replaces paid time, and an account that had a plan gets no trial", async () => {
+  const trialEvent = { kind: "paid", eventId: "t", userId: A, plan: "lite", paidUntil: days(7), trial: true } as const;
+  const paying = { plan: "max" as const, paidUntil: days(20), usedBytes: 0, trial: false };
+  assert.deepEqual(cloud.applyEvent(paying, trialEvent, now), paying);
+  const lapsed = { plan: "lite" as const, paidUntil: days(-40), usedBytes: 0, trial: false };
+  assert.equal(cloud.mayStartTrial(lapsed), false);
+  assert.deepEqual(cloud.applyEvent(lapsed, trialEvent, now), lapsed);
+  assert.equal(cloud.mayStartTrial({ plan: null, paidUntil: null, usedBytes: 0 }), true);
+});
+
+test("the trial's worst case costs pennies, not a plan", async () => {
+  const cost = cloud.TRIAL_GB * 0.015 * 1.15 * (cloud.TRIAL_DAYS + cloud.REFUND_EXPORT_DAYS) / 30;
+  assert.ok(cost < 0.15, `a trial can cost ${cost.toFixed(2)}`);
+});
+
 // ── Routes ───────────────────────────────────────────────────────────────────
 
 test("health and plans answer without an account", async () => {
@@ -211,7 +253,10 @@ test("the account needs a sign-in", async () => {
 test("a new person has no plan and no access", async () => {
   const r = await call("GET", "/v1/account", await token(A));
   assert.equal(r.status, 200);
-  assert.deepEqual(r.body, { plan: null, access: "none", paidUntil: null, deleteAfter: null, usedBytes: 0, quotaBytes: 0 });
+  assert.deepEqual(r.body, {
+    plan: null, access: "none", paidUntil: null, deleteAfter: null, usedBytes: 0, quotaBytes: 0,
+    trial: false, trialAvailable: true,
+  });
 });
 
 test("an account row someone paid for shows its plan", async () => {
@@ -312,6 +357,46 @@ test("a chargeback ends access like a refund", async () => {
   assert.equal((await call("GET", "/v1/account", await token(E))).body.access, "full");
   await webhook({ id: "evt_d1", eventType: "dispute.created", object: { transaction: { subscription: "sub_e" } } });
   assert.equal((await call("GET", "/v1/account", await token(E))).body.access, "read_only");
+});
+
+test("trial checkout: monthly only, the trial product, once per account", async () => {
+  const T = "66666666-6666-4666-8666-666666666666";
+  const ok = await call("POST", "/v1/checkout", await token(T), { plan: "lite", period: "monthly", trial: true });
+  assert.equal(ok.status, 200);
+  assert.equal(checkouts.at(-1).product_id, "prod_lite_trial");
+  assert.equal((await call("POST", "/v1/checkout", await token(T), { plan: "lite", period: "yearly", trial: true })).status, 400);
+  assert.equal((await call("GET", "/v1/account", await token(T))).body.trialAvailable, true);
+  // C already has a plan from the tests above: no trial.
+  const used = await call("POST", "/v1/checkout", await token(C), { plan: "lite", period: "monthly", trial: true });
+  assert.equal(used.status, 409);
+  assert.equal(used.body.error, "trial_used");
+});
+
+test("Creem's real trial start (a $0 subscription.paid, status trialing) grants the trial only", async () => {
+  // Shaped as captured from Creem's test mode on 2026-10-21.
+  const T = "77777777-7777-4777-8777-777777777777";
+  const end = future(7);
+  const started = {
+    id: "evt_trial_paid",
+    eventType: "subscription.paid",
+    object: {
+      id: "sub_trial", object: "subscription", status: "trialing",
+      product: { id: "prod_lite_trial" }, customer: { id: "cust_t" },
+      current_period_end_date: end.toISOString(), metadata: { userId: T },
+    },
+  };
+  await webhook(started);
+  await webhook({ ...started, id: "evt_trialing", eventType: "subscription.trialing" });
+  let r = (await call("GET", "/v1/account", await token(T))).body;
+  assert.equal(r.trial, true);
+  assert.equal(r.access, "full");
+  assert.equal(r.quotaBytes, cloud.TRIAL_GB * GB);
+  assert.equal(r.trialAvailable, false);
+  // Day 7: the card is charged for the first month.
+  await webhook({ ...started, id: "evt_first_charge", object: { ...started.object, status: "active", current_period_end_date: future(37).toISOString() } });
+  r = (await call("GET", "/v1/account", await token(T))).body;
+  assert.equal(r.trial, false);
+  assert.equal(r.quotaBytes, 100 * GB);
 });
 
 // ── Run ──────────────────────────────────────────────────────────────────────

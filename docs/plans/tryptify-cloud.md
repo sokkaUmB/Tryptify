@@ -114,8 +114,10 @@ Rules that keep the guarantee (all phase 1 or 3 requirements):
    playback is presigned GETs, straight to the bucket. Service egress is
    $0.05/GB and unbounded: one hi-res listener streamed through the service
    could cost $12/month.
-3. **No free tier and no free trial that stores files.** Both cost storage for
-   people who pay nothing. A paid month cancelled any time is the trial.
+3. **No free tier. One free trial, with a card** (owner's decision,
+   2026-10-21): 7 days with 20 GB, once per account, monthly plans only,
+   charged at day 7 unless cancelled. Unpaid, it gets 2 days to export, so it
+   costs at most about $0.10: the only cost a non-payer can cause.
 4. **When payment stops: 7 days read-only, then deleted**, with reminders and
    Export everything. At full Lite quota those 7 days cost $0.40, inside the
    last payment's worst profit ($0.58). Play's grace period is set to match.

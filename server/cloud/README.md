@@ -77,6 +77,9 @@ ids are not secrets:
 | `CREEM_PRODUCT_PLUS_YEARLY` | `prod_1TGw8qSxCjKxq0MSiLuyI0` ($99.99) |
 | `CREEM_PRODUCT_MAX_MONTHLY` | `prod_21MRJ0oZMS7dusCMGBLX0l` ($19.99) |
 | `CREEM_PRODUCT_MAX_YEARLY` | `prod_7TtInxGK5fNOs0VKHHpdY3` ($199.99) |
+| `CREEM_PRODUCT_LITE_MONTHLY_TRIAL` | `prod_7B4iLXRJKPaeSjOy4BmBir` ($3.99, 7-day trial) |
+| `CREEM_PRODUCT_PLUS_MONTHLY_TRIAL` | `prod_7CntKejjZyg6Lt3BbmtIkQ` ($9.99, 7-day trial) |
+| `CREEM_PRODUCT_MAX_MONTHLY_TRIAL` | `prod_3S0jO8p2OwGiaVQHg3xO59` ($19.99, 7-day trial) |
 
 Live mode has none yet: going live means creating the same six there, which
 get new ids.
@@ -98,6 +101,28 @@ creem listen --environment test --forward-to http://127.0.0.1:3000/webhooks/bill
 with `CREEM_WEBHOOK_SECRET` set to the secret it prints. Stopping it deletes
 its temporary endpoint at Creem.
 
+## The free trial
+
+7 days with 20 GB, card required, once per account, monthly plans only. The
+card and the 7 days are Creem's: three extra products carry
+`trial_period_days: 7` (`CREEM_PRODUCT_<PLAN>_MONTHLY_TRIAL`), and
+`POST /v1/checkout` with `"trial": true` uses them only for an account that
+has never had a plan or a trial (`409 trial_used` otherwise). After 7 days
+Creem charges the card for the first month, unless it was cancelled.
+
+**Creem reports a trial's start as a payment.** In test mode a trial checkout
+sent `subscription.trialing` and a $0 `subscription.paid`, both with status
+`trialing` and the trial's end as the period end. Read as an ordinary payment,
+that unlocked the whole plan (up to 500 GB) for free. So a `paid` with status
+`trialing` is a trial (`trial: true`): 20 GB until it ends, never replacing
+time someone paid for, and if no payment follows, the refund's 2 days to
+export, not 7. The first real charge makes it the full plan. The replayed
+capture is a test (`Creem's real trial start …`).
+
+A trial that is cancelled costs at most 20 GB for 9 days, about $0.10. That is
+the one place a non-payer costs anything, by the owner's choice; the test
+`the trial's worst case costs pennies` keeps it so.
+
 ## The rule it enforces
 
 A listener can never cost more than they pay. Access comes only from the date
@@ -112,9 +137,9 @@ that does not fit is refused (`mayUpload`).
 | Route | Does |
 | --- | --- |
 | `GET /health` | Up, with whether it has a database and a payment provider |
-| `GET /plans` | The plans and prices, no account needed |
-| `GET /v1/account` | Plan, `access` (`full`, `read_only`, `none`), paid-until, delete-after, used and quota bytes |
-| `POST /v1/checkout` | `{"plan", "period"}` → `{"url"}`, a checkout link that carries the person's id |
+| `GET /plans` | The plans, prices and the trial's terms, no account needed |
+| `GET /v1/account` | Plan, `access` (`full`, `read_only`, `none`), paid-until, delete-after, used and quota bytes, `trial`, `trialAvailable` |
+| `POST /v1/checkout` | `{"plan", "period", "trial"?}` → `{"url"}`, a checkout link that carries the person's id |
 | `POST /webhooks/billing` | Creem's webhook, signature checked; each event applied once (`cloud_billing_events`) |
 
 ## Testing
