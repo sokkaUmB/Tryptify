@@ -81,6 +81,23 @@ ids are not secrets:
 Live mode has none yet: going live means creating the same six there, which
 get new ids.
 
+**Test purchase, 2026-10-21: passed end to end.** The service ran locally
+against a fresh Postgres with the test products and key; a Lite monthly
+checkout was made through `POST /v1/checkout`, paid on Creem's test checkout
+with the test card 4111 1111 1111 1111, and Creem's real `subscription.paid`
+webhook, forwarded by `creem listen` with its genuine signature, gave the
+account `lite`, `full` access, paid until one month on, 100 GB. The event was
+recorded once. Only Supabase sign-in was a stand-in. To repeat it before
+Railway is up:
+
+```
+creem listen --environment test --forward-to http://127.0.0.1:3000/webhooks/billing \
+  --events subscription.paid,refund.created,dispute.created
+```
+
+with `CREEM_WEBHOOK_SECRET` set to the secret it prints. Stopping it deletes
+its temporary endpoint at Creem.
+
 ## The rule it enforces
 
 A listener can never cost more than they pay. Access comes only from the date
