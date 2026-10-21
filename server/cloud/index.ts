@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 // Tryptify Cloud — paid, private storage for a listener's own music.
 //
 // Runs as a Railway Function (one file, Bun) next to its own Railway Postgres,

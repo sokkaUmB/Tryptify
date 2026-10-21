@@ -6,6 +6,11 @@ are in [`docs/plans/tryptify-cloud.md`](../../docs/plans/tryptify-cloud.md).
 with its own Railway Postgres, signed in with the app's Supabase account the
 same way as the [Theme Store](../theme-store/README.md).
 
+**Licence:** [PolyForm Noncommercial 1.0.0](LICENSE.md), unlike the rest of
+the repository (GPL-3.0). Anyone may read, run and change it for
+noncommercial purposes; running it as a paid service needs the author's
+permission.
+
 ## Status
 
 Accounts and billing are written and tested, with Creem as the payment

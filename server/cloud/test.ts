@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 // Tryptify Cloud end to end against a real Postgres, with a stand-in for
 // Supabase Auth (public keys for a key made here). Needs an empty database it
 // may drop tables in:

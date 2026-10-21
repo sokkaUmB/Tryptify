@@ -72,7 +72,8 @@ with no computer or NAS.
 - Refund and cancellation terms; taxes through the merchant of record (web) and
   Google (Play).
 - The open items from the 2026-10-21 licensing review still stand and should
-  be done first: a root LICENSE (the source headers say GPL-3.0-or-later),
+  be done first: a root LICENSE (done 2026-10-21: the app GPL-3.0, the
+  cloud server PolyForm Noncommercial 1.0.0),
   the upstream Monochrome licence, an in-app open-source licences screen, a
   "not affiliated" line for the services the app names, and Android backup
   rules that leave sign-ins out.
