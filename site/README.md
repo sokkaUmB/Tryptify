@@ -28,7 +28,7 @@ screen, 1000 px for a wide one) of the app's own pictures in
 (`party-app.webp`, `party-web.webp`), which the owner took, with the status
 bar and a screen recorder's button removed, and the three themes-and-fonts
 screens (`typography`, `theme-store`, `share-my-look`), also the owner's. The
-CRT clip in `public/video/` is the owner's screen recording, silent, as WebM
+music links clip in `public/video/` is the owner's screen recording, silent, as WebM
 (VP9, played first) and MP4 (H.264, for Safari) with a poster frame; the same
 MP4 is in `docs/releases/1.9.4/`. Trypt Mania multiplayer has no
 screenshot yet, so it is a drawing (`.diagram.multi`) with made-up players;
