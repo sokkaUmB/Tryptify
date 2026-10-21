@@ -3080,4 +3080,5 @@ cloud_error_other	Tryptify Cloud said: %1$s	Tryptify Cloud 返回：%1$s	Tryptif
 cloud_uploading	Uploading to Tryptify Cloud	正在上传到 Tryptify Cloud	Tryptify Cloud にアップロード中	Envoi vers Tryptify Cloud	Subiendo a Tryptify Cloud	Tryptify Cloud’a yükleniyor	Wird in Tryptify Cloud hochgeladen
 cloud_uploads_channel	Cloud uploads	云端上传	クラウドへのアップロード	Envois vers le cloud	Subidas a la nube	Bulut yüklemeleri	Cloud-Uploads
 cloud_uploads_channel_desc	Progress of songs uploading to Tryptify Cloud.	歌曲上传到 Tryptify Cloud 的进度。	Tryptify Cloud への曲のアップロードの進行状況。	Progression des titres envoyés vers Tryptify Cloud.	Progreso de las canciones que se suben a Tryptify Cloud.	Tryptify Cloud’a yüklenen şarkıların ilerlemesi.	Fortschritt der Songs, die in Tryptify Cloud hochgeladen werden.
+cloud_manage_subscription	Manage or cancel subscription	管理或取消订阅	サブスクリプションの管理・解約	Gérer ou résilier l’abonnement	Gestionar o cancelar la suscripción	Aboneliği yönet veya iptal et	Abo verwalten oder kündigen
 action_upload_to_cloud	Upload to Tryptify Cloud	上传到 Tryptify Cloud	Tryptify Cloud にアップロード	Envoyer vers Tryptify Cloud	Subir a Tryptify Cloud	Tryptify Cloud’a yükle	In Tryptify Cloud hochladen

@@ -98,6 +98,11 @@ class CloudSettingsViewModel @Inject constructor(
         cloud.checkoutUrl(plan, period, trial).onSuccess { _openUrl.value = it }
     }
 
+    /** Opens the payment provider's page for changing or cancelling the plan. */
+    fun manageSubscription() = act {
+        cloud.portalUrl().onSuccess { _openUrl.value = it }
+    }
+
     fun connectPlayer() = act {
         cloud.connectPlayer("${Build.MANUFACTURER} ${Build.MODEL}".trim())
     }

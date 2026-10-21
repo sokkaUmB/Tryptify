@@ -1,0 +1,11 @@
+# The Tryptify website: a static site served by Cloudflare (Workers static
+# assets, no code). Deploy: npx wrangler deploy (from this folder).
+name = "tryptify-site"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[assets]
+directory = "./public"
+# /cloud serves cloud.html, /terms serves terms.html, and so on.
+html_handling = "drop-trailing-slash"
+not_found_handling = "404-page"

@@ -14,6 +14,8 @@ import { PLANS, type BillingEvent, type Period, type PlanId } from "./rules";
 export interface Billing {
   name: string;
   checkoutUrl(plan: PlanId, period: Period, userId: string, trial?: boolean): Promise<string | null>;
+  /** The provider's page where a customer changes or cancels their plan, or null when it cannot be had. */
+  portalUrl(customerId: string): Promise<string | null>;
   /** The events in a verified webhook, or null when its signature does not check out. */
   parseWebhook(headers: Headers, raw: string): Promise<BillingEvent[] | null>;
 }
@@ -83,6 +85,21 @@ export function creemBilling(env: Record<string, string | undefined>, http: type
       }
       const body = (await res.json().catch(() => null)) as { checkout_url?: unknown } | null;
       return typeof body?.checkout_url === "string" ? body.checkout_url : null;
+    },
+
+    async portalUrl(customerId) {
+      const res = await http(`${base}/v1/customers/billing`, {
+        method: "POST",
+        headers: { "x-api-key": apiKey, "content-type": "application/json" },
+        body: JSON.stringify({ customer_id: customerId }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) {
+        console.error(`creem portal failed: ${res.status} ${(await res.text()).slice(0, 300)}`);
+        return null;
+      }
+      const body = (await res.json().catch(() => null)) as { customer_portal_link?: unknown } | null;
+      return typeof body?.customer_portal_link === "string" ? body.customer_portal_link : null;
     },
 
     async parseWebhook(headers, raw) {

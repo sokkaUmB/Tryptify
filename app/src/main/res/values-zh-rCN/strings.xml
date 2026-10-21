@@ -3059,5 +3059,6 @@
     <string name="cloud_uploading">正在上传到 Tryptify Cloud</string>
     <string name="cloud_uploads_channel">云端上传</string>
     <string name="cloud_uploads_channel_desc">歌曲上传到 Tryptify Cloud 的进度。</string>
+    <string name="cloud_manage_subscription">管理或取消订阅</string>
     <string name="action_upload_to_cloud">上传到 Tryptify Cloud</string>
 </resources>

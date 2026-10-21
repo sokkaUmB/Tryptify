@@ -3207,5 +3207,6 @@
     <string name="cloud_uploading">Subiendo a Tryptify Cloud</string>
     <string name="cloud_uploads_channel">Subidas a la nube</string>
     <string name="cloud_uploads_channel_desc">Progreso de las canciones que se suben a Tryptify Cloud.</string>
+    <string name="cloud_manage_subscription">Gestionar o cancelar la suscripción</string>
     <string name="action_upload_to_cloud">Subir a Tryptify Cloud</string>
 </resources>

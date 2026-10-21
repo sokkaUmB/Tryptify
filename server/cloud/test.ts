@@ -192,9 +192,12 @@ async function setUp() {
   const creem = Bun.serve({
     port: 0,
     async fetch(req) {
-      if (new URL(req.url).pathname !== "/v1/checkouts" || req.headers.get("x-api-key") !== "creem_test_key") {
-        return new Response("no", { status: 403 });
+      if (req.headers.get("x-api-key") !== "creem_test_key") return new Response("no", { status: 403 });
+      if (new URL(req.url).pathname === "/v1/customers/billing") {
+        const { customer_id } = await req.json();
+        return Response.json({ customer_portal_link: `https://creem.test/portal/${customer_id}` });
       }
+      if (new URL(req.url).pathname !== "/v1/checkouts") return new Response("no", { status: 404 });
       const body = await req.json();
       checkouts.push(body);
       return Response.json({ id: "ch_1", checkout_url: `https://checkout.creem.test/ch_${checkouts.length}` });
@@ -392,6 +395,20 @@ test("checkout refuses a bad plan, needs a sign-in, and says when a product is m
   const r = await call("POST", "/v1/checkout", await token(A), { plan: "max", period: "yearly" });
   assert.equal(r.status, 503);
   assert.equal(r.body.error, "billing_not_set_up");
+});
+
+test("the billing portal opens for a paying customer, and only for them", async () => {
+  const P = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  assert.equal((await call("POST", "/v1/billing-portal", undefined)).status, 401);
+  const none = await call("POST", "/v1/billing-portal", await token(P));
+  assert.equal(none.status, 404);
+  assert.equal(none.body.error, "no_subscription");
+  const paid = paidEvent("evt_portal", P, "prod_lite_m", future(30), "sub_portal");
+  paid.object.customer = { id: "cust_portal" };
+  assert.equal((await webhook(paid)).status, 200);
+  const r = await call("POST", "/v1/billing-portal", await token(P));
+  assert.equal(r.status, 200);
+  assert.equal(r.body.url, "https://creem.test/portal/cust_portal");
 });
 
 test("a webhook with a wrong or missing signature changes nothing", async () => {

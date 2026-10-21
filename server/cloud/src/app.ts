@@ -92,6 +92,20 @@ export function createApp({ db, storage = null, billing, personOf, now = () => n
     return url ? c.json({ url }) : fail(503, "billing_not_set_up");
   });
 
+  /**
+   * The payment provider's customer portal for the signed-in person, where
+   * they change or cancel their plan. Creem requires that people can cancel
+   * from inside the product; this is how the app's "Manage subscription" does.
+   */
+  app.post("/v1/billing-portal", async (c) => {
+    if (!billing) return fail(503, "billing_not_set_up");
+    const row = await db!.prepare("select customer_id from cloud_accounts where user_id = ?1")
+      .bind(c.get("uid")).first<{ customer_id: string | null }>();
+    if (!row?.customer_id) return fail(404, "no_subscription");
+    const url = await billing.portalUrl(row.customer_id);
+    return url ? c.json({ url }) : fail(502, "billing_unreachable");
+  });
+
   /** The payment provider's webhook. Answers 2xx only once the event is safely recorded. */
   app.post("/webhooks/billing", async (c) => {
     if (!db || !billing) return fail(503, "not_set_up");

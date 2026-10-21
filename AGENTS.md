@@ -311,6 +311,13 @@ are in `src/rules.ts` and held by `test.ts` (`bun run test.ts`), including the
 worst-case pricing check. Deploy with `npx wrangler deploy` after the tests
 pass; secrets live only in the Worker.
 
+## Website
+
+[`site/`](site/README.md) is the public site (app, Tryptify Cloud and its
+pricing, Terms, Privacy, Refunds, Contact), static files on Cloudflare. Its
+prices and grace periods repeat `server/cloud/src/rules.ts`: change both
+together.
+
 ## Commits
 
 Author as `tryptz`. No co-author trailers and no tool attribution in commit

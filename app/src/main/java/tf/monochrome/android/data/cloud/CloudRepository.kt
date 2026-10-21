@@ -83,6 +83,11 @@ class CloudRepository @Inject constructor(
         json.decodeFromString<CheckoutUrl>(send(HttpMethod.Post, "checkout", body = body).bodyAsText()).url
     }
 
+    /** The payment provider's page where the listener changes or cancels their plan. */
+    suspend fun portalUrl(): Result<String> = call {
+        json.decodeFromString<CheckoutUrl>(send(HttpMethod.Post, "billing-portal").bodyAsText()).url
+    }
+
     /** True when [server] is this cloud, rather than a server the listener runs. */
     fun isCloud(server: SubsonicServer?): Boolean =
         server != null && server.url.trimEnd('/') == BASE.trimEnd('/')

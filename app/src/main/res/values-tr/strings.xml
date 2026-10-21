@@ -3133,5 +3133,6 @@
     <string name="cloud_uploading">Tryptify Cloud’a yükleniyor</string>
     <string name="cloud_uploads_channel">Bulut yüklemeleri</string>
     <string name="cloud_uploads_channel_desc">Tryptify Cloud’a yüklenen şarkıların ilerlemesi.</string>
+    <string name="cloud_manage_subscription">Aboneliği yönet veya iptal et</string>
     <string name="action_upload_to_cloud">Tryptify Cloud’a yükle</string>
 </resources>

@@ -3207,5 +3207,6 @@
     <string name="cloud_uploading">Envoi vers Tryptify Cloud</string>
     <string name="cloud_uploads_channel">Envois vers le cloud</string>
     <string name="cloud_uploads_channel_desc">Progression des titres envoyés vers Tryptify Cloud.</string>
+    <string name="cloud_manage_subscription">Gérer ou résilier l’abonnement</string>
     <string name="action_upload_to_cloud">Envoyer vers Tryptify Cloud</string>
 </resources>

@@ -106,6 +106,10 @@ private fun Ready(viewModel: CloudSettingsViewModel, account: CloudAccount, plan
     if (account.access == "full") {
         Player(viewModel, busy)
         Uploads(viewModel)
+        // Creem requires that a subscriber can cancel from inside the product.
+        TextButton(onClick = viewModel::manageSubscription, enabled = !busy) {
+            Text(stringResource(R.string.cloud_manage_subscription))
+        }
     } else {
         PlanPicker(plans, account.trialAvailable, busy) { plan, period, trial -> viewModel.checkout(plan, period, trial) }
     }
