@@ -289,6 +289,15 @@ test (`bun run test.ts` against a local Postgres, see the README), then replace
 the function's code with the whole file. `ThemeStoreWireTest` holds the app and
 the server to the same theme parts, pack and picture size caps, and error codes.
 
+## Tryptify Cloud server
+
+The paid music storage's API is [`server/cloud/`](server/cloud/README.md): a
+Cloudflare Worker with a D1 database, Creem for payments, Supabase sign-in.
+PolyForm Noncommercial, unlike the rest of the repository. Its money rules
+are in `src/rules.ts` and held by `test.ts` (`bun run test.ts`), including the
+worst-case pricing check. Deploy with `npx wrangler deploy` after the tests
+pass; secrets live only in the Worker.
+
 ## Commits
 
 Author as `tryptz`. No co-author trailers and no tool attribution in commit

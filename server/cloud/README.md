@@ -2,9 +2,12 @@
 
 Paid, private storage for a listener's own music. The plan, prices and rules
 are in [`docs/plans/tryptify-cloud.md`](../../docs/plans/tryptify-cloud.md).
-`index.ts` is the whole service: one file, run by Bun as a Railway Function,
-with its own Railway Postgres, signed in with the app's Supabase account the
-same way as the [Theme Store](../theme-store/README.md).
+It runs on **Cloudflare Workers** (`src/worker.ts`), keeps accounts and
+billing events in **Cloudflare D1** (SQLite, `schema.sql`), and signs people
+in with the app's Supabase account the same way as the
+[Theme Store](../theme-store/README.md). Music will go in **Cloudflare R2**
+(phase 1). It moved here from Railway, which was pausing deploys for Hobby
+workspaces, before it ever went live there.
 
 **Licence:** [PolyForm Noncommercial 1.0.0](LICENSE.md), unlike the rest of
 the repository (GPL-3.0). Anyone may read, run and change it for
@@ -13,11 +16,45 @@ permission.
 
 ## Status
 
-Accounts and billing are written and tested, with Creem as the payment
-provider. Not deployed yet: Railway was pausing deploys for Hobby workspaces
-when this was written. Until the Creem variables are set, checkout and the
-webhook answer `billing_not_set_up`, and nobody can pay or be granted
-anything. Storage and the Subsonic API come next (phase 1 of the plan).
+**Live, in Creem test mode**, at
+`https://tryptify-cloud.tryptify-cloud.workers.dev` (2026-10-21). Accounts,
+billing and the trial work end to end there: a test-card payment for Plus
+reached the Worker as Creem's signed webhook and gave the account Plus for one
+month in D1, recorded once. Storage and the Subsonic API come next (phase 1 of
+the plan). Without `CREEM_API_KEY` and `CREEM_WEBHOOK_SECRET`, checkout and the
+webhook answer `billing_not_set_up`, and nobody can pay or be granted anything.
+
+## Where it runs
+
+| Piece | Cloudflare | Notes |
+| --- | --- | --- |
+| The API | Worker `tryptify-cloud` | `src/worker.ts`, config in `wrangler.toml` |
+| Accounts, billing events | D1 database `tryptify-cloud` | `b2b03937-98bd-4fec-a132-ce0d0b932454`, tables from `schema.sql` |
+| Music (phase 1) | R2 | Needs enabling once in the dashboard |
+| Secrets | Worker secrets | `CREEM_API_KEY`, `CREEM_WEBHOOK_SECRET`; never in the repository |
+
+Code: `src/rules.ts` (the money rules, pure), `src/creem.ts` (checkout and
+webhooks), `src/store.ts` (D1), `src/auth.ts` (Supabase sign-in),
+`src/app.ts` (routes), `src/worker.ts` (the entry point).
+
+D1 has no row locks, so a billing event is written optimistically
+(`store.record`): the account row is written only if its version is unchanged
+since it was read and the event is new, and the event is recorded only if that
+write is the one that landed (the row then carries the event's id). A second
+webhook for the same person in between turns both into no-ops and the first is
+retried. A test races two payments to hold it.
+
+## Deploying a change
+
+```
+cd server/cloud
+bun install && bun run test.ts      # all must pass
+npx wrangler deploy                 # needs CLOUDFLARE_API_TOKEN (Workers edit)
+```
+
+A schema change goes in `schema.sql` as `create … if not exists` / an added
+column, run once against D1 (`npx wrangler d1 execute tryptify-cloud --remote
+--file schema.sql`) before the deploy that uses it. Then check `/health`.
 
 ## Payments: Creem
 
@@ -51,8 +88,8 @@ What the service does with it:
    `<the service's address>/webhooks/billing` with at least
    `subscription.paid`, `refund.created` and `dispute.created`. Copy its
    secret.
-4. In Railway, on the `cloud` service, set these variables (never in chat,
-   never in the repository):
+4. On the Worker, set these (secrets with `wrangler secret put`, the rest in
+   `wrangler.toml`; never a secret in chat or the repository):
 
    | Variable | Value |
    | --- | --- |
@@ -95,8 +132,8 @@ checkout was made through `POST /v1/checkout`, paid on Creem's test checkout
 with the test card 4111 1111 1111 1111, and Creem's real `subscription.paid`
 webhook, forwarded by `creem listen` with its genuine signature, gave the
 account `lite`, `full` access, paid until one month on, 100 GB. The event was
-recorded once. Only Supabase sign-in was a stand-in. To repeat it before
-Railway is up:
+recorded once. Only Supabase sign-in was a stand-in. To test a change locally
+before deploying it:
 
 ```
 creem listen --environment test --forward-to http://127.0.0.1:3000/webhooks/billing \
@@ -149,10 +186,11 @@ that does not fit is refused (`mayUpload`).
 
 ## Testing
 
-Against a throwaway local Postgres (it drops the service's tables):
+The Worker's own routes over a real in-memory SQLite (the engine D1 is), with
+stand-ins for Supabase's public keys and Creem's API. Nothing else needed:
 
 ```
-TEST_DATABASE_URL=postgres://postgres@127.0.0.1:55432/cloud bun run test.ts
+bun install && bun run test.ts
 ```
 
 One test reruns the pricing check from the plan against `PLANS`, so a price

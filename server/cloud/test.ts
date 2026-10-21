@@ -1,37 +1,50 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-// Tryptify Cloud end to end against a real Postgres, with a stand-in for
-// Supabase Auth (public keys for a key made here). Needs an empty database it
-// may drop tables in:
+// Tryptify Cloud end to end: the Worker's own routes (src/app.ts) over a real
+// SQLite database (the engine D1 is), with stand-ins for Supabase Auth's
+// public keys and for Creem's API. Needs nothing else:
 //
-//   TEST_DATABASE_URL=postgres://postgres@127.0.0.1:55432/cloud bun run test.ts
+//   bun install && bun run test.ts
 //
-// A plain script rather than `bun test`, like the Theme Store's: the runner
-// does not fetch versioned imports such as "jose@5", and a plain run does.
+// A plain script rather than `bun test`, like the Theme Store's.
 
 import assert from "node:assert/strict";
-import { SQL } from "bun";
-import { SignJWT, exportJWK, generateKeyPair } from "jose@5";
+import { Database } from "bun:sqlite";
+import { SignJWT, exportJWK, generateKeyPair } from "jose";
+import { createApp } from "./src/app";
+import { supabaseAuth } from "./src/auth";
+import { creemBilling } from "./src/creem";
+import * as rules from "./src/rules";
+import type { Db, Stmt } from "./src/store";
 
-const url = Bun.env.TEST_DATABASE_URL;
-if (!url) {
-  console.error("Set TEST_DATABASE_URL to an empty Postgres database the test may drop tables in.");
-  process.exit(2);
-}
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
 const DAY = 86_400_000;
 const GB = 1_000_000_000;
 
+/** D1's binding over bun:sqlite: positional ?N parameters, atomic batches. */
+function d1(sqlite: Database): Db {
+  const stmt = (sql: string, values: unknown[] = []): Stmt => ({
+    bind: (...v: unknown[]) => stmt(sql, v),
+    first: async <T>() => (sqlite.query(sql).get(...(values as any[])) as T) ?? null,
+    run: async () => sqlite.query(sql).run(...(values as any[])),
+    runSync: () => sqlite.query(sql).run(...(values as any[])),
+  } as Stmt & { runSync: () => unknown });
+  return {
+    prepare: (sql) => stmt(sql),
+    batch: async (statements) => sqlite.transaction(() => statements.map((s) => (s as any).runSync?.() ?? s))(),
+  };
+}
+
 let ISSUER = "";
 let keys: CryptoKeyPair;
-let db: SQL;
+let sqlite: Database;
 let fetchCloud: (r: Request) => Promise<Response>;
-let cloud: typeof import("./index.ts");
+const cloud = rules;
 
 // A stand-in for Creem: what checkouts it was asked for, and its answer.
 const SECRET = "whsec_test_only";
 const checkouts: any[] = [];
-const sign = (raw: string) => new Bun.CryptoHasher("sha256", SECRET).update(raw).digest("hex");
+const sign = (raw: string) => new Bun.CryptoHasher("sha256", SECRET).update(raw).digest("hex"); // independent of the code under test
 async function webhook(event: unknown, signature?: string) {
   const raw = JSON.stringify(event);
   return call("POST", "/webhooks/billing", undefined, raw, { "creem-signature": signature ?? sign(raw) });
@@ -78,8 +91,8 @@ const tests: [string, () => Promise<void>][] = [];
 const test = (name: string, fn: () => Promise<void>) => tests.push([name, fn]);
 
 async function setUp() {
-  db = new SQL(url!);
-  await db.unsafe("drop table if exists cloud_billing_events, cloud_accounts cascade");
+  sqlite = new Database(":memory:");
+  sqlite.exec(await Bun.file(new URL("./schema.sql", import.meta.url)).text());
   keys = await generateKeyPair("ES256");
   const jwk = { ...(await exportJWK(keys.publicKey)), kid: "test", alg: "ES256", use: "sig" };
   const supabase = Bun.serve({
@@ -102,22 +115,23 @@ async function setUp() {
       return Response.json({ id: "ch_1", checkout_url: `https://checkout.creem.test/ch_${checkouts.length}` });
     },
   });
-  Object.assign(Bun.env, {
-    CREEM_API_KEY: "creem_test_key",
-    CREEM_WEBHOOK_SECRET: SECRET,
-    CREEM_API_BASE: `http://127.0.0.1:${creem.port}`,
-    CREEM_PRODUCT_LITE_MONTHLY: "prod_lite_m",
-    CREEM_PRODUCT_LITE_YEARLY: "prod_lite_y",
-    CREEM_PRODUCT_PLUS_MONTHLY: "prod_plus_m",
-    CREEM_PRODUCT_PLUS_YEARLY: "prod_plus_y",
-    CREEM_PRODUCT_MAX_MONTHLY: "prod_max_m",
-    CREEM_PRODUCT_LITE_MONTHLY_TRIAL: "prod_lite_trial",
-    // MAX_YEARLY left unset on purpose: that checkout must say not set up.
+  const app = createApp({
+    db: d1(sqlite),
+    personOf: supabaseAuth(`http://127.0.0.1:${supabase.port}/`, "test-anon-key"),
+    billing: creemBilling({
+      CREEM_API_KEY: "creem_test_key",
+      CREEM_WEBHOOK_SECRET: SECRET,
+      CREEM_API_BASE: `http://127.0.0.1:${creem.port}`,
+      CREEM_PRODUCT_LITE_MONTHLY: "prod_lite_m",
+      CREEM_PRODUCT_LITE_YEARLY: "prod_lite_y",
+      CREEM_PRODUCT_PLUS_MONTHLY: "prod_plus_m",
+      CREEM_PRODUCT_PLUS_YEARLY: "prod_plus_y",
+      CREEM_PRODUCT_MAX_MONTHLY: "prod_max_m",
+      CREEM_PRODUCT_LITE_MONTHLY_TRIAL: "prod_lite_trial",
+      // MAX_YEARLY left unset on purpose: that checkout must say not set up.
+    }),
   });
-  Bun.env.DATABASE_URL = url;
-  Bun.env.SUPABASE_URL = `http://127.0.0.1:${supabase.port}/`;
-  cloud = await import("./index.ts");
-  fetchCloud = (r) => Promise.resolve(cloud.default.fetch(r));
+  fetchCloud = (r) => Promise.resolve(app.fetch(r));
 }
 
 // ── The rule: nobody costs more than they pay ───────────────────────────────
@@ -242,6 +256,7 @@ test("the trial's worst case costs pennies, not a plan", async () => {
 
 test("health and plans answer without an account", async () => {
   assert.equal((await call("GET", "/health")).body.ok, true);
+  assert.equal((await call("GET", "/health")).body.database, true);
   const plans = await call("GET", "/plans");
   assert.deepEqual(plans.body.plans.map((p: { id: string }) => p.id), ["lite", "plus", "max"]);
 });
@@ -261,7 +276,7 @@ test("a new person has no plan and no access", async () => {
 });
 
 test("an account row someone paid for shows its plan", async () => {
-  await db`insert into cloud_accounts (user_id, plan, paid_until) values (${B}, 'plus', ${days(400)})`;
+  sqlite.query("insert into cloud_accounts (user_id, plan, paid_until) values (?1, 'plus', ?2)").run(B, days(400).toISOString());
   const r = await call("GET", "/v1/account", await token(B));
   assert.equal(r.body.plan, "plus");
   assert.equal(r.body.access, "full");
@@ -311,7 +326,7 @@ test("subscription.paid grants the plan until the period's end", async () => {
 test("a redelivered webhook is applied once", async () => {
   const again = await webhook(paidEvent("evt_p1", C, "prod_lite_m", future(30), "sub_c"));
   assert.equal(again.status, 200);
-  const [{ n }] = await db`select count(*)::int as n from cloud_billing_events where event_id = 'evt_p1'`;
+  const { n } = sqlite.query("select count(*) as n from cloud_billing_events where event_id = 'evt_p1'").get() as { n: number };
   assert.equal(n, 1);
 });
 
@@ -400,6 +415,34 @@ test("Creem's real trial start (a $0 subscription.paid, status trialing) grants 
   assert.equal(r.quotaBytes, 100 * GB);
 });
 
+test("two payments racing for one account both land, each once", async () => {
+  const { record } = await import("./src/store");
+  const R = "88888888-8888-4888-8888-888888888888";
+  const base = d1(sqlite);
+  let interleaved = false;
+  const later = future(60);
+  // A Db whose first batch lets a second webhook for the same person write
+  // first: the version the first one read is then stale.
+  const racing: Db = {
+    prepare: (sql) => base.prepare(sql),
+    batch: async (statements) => {
+      if (!interleaved) {
+        interleaved = true;
+        await record(base, "creem", { kind: "paid", eventId: "evt_race_b", userId: R, plan: "plus", paidUntil: later });
+      }
+      return base.batch(statements);
+    },
+  };
+  const applied = await record(racing, "creem", { kind: "paid", eventId: "evt_race_a", userId: R, plan: "lite", paidUntil: future(30) });
+  assert.equal(applied, true);
+  const events = sqlite.query("select event_id from cloud_billing_events where user_id = ?1 order by event_id").all(R) as { event_id: string }[];
+  assert.deepEqual(events.map((e) => e.event_id), ["evt_race_a", "evt_race_b"]);
+  const row = sqlite.query("select plan, paid_until, version from cloud_accounts where user_id = ?1").get(R) as any;
+  // Both applied, the later paid-until kept, and two writes counted.
+  assert.equal(row.paid_until, later.toISOString());
+  assert.equal(row.version, 2);
+});
+
 // ── Run ──────────────────────────────────────────────────────────────────────
 
 await setUp();
@@ -414,6 +457,6 @@ for (const [name, fn] of tests) {
     console.log(e);
   }
 }
-await db.close();
+sqlite.close();
 console.log(`${tests.length - failed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

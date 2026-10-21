@@ -20,9 +20,10 @@ with no computer or NAS.
   the subset the app uses: `ping`, `getAlbumList2`, `getAlbum`, `getArtists`,
   `getArtist`, `search3`, `getRandomSongs`, `stream` (with HTTP Range, so
   seeking works), `getCoverArt`. Plus its own upload and account routes.
-- **Same shape as the Theme Store** (`server/theme-store/`): one Bun service on
-  Railway, its own Railway Postgres, and a Railway storage bucket for the
-  files. Sign-in is the app's Supabase account, checked the way the Theme
+- **Hosting: Cloudflare** (changed 2026-10-21 from Railway, which was pausing
+  deploys): a Worker for the API, D1 for accounts and billing, R2 for the
+  files (same $0.015/GB as the Railway bucket, with free egress written into
+  its price list). Sign-in as in the Theme Store. Sign-in is the app's Supabase account, checked the way the Theme
   Store checks it (public JWKS, or Supabase Auth for HS256). The service holds
   no Supabase secret.
 - **Subsonic sign-in for the cloud:** the app cannot send a Supabase JWT as
@@ -130,10 +131,10 @@ Rules that keep the guarantee (all phase 1 or 3 requirements):
    it can be switched on without an app update. Keep the storage code plain S3
    so the bucket can move to Cloudflare R2: same storage price, free egress in
    its published terms.
-7. **Fixed cost only grows with paying listeners.** The beta runs on Railway
-   Hobby ($5, 1 TB in total). Move to Pro ($20 a month, which includes $20 of
-   usage) when subscribers pay for it: 9 Lite subscribers at full quota cover
-   it even in the worst case.
+7. **Fixed cost only grows with paying listeners.** Cloudflare Workers is free
+   up to 100,000 requests a day and D1 up to 5 GB; the $5-a-month Workers Paid
+   plan is needed only past that, which 10 Lite subscribers cover even in the
+   worst case. (Written for Railway first, at $20 a month and 9 subscribers.)
 
 What sells it to listeners, at no cost: originals kept as uploaded (lossless
 stays lossless, nothing transcoded), uploads from the phone, a clear usage
