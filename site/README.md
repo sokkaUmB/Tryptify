@@ -19,3 +19,17 @@ Keep the prices, the trial and the grace periods in step with
 not. All text is Orbitron, the app's font, in its six weights (Regular 400 to
 Black 900, Latin) as WOFF2 under `public/fonts/`, with its licence
 `public/fonts/orbitron-license.txt`.
+
+## Motion and designs
+
+`js/site.js` animates the pages with Motion (motion.dev, MIT), served from
+`js/motion-12.23.12.js` with its licence beside it: the hero's live spectrum,
+words arriving one by one, sections sliding in, screenshots dealt and tilted,
+the pricing switch counting, springy buttons. All of it is decoration: with
+"reduce motion" on, without JavaScript, or if Motion fails to load, the pages
+are the same, standing still.
+
+While the owner chooses, there are six colour designs (Mono, Neon, Ember,
+Mint, Acid, Paper), set by `<html data-design>`, picked with the dots at the
+bottom of every page or compared live at `/designs`. Once one is chosen, make
+it the `:root` colours and delete the others, the picker and `designs.html`.

@@ -7,6 +7,20 @@
   <meta name="description" content="Tryptify Cloud is your personal Subsonic-API music storage, made for fast streaming. Upload your music once and play it anywhere in Tryptify. From $3.99 a month for 100 GB, with a 7-day free trial.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
+  <script>
+    (function () {
+      var root = document.documentElement, top = window.top === window;
+      // The design: ?design=… (a preview), else the one last picked.
+      var d = new URLSearchParams(location.search).get("design");
+      try { if (d && top) localStorage.setItem("tryptify-design", d); if (!d) d = localStorage.getItem("tryptify-design"); } catch (e) {}
+      if (/^(mono|neon|ember|mint|acid|paper)$/.test(d || "")) root.dataset.design = d;
+      // Motion only when it is welcome; if site.js has not started in 3 s, show everything as is.
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        root.classList.add("motion");
+        setTimeout(function () { if (!window.__tryptifyMotion) root.classList.remove("motion"); }, 3000);
+      }
+    })();
+  </script>
 </head>
 <body>
   <header class="top">
@@ -56,24 +70,29 @@
     <section id="pricing">
       <h2>Pricing</h2>
       <p class="muted">Prices in US dollars. Sales tax or VAT is added at checkout where it applies.</p>
+      <div class="period" role="group" aria-label="Billing period" hidden>
+        <button type="button" data-period="monthly" aria-pressed="true">Monthly</button>
+        <button type="button" data-period="yearly" aria-pressed="false">Yearly <span class="save">Save 16%</span></button>
+        <span class="period-pill" aria-hidden="true"></span>
+      </div>
       <div class="plans">
         <div class="plan">
           <div class="name">Lite</div>
           <div class="size">100 GB</div>
-          <div class="price">$3.99 <small>/ month</small></div>
-          <div class="year">or $39.99 / year</div>
+          <div class="price"><span class="amount" data-monthly="3.99" data-yearly="39.99">$3.99</span> <small class="per" data-monthly="/ month" data-yearly="/ year">/ month</small></div>
+          <div class="year" data-monthly="or $39.99 / year" data-yearly="$3.33 a month, billed yearly">or $39.99 / year</div>
         </div>
         <div class="plan featured">
           <div class="name">Plus</div>
           <div class="size">250 GB</div>
-          <div class="price">$9.99 <small>/ month</small></div>
-          <div class="year">or $99.99 / year</div>
+          <div class="price"><span class="amount" data-monthly="9.99" data-yearly="99.99">$9.99</span> <small class="per" data-monthly="/ month" data-yearly="/ year">/ month</small></div>
+          <div class="year" data-monthly="or $99.99 / year" data-yearly="$8.33 a month, billed yearly">or $99.99 / year</div>
         </div>
         <div class="plan">
           <div class="name">Max</div>
           <div class="size">500 GB</div>
-          <div class="price">$19.99 <small>/ month</small></div>
-          <div class="year">or $199.99 / year</div>
+          <div class="price"><span class="amount" data-monthly="19.99" data-yearly="199.99">$19.99</span> <small class="per" data-monthly="/ month" data-yearly="/ year">/ month</small></div>
+          <div class="year" data-monthly="or $199.99 / year" data-yearly="$16.67 a month, billed yearly">or $199.99 / year</div>
         </div>
       </div>
       <div class="trial">
@@ -110,5 +129,7 @@
       </nav>
     </div>
   </footer>
+  <script src="/js/motion-12.23.12.js"></script>
+  <script src="/js/site.js"></script>
 </body>
 </html>

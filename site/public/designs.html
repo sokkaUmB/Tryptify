@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Designs · Tryptify</title>
+  <meta name="description" content="Every design for the Tryptify website, side by side.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script>
+    (function () {
+      var root = document.documentElement, top = window.top === window;
+      // The design: ?design=… (a preview), else the one last picked.
+      var d = new URLSearchParams(location.search).get("design");
+      try { if (d && top) localStorage.setItem("tryptify-design", d); if (!d) d = localStorage.getItem("tryptify-design"); } catch (e) {}
+      if (/^(mono|neon|ember|mint|acid|paper)$/.test(d || "")) root.dataset.design = d;
+      // Motion only when it is welcome; if site.js has not started in 3 s, show everything as is.
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        root.classList.add("motion");
+        setTimeout(function () { if (!window.__tryptifyMotion) root.classList.remove("motion"); }, 3000);
+      }
+    })();
+  </script>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="/">Trypt<span>ify</span></a>
+      <nav class="nav">
+        <a href="/">App</a>
+        <a href="/autoeq">AutoEQ ranking</a>
+        <a href="/cloud">Tryptify Cloud</a>
+        <a href="/cloud#pricing">Pricing</a>
+        <a href="/contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero" style="padding-bottom:16px">
+      <p class="eyebrow">Pick one</p>
+      <h1>Six designs, live.</h1>
+      <p class="lead">Each preview is the real site in that design. Tap "Use this design" to browse the whole site in it, or switch any time with the dots at the bottom.</p>
+    </section>
+    <section style="padding-top:0">
+      <div class="gallery">
+        <article>
+          <div class="preview"><iframe src="/?design=mono" title="Mono design preview" loading="lazy" tabindex="-1"></iframe></div>
+          <div class="info">
+            <h3>Mono</h3>
+            <p>Black and white, after the app's first name, Monochrome. Calm and premium.</p>
+            <div class="buttons">
+              <button type="button" class="btn primary" data-use-design="mono">Use this design</button>
+              <a class="btn" href="/?design=mono">Open</a>
+            </div>
+          </div>
+        </article>
+        <article>
+          <div class="preview"><iframe src="/?design=neon" title="Neon design preview" loading="lazy" tabindex="-1"></iframe></div>
+          <div class="info">
+            <h3>Neon</h3>
+            <p>Hot pink and cyan, like SeapEngine. Loud, club-night energy.</p>
+            <div class="buttons">
+              <button type="button" class="btn primary" data-use-design="neon">Use this design</button>
+              <a class="btn" href="/?design=neon">Open</a>
+            </div>
+          </div>
+        </article>
+        <article>
+          <div class="preview"><iframe src="/?design=ember" title="Ember design preview" loading="lazy" tabindex="-1"></iframe></div>
+          <div class="info">
+            <h3>Ember</h3>
+            <p>Orange and amber, like the app's mixer. Warm, analog studio.</p>
+            <div class="buttons">
+              <button type="button" class="btn primary" data-use-design="ember">Use this design</button>
+              <a class="btn" href="/?design=ember">Open</a>
+            </div>
+          </div>
+        </article>
+        <article>
+          <div class="preview"><iframe src="/?design=mint" title="Mint design preview" loading="lazy" tabindex="-1"></iframe></div>
+          <div class="info">
+            <h3>Mint</h3>
+            <p>Teal on deep blue-green. Fresh and clean.</p>
+            <div class="buttons">
+              <button type="button" class="btn primary" data-use-design="mint">Use this design</button>
+              <a class="btn" href="/?design=mint">Open</a>
+            </div>
+          </div>
+        </article>
+        <article>
+          <div class="preview"><iframe src="/?design=acid" title="Acid design preview" loading="lazy" tabindex="-1"></iframe></div>
+          <div class="info">
+            <h3>Acid</h3>
+            <p>Lime on black. The most sci-fi, made for Orbitron.</p>
+            <div class="buttons">
+              <button type="button" class="btn primary" data-use-design="acid">Use this design</button>
+              <a class="btn" href="/?design=acid">Open</a>
+            </div>
+          </div>
+        </article>
+        <article>
+          <div class="preview"><iframe src="/?design=paper" title="Paper design preview" loading="lazy" tabindex="-1"></iframe></div>
+          <div class="info">
+            <h3>Paper</h3>
+            <p>The light design: cream paper, black ink, a red-orange accent.</p>
+            <div class="buttons">
+              <button type="button" class="btn primary" data-use-design="paper">Use this design</button>
+              <a class="btn" href="/?design=paper">Open</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>© 2026 tryptz · Tryptify · <a href="mailto:support@tryptify.com">support@tryptify.com</a></div>
+      <nav>
+        <a href="/autoeq">AutoEQ ranking</a>
+        <a href="/">App</a>
+        <a href="/cloud">Tryptify Cloud</a>
+        <a href="/terms">Terms</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/refunds">Refunds</a>
+        <a href="/contact">Contact</a>
+      </nav>
+    </div>
+  </footer>
+  <script src="/js/motion-12.23.12.js"></script>
+  <script src="/js/site.js"></script>
+</body>
+</html>

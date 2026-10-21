@@ -7,20 +7,105 @@
 @font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-800.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: swap; } /* ExtraBold */
 @font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-900.woff2") format("woff2"); font-weight: 900; font-style: normal; font-display: swap; } /* Black */
 
+/* Designs: each is a full set of colors, picked by <html data-design="…">
+   (see the head's inline script; js/site.js adds the switcher). Mono is the
+   default, after the app's first name, Monochrome. */
 :root {
-  --bg: #0b0b10;
-  --panel: #15151d;
-  --panel-2: #1c1c26;
-  --line: #2a2a36;
-  --text: #ececf2;
-  --muted: #a3a3b3;
-  --accent: #8e5cff;
-  --accent-2: #b597ff;
-  --ok: #3ddc84;
   --radius: 14px;
   --max: 1080px;
   --display: "Orbitron", system-ui, sans-serif;
 }
+:root, [data-design="mono"] {
+  --bg: #0a0a0a;
+  --panel: #141414;
+  --panel-2: #1b1b1b;
+  --line: #2a2a2a;
+  --text: #f2f2f2;
+  --muted: #9a9a9a;
+  --accent: #f2f2f2;
+  --accent-2: #bdbdbd;
+  --hot: #ffffff;
+  --on-accent: #0a0a0a;
+  --glow: 255, 255, 255;
+  --ok: #9fe3b4;
+  --header: rgba(10, 10, 10, 0.85);
+}
+[data-design="neon"] {
+  --bg: #07070d;
+  --panel: #10101a;
+  --panel-2: #161624;
+  --line: #262640;
+  --text: #f1f1fb;
+  --muted: #9a9ab8;
+  --accent: #ff2e88;
+  --accent-2: #22d3ee;
+  --hot: #ffd23f;
+  --on-accent: #ffffff;
+  --glow: 255, 46, 136;
+  --ok: #5cf2a6;
+  --header: rgba(7, 7, 13, 0.85);
+}
+[data-design="ember"] {
+  --bg: #0d0a08;
+  --panel: #17120e;
+  --panel-2: #1f1813;
+  --line: #33281f;
+  --text: #f6eee8;
+  --muted: #b3a497;
+  --accent: #ff6a1a;
+  --accent-2: #ffb347;
+  --hot: #ffe08a;
+  --on-accent: #160b03;
+  --glow: 255, 106, 26;
+  --ok: #9be37a;
+  --header: rgba(13, 10, 8, 0.85);
+}
+[data-design="mint"] {
+  --bg: #061113;
+  --panel: #0c1b1e;
+  --panel-2: #112428;
+  --line: #1d3a40;
+  --text: #e8fbf7;
+  --muted: #8fb3ad;
+  --accent: #19e3b1;
+  --accent-2: #4cc9f0;
+  --hot: #b8ffef;
+  --on-accent: #04201a;
+  --glow: 25, 227, 177;
+  --ok: #b8ffef;
+  --header: rgba(6, 17, 19, 0.85);
+}
+[data-design="acid"] {
+  --bg: #080808;
+  --panel: #121212;
+  --panel-2: #191919;
+  --line: #2b2b2b;
+  --text: #f4f4f0;
+  --muted: #a3a39a;
+  --accent: #c6ff3d;
+  --accent-2: #7dffb2;
+  --hot: #ffffff;
+  --on-accent: #0b0f00;
+  --glow: 198, 255, 61;
+  --ok: #7dffb2;
+  --header: rgba(8, 8, 8, 0.85);
+}
+[data-design="paper"] {
+  --bg: #f5f3ee;
+  --panel: #ffffff;
+  --panel-2: #efece5;
+  --line: #dcd7cc;
+  --text: #141414;
+  --muted: #5d5a54;
+  --accent: #141414;
+  --accent-2: #e4572e;
+  --hot: #f4a259;
+  --on-accent: #ffffff;
+  --glow: 228, 87, 46;
+  --ok: #2f9e44;
+  --header: rgba(245, 243, 238, 0.85);
+}
+[data-design="paper"] { color-scheme: light; }
 
 * { box-sizing: border-box; }
 
@@ -38,14 +123,14 @@ body {
 }
 
 a { color: var(--accent-2); }
-a:hover { color: #fff; }
+a:hover { color: var(--text); }
 
 .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
 
 /* Header */
 .top {
   position: sticky; top: 0; z-index: 10;
-  background: rgba(11, 11, 16, 0.85);
+  background: var(--header);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
@@ -69,8 +154,9 @@ a:hover { color: #fff; }
   text-decoration: none; font-size: 14px;
   border: 1px solid var(--line); color: var(--text); background: var(--panel);
 }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn:hover { border-color: var(--accent-2); color: #fff; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn:hover { border-color: var(--accent-2); }
+.btn:not(.primary):hover { color: var(--text); }
 
 /* The weights: Regular body, Medium nav and notes, SemiBold card titles,
    Bold buttons and emphasis, ExtraBold section titles, Black headlines. */
@@ -122,7 +208,7 @@ h3 { font-size: 18px; margin: 0 0 6px; }
 .steps li::before {
   content: counter(step); position: absolute; left: 0; top: 0;
   width: 30px; height: 30px; border-radius: 50%;
-  background: var(--accent); color: #fff;
+  background: var(--accent); color: var(--on-accent);
   display: flex; align-items: center; justify-content: center; font-size: 15px;
 }
 
@@ -133,7 +219,7 @@ ul.ticks li { margin: 4px 0; }
 .doc { max-width: 760px; padding: 48px 0; }
 .doc h1 { font-size: 34px; margin: 0 0 6px; }
 .doc h2 { font-size: 21px; margin: 32px 0 8px; }
-.doc p, .doc li { color: #d5d5df; }
+.doc p, .doc li { color: var(--text); opacity: 0.88; }
 .doc .updated { color: var(--muted); margin: 0 0 24px; }
 
 /* Footer */
@@ -156,3 +242,115 @@ footer a { color: var(--muted); }
   border: 1px solid var(--line); border-radius: var(--radius);
   background: var(--panel); margin-bottom: 10px;
 }
+
+/* ── Motion (js/site.js, with Motion from motion.dev) ─────────────────────
+   Everything below is decoration: with "reduce motion" on, or without
+   JavaScript, the page is the same page, standing still. The head's inline
+   script adds .motion only when it is wanted, and takes it away again if
+   site.js has not started within a few seconds. */
+
+.motion .hero > :not(.spectrum),
+.motion .grid > *, .motion .plans > *, .motion .shots > *, .motion .steps > li,
+.motion section > h2, .motion section > p, .motion .trial, .motion .ticks,
+.motion .period, .motion section > .card, .motion .doc > * { opacity: 0; }
+
+/* The scroll progress bar along the top. */
+.progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 20;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--hot));
+  transform-origin: 0 50%; transform: scaleX(0);
+}
+
+/* The hero's spectrum: bars that move like a visualizer behind the words. */
+.hero { position: relative; isolation: isolate; }
+.hero > :not(.spectrum) { position: relative; z-index: 1; }
+.spectrum {
+  position: absolute; z-index: 0; right: 0; bottom: 12px; width: min(560px, 70%); height: 230px;
+  display: flex; align-items: flex-end; gap: 4px; pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%, #000 85%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 30%, #000 85%, transparent);
+  opacity: 0.55;
+}
+.spectrum .bar { flex: 1; height: 100%; display: flex; align-items: flex-end; transform-origin: 50% 100%; }
+.spectrum .bar i {
+  display: block; width: 100%; height: 100%; border-radius: 3px 3px 1px 1px;
+  background: linear-gradient(0deg, var(--accent) 0%, var(--accent-2) 70%, var(--hot) 100%);
+  transform-origin: 50% 100%; transform: scaleY(0.2);
+}
+@media (max-width: 560px) { .spectrum { width: 100%; height: 150px; opacity: 0.32; } }
+
+/* A soft light that follows the pointer over the hero and over cards. */
+.hero::before {
+  content: ""; position: absolute; inset: -40px -20px; z-index: 0; pointer-events: none;
+  background: radial-gradient(420px circle at var(--mx, 70%) var(--my, 40%), rgba(var(--glow), 0.16), transparent 60%);
+}
+.card, .plan { position: relative; overflow: hidden; }
+.card::after, .plan::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.25s;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(var(--glow), 0.12), transparent 65%);
+}
+.card:hover::after, .plan:hover::after { opacity: 1; }
+
+/* Headline words, each its own span so they can arrive one by one. */
+.word { display: inline-block; white-space: pre; }
+
+/* Screenshots tilt in 3D under the pointer. */
+.shots figure { perspective: 900px; }
+.shots img { transform-style: preserve-3d; will-change: transform; }
+
+/* Monthly / yearly. Hidden without JavaScript, where both prices show. */
+.period {
+  position: relative; display: inline-flex; gap: 0; padding: 4px; margin: 4px 0 18px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+}
+.period button {
+  position: relative; z-index: 1; font: inherit; font-weight: 700; font-size: 13px;
+  color: var(--muted); background: none; border: 0; padding: 9px 16px; border-radius: 999px; cursor: pointer;
+}
+.period button[aria-pressed="true"] { color: var(--on-accent); }
+.period .save { color: var(--ok); font-weight: 600; margin-left: 4px; }
+.period button[aria-pressed="true"] .save { color: var(--on-accent); opacity: 0.8; }
+.period-pill { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px; border-radius: 999px; background: var(--accent); }
+.plan .amount { display: inline-block; font-variant-numeric: tabular-nums; }
+
+.btn { will-change: transform; }
+.motion .steps li::before { transform: scale(0); }
+.motion .steps li.pop::before { animation: pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+/* Jumping to #pricing lands below the sticky header, smoothly unless motion is reduced. */
+section[id] { scroll-margin-top: 80px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* The featured plan breathes, in whichever design is on. */
+.plan.featured.breathing { animation: breathe 2.4s ease-in-out 1s infinite alternate; }
+@keyframes breathe { from { box-shadow: 0 0 0 rgba(var(--glow), 0); } to { box-shadow: 0 0 36px rgba(var(--glow), 0.35); } }
+
+/* The design picker: a row of swatches, bottom right, on every page. */
+.designs {
+  position: fixed; z-index: 30; right: 16px; bottom: 16px;
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px;
+  background: var(--header); border: 1px solid var(--line); border-radius: 999px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  font-size: 12px; font-weight: 700; color: var(--muted);
+}
+.designs a { color: var(--muted); text-decoration: none; margin-right: 2px; }
+.designs a:hover { color: var(--text); }
+.designs button {
+  width: 24px; height: 24px; border-radius: 50%; padding: 0; cursor: pointer;
+  border: 2px solid var(--line); background: var(--sw-bg);
+  position: relative; overflow: hidden;
+}
+.designs button::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--sw-accent); }
+.designs button[aria-pressed="true"] { border-color: var(--text); transform: scale(1.15); }
+@media (max-width: 560px) { .designs { left: 16px; right: 16px; justify-content: center; } }
+footer { padding-bottom: 90px; }
+
+/* The designs page: every design side by side, live. */
+.gallery { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.gallery article { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.gallery .preview { position: relative; aspect-ratio: 1280 / 820; overflow: hidden; border-bottom: 1px solid var(--line); background: var(--bg); }
+.gallery iframe { position: absolute; top: 0; left: 0; width: 1280px; height: 820px; border: 0; transform-origin: 0 0; pointer-events: none; }
+.gallery .info { padding: 16px 18px 18px; }
+.gallery .info p { margin: 4px 0 12px; color: var(--muted); font-size: 14px; }
+button.btn { cursor: pointer; }
