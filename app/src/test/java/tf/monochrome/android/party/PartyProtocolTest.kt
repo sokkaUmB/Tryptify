@@ -248,6 +248,14 @@ class PartyProtocolTest {
     }
 
     @Test
+    fun aTidalIdIsBelievedOnlyForTheSameSong() {
+        assertTrue(PartyMatch.sameTitle("tricky disco hardtekk", "Tricky Disco – HardTekk"))
+        assertTrue(PartyMatch.sameTitle("One More Time (Radio Edit)", "One More Time"))
+        assertFalse(PartyMatch.sameTitle("Blinding Lights", "Tricky Disco"))
+        assertFalse(PartyMatch.sameTitle("", "x"))
+    }
+
+    @Test
     fun aSongFromSearchIsNamedByWhereItPlaysFrom() {
         assertEquals("tidal:7", PartyMatch.catalogId(tf.monochrome.android.domain.model.PlaybackSource.HiFiApi(tidalId = 7)))
         assertEquals("qobuz:8", PartyMatch.catalogId(tf.monochrome.android.domain.model.PlaybackSource.QobuzCached(qobuzId = 8)))

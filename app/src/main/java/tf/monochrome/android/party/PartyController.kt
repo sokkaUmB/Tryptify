@@ -138,6 +138,7 @@ class PartyController @Inject constructor(
     private val streamResolver: StreamResolver,
     private val localTrackLocator: LocalTrackLocator,
     private val repository: MusicRepository,
+    private val catalogIds: tf.monochrome.android.data.api.QobuzIdRegistry,
     private val prefs: PartyPrefs,
     private val notifier: PartyNotifier,
     private val preferences: PreferencesManager,
@@ -394,7 +395,10 @@ class PartyController @Inject constructor(
             return playable(unifiedFor(item, PlaybackSource.LocalFile(file.absolutePath, codecFor(shared.ext), 0)))
         }
         val track = withContext(Dispatchers.IO) {
+            // A TIDAL id is believed only when TIDAL names the same song: a
+            // Qobuz id sent as a TIDAL one played whatever TIDAL has under it.
             catalogId?.let { runCatching { repository.getTidalTrack(it) }.getOrNull() }
+                ?.takeIf { PartyMatch.sameTitle(it.title, item.title) }
                 ?: search(item)
         } ?: return null
         return playableLegacy(track)
@@ -622,7 +626,10 @@ class PartyController @Inject constructor(
                     )?.filePath?.let(::File)?.takeIf { it.isFile }
                 }
             val local = file != null && filePath != null
-            val isrc = if (local || track.appleId != null || track.deezerId != null) null
+            val catalogId = catalogIdOf(track, local)
+            // TIDAL is asked for an ISRC only for a TIDAL song: asked with a
+            // Qobuz id it answered for whatever TIDAL song has that number.
+            val isrc = if (catalogId?.startsWith("tidal:") != true) null
             else withContext(Dispatchers.IO) { runCatching { repository.getTidalIsrc(track.id) }.getOrNull() }
             val item = PartyAdd(
                 title = track.title,
@@ -630,12 +637,28 @@ class PartyController @Inject constructor(
                 album = track.album?.title.orEmpty(),
                 durationMs = track.duration * 1000L,
                 isrc = isrc,
-                catalogId = PartyMatch.catalogId(track, local),
+                catalogId = catalogId,
                 cover = track.album?.cover?.let { buildCoverUrl(it, 640) }?.takeIf { it.startsWith("https://") },
                 share = file != null && prefs.shareSongs.value,
             )
             send(item, Mine(unified = null, legacy = track, file = file))
         }
+    }
+
+    /**
+     * Which catalogue [track] is from, by the ids this app has seen come out
+     * of each: a Qobuz, Apple or Deezer id is a plain number like a TIDAL one,
+     * and labelled TIDAL every other phone and the website played whatever
+     * TIDAL song has that number, or nothing.
+     */
+    private fun catalogIdOf(track: Track, local: Boolean): String? = when {
+        local -> null
+        track.appleId != null -> "apple:${track.appleId}"
+        track.deezerId != null -> "deezer:${track.deezerId}"
+        catalogIds.isAppleTrack(track.id) -> "apple:${track.id}"
+        catalogIds.isDeezerTrack(track.id) -> "deezer:${track.id}"
+        catalogIds.isQobuzTrack(track.id) -> "qobuz:${track.id}"
+        else -> PartyMatch.catalogId(track, local)
     }
 
     /** A song that is a file on this phone: the library, or one opened with Tryptify. */
@@ -728,6 +751,13 @@ object PartyMatch {
     const val LENGTH_SLACK_MS = 3_000L
 
     /** [track]'s id in its catalogue as the party carries it; none for a file of the listener's own. */
+    /** Two titles for one song: the same letters, one maybe with a version on (as the server judges). */
+    fun sameTitle(a: String, b: String): Boolean {
+        fun norm(s: String) = s.lowercase().filter { it.isLetterOrDigit() }
+        val (x, y) = norm(a) to norm(b)
+        return x.isNotEmpty() && y.isNotEmpty() && (x.startsWith(y) || y.startsWith(x))
+    }
+
     /** A song's catalogue id from where it plays from; null for a file or a collection. */
     fun catalogId(source: PlaybackSource): String? = when (source) {
         is PlaybackSource.HiFiApi -> "tidal:${source.tidalId}"
