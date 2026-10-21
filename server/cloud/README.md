@@ -123,8 +123,27 @@ ids are not secrets:
 | `CREEM_PRODUCT_PLUS_MONTHLY_TRIAL` | `prod_7CntKejjZyg6Lt3BbmtIkQ` ($9.99, 7-day trial) |
 | `CREEM_PRODUCT_MAX_MONTHLY_TRIAL` | `prod_3S0jO8p2OwGiaVQHg3xO59` ($19.99, 7-day trial) |
 
-Live mode has none yet: going live means creating the same six there, which
-get new ids.
+### Live mode, created on 2026-10-21
+
+The same nine exist in Creem's **live** mode (checked back: nine, USD, tax
+included, trials only on the three trial products). The Worker does **not**
+use them yet: it stays in test mode until phase 1 stores music, so nobody can
+pay for storage that does not exist. Going live then means, in
+`wrangler.toml`, removing `CREEM_API_BASE` and swapping in these ids, and
+setting the live `CREEM_API_KEY` and a live webhook's `CREEM_WEBHOOK_SECRET`
+as Worker secrets:
+
+| Variable | Live product |
+| --- | --- |
+| `CREEM_PRODUCT_LITE_MONTHLY` | `prod_63elKtKRItGQSMCIfqquAz` ($3.99) |
+| `CREEM_PRODUCT_LITE_YEARLY` | `prod_1bjumyDR0OUeJWohM5rPWy` ($39.99) |
+| `CREEM_PRODUCT_PLUS_MONTHLY` | `prod_28Df3920dPkS1izcsr6VGO` ($9.99) |
+| `CREEM_PRODUCT_PLUS_YEARLY` | `prod_1HSF4zKQOe2zwqn6ulQXcF` ($99.99) |
+| `CREEM_PRODUCT_MAX_MONTHLY` | `prod_4b9i4eCaYxDS9QwrZKhYV2` ($19.99) |
+| `CREEM_PRODUCT_MAX_YEARLY` | `prod_6G4ubzzqvCaJKaamWsnHMt` ($199.99) |
+| `CREEM_PRODUCT_LITE_MONTHLY_TRIAL` | `prod_56tTODaE022GeT50ruLqXj` ($3.99, 7-day trial) |
+| `CREEM_PRODUCT_PLUS_MONTHLY_TRIAL` | `prod_OSmi11W9RYftN5oUWt9rz` ($9.99, 7-day trial) |
+| `CREEM_PRODUCT_MAX_MONTHLY_TRIAL` | `prod_6dOHBryZ66HGZnk9wjwydV` ($19.99, 7-day trial) |
 
 **Test purchase, 2026-10-21: passed end to end.** The service ran locally
 against a fresh Postgres with the test products and key; a Lite monthly
