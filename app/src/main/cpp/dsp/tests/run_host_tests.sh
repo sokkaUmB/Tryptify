@@ -46,6 +46,12 @@ echo "== state_fixture_test"
 $cxx $flags "$here/state_fixture_test.cpp" "$dsp/dsp_engine.cpp" -o "$out/state_fixture_test"
 "$out/state_fixture_test" "$here/../../../../test/resources/mixer_state_fixture.json"
 
+# Knobs that follow the music: the follower against the Kotlin side's numbers,
+# with -ffast-math as on the phone, and links through the engine's chain edits.
+echo "== mod_route_test"
+$cxx $flags -ffast-math "$here/mod_route_test.cpp" "$dsp/dsp_engine.cpp" -o "$out/mod_route_test"
+"$out/mod_route_test"
+
 # The oversampler: exact latency, linear phase, passband null, image rejection.
 echo "== oversampler_test"
 $cxx $flags "$here/oversampler_test.cpp" -o "$out/oversampler_test"
@@ -56,6 +62,12 @@ $cxx $flags "$here/oversampler_test.cpp" -o "$out/oversampler_test"
 echo "== loudness_meter_test"
 $cxx $flags -ffast-math "$here/loudness_meter_test.cpp" -o "$out/loudness_meter_test"
 "$out/loudness_meter_test"
+
+# The dynamic range meter against signals whose DR is known by hand, with
+# -ffast-math as on the phone: its no-reading value must survive it.
+echo "== dynamic_range_meter_test"
+$cxx $flags -ffast-math "$here/dynamic_range_meter_test.cpp" -o "$out/dynamic_range_meter_test"
+"$out/dynamic_range_meter_test"
 
 # The spectrum waterfall's geometry: inside the box at every angle, the fade
 # where it was set, a fixed line count whatever the depth.
@@ -90,3 +102,19 @@ atmos="$dsp/../atmos"
 $cxx -std=c++17 -O2 -ffast-math -I"$atmos" -I"$atmos/render" \
     "$atmos/tests/channel_placer_test.cpp" -o "$out/channel_placer_test"
 "$out/channel_placer_test"
+
+# The USB DAC bypass driver against stubbed libusb: alt-setting match for
+# UAC2 and UAC3 BADD (Apple's USB-C adapter in each of its configurations)
+# and iso packets that never pass wMaxPacketSize. Needs the libusb headers
+# from the submodule.
+usb="$dsp/../usb"
+libusb_inc="$here/../../../../../../third_party/libusb/libusb"
+echo "== uac_driver_test"
+if [ -f "$libusb_inc/libusb.h" ]; then
+    $cxx -std=c++17 -O2 -I"$usb" -I"$here/host_include" -I"$libusb_inc" \
+        "$usb/tests/uac_driver_test.cpp" "$usb/libusb_uac_driver.cpp" \
+        -o "$out/uac_driver_test" -lpthread
+    "$out/uac_driver_test"
+else
+    echo "skipped: third_party/libusb is not checked out"
+fi

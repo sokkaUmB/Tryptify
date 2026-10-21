@@ -42,6 +42,15 @@ object NetworkModule {
                 connectTimeout(30, TimeUnit.SECONDS)
                 readTimeout(30, TimeUnit.SECONDS)
                 writeTimeout(30, TimeUnit.SECONDS)
+                // OkHttp runs five requests to one host at a time and queues
+                // the rest: a Trypt Mania batch sends a song to every
+                // replica of its chart server at once (StepManiaGenerationWorker.MAX_LANES).
+                dispatcher(
+                    okhttp3.Dispatcher().apply {
+                        maxRequests = 64
+                        maxRequestsPerHost = 48
+                    },
+                )
             }
         }
     }

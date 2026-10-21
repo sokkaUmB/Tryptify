@@ -1,5 +1,7 @@
 package tf.monochrome.android.ui.main
 
+import kotlinx.coroutines.flow.map
+import tf.monochrome.android.ui.glyph.tvShader
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -10,6 +12,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import android.media.AudioManager
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -27,6 +30,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.graphics.luminance
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,6 +64,11 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var performanceProfile: PerformanceProfile
     @Inject lateinit var libusbDriver: tf.monochrome.android.audio.usb.LibusbUacDriver
     @Inject lateinit var bypassVolumeController: tf.monochrome.android.audio.usb.BypassVolumeController
+    @Inject lateinit var musicLinks: tf.monochrome.android.data.repository.MusicLinksRepository
+    @Inject lateinit var outputSync: tf.monochrome.android.audio.sync.OutputSyncRepository
+    @Inject lateinit var spectrumAnalyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap
+    @Inject lateinit var openedAudio: tf.monochrome.android.data.opened.OpenedAudioRepository
+    @Inject lateinit var partyInvites: tf.monochrome.android.party.PartyInvites
 
     /** Set once the onboarding flag has been read; releases the splash screen. */
     @Volatile private var onboardingGateLoaded = false
@@ -68,6 +78,23 @@ class MainActivity : ComponentActivity() {
      * ("library", "settings?tab=7"), null for the default start screen.
      */
     private var pendingPostRoute by mutableStateOf<String?>(null)
+
+    /**
+     * The app-wide CRT's sliders as its picture is drawn this frame, music
+     * links included, for [dispatchTouchEvent] to bend taps through a curved
+     * tube; null when the effect is off. [appTubeBounds] is where its layer
+     * sits in the window.
+     */
+    private var appTube: (() -> tf.monochrome.android.glyph.engine.GlyphTvTuning)? = null
+
+    /**
+     * The tube's shape as the gesture under way began on it. A linked curve or
+     * tilt moves with the beat; bent through each frame's shape, a finger held
+     * still would drift and a tap could turn into a scroll.
+     */
+    private var gestureTube: tf.monochrome.android.glyph.engine.GlyphTvTuning? = null
+    private var appTubeLook = tf.monochrome.android.glyph.engine.GlyphTvShader.OFF
+    private val appTubeBounds = android.graphics.RectF()
 
     // Registered-for-result launcher for POST_NOTIFICATIONS. Fires a one-shot
     // system prompt on Android 13+; the result doesn't block the UI either way
@@ -118,7 +145,13 @@ class MainActivity : ComponentActivity() {
         // A cold start triggered by the OAuth redirect delivers the callback as
         // the launch intent (onNewIntent never fires) — handle it here too so
         // login completes instead of silently failing.
-        handleDeepLinkIntent(intent)
+        // Re-created after a rotation or from Recents, the activity is handed
+        // the same intent again: a song opened once must not start over.
+        handleDeepLinkIntent(
+            intent,
+            openFiles = savedInstanceState == null &&
+                intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0,
+        )
 
         FrequencyTargets.init(applicationContext)
 
@@ -169,12 +202,53 @@ class MainActivity : ComponentActivity() {
             // composition local as well as applied here, so the visualiser's
             // own fullscreen mode knows not to show the bars again on its way
             // out — see SystemBarsHidden.
+            // Settings › Appearance › CRT effect: every screen through an old TV.
+            val appTvShader by preferences.appTvShader
+                .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.glyph.engine.GlyphTvShader.OFF)
+            val appTvOnLyrics by preferences.appTvOnLyrics.collectAsStateWithLifecycle(initialValue = false)
+            val appTvStored = preferences.appTvTuning
+                .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.glyph.engine.GlyphTvTuning())
+            // A slider being dragged wins until the store has its value.
+            androidx.compose.runtime.LaunchedEffect(appTvStored.value) {
+                if (tf.monochrome.android.ui.glyph.AppTvLive.tuning == appTvStored.value) {
+                    tf.monochrome.android.ui.glyph.AppTvLive.tuning = null
+                }
+            }
+            val appTvNow = remember(appTvStored) {
+                { tf.monochrome.android.ui.glyph.AppTvLive.tuning ?: appTvStored.value }
+            }
+            // The app's own music links: the UI panels' glass (the mini player,
+            // the tab bar, every pane) and the CRT effect, which are on every
+            // screen. It holds the analyser only while one of those is linked;
+            // the player's driver runs the lyrics and its own controls, and
+            // reads through to this one for the rest.
+            // The link open in an editor runs here too, so the CRT moves with it.
+            val runningLinks by musicLinks.previewVisualLinks.collectAsStateWithLifecycle(initialValue = emptyList())
+            val appLinks = remember(runningLinks) {
+                runningLinks.filter { it.target.startsWith("panels.") || it.target.startsWith("tv.") }
+            }
+            // How late the output playing now plays (Settings › Audio ›
+            // Bluetooth sync): the lyrics and every visual link wait for it.
+            val outputSyncMs by outputSync.delayMs.collectAsStateWithLifecycle()
+            val linkDelayMs = outputSyncMs.toFloat()
+            val appLive = tf.monochrome.android.ui.player.rememberVisualLinkDriver(
+                tap = spectrumAnalyzer,
+                links = appLinks,
+                active = true,
+                delayMs = linkDelayMs,
+            )
+            // What the CRT shader draws: the tuning with its linked settings
+            // live, read in the shader's layer block. Touches are bent through
+            // the same, held for each gesture (dispatchTouchEvent).
+            val appTvDrawn = remember(appTvNow, appLive) { { appLive.tv(appTvNow()) } }
             val immersiveFullScreen by preferences.immersiveFullScreen
                 .collectAsStateWithLifecycle(initialValue = false)
             // The user's manual low-performance overrides, from Settings ›
             // System › Performance.
             val showExplicitBadges by preferences.showExplicitBadges
                 .collectAsStateWithLifecycle(initialValue = true)
+            val rowBadges by preferences.rowBadges
+                .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.data.preferences.RowBadges())
             val lowPerformance by preferences.lowPerformanceSettings
                 .collectAsStateWithLifecycle(
                     initialValue = tf.monochrome.android.performance.LowPerformanceSettings()
@@ -189,14 +263,18 @@ class MainActivity : ComponentActivity() {
             // cross-fade, recomposing the root and every provider under it for
             // the length of the fade. MonochromeTheme passes it down and only
             // the surfaces that paint with it read it.
+            // One palette for the whole app, from the playing track's cover or
+            // from the song a screen like Trypt Mania has picked in its place
+            // (DynamicColorSource): two at once coloured the screen from two
+            // covers.
             val dynamicPalette = rememberDynamicPalette(
-                coverUrl = currentTrack?.coverUrl,
+                coverUrl = tf.monochrome.android.ui.theme.DynamicColorSource.coverFor(currentTrack?.coverUrl),
                 enabled = dynamicColorsEnabled,
                 // Instant colour change with animations off: the palette is a
                 // continuous cross-fade rather than a one-off transition, so it
                 // goes on producing values for the whole blend window.
                 blendMillis = if (lowPerformance.disableAnimations) 0
-                else ColorBlend.millisFor(colorTransitionMs),
+                else tf.monochrome.android.ui.theme.DynamicColorSource.blendFor(ColorBlend.millisFor(colorTransitionMs)),
             )
 
             // Handles both a bundled `asset:` font and an imported file path —
@@ -206,12 +284,23 @@ class MainActivity : ComponentActivity() {
             val customFontFamily = remember(customFontPath, fontLoadContext) {
                 tf.monochrome.android.ui.theme.loadAppFontFamily(fontLoadContext, customFontPath)
             }
+            // The typography table, and the fonts its styles name besides the main one.
+            val typographySettings by preferences.typography
+                .collectAsStateWithLifecycle(initialValue = tf.monochrome.android.domain.model.TypographySettings.DEFAULT)
+            // Each (font, width) the styles draw at, loaded once: the main font at
+            // its own width needs nothing, being customFontFamily itself.
+            val typographyFonts = remember(typographySettings.fontWidths, customFontPath, fontLoadContext) {
+                typographySettings.fontWidths
+                    .filterNot { (id, width) -> id == null && width == 100 }
+                    .associateWith { (id, width) ->
+                        tf.monochrome.android.ui.theme.loadWidthFont(fontLoadContext, id ?: customFontPath, width)
+                    }
+            }
 
             // "Remove liquid glass" is folded into the detected profile rather
-            // than checked separately: allowHazeBlur is already the flag every
-            // `Modifier.liquidGlass` call site consults, so turning it off here
-            // reaches all of them — list rows, the mini player, the nav pill,
-            // the audio-tools sheet — without touching one of them.
+            // than checked separately: allowHazeBlur is the flag every haze
+            // frost consults, so turning it off here reaches all of them
+            // without touching one of them.
             val effectiveProfile = remember(performanceProfile, lowPerformance.disableLiquidGlass) {
                 if (lowPerformance.disableLiquidGlass) {
                     performanceProfile.copy(allowHazeBlur = false)
@@ -224,7 +313,9 @@ class MainActivity : ComponentActivity() {
                 LocalPerformanceProfile provides effectiveProfile,
                 tf.monochrome.android.performance.LocalLowPerformance provides lowPerformance,
                 tf.monochrome.android.ui.theme.LocalShowExplicitBadges provides showExplicitBadges,
+                tf.monochrome.android.ui.theme.LocalRowBadges provides rowBadges,
                 LocalImmersiveFullScreen provides immersiveFullScreen,
+                tf.monochrome.android.ui.player.LocalOutputSyncMs provides linkDelayMs,
                 // Every list row's source tag reads its catalog from here.
                 tf.monochrome.android.ui.components.LocalTrackSource provides trackSourceResolver::of,
             ) {
@@ -232,6 +323,8 @@ class MainActivity : ComponentActivity() {
                     themeName = themeName,
                     fontScale = fontScale,
                     customFontFamily = customFontFamily,
+                    typographySettings = typographySettings,
+                    typographyFonts = typographyFonts,
                     dynamicPalette = dynamicPalette,
                     paper = if (themePaper == "warm") {
                         tf.monochrome.android.ui.theme.Paper.Warm
@@ -268,22 +361,52 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     SystemBarsHidden(immersiveFullScreen)
+                    // The CRT effect over the whole app, drawn on the one layer
+                    // every screen is in; a screen with its own (Trypt Mania's
+                    // playfield) leaves its own off under it.
+                    val tvRuns = tf.monochrome.android.ui.glyph.appTvShaderRuns(appTvShader)
+                    // Over every screen, or handed to the lyric view alone.
+                    val appTv = tvRuns && !appTvOnLyrics
+                    val lyricsTv = remember(tvRuns, appTvOnLyrics, appTvShader, appTvDrawn) {
+                        if (tvRuns && appTvOnLyrics) tf.monochrome.android.ui.glyph.LyricsTv(appTvShader, appTvDrawn) else null
+                    }
+                    SideEffect {
+                        appTube = if (appTv) appTvDrawn else null
+                        appTubeLook = appTvShader
+                        tf.monochrome.android.debug.CrashBreadcrumbs.note(
+                            "crt",
+                            if (!tvRuns) "off" else "${appTvShader.id} over ${if (appTvOnLyrics) "lyrics" else "app"}",
+                        )
+                    }
                     Surface(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onGloballyPositioned {
+                                val at = it.positionInWindow()
+                                appTubeBounds.set(at.x, at.y, at.x + it.size.width, at.y + it.size.height)
+                            }
+                            .then(if (appTv) Modifier.tvShader(appTvShader, tv = appTvDrawn) else Modifier),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        // First-run gate. null = flag not read yet (splash is
-                        // still covering); false = wizard; true = main app.
-                        // Collected (not read once) so Settings flipping the
-                        // flag back re-enters onboarding on the next frame.
-                        val onboardingComplete by preferences.onboardingComplete
-                            .collectAsStateWithLifecycle(initialValue = null)
-                        when (onboardingComplete) {
-                            null -> Unit
-                            false -> OnboardingScreen(
-                                onFinished = { pendingPostRoute = it }
-                            )
-                            true -> MonochromeNavHost(initialRoute = pendingPostRoute)
+                        CompositionLocalProvider(
+                            tf.monochrome.android.ui.glyph.LocalAppTvShader provides appTv,
+                            tf.monochrome.android.ui.glyph.LocalLyricsTv provides lyricsTv,
+                            tf.monochrome.android.ui.glyph.LocalAppTube provides (if (appTv) appTvNow else null),
+                            tf.monochrome.android.ui.player.LocalVisualLinks provides appLive,
+                        ) {
+                            // First-run gate. null = flag not read yet (splash is
+                            // still covering); false = wizard; true = main app.
+                            // Collected (not read once) so Settings flipping the
+                            // flag back re-enters onboarding on the next frame.
+                            val onboardingComplete by preferences.onboardingComplete
+                                .collectAsStateWithLifecycle(initialValue = null)
+                            when (onboardingComplete) {
+                                null -> Unit
+                                false -> OnboardingScreen(
+                                    onFinished = { pendingPostRoute = it }
+                                )
+                                true -> MonochromeNavHost(initialRoute = pendingPostRoute)
+                            }
                         }
                     }
                 }
@@ -337,6 +460,35 @@ class MainActivity : ComponentActivity() {
      * ACTION_DOWN only — ACTION_UP fires on every key release and would
      * double the step otherwise. A held key repeats ACTION_DOWN.
      */
+    /**
+     * Under the app-wide CRT's Curvature the picture is bowed but the screens
+     * under it are not: a tap goes to the spot on them that is seen under the
+     * finger, so a button near a corner is pressed where it shows. A gesture
+     * keeps the shape it started on, from the first finger down to the last up.
+     */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> gestureTube = appTube?.invoke()
+            // Turned off mid-gesture, the rest of it goes through flat; turned
+            // on mid-gesture, it waits for the next finger down.
+            else -> if (appTube == null) gestureTube = null
+        }
+        val tuning = gestureTube
+        if (ev.actionMasked == MotionEvent.ACTION_UP || ev.actionMasked == MotionEvent.ACTION_CANCEL) gestureTube = null
+        val bounds = appTubeBounds
+        if (tuning == null || !tuning.reshaped || bounds.isEmpty || !tf.monochrome.android.ui.glyph.tubeDrawable(appTubeLook)) {
+            return super.dispatchTouchEvent(ev)
+        }
+        val bent = tf.monochrome.android.ui.glyph.bentThroughTube(
+            ev, tuning, bounds.left, bounds.top, bounds.width(), bounds.height(),
+        )
+        return try {
+            super.dispatchTouchEvent(bent)
+        } finally {
+            bent.recycle()
+        }
+    }
+
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
@@ -372,21 +524,39 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Route auth callback deep-links: Spotify (tryptify://spotify-callback),
+     * Route what other apps send: an audio file opened with Tryptify, a
+     * listening party invite (the rooms server's https link), and the
+     * auth callback deep-links, Spotify (tryptify://spotify-callback),
      * Last.fm (tryptify://lastfm-callback) and Supabase
      * (tf.monotrypt.android://login-callback). Handled from BOTH
      * onNewIntent (app already running) and onCreate (cold start after process
      * death, where the redirect delivers the callback as the launch intent —
      * previously dropped, so login silently failed).
+     *
+     * Anything else is dropped. It all used to go to Supabase, so a song
+     * opened from a file manager showed as a failed sign-in.
      */
-    private fun handleDeepLinkIntent(intent: Intent?) {
+    private fun handleDeepLinkIntent(intent: Intent?, openFiles: Boolean = true) {
         val uri = intent?.data ?: return
+        if (intent.action != Intent.ACTION_VIEW) return
+        val scheme = uri.scheme?.lowercase()
+        if (scheme == "content" || scheme == "file") {
+            // Taken now, while this activity holds the permission to read it.
+            if (openFiles) openedAudio.open(uri, intent.type)
+            return
+        }
+        // A listening party invite. Only once, as a song opened is: rotated
+        // or reopened from Recents, the same link does not join again.
+        if (scheme == "https") {
+            if (openFiles) partyInvites.offer(uri)
+            return
+        }
         lifecycleScope.launch {
-            if (uri.scheme == "tryptify" && uri.host == "spotify-callback") {
+            if (scheme == "tryptify" && uri.host == "spotify-callback") {
                 spotifyAuthManager.handleCallback(uri)
-            } else if (uri.scheme == "tryptify" && uri.host == "lastfm-callback") {
+            } else if (scheme == "tryptify" && uri.host == "lastfm-callback") {
                 lastFmAuthManager.handleCallback(uri)
-            } else {
+            } else if (scheme == "tf.monotrypt.android") {
                 supabaseAuthManager.handleDeepLink(uri)
             }
         }

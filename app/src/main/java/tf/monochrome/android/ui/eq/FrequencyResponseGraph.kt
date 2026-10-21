@@ -95,6 +95,10 @@ fun FrequencyResponseGraph(
     // the active ear as primary, so without this the legend would label the
     // right ear's curves "L meas"/"L EQ" whenever the Right chip is selected.
     primaryIsRight: Boolean = false,
+    // Colour of each band's dot. Null keeps the gain colours (green boosts,
+    // red cuts); Precision AutoEQ passes its filter chips' colour so a dot
+    // and its chip match.
+    bandDotColor: ((EqBand) -> Color)? = null,
 ) {
     val primary = MaterialTheme.colorScheme.primary
 
@@ -436,7 +440,7 @@ fun FrequencyResponseGraph(
                 // Colour encodes what the band DOES — green boosts, red cuts,
                 // grey ≈ flat — instead of the old frequency-rainbow, which was
                 // decorative but said nothing about the band's effect.
-                val bandColor = when {
+                val bandColor = bandDotColor?.invoke(band) ?: when {
                     band.gain > 0.25f -> Color(0xFF4CAF50)
                     band.gain < -0.25f -> Color(0xFFE53935)
                     else -> Color(0xFF9E9E9E)

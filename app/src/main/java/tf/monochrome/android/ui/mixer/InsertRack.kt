@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.mixer
 
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.mixer.fxchain.FxPreset
 import tf.monochrome.android.ui.mixer.fxchain.FxPresetRow
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -49,7 +50,6 @@ import androidx.compose.ui.unit.sp
 import tf.monochrome.android.audio.dsp.DspEngineManager
 import tf.monochrome.android.audio.dsp.model.BusConfig
 import tf.monochrome.android.audio.dsp.model.PluginInstance
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.theme.MonoDimens
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
@@ -58,7 +58,7 @@ import tf.monochrome.android.R
  * FL Studio-style insert effect rack — right-side panel.
  *
  * Shows numbered effect slots for the selected bus, with inline
- * plugin parameter editing.  Uses liquidGlass surfaces and MaterialTheme
+ * plugin parameter editing.  Uses Material 3 surfaces and MaterialTheme
  * colours so it blends with the rest of the app's aesthetic.
  *
  * Matches the "Mixer – Insert N" panel from FL Studio's mixer layout.
@@ -94,9 +94,9 @@ fun InsertRack(
         modifier = modifier
             .fillMaxHeight()
             .width(200.dp)
-            .liquidGlass(
+            .materialSurface(
                 shape     = MonoDimens.shapeSm,
-                tintAlpha = 0.30f
+                tintAlpha = 0.30f,
             )
     ) {
         // ── Header ─────────────────────────────────────────────────────
@@ -202,7 +202,7 @@ fun InsertRack(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .liquidGlass(shape = MonoDimens.shapeSm, tintAlpha = if (bus.inputEnabled) 0.15f else 0.06f)
+                        .materialSurface(shape = MonoDimens.shapeSm, tintAlpha = if (bus.inputEnabled) 0.15f else 0.06f)
                         .clickable { onBusInputToggle(bus.index, !bus.inputEnabled) }
                         .padding(horizontal = MonoDimens.spacingSm, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -231,7 +231,7 @@ fun InsertRack(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .liquidGlass(shape = MonoDimens.shapeSm, tintAlpha = 0.10f)
+                            .materialSurface(shape = MonoDimens.shapeSm, tintAlpha = 0.10f)
                             .padding(horizontal = MonoDimens.spacingSm, vertical = 2.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -308,9 +308,9 @@ fun InsertRack(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .liquidGlass(
+                            .materialSurface(
                                 shape = MonoDimens.shapeSm,
-                                tintAlpha = if (takesInput) 0.15f else 0.06f
+                                tintAlpha = if (takesInput) 0.15f else 0.06f,
                             )
                             .clickable(enabled = !routed) {
                                 onBusInputToggle(mixBus.index, !mixBus.inputEnabled)
@@ -428,11 +428,9 @@ private fun InsertSlot(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .liquidGlass(
+            .materialSurface(
                 shape       = MonoDimens.shapeSm,
                 tintAlpha   = bgAlpha,
-                borderAlpha = if (isEditing) MonoDimens.glassBorderAlpha * 2f
-                else MonoDimens.glassBorderAlpha
             )
     ) {
         Box {
@@ -577,10 +575,9 @@ private fun InlinePluginEditor(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .liquidGlass(
+            .materialSurface(
                 shape       = MonoDimens.shapeSm,
                 tintAlpha   = 0.20f,
-                borderAlpha = MonoDimens.glassBorderAlpha * 2f
             )
             .padding(horizontal = MonoDimens.spacingSm, vertical = MonoDimens.spacingSm),
         verticalArrangement = Arrangement.spacedBy(4.dp)

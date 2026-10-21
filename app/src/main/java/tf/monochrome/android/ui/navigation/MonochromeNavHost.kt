@@ -1,6 +1,5 @@
 package tf.monochrome.android.ui.navigation
 
-import tf.monochrome.android.performance.LocalLowPerformance
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
@@ -64,7 +63,6 @@ import dev.chrisbanes.haze.rememberHazeState
 import tf.monochrome.android.ui.components.LocalGlassOverlayHost
 import tf.monochrome.android.ui.components.GlassOverlayLayer
 import tf.monochrome.android.ui.components.GlassOverlayHost
-import tf.monochrome.android.ui.components.liquidGlass
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -72,6 +70,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.drop
 import tf.monochrome.android.ui.components.MiniPlayer
 import tf.monochrome.android.ui.theme.ColorBlend
 import tf.monochrome.android.ui.theme.goToPage
@@ -99,8 +98,8 @@ import tf.monochrome.android.ui.player.NowPlayingScreen
 import tf.monochrome.android.ui.player.PlayerViewModel
 import tf.monochrome.android.ui.library.FolderBrowserScreen
 import tf.monochrome.android.ui.profile.ProfileScreen
-import tf.monochrome.android.ui.stats.ListeningStatsScreen
 import tf.monochrome.android.ui.stats.StatsScreen
+import tf.monochrome.android.ui.stats.StatsChartScreen
 import tf.monochrome.android.ui.search.SearchScreen
 import tf.monochrome.android.ui.theme.motionMillis
 import tf.monochrome.android.ui.settings.SettingsScreen
@@ -109,6 +108,7 @@ import tf.monochrome.android.ui.debug.DebugLogScreen
 import tf.monochrome.android.ui.crossfeed.CrossfeedScreen
 import tf.monochrome.android.ui.crossfeed.CrossfeedViewModel
 import tf.monochrome.android.ui.oxford.OxfordEffectsTabs
+import tf.monochrome.android.ui.glyph.GlyphRoute
 import tf.monochrome.android.ui.oxford.OxfordViewModel
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
@@ -118,6 +118,8 @@ sealed class Screen(val route: String) {
     data object Search : Screen("search")
     data object Discover : Screen("discover")
     data object GenreMap : Screen("discover/map")
+    /** The library galaxy: the music on this phone as a sky, artists as stars. */
+    data object LibraryGalaxy : Screen("library/galaxy")
     data object DiscoverDeck : Screen("discover/deck")
     data object DiscoverShelf : Screen("discover/shelf/{shelfId}") {
         fun createRoute(shelfId: String) = "discover/shelf/${android.net.Uri.encode(shelfId)}"
@@ -153,8 +155,15 @@ sealed class Screen(val route: String) {
     data object ParametricEq : Screen("parametric_eq")
     data object ParametricEqEdit : Screen("parametric_eq_edit")
     data object Profile : Screen("profile")
-    data object Stats : Screen("stats")
-    data object ListeningStats : Screen("listening_stats")
+
+    /** A listening party: everyone queues songs and hears the same moment. */
+    data object ListeningParty : Screen("listening_party")
+    data object Stats : Screen("stats?page={page}") {
+        /** page: 0 = Stats, 1 = Achievements (the unlocked pill's View). */
+        fun createRoute(page: Int = 0) = "stats?page=$page"
+    }
+    /** One Stats chart, opened to be looked at closely; see statsChartRoute. */
+    data object StatsChart : Screen("stats_chart/{chart}?range={range}")
     data object FolderBrowser : Screen("folder/{folderPath}") {
         // Uri.encode (not URLEncoder) so spaces become %20 not '+', and every
         // reserved char (incl. '/' and '%') is percent-encoded. Navigation
@@ -191,8 +200,18 @@ sealed class Screen(val route: String) {
     data object Crossfeed : Screen("crossfeed")
     data object DebugLog : Screen("debug_log")
     data object LyricsFxStudio : Screen("lyrics_fx_studio")
+    data object MusicLinks : Screen("music_links")
+    data object ThemeStore : Screen("theme_store")
+    data object ThemePackDetail : Screen("theme_pack/{packId}") {
+        fun createRoute(packId: String) = "theme_pack/${android.net.Uri.encode(packId)}"
+    }
+    data object ThemePublish : Screen("theme_publish")
+    data object LyricsEditor : Screen("lyrics_editor")
     data object AtmosRenderer : Screen("atmos_renderer")
     data object HrtfDatabase : Screen("hrtf_database")
+
+    /** StepMania Glyph: generated charts, gameplay and Training Ground. */
+    data object Glyph : Screen("glyph")
 }
 
 // The NavHost destinations the swipeable page list is drawn on. These are stubs
@@ -212,7 +231,11 @@ private val pagerRoutes =
 // compressor and inflator faders; car mode is a full-screen driving surface
 // with its own transport. Everywhere else the chrome stays — on pushed screens
 // too, the way Apple Music keeps its tab bar — and this list is the whole
-// exception.
+// exception for whole routes. A screen that needs the window for only part of
+// its life asks for it through HideAppChrome instead: the genre galaxy in full
+// screen, and Trypt Mania while a chart is played or practised (a mini player
+// over the receptor row would cover the one part of it the player is looking
+// at), though its song list, panels and results keep the bar like any menu.
 internal val chromeHiddenRoutes = setOf(
     Screen.NowPlaying.route,
     Screen.Mixer.route,
@@ -220,9 +243,26 @@ internal val chromeHiddenRoutes = setOf(
     Screen.CarMode.route,
 )
 
+/**
+ * Destinations that keep the tab bar but never the mini player: Trypt Mania,
+ * on every one of its screens, results included. GlyphRoute also asks for it
+ * (HideMiniPlayer), but that is an effect, a frame late and only as good as
+ * the order screens come and go in; the route is known before anything is
+ * composed, so the bar never shows there, even for a frame.
+ */
+internal val miniPlayerHiddenRoutes = setOf(
+    Screen.Glyph.route,
+)
+
 @Composable
 fun MonochromeNavHost(initialRoute: String? = null) {
     val navController = rememberNavController()
+    // The screen, for a native crash's report (CrashBreadcrumbs).
+    androidx.compose.runtime.LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collect {
+            tf.monochrome.android.debug.CrashBreadcrumbs.note("screen", it.destination.route)
+        }
+    }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
@@ -298,7 +338,9 @@ fun MonochromeNavHost(initialRoute: String? = null) {
     // The handle only — never its contents, which change on every composition
     // of the screen that holds it (see MiniBarHandle). The bar reads those.
     val miniHandle = miniPlayerSlot.handle
-    val showMiniPlayer = (currentTrack != null || miniHandle != null) && showChrome
+    // A screen can keep the tab bar and send the mini player away (Trypt Mania).
+    val showMiniPlayer = (currentTrack != null || miniHandle != null) && showChrome &&
+        !appChrome.miniPlayerHidden && currentDestination?.route !in miniPlayerHiddenRoutes
 
     val scope = rememberCoroutineScope()
 
@@ -378,6 +420,12 @@ fun MonochromeNavHost(initialRoute: String? = null) {
     // Set by a tap on Search and spent by the Search page's first composition,
     // so the keyboard comes up for a tap and not for coming back to results.
     var focusSearch by remember { mutableStateOf(false) }
+    val openMainPage: (String) -> Unit = { id ->
+        if (!isOnMainTab && !navController.popBackStack(Screen.Home.route, inclusive = false)) {
+            navController.navigate(Screen.Home.route)
+        }
+        selectPageWith(id, false)
+    }
     val onTab: (AppTab) -> Unit = { tab ->
         // A tab tapped from a pushed screen closes it, as in Apple Music: the
         // pager is only drawn while the NavHost is on "home".
@@ -477,11 +525,14 @@ fun MonochromeNavHost(initialRoute: String? = null) {
     // tab bar, and the mini player stacked over it. Lists pad by the expanded
     // height even while the bar is folded — following the fold would jolt them.
     // Taking turns, nothing is ever stacked: both states are one row high.
-    // "Remove liquid glass" swaps the floating glass chrome for a flat Material 3
-    // navigation bar docked at the bottom, with the mini player on it: see
-    // FlatTabChrome. That one stands on the system bar rather than floating
-    // above it, so it has its own height.
-    val flatChrome = LocalLowPerformance.current.disableLiquidGlass
+    // Without liquid glass the floating chrome is a flat Material 3 navigation
+    // bar docked at the bottom, with the mini player on it: see FlatTabChrome.
+    // That one stands on the system bar rather than floating above it, so it
+    // has its own height. Without liquid glass means "Remove liquid glass", the
+    // UI panels' own glass switched off in Visual Studio, or a phone that
+    // cannot run the shader (before Android 13). There is no frosted pane in
+    // between: the app is liquid glass or Material 3.
+    val flatChrome = !tf.monochrome.android.ui.player.rememberLiquidGlassAvailable(miniPlayerGlass)
     val chromeHeight = when {
         !showChrome -> 0.dp
         flatChrome && showMiniPlayer -> FLAT_NAV_BAR_HEIGHT + CHROME_GAP + MINI_PLAYER_HEIGHT
@@ -524,8 +575,16 @@ fun MonochromeNavHost(initialRoute: String? = null) {
         // 3-button navigation, which the height-bound artwork paid for.
         // World radio used to be here. It is a pager page now, and the pager
         // is already full-bleed — this list is only about NavHost destinations.
+        //
+        // And whatever screen has asked for the whole window (HideAppChrome)
+        // has it down to the bottom edge while it holds it: Trypt Mania's
+        // playfield is black in every theme, and stopped above the system bar
+        // it left a strip of theme background under the lanes — a white one
+        // on a light theme. Such a screen pads the system bar itself.
         val fullBleedRoute = currentDestination?.route == Screen.GenreMap.route ||
-            currentDestination?.route == Screen.NowPlaying.route
+            currentDestination?.route == Screen.LibraryGalaxy.route ||
+            currentDestination?.route == Screen.NowPlaying.route ||
+            appChrome.hidden
 
         // Every screen runs *under* the mini player. Reserving the bar's height
         // out here letterboxed them: the strip behind the bar was flat theme
@@ -548,6 +607,105 @@ fun MonochromeNavHost(initialRoute: String? = null) {
         // so coming back to Library would reset to the Overview sub-tab and
         // scroll to the top.
         val tabStateHolder = rememberSaveableStateHolder()
+        // Hold a song to hear it: one preview player for every list's rows.
+        val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
+        val songPreview = remember(appContext) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                appContext,
+                tf.monochrome.android.player.preview.SongPreviewEntryPoint::class.java,
+            ).songPreview()
+        }
+        // Every song menu's and selection's "Find album art", and how it went.
+        val albumArt = remember(appContext) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                appContext,
+                tf.monochrome.android.data.local.art.AlbumArtEntryPoint::class.java,
+            ).albumArtFinder()
+        }
+        val findAlbumArt: (List<tf.monochrome.android.data.local.art.ArtRequest>) -> Unit = remember(albumArt) {
+            { songs ->
+                albumArt.find(songs)
+                android.widget.Toast.makeText(appContext, appContext.getString(R.string.art_looking), android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+        androidx.compose.runtime.LaunchedEffect(albumArt) {
+            albumArt.outcomes.collect { o ->
+                val text = when {
+                    o.total > 1 -> appContext.resources.getQuantityString(R.plurals.art_found_many, o.total, o.found, o.total)
+                    o.found == 1 -> appContext.getString(R.string.art_found_one)
+                    o.ownCover == 1 -> appContext.getString(R.string.art_own_one)
+                    else -> appContext.getString(R.string.art_none_one)
+                }
+                android.widget.Toast.makeText(appContext, text, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+        // Every local song menu's "Upload to Tryptify Cloud", and how it went.
+        val cloudUploads = remember(appContext) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                appContext,
+                tf.monochrome.android.data.cloud.CloudEntryPoint::class.java,
+            ).cloudUploads()
+        }
+        val uploadToCloud: (String) -> Unit = remember(cloudUploads) {
+            { path ->
+                cloudUploads.enqueue(path)
+                android.widget.Toast.makeText(appContext, appContext.getString(R.string.cloud_upload_queued), android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+        androidx.compose.runtime.LaunchedEffect(cloudUploads) {
+            // drop(1): the value already there was toasted when it happened.
+            cloudUploads.last.drop(1).collect { r ->
+                if (r == null) return@collect
+                val text = if (r.error == null) appContext.getString(R.string.cloud_uploaded, r.title)
+                else appContext.getString(R.string.cloud_upload_failed_toast, r.title)
+                android.widget.Toast.makeText(appContext, text, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+        // Every song menu's "Add to party", while a party is on.
+        val party = remember(appContext) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                appContext,
+                tf.monochrome.android.party.PartyEntryPoint::class.java,
+            ).partyController()
+        }
+        val partyOn by party.active.collectAsStateWithLifecycle()
+        // A party invite opened from a link goes to the party screen, which joins it.
+        val partyInvites = remember(appContext) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                appContext,
+                tf.monochrome.android.party.PartyEntryPoint::class.java,
+            ).partyInvites()
+        }
+        val invite by partyInvites.code.collectAsStateWithLifecycle()
+        LaunchedEffect(invite) {
+            if (invite != null) navController.navigate(Screen.ListeningParty.route) { launchSingleTop = true }
+        }
+        val addToParty: ((tf.monochrome.android.domain.model.Track, String?) -> Unit)? =
+            if (partyOn) remember(party) { { track, file -> party.add(track, file) } } else null
+        val partyAdder: tf.monochrome.android.ui.party.PartyAdder? = if (partyOn) {
+            remember(party, appContext) {
+                val said: (Int) -> Unit = { n ->
+                    if (n > 0) {
+                        android.widget.Toast.makeText(
+                            appContext,
+                            appContext.resources.getQuantityString(R.plurals.party_added_many, n, n),
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                }
+                tf.monochrome.android.ui.party.PartyAdder(
+                    addTracks = { tracks -> party.addAll(tracks); said(tracks.size) },
+                    addUnified = { tracks -> party.addAllUnified(tracks); said(tracks.size) },
+                )
+            }
+        } else null
+        val playInTryptMania: (tf.monochrome.android.glyph.data.TryptManiaRequest) -> Unit =
+            remember(navController) {
+                { request ->
+                    tf.monochrome.android.glyph.data.TryptManiaRequests.send(request)
+                    navController.navigateTool(Screen.Glyph)
+                }
+            }
 
         CompositionLocalProvider(
             // A pushed screen stops above the system bar (the NavHost is padded
@@ -567,6 +725,14 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             LocalGlassOverlayHost provides glassOverlayHost,
             tf.monochrome.android.ui.components.LocalMiniPlayerSlot provides miniPlayerSlot,
             tf.monochrome.android.ui.components.LocalAppChrome provides appChrome,
+            // Every song menu's "Play in Trypt Mania": the request handed over,
+            // and the mode opened to take it.
+            tf.monochrome.android.ui.components.LocalPlayInTryptMania provides playInTryptMania,
+            tf.monochrome.android.ui.party.LocalAddToParty provides addToParty,
+            tf.monochrome.android.ui.party.LocalPartyAdder provides partyAdder,
+            tf.monochrome.android.ui.components.LocalFindAlbumArt provides findAlbumArt,
+            tf.monochrome.android.ui.components.LocalUploadToCloud provides uploadToCloud,
+            tf.monochrome.android.ui.components.LocalSongPreview provides songPreview,
         ) {
         Box(modifier = Modifier.fillMaxSize().hazeSource(hazeState).nestedScroll(collapseOnScroll)) {
             // Pager for main tabs — fills entire screen
@@ -664,6 +830,14 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 composable(Screen.GenreMap.route) {
                     tf.monochrome.android.devedit.DevEditScreen("genre_map") {
                         GenreMapScreen(
+                            navController = navController,
+                            playerViewModel = playerViewModel,
+                        )
+                    }
+                }
+                composable(Screen.LibraryGalaxy.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("library_galaxy") {
+                        tf.monochrome.android.ui.library.galaxy.LibraryMapScreen(
                             navController = navController,
                             playerViewModel = playerViewModel,
                         )
@@ -784,6 +958,14 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                         CarModeScreen(navController = navController)
                     }
                 }
+                composable(Screen.Glyph.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("glyph") {
+                        GlyphRoute(
+                            onBack = { navController.popBackStack() },
+                            onSignIn = { navController.navigate(Screen.Profile.route) },
+                        )
+                    }
+                }
                 composable(Screen.DebugLog.route) {
                     tf.monochrome.android.devedit.DevEditScreen("debug_log") {
                         DebugLogScreen(navController = navController)
@@ -793,6 +975,33 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                     tf.monochrome.android.devedit.DevEditScreen("lyrics_fx_studio") {
                         tf.monochrome.android.ui.settings.LyricsFxStudioScreen(navController = navController)
                     }
+                }
+                composable(Screen.MusicLinks.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("music_links") {
+                        tf.monochrome.android.ui.musiclinks.MusicLinksScreen(navController = navController)
+                    }
+                }
+                composable(Screen.ThemeStore.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("theme_store") {
+                        tf.monochrome.android.ui.themestore.ThemeStoreScreen(navController = navController)
+                    }
+                }
+                composable(
+                    route = Screen.ThemePackDetail.route,
+                    arguments = listOf(navArgument("packId") { type = NavType.StringType }),
+                ) {
+                    tf.monochrome.android.devedit.DevEditScreen("theme_pack") {
+                        tf.monochrome.android.ui.themestore.ThemePackScreen(navController = navController)
+                    }
+                }
+                composable(Screen.ThemePublish.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("theme_publish") {
+                        tf.monochrome.android.ui.themestore.ThemePublishScreen(navController = navController)
+                    }
+                }
+                composable(Screen.LyricsEditor.route) {
+                    // The shared player: the editor plays, seeks and stamps the song that is on.
+                    tf.monochrome.android.ui.lyrics.LyricsEditorScreen(navController = navController, playerViewModel = playerViewModel)
                 }
                 composable(Screen.AtmosRenderer.route) {
                     tf.monochrome.android.devedit.DevEditScreen("atmos_renderer") {
@@ -841,14 +1050,38 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                         ProfileScreen(navController = navController)
                     }
                 }
-                composable(Screen.Stats.route) {
-                    tf.monochrome.android.devedit.DevEditScreen("stats") {
-                        StatsScreen(navController = navController)
+                composable(Screen.ListeningParty.route) {
+                    tf.monochrome.android.devedit.DevEditScreen("listening_party") {
+                        tf.monochrome.android.ui.party.PartyScreen(
+                            onBack = { navController.popBackStack() },
+                            onSignIn = { navController.navigate(Screen.Profile.route) },
+                        )
                     }
                 }
-                composable(Screen.ListeningStats.route) {
-                    tf.monochrome.android.devedit.DevEditScreen("listening_stats") {
-                        ListeningStatsScreen(onBack = { navController.popBackStackSafe() })
+                composable(
+                    route = Screen.Stats.route,
+                    arguments = listOf(navArgument("page") { type = NavType.IntType; defaultValue = 0 }),
+                ) { entry ->
+                    tf.monochrome.android.devedit.DevEditScreen("stats") {
+                        StatsScreen(
+                            navController = navController,
+                            onOpenPage = openMainPage,
+                            initialPage = entry.arguments?.getInt("page") ?: 0,
+                        )
+                    }
+                }
+                composable(
+                    route = Screen.StatsChart.route,
+                    arguments = listOf(
+                        navArgument("chart") { type = NavType.StringType },
+                        navArgument("range") { type = NavType.StringType; defaultValue = "Month" },
+                    ),
+                ) { backStackEntry ->
+                    val chart = backStackEntry.arguments?.getString("chart")
+                        ?.let { name -> tf.monochrome.android.ui.stats.StatsChart.entries.firstOrNull { it.name == name } }
+                        ?: tf.monochrome.android.ui.stats.StatsChart.MINUTES
+                    tf.monochrome.android.devedit.DevEditScreen("stats_chart") {
+                        StatsChartScreen(navController = navController, chart = chart)
                     }
                 }
                 composable(
@@ -978,6 +1211,7 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                     DynamicColorScope {
                         CompositionLocalProvider(
                             tf.monochrome.android.ui.player.LocalPlayerGlass provides miniPlayerGlass,
+                            tf.monochrome.android.ui.player.LocalGlassArea provides tf.monochrome.android.domain.model.LinkArea.PANELS,
                         ) {
                             MiniPlayer(
                                 track = currentTrack,
@@ -1005,18 +1239,26 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 }
             } else null
 
+            // While a party is on, a round button back to it, over Search; the
+            // mini player gives up its width for it. Gone when the party is.
+            val onParty: (() -> Unit)? = if (partyOn) {
+                { navController.navigateTool(Screen.ListeningParty) }
+            } else null
+            val atParty = currentDestination?.route == Screen.ListeningParty.route
             if (flatChrome) {
                 FlatTabChrome(
                     tabs = pillTabs(pages, navBarSlots),
                     selected = tabFor(currentPageId, navBarSlots),
                     onTab = onTab,
                     miniPlayer = miniPlayer,
+                    onParty = onParty,
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             } else CompositionLocalProvider(
                 // The bar is the app's chrome, so it is the mini player's
                 // material — see LocalMiniPlayerGlass.
                 tf.monochrome.android.ui.player.LocalPlayerGlass provides miniPlayerGlass,
+                tf.monochrome.android.ui.player.LocalGlassArea provides tf.monochrome.android.domain.model.LinkArea.PANELS,
             ) {
                 TabChrome(
                     tabs = pillTabs(pages, navBarSlots),
@@ -1041,6 +1283,8 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                     stackMiniPlayer = !miniPlayerHideWithTabs,
                     hazeState = hazeState,
                     miniPlayer = miniPlayer,
+                    onParty = onParty,
+                    atParty = atParty,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = navBarHeight + CHROME_GAP),
@@ -1095,6 +1339,8 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             host = glassOverlayHost,
             hazeState = hazeState,
             glass = miniPlayerGlass,
+            // The song menu sits above the bar rather than over its buttons.
+            bottomClearance = chromeHeightNow,
         )
 
         // The USB DAC's volume, shown by the volume keys while one plays in
@@ -1109,8 +1355,33 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             onMute = playerViewModel::setDacMuted,
             hazeState = hazeState,
             glass = miniPlayerGlass,
-            // The full player carries the bar itself.
-            suppressed = currentDestination?.route == Screen.NowPlaying.route,
+            modifier = Modifier.align(Alignment.TopCenter),
+        )
+
+        // An achievement just completed: a pill over whatever is open, the
+        // same chrome and haze as the DAC popup above. View opens it.
+        tf.monochrome.android.ui.stats.rememberAchievementWatcher()?.let { watcher ->
+            val pendingAchievements by watcher.pending.collectAsStateWithLifecycle()
+            tf.monochrome.android.ui.stats.AchievementUnlockedPill(
+                pending = pendingAchievements,
+                onShown = watcher::shown,
+                onView = { navController.navigateTool(Screen.Stats, Screen.Stats.createRoute(page = 1)) },
+                hazeState = hazeState,
+                glass = miniPlayerGlass,
+                reducedMotion = tf.monochrome.android.ui.theme.reduceMotion(),
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
+        // A song opened from another app: it plays at once, and this pill
+        // offers to keep it in the library (or says why it could not open).
+        val openedFile by playerViewModel.openedFile.collectAsStateWithLifecycle()
+        tf.monochrome.android.ui.opened.OpenedFilePill(
+            opened = openedFile,
+            onTake = playerViewModel::takeOpenedFile,
+            onAdd = playerViewModel::addOpenedToLibrary,
+            hazeState = hazeState,
+            glass = miniPlayerGlass,
+            reducedMotion = tf.monochrome.android.ui.theme.reduceMotion(),
             modifier = Modifier.align(Alignment.TopCenter),
         )
     }
@@ -1143,15 +1414,37 @@ private fun FlatTabChrome(
     selected: AppTab,
     onTab: (AppTab) -> Unit,
     miniPlayer: (@Composable (Modifier) -> Unit)?,
+    onParty: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        miniPlayer?.invoke(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .padding(bottom = CHROME_GAP),
-        )
+        if (onParty == null) {
+            miniPlayer?.invoke(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .padding(bottom = CHROME_GAP),
+            )
+        } else {
+            // The party's way back beside the mini player, flat as it is.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = CHROME_GAP),
+                horizontalArrangement = Arrangement.spacedBy(CHROME_GAP),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (miniPlayer != null) miniPlayer(Modifier.weight(1f)) else Spacer(Modifier.weight(1f))
+                androidx.compose.material3.FilledTonalIconButton(
+                    onClick = onParty,
+                    modifier = Modifier.size(56.dp),
+                ) {
+                    androidx.compose.material3.Icon(
+                        painter = androidx.compose.ui.res.painterResource(AppTab.PARTY.glyph),
+                        contentDescription = androidx.compose.ui.res.stringResource(AppTab.PARTY.label),
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
+        }
         NavigationBar {
             (tabs + AppTab.SEARCH).forEach { tab ->
                 val label = androidx.compose.ui.res.stringResource(tab.label)
@@ -1201,16 +1494,32 @@ private fun TabChrome(
     stackMiniPlayer: Boolean,
     hazeState: dev.chrisbanes.haze.HazeState,
     miniPlayer: (@Composable (Modifier) -> Unit)?,
+    onParty: (() -> Unit)?,
+    atParty: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val foldMillis = motionMillis(240)
+    // The party's round button: Search's glass, its glyph lit on the party screen.
+    val partyButton: (@Composable () -> Unit)? = onParty?.let { open ->
+        {
+            GlassTabBar(
+                tabs = listOf(AppTab.PARTY),
+                selected = if (atParty) AppTab.PARTY else null,
+                onSelect = { open() },
+                accent = accent,
+                hazeState = hazeState,
+                showLabels = false,
+                modifier = Modifier.width(TabBarHeight),
+            )
+        }
+    }
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(CHROME_GAP),
     ) {
         AnimatedVisibility(
-            visible = miniPlayer != null && !collapsed && stackMiniPlayer,
+            visible = (miniPlayer != null || partyButton != null) && !collapsed && stackMiniPlayer,
             // clip = false: the bar casts a glass shadow past its own bounds,
             // and expand/shrink clip to them by default, which cut the spill
             // off. The bar's own content is still clipped to its rounded
@@ -1218,12 +1527,31 @@ private fun TabChrome(
             enter = fadeIn(tween(foldMillis)) + expandVertically(tween(foldMillis), clip = false),
             exit = fadeOut(tween(foldMillis)) + shrinkVertically(tween(foldMillis), clip = false),
         ) {
-            miniPlayer?.invoke(Modifier.fillMaxWidth())
+            if (partyButton == null) {
+                miniPlayer?.invoke(Modifier.fillMaxWidth())
+            } else {
+                // At a party the row splits: the mini player shortens, and the
+                // party's button stands over Search, the same width.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(CHROME_GAP),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (miniPlayer != null) miniPlayer(Modifier.weight(1f)) else Spacer(Modifier.weight(1f))
+                    partyButton()
+                }
+            }
         }
+        // The two rows never share the screen at half strength: the one going
+        // fades out first, then the one coming fades in. Crossfaded, the full
+        // bar's slab and its shadow sat at half opacity behind the folded pill
+        // and the mini player for a quarter of a second, a grey slab across the
+        // bottom with every fold (seen on device).
+        val outMillis = foldMillis * 2 / 5
         AnimatedContent(
             targetState = collapsed,
             transitionSpec = {
-                fadeIn(tween(foldMillis)) togetherWith fadeOut(tween(foldMillis)) using
+                fadeIn(tween(foldMillis - outMillis, delayMillis = outMillis)) togetherWith
+                    fadeOut(tween(outMillis)) using
                     SizeTransform(clip = false)
             },
             label = "tabChromeFold",
@@ -1246,6 +1574,8 @@ private fun TabChrome(
                         modifier = Modifier.width(TabBarHeight),
                     )
                     miniPlayer(Modifier.weight(1f))
+                    // Folded, the party's button sits between it and Search.
+                    partyButton?.invoke()
                 } else {
                     GlassTabBar(
                         tabs = tabs,
@@ -1255,6 +1585,9 @@ private fun TabChrome(
                         hazeState = hazeState,
                         modifier = Modifier.weight(1f),
                     )
+                    // Taking turns, the open bar has no mini player row to
+                    // share, so the party's button joins the tabs' row.
+                    if (!stackMiniPlayer) partyButton?.invoke()
                 }
                 GlassTabBar(
                     tabs = listOf(AppTab.SEARCH),

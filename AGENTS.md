@@ -1,33 +1,36 @@
 # Tryptify — notes for agents
 
-`CLAUDE.md` is gitignored in this repo, so anything that has to survive a fresh
-clone lives here or under `docs/`.
+Project notes live here and under `docs/`. `CLAUDE.md` imports this file and
+adds the owner's standing rules (branch, secrets, how to report back).
 
 ## Read before changing the UI
 
 **[`docs/ui-invariants.md`](docs/ui-invariants.md)** — the current, accepted look,
 written as invariants with the failure each one prevents.
 
-Read it before touching glass, search bars, press feedback, themes, the globe's
-land fill, or the Discord presence artwork. Every rule in it is a bug that was
-already found and fixed; none of them are obvious from the code, which is exactly
-why they kept getting undone. A slab drawn at a tenth opacity looks like a
-deliberate choice. A haze pane under a button looks like an improvement. A search
-bar laid out inline looks perfectly ordinary.
+Read it before touching glass, the lyrics' glass and god rays, music links,
+titles and text on glass, search bars, press feedback, pages and the tab bar,
+list rows, themes and Theme Store pictures, the globe, the galaxies, stats
+charts, Trypt Mania (its menus, playfield and the CRT effect), or the Discord
+presence artwork. Every rule in it is a bug that was already found and fixed;
+none of them are obvious from the code, which is exactly why they kept getting
+undone. A slab drawn at a tenth opacity looks like a deliberate choice. A
+frosted pane behind a list row looks like an improvement. A search bar laid out
+inline looks perfectly ordinary.
 
-The build those rules describe is commit `5ec5b072`. If something looks wrong and
-you are not sure whether it changed, diff against it:
+The build those rules describe is commit `281c07a2` (1.9.4). If something looks
+wrong and you are not sure whether it changed, diff against it:
 
 ```
-git diff 5ec5b072 -- app/src/main/java/tf/monochrome/android/ui
+git diff 281c07a2 -- app/src/main/java/tf/monochrome/android/ui
 ```
 
 ## Route the work before starting
 
 **[`docs/agent-playbook.md`](docs/agent-playbook.md)** — per-area playbooks, each
-with a workflow and completion gates: Glass Surfaces, Realtime Audio, Playback
-Routing, Radio Ranking, and the engineering gates for build upgrades, shrinking
-and intent security.
+with a workflow and completion gates: Glass Surfaces, Music Links, Realtime
+Audio, Playback Routing, Radio Ranking, Cloud Sync, Trypt Mania, and the
+engineering gates for build upgrades, shrinking and intent security.
 
 Read the section that matches what you are touching before you touch it. The
 playbook also carries a re-verified list of known review targets — places where
@@ -64,11 +67,118 @@ files that nothing ever opened.
 The native DSP has host tests that build with the desktop compiler, no
 device or NDK needed — the multichannel mixer, the Oxford stages at Atmos
 widths, the WSOLA shifter, the EBU R128 loudness meter (against EBU Tech
-3341/3342's reference signals) and the spectrum waterfall's geometry:
+3341/3342's reference signals), the dynamic range meter (against signals whose
+DR is known by hand), the spectrum waterfall's geometry and the knobs' music
+links (`mod_route_test`, held to the same numbers as the Kotlin
+`MusicLinkFollowerTest`). The same script runs the USB DAC bypass driver
+against stubbed libusb (`usb/tests/`), which needs the `third_party/libusb`
+submodule and is skipped without it:
 
 ```
 app/src/main/cpp/dsp/tests/run_host_tests.sh
 ```
+
+Two more native suites are CMake projects of their own, built and run on the
+desktop the same way: the Atmos renderer's (`atmos/tests/`, sixteen tests; the
+script above runs only `channel_placer_test` from it) and Trypt Mania's game
+engine (`glyph/tests/`, held to the same rules as its Kotlin twin):
+
+```
+cmake -S app/src/main/cpp/atmos/tests -B build/atmos-tests
+cmake --build build/atmos-tests && ctest --test-dir build/atmos-tests --output-on-failure
+cmake -S app/src/main/cpp/glyph/tests -B build/glyph-tests
+cmake --build build/glyph-tests && ctest --test-dir build/glyph-tests --output-on-failure
+```
+
+Nothing runs any of these automatically: the one CI workflow
+(`.github/workflows/main.yml`) only builds and signs a release.
+
+## Strings
+
+Every user-facing string is a row of `app/l10n/strings.tsv`, one column per
+language. The eight `strings.xml` files are generated from it by
+`python3 app/l10n/generate_strings.py` and are never edited by hand: the next
+run rewrites them from the table, so a string added only to the XML vanishes
+and a rewording made only there reverts. `StringResourcesTest` fails when the
+XML and the table disagree. Names that are never translated (`app_name`,
+`trypt_mania`) are listed in the script's `NON_TRANSLATABLE`. Plurals are rows
+whose key ends `#one`, `#other` and so on, and the script refuses a row with
+an empty language. Recurring terms (tab names, settings paths) are fixed in
+`app/l10n/GLOSSARY.md`; reuse its row, or add one first.
+
+## Trypt Mania's StepMania art
+
+The retro noteskin (`assets/stepmania/skins/retro`) and the default theme's
+judgement, grade and full-combo art with its typefaces
+(`assets/stepmania/theme`) are cut from a StepMania checkout by
+`tools/stepmania_skin/build_retro_skin.py` and `build_theme.py`. Regenerate
+them with those scripts rather than editing the PNGs; each writes the licence
+StepMania's notice requires next to the art.
+
+## Trypt Mania's built-in servers are build secrets
+
+A release can ship with two TryptMania Parser servers built in. Each address
+carries a secret path, so it comes only from the gitignored `local.properties`
+or the environment, never from the repository (`app/build.gradle.kts`):
+
+| `local.properties` key | or environment variable | becomes | what it is |
+|---|---|---|---|
+| `tryptmania.cpuServer` | `TRYPTMANIA_CPU_SERVER` | `BuildConfig.BUILT_IN_CPU_SERVER` | the chart server (Slow mode, a CPU server; it also times lyrics) |
+| `tryptmania.roomsServer` | `TRYPTMANIA_ROOMS_SERVER` | `BuildConfig.BUILT_IN_ROOMS_SERVER` | the multiplayer rooms server |
+
+The `local.properties` key wins over the variable. A release build for the
+owner needs both. Without them the app still builds and runs, but nothing is
+built in: no server is added under Settings › Connections, charting waits until
+the listener adds one there, and multiplayer has no rooms server. With them,
+`BuiltInServer` puts each one back in that list on every read, and the list
+shows only its host.
+
+Never print, log or commit the values, and never write them into a document, a
+test, a commit message or a chat reply. Anyone with the APK can dig them out;
+the repository must not hand them out as well. To check without showing a
+value:
+
+```
+cut -d= -f1 local.properties     # the key names only
+f=app/build/generated/source/buildConfig/release/tf/monochrome/android/BuildConfig.java
+grep -c 'BUILT_IN_CPU_SERVER = ""' $f; grep -c 'BUILT_IN_ROOMS_SERVER = ""' $f
+```
+
+After a release build, each `grep` prints `1` when that server was left out and
+`0` when it is built in. The cloud setup below writes `local.properties` with
+`>`, which replaces the file, so add these keys after it, not before. The CI
+workflow sets neither variable, so an APK it builds has no built-in servers.
+
+The other settings `local.properties` can override (`spotify.clientId`,
+`themeStore.url`, `lastfm.apiKey`) are public and have committed defaults.
+They are not secrets, but the rule for `local.properties` stays the same: it is
+never committed.
+
+## A listener's Subsonic server is a device secret
+
+Settings › Connections › Music server stores one Subsonic server
+(`data/subsonic/`) in the DataStore key `subsonic_server`, deliberately not in
+`SETTINGS_SYNC_KEYS`, like the Discord token. It holds a token and salt, never
+the password, unless the server refuses tokens (API older than 1.13.0, or error
+41/42), and then the password's hex. Keep that sign-in out of everything that
+leaves the app or is written down: `PlaybackSource.Subsonic` holds only the
+song id (the stream URL is built in `StreamResolver` at play time), and artwork
+is a `subsonic-cover://` reference resolved only by the app's own Coil
+(`SubsonicCoverMapper`). `SubsonicTest` checks that nothing mapped from a server
+contains the token or the password.
+
+## Tryptify Cloud
+
+The paid music storage. The server is `server/cloud` (a Cloudflare Worker with
+D1 and R2, PolyForm Noncommercial; see its README). The app side is
+`data/cloud/` and Settings › Connections › Tryptify Cloud. Its address is
+`BuildConfig.TRYPTIFY_CLOUD_URL`, overridable with `tryptifyCloud.url` in
+`local.properties`. Like the Theme Store, it holds no secret: calls carry the
+Supabase session.
+
+The cloud is played by saving it as the Subsonic server, with a device
+password from `POST /v1/subsonic-keys`, so everything above about that server
+applies. `CloudTest` holds the app to the server's error codes and JSON.
 
 ## projectM is patched, and its presets are scanned
 
@@ -85,7 +195,7 @@ those fixes applied. The app never loads them. It is generated by
 under AddressSanitizer on a headless GLES context. Rerun it whenever projectM,
 the patches or the preset pack change.
 
-Several tests exist specifically to hold the invariants above — `LightSchemesTest`,
+Several tests exist specifically to hold the UI invariants — `LightSchemesTest`,
 `CustomSchemeTest`, `GlobeLandClipTest`, `SettingsSearchIndexTest`. They are the
 guarantee, not a formality. If one fails, fix the code; do not loosen the
 threshold.
@@ -116,29 +226,36 @@ Release signing needs the keystore, which is never committed. The owner
 uploads `tryptify-release.jks` and its password note into the session; copy
 the `.jks` outside the repo and write a `keystore.properties` in the repo root
 (gitignored) with `storeFile`, `storePassword`, `keyAlias=tryptify` and
-`keyPassword`. Without that file `assembleRelease` does not fail: it builds an
-APK signed with the debug key, which will not install over a released build.
-Check that the signing certificate's SHA-256 starts `70:96:05:04` before handing
-an APK over.
+`keyPassword`. Without that file `assembleRelease` does not fail: the release
+build type is left with no signing config, so it writes an unsigned
+`app-release-unsigned.apk` (the build file says the same), which will not
+install. Check that the signing certificate's SHA-256 starts `70:96:05:04`
+before handing an APK over. For Trypt Mania's servers, see the section above.
 
 ## Baseline profile
 
-`:app` ships `androidx.profileinstaller`, and until now the only profiles it had
-to install were the ones the AndroidX libraries ship — nothing described this
-app's own startup, nav host or list rows. `:baselineprofile` is the module that
-records that. It needs a **connected device or emulator**, because the only way
-to know which code is hot is to run it:
+`:app` ships `androidx.profileinstaller`, but the only profiles it has to
+install are the ones the AndroidX libraries ship — nothing describes this
+app's own startup, nav host or list rows yet. `:baselineprofile` is the module
+that records that. The only way to know which code is hot is to run it, so it
+needs an emulator or a phone:
 
 ```
 ./gradlew :app:generateBaselineProfile
 ```
 
-The result lands in `app/src/release/generated/baselineProfiles/` and is
-**committed** — it is an input to the release build, not an artifact, so a
-release does not depend on someone having a phone plugged in. `.gitignore` has
-a blanket `*.txt`, so there is an explicit negation for that path; if you move
-the output, move the negation with it or the profile will vanish silently and
-the build will still succeed.
+By default it starts two Gradle-managed AOSP emulators of its own (Pixel 6 on
+API 34, and Pixel 5 on API 30 for the branches older Android versions take) and
+merges what both record. `-Pbaselineprofile.device=connected` uses a plugged-in
+phone instead.
+
+The result lands in `app/src/release/generated/baselineProfiles/` and is meant
+to be **committed**: it is an input to the release build, not an artifact, so a
+release does not depend on someone having a phone plugged in. At 1.9.4 nothing
+has been committed there yet. `.gitignore`'s text-file rule is anchored to the
+repository root (`/*.txt`), so that path is not ignored and needs no negation;
+an unanchored `*.txt` would make the profile vanish silently while the build
+still succeeds.
 
 Needs the submodules, like anything else that assembles an APK.
 
@@ -151,9 +268,9 @@ stale profile is not wrong, only progressively less useful.
 
 ## Sending files to the owner
 
-The file upload limit is 30 MiB per file, so anything over 30 MB (a release APK
-is about 87 MB) goes as **zip parts**, never as one file and never left
-undelivered:
+The file upload limit is 30 MiB per file, so anything over 30 MB (the 1.9.4
+release APK is about 94 MB) goes as **zip parts**, never as one file and never
+left undelivered:
 
 ```
 zip -q -0 Tryptify-<version>-release.zip app-release.apk   # -0: an APK is already compressed
@@ -170,6 +287,36 @@ MiXplorer on Android, 7-Zip on Windows), or `cat *.zip.0* > joined.zip`.
 Do not use Info-ZIP's own split (`zip -s`, giving `.z01`, `.z02`, `.zip`). It
 failed that round trip here — the rejoined archive was corrupt and the APK in it
 was not the one built — and Android extractors handle it poorly anyway.
+
+## Theme Store server
+
+The Theme Store does not live in Supabase. Its API is
+[`server/theme-store/index.ts`](server/theme-store/README.md), a single-file
+Railway Function (Bun) in project humble-charm with its own Railway Postgres.
+Sign-in stays Supabase: the app sends the session's access token, and the
+server verifies it against the project's public JWKS, or asks Supabase Auth
+when the token was signed with the shared secret. It holds no secret.
+
+Railway does not deploy it from this repository. Change `index.ts`, run its
+test (`bun run test.ts` against a local Postgres, see the README), then replace
+the function's code with the whole file. `ThemeStoreWireTest` holds the app and
+the server to the same theme parts, pack and picture size caps, and error codes.
+
+## Tryptify Cloud server
+
+The paid music storage's API is [`server/cloud/`](server/cloud/README.md): a
+Cloudflare Worker with a D1 database, Creem for payments, Supabase sign-in.
+PolyForm Noncommercial, unlike the rest of the repository. Its money rules
+are in `src/rules.ts` and held by `test.ts` (`bun run test.ts`), including the
+worst-case pricing check. Deploy with `npx wrangler deploy` after the tests
+pass; secrets live only in the Worker.
+
+## Website
+
+[`site/`](site/README.md) is the public site (app, Tryptify Cloud and its
+pricing, Terms, Privacy, Refunds, Contact), static files on Cloudflare. Its
+prices and grace periods repeat `server/cloud/src/rules.ts`: change both
+together.
 
 ## Commits
 

@@ -1,8 +1,10 @@
 package tf.monochrome.android.ui.library
 
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -53,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
@@ -64,7 +67,6 @@ import coil3.compose.AsyncImage
 import tf.monochrome.android.domain.model.UnifiedTrack
 import tf.monochrome.android.ui.components.FastScroller
 import tf.monochrome.android.ui.components.bounceCombinedClick
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.components.TrackArtistAlbumLine
 import tf.monochrome.android.ui.theme.MonoDimens
 import tf.monochrome.android.ui.components.UnifiedTrackContextMenuHost
@@ -82,6 +84,9 @@ import tf.monochrome.android.ui.components.SearchAction
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.player.preview.SongPreview
+import tf.monochrome.android.ui.components.rememberHoldToPreview
+import tf.monochrome.android.ui.components.songPreviewHold
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -140,13 +145,49 @@ fun FolderBrowserScreen(
     // The subfolder whose long-press menu is open, by path.
     var menuFolder by remember { mutableStateOf<String?>(null) }
 
+    // Multi-select, begun from a song's menu ("Select"): taps then add and
+    // remove songs, and the bar acts on all of them at once.
+    val selection = tf.monochrome.android.ui.components.rememberTrackSelectionState<String>()
+    androidx.activity.compose.BackHandler(enabled = selection.active) { selection.clear() }
+    val selectedTracks = { tracks.filter { it.id in selection.selectedIds } }
+    var addSelectionToPlaylist by remember { mutableStateOf(false) }
+    var createPlaylistForSelection by remember { mutableStateOf(false) }
+    val findAlbumArt = tf.monochrome.android.ui.components.LocalFindAlbumArt.current
+
     var menuTrack by remember { mutableStateOf<UnifiedTrack?>(null) }
     UnifiedTrackContextMenuHost(
         track = menuTrack,
         onDismissRequest = { menuTrack = null },
         navController = navController,
         playerViewModel = playerViewModel,
+        onSelect = menuTrack?.let { t -> { selection.toggle(t.id) } },
     )
+    if (addSelectionToPlaylist) {
+        val playlists by playerViewModel.playlists.collectAsStateWithLifecycle()
+        tf.monochrome.android.ui.components.AddToPlaylistSheet(
+            playlists = playlists,
+            onDismiss = { addSelectionToPlaylist = false },
+            onPlaylistSelected = { playlist ->
+                selectedTracks().forEach { playerViewModel.addTrackToPlaylist(playlist.id, it.toLegacyTrack()) }
+                addSelectionToPlaylist = false
+                selection.clear()
+            },
+            onCreateNew = {
+                addSelectionToPlaylist = false
+                createPlaylistForSelection = true
+            },
+        )
+    }
+    if (createPlaylistForSelection) {
+        tf.monochrome.android.ui.components.CreatePlaylistDialog(
+            onDismiss = { createPlaylistForSelection = false },
+            onSubmit = { name, description ->
+                playerViewModel.createPlaylist(name, description, selectedTracks().map { it.toLegacyTrack() })
+                createPlaylistForSelection = false
+                selection.clear()
+            },
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -180,6 +221,35 @@ fun FolderBrowserScreen(
             )
         )
         FolderCrumbBar(crumbs = crumbs, onOpen = { navController.openAncestorFolder(it) })
+        androidx.compose.animation.AnimatedVisibility(visible = selection.active) {
+            tf.monochrome.android.ui.components.TrackSelectionBar(
+                selectedCount = selection.count,
+                onClose = { selection.clear() },
+                onAddToQueue = {
+                    playerViewModel.addUnifiedToQueue(selectedTracks())
+                    selection.clear()
+                },
+                onAddToParty = tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                    {
+                        party.unified(selectedTracks())
+                        selection.clear()
+                    }
+                },
+                onAddToPlaylist = { addSelectionToPlaylist = true },
+                onFindAlbumArt = findAlbumArt?.let { find ->
+                    {
+                        find(
+                            selectedTracks().mapNotNull { t ->
+                                val path = (t.source as? tf.monochrome.android.domain.model.PlaybackSource.LocalFile)?.filePath
+                                    ?: return@mapNotNull null
+                                tf.monochrome.android.data.local.art.ArtRequest(t.title, t.artistName, t.albumTitle, t.durationSeconds, path)
+                            },
+                        )
+                        selection.clear()
+                    }
+                },
+            )
+        }
 
         SearchOverlay(
             open = searchOpen,
@@ -219,12 +289,12 @@ fun FolderBrowserScreen(
                     // list's arrangement, because the tracks below share this
                     // LazyColumn and are a dense list, not tiles.
                     //
-                    // No hazeState, as everywhere else in scrolling content —
-                    // see liquidGlass.
+                    // A Material 3 surface, as everywhere else in scrolling
+                    // content — see materialSurface.
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 6.dp)
-                        .liquidGlass(shape = MonoDimens.shapeMd)
+                        .materialSurface(shape = MonoDimens.shapeMd)
                         .bounceCombinedClick(
                             onLongClick = { menuFolder = folder.path },
                             onClick = {
@@ -276,15 +346,27 @@ fun FolderBrowserScreen(
                 // legacyId, not id: the queue holds legacy Tracks, so that is
                 // what LocalNowPlayingTrackId carries.
                 val nowPlaying = track.legacyId == LocalNowPlayingTrackId.current
+                val selected = track.id in selection.selectedIds
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(MonoDimens.listRowHeight)
                         .background(
-                            if (nowPlaying) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                            else Color.Transparent
+                            when {
+                                selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
+                                nowPlaying -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                else -> Color.Transparent
+                            }
                         )
-                        .clickable { onPlayTrack(track, visibleTracks) }
+                        // Holding plays the song's preview until the finger lifts.
+                        // While songs are selected, a tap adds or removes one.
+                        .combinedClickable(
+                            onClick = {
+                                if (selection.active) selection.toggle(track.id) else onPlayTrack(track, visibleTracks)
+                            },
+                            onLongClick = rememberHoldToPreview(track),
+                        )
+                        .songPreviewHold(SongPreview.keyOf(track), RectangleShape)
                         .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

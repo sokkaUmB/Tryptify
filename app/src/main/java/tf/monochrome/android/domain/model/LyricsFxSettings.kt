@@ -29,6 +29,11 @@ data class LyricsFxSettings(
      * what's heard; this pushes the lyric timeline back by the same amount.
      * Positive = lyrics wait longer (the usual case); negative = lyrics lead.
      * Personal/device setting — preserved when a theme preset is applied.
+     *
+     * No longer read: the delay is the output's own now
+     * ([tf.monochrome.android.audio.sync.OutputSync], Settings › Audio ›
+     * Bluetooth sync), and this value was carried into it once. Kept so a
+     * stored or shared value still reads, and stays out of shared themes.
      */
     val bluetoothDelayMs: Float = 0f,
 
@@ -111,6 +116,27 @@ data class LyricsFxSettings(
      * the sung line's letters (see lyricShadow).
      */
     val shadowDepth: Float = 0.7f,
+    /**
+     * The lyrics on a curved tube, as a CRT draws them: how far the tube's
+     * glass bows away from the viewer toward its top and bottom edges, in
+     * degrees. 0 = flat (the shipped look), about 16 = the classic tube, 75 =
+     * a deep pillow. Those edges bow outward and the corners round off; the
+     * middle stays as it is, never a fish-eye's swollen middle. Android 13 and
+     * later (lyricCurvature, crtWarp). [curvatureSideDeg] is the sides'.
+     */
+    val curvatureDeg: Float = 0f,
+    /**
+     * The same toward the left and right edges, about 14 the classic tube.
+     * -1 (unset) draws it at [curvatureDeg]: a curve saved with the one angle
+     * keeps its shape ([effectiveCurvatureSideDeg]).
+     */
+    val curvatureSideDeg: Float = -1f,
+    /**
+     * What the curve bends: [CURVE_ALL] the lyrics as one tube, [CURVE_LINE]
+     * a tube over the sung line alone, [CURVE_WORD] over the sung word alone
+     * (word-timed lyrics; the line otherwise). Everything else stays flat.
+     */
+    val curvatureTarget: Int = 0,
 
     // ── Beat engine (bass → pulse) ─────────────────────────────────────
     /** Master intensity. 0 disables the whole audio-reactive path. */
@@ -252,6 +278,9 @@ data class LyricsFxSettings(
             wavePhaseStep = wavePhaseStep.c(0.05f, 0.9f, d.wavePhaseStep),
             waveTravelDp = waveTravelDp.c(0f, 8f, d.waveTravelDp),
             shadowDepth = shadowDepth.c(0f, 1f, d.shadowDepth),
+            curvatureDeg = curvatureDeg.c(0f, 75f, d.curvatureDeg),
+            curvatureSideDeg = curvatureSideDeg.c(-1f, 75f, d.curvatureSideDeg),
+            curvatureTarget = curvatureTarget.coerceIn(0, 2),
             bassReact = bassReact.c(0f, 1f, d.bassReact),
             pumpAmount = pumpAmount.c(0f, 0.25f, d.pumpAmount),
             attackMs = attackMs.c(4f, 60f, d.attackMs),
@@ -310,6 +339,12 @@ data class LyricsFxSettings(
         glassFrost = glass.frost,
     ).clamped()
 
+    /** The sides' angle as drawn: [curvatureSideDeg], or [curvatureDeg] where it is unset. */
+    val effectiveCurvatureSideDeg: Float get() = if (curvatureSideDeg < 0f) curvatureDeg else curvatureSideDeg
+
+    /** Whether the lyrics are bent at all, along either axis. */
+    val curved: Boolean get() = maxOf(curvatureDeg, effectiveCurvatureSideDeg) >= 0.05f
+
     /**
      * The user's personal/device settings — the lyric font and the perf/latency
      * knobs — that a theme preset should carry over rather than overwrite.
@@ -335,6 +370,13 @@ data class LyricsFxSettings(
     fun matchesPreset(preset: LyricsFxSettings): Boolean = this == preset.withPersonalFrom(this)
 
     companion object {
+        /** [curvatureTarget]: every lyric, as one tube. */
+        const val CURVE_ALL = 0
+        /** [curvatureTarget]: the sung line alone. */
+        const val CURVE_LINE = 1
+        /** [curvatureTarget]: the sung word alone, on word-timed lyrics. */
+        const val CURVE_WORD = 2
+
         val DEFAULT = LyricsFxSettings()
 
         /** [godRaySource]: the sung line itself shines, and its light streams out of the letters. */

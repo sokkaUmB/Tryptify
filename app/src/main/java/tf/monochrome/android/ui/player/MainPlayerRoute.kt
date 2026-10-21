@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.player
 
+import tf.monochrome.android.domain.model.LinkArea
 import tf.monochrome.android.ui.navigation.trackArtistAction
 import tf.monochrome.android.ui.navigation.trackAlbumAction
 import tf.monochrome.android.ui.navigation.popBackStackSafe
@@ -97,6 +98,7 @@ import tf.monochrome.android.ui.main.LocalImmersiveFullScreen
 import tf.monochrome.android.ui.main.SystemBarsHidden
 import androidx.navigation.NavController
 import tf.monochrome.android.domain.model.NowPlayingViewMode
+import tf.monochrome.android.domain.model.VisualLinkTargets
 import tf.monochrome.android.domain.model.SourceType
 import tf.monochrome.android.domain.model.Track
 import tf.monochrome.android.ui.navigation.Screen
@@ -148,6 +150,8 @@ fun MainPlayerRoute(
     val isDownloaded = isDownloadedRemote || isLocalTrack
     val lyrics by playerViewModel.currentLyrics.collectAsStateWithLifecycle()
     val isLyricsLoading by playerViewModel.isLyricsLoading.collectAsStateWithLifecycle()
+    val serverLyricsStatus by playerViewModel.serverLyricsStatus.collectAsStateWithLifecycle()
+    val hasLyricsServer by playerViewModel.hasLyricsServer.collectAsStateWithLifecycle()
     val viewMode by playerViewModel.nowPlayingViewMode.collectAsStateWithLifecycle()
     val blurredBackground by playerViewModel.playerBlurredBackground.collectAsStateWithLifecycle()
     val playbackSpeed by playerViewModel.playbackSpeed.collectAsStateWithLifecycle()
@@ -245,9 +249,9 @@ fun MainPlayerRoute(
     }
 
     val lyricsFx by playerViewModel.lyricsFx.collectAsStateWithLifecycle()
+    val visualLinks by playerViewModel.visualLinks.collectAsStateWithLifecycle()
     val liveSpeed by playerViewModel.liveSpeed.collectAsStateWithLifecycle()
     val playerGlass by playerViewModel.playerGlass.collectAsStateWithLifecycle()
-    val dacExclusive by playerViewModel.dacExclusive.collectAsStateWithLifecycle()
     val playerDynamicColor by playerViewModel.playerDynamicColor.collectAsStateWithLifecycle()
     val dynamicColors by playerViewModel.dynamicColors.collectAsStateWithLifecycle()
 
@@ -554,7 +558,9 @@ fun MainPlayerRoute(
     val albumGlowOn = lyricsFx.glowBehindArt && lyricsFx.bassReact > 0.01f &&
         // A halo at zero brightness is the same case as the legacy guard below:
         // drawArtGlow returns immediately, so staking the tap buys nothing.
-        lyricsFx.effectiveArtGlowBrightness > 0.001f &&
+        // A linked brightness can rise from zero, so a link keeps it staked.
+        (lyricsFx.effectiveArtGlowBrightness > 0.001f ||
+            visualLinks.any { it.target == "lyrics.artGlowBrightness" && !it.paused }) &&
         viewMode == NowPlayingViewMode.COVER_ART &&
         // Only MainPlayerScreen is handed the fxUnderlay that draws this glow.
         // Without the guard the legacy layout still staked the FFT tap and woke
@@ -564,6 +570,29 @@ fun MainPlayerRoute(
     val beatOn = lyricsBeatOn || albumGlowOn
     val beatPulse: androidx.compose.runtime.State<Float>? =
         if (beatOn) rememberBassPulse(playerViewModel.spectrumAnalyzer, lyricsFx) else null
+    // The visual settings that follow the music here: the lyrics' only while
+    // the lyrics are what the player shows (that is where they are drawn),
+    // apart from the cover glow's, which is drawn in cover-art view; the
+    // player's own controls' whenever the player is up, the ambient
+    // visualizer's while it is the background. The UI panels and the CRT
+    // effect follow the app's own driver, which shows through this one.
+    val appLive = LocalVisualLinks.current
+    val lyricsShown = viewMode == NowPlayingViewMode.LYRICS
+    val playerLinks = remember(visualLinks, lyricsShown, ambientActive) {
+        visualLinks.filter {
+            it.target.startsWith("player.") ||
+                (lyricsShown && it.target.startsWith("lyrics.")) ||
+                it.target in VisualLinkTargets.COVER_KEYS ||
+                (ambientActive && it.target.startsWith("visualizer."))
+        }
+    }
+    val visualLive = rememberVisualLinkDriver(
+        tap = playerViewModel.spectrumAnalyzer,
+        links = playerLinks,
+        active = true,
+        delayMs = LocalOutputSyncMs.current,
+        parent = appLive,
+    )
     androidx.compose.runtime.LaunchedEffect(beatOn) {
         LyricsDebug.log("beat engine ${if (beatOn) "acquired (FFT analyzer staked)" else "released"}")
         if (!beatOn) { glyphAnchors.reset(); albumArtAnchor.reset() }
@@ -608,6 +637,9 @@ fun MainPlayerRoute(
             lettersBox = { lyricLetters.boxInRoot },
             fx = lyricsFx,
             debugName = "player",
+            // Built out here, before the provider below, so it is handed the
+            // links rather than reading them from a local it is not inside.
+            live = visualLive,
         )
     } else {
         null
@@ -619,6 +651,7 @@ fun MainPlayerRoute(
     CompositionLocalProvider(
         LocalLyricBackdrop provides lyricBackdrop,
         LocalLyricsFx provides lyricsFx,
+        LocalVisualLinks provides visualLive,
         LocalPlaybackSpeed provides liveSpeed,
         LocalLyricsSpectrum provides playerViewModel.spectrumAnalyzer,
         LocalLyricGlyphAnchors provides glyphAnchors.takeIf { lyricsBeatOn },
@@ -633,31 +666,18 @@ fun MainPlayerRoute(
         ),
         // The transport buttons' refractive glass parameters (Studio › Player Glass).
         LocalPlayerGlass provides playerGlass,
+        LocalGlassArea provides LinkArea.PLAYER,
+        // What the player's glass stands over: its own dark background, not the
+        // theme's. Every pane works its text colour out from this.
+        tf.monochrome.android.ui.components.LocalGlassGround provides playerGlassGround(blendedColors.dominant),
     ) {
     // topBar and hero are content, not chrome — the artwork, lyrics, queue and
     // visualizer are the same whichever layout is drawing around them. Hoisted
     // into slots so both the current and the legacy screen are handed one copy
     // instead of the hero being forked along with the chrome.
-    // The DAC's volume, only while one is claimed for exclusive output: Android's
-    // own volume never reaches it then. The level is collected inside the slot,
-    // so a drag recomposes the bar and not the player around it.
-    val dacVolumeSlot: (@Composable () -> Unit)? = if (dacExclusive) {
-        {
-            val level by playerViewModel.dacLevelDb.collectAsStateWithLifecycle()
-            val glass = LocalPlayerGlass.current
-            DacVolumeBar(
-                levelDb = level,
-                onLevelDb = playerViewModel::setDacLevelDb,
-                onMute = playerViewModel::setDacMuted,
-                // The seek bar's tint, so the two tubes are one material.
-                tint = if (glass.tintColor != 0) Color(glass.tintColor) else state.albumColors.vibrant,
-                contentColor = Color.White,
-                glassTube = !legacyPlayer,
-            )
-        }
-    } else {
-        null
-    }
+    val openedSaved by playerViewModel.openedSaved.collectAsStateWithLifecycle()
+    val openedUnified = playerViewModel.unifiedFor(currentTrack)?.takeIf { playerViewModel.isOpenedFile(currentTrack) }
+    val context = androidx.compose.ui.platform.LocalContext.current
     val topBarSlot: @Composable () -> Unit = {
         PlayerTopBar(
             speedLabel = state.speedLabel,
@@ -675,8 +695,24 @@ fun MainPlayerRoute(
             onSendFile = { currentTrack?.let { playerViewModel.shareTrack(it) } },
             onOpenLyricsStudio = { navController.navigateTool(Screen.LyricsFxStudio) },
             onOpenSettings = { navController.navigateTool(Screen.Settings, Screen.Settings.createRoute()) },
+            onSyncLyricsOnServer = if (hasLyricsServer) playerViewModel::syncLyricsOnServer else null,
+            onEditLyrics = { navController.navigateTool(Screen.LyricsEditor) },
             onGoToArtist = navController.trackArtistAction(currentTrack, playerViewModel.unifiedFor(currentTrack)),
             onGoToAlbum = navController.trackAlbumAction(currentTrack, playerViewModel.unifiedFor(currentTrack)),
+            onAddToLibrary = openedUnified?.takeIf { it.id !in openedSaved }?.let { track ->
+                {
+                    playerViewModel.addOpenedToLibrary(track) { outcome ->
+                        val message = when (outcome) {
+                            is tf.monochrome.android.data.opened.OpenedAudioRepository.Added.Saved ->
+                                context.getString(R.string.opened_added_where, outcome.folder)
+                            is tf.monochrome.android.data.opened.OpenedAudioRepository.Added.Failed ->
+                                context.getString(R.string.opened_add_failed) + " · " +
+                                    context.getString(tf.monochrome.android.ui.opened.reasonFor(outcome.failure))
+                        }
+                        android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
+            },
         )
     }
     // Ambient › "Remove album cover": the preset row fades itself out after a
@@ -919,6 +955,9 @@ fun MainPlayerRoute(
                     isLoading = isLyricsLoading,
                     albumColors = blendedColors,
                     positionMs = playerViewModel.positionMs,
+                    serverStatus = serverLyricsStatus,
+                    onSyncOnServer = if (hasLyricsServer) playerViewModel::syncLyricsOnServer else null,
+                    onCancelServer = playerViewModel::cancelServerLyrics,
                     // One element, two states: compact taps expand
                     // (synced lyrics only); expanded line taps seek and
                     // gap taps collapse.
@@ -1075,7 +1114,6 @@ fun MainPlayerRoute(
                 },
                 topBar = topBarSlot,
                 hero = heroSlot,
-                dacVolume = dacVolumeSlot,
                 lyricsMode = lyricsSlotWide,
             )
         } else {
@@ -1168,7 +1206,6 @@ fun MainPlayerRoute(
                     null
                 },
                 overlay = playerPanels,
-                dacVolume = dacVolumeSlot,
             )
         }
     }
@@ -1578,6 +1615,7 @@ private fun BoxScope.SpeedPanel(
                 Switch(
                     checked = preservePitch,
                     onCheckedChange = onPreservePitchChange,
+                    colors = tf.monochrome.android.ui.components.glassSwitchColors(),
                 )
             }
 

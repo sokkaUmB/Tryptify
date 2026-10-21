@@ -30,3 +30,16 @@
 
 # Keep projectM JNI bridge
 -keep class tf.monochrome.android.visualizer.ProjectMNativeBridge { *; }
+
+# jaudiotagger makes each ID3 frame's body by name, Class.forName(
+# "org.jaudiotagger.tag.id3.framebody.FrameBody" + frameId), then calls its
+# (ByteBuffer, int) constructor. Renamed or stripped, a frame reads as
+# unsupported and its text is lost: BPM, key and ReplayGain from an MP3, and a
+# WAV's ID3 tags, would come back empty in release builds only.
+-keep class org.jaudiotagger.tag.id3.framebody.** { <init>(...); }
+
+# LiveGlassLens reads Haze's internal "source is recording" flag by name, so a
+# lens inside its own source skips it instead of looping (HazeContentDrawing).
+-keepclassmembers class dev.chrisbanes.haze.HazeArea {
+    boolean getContentDrawing$haze_release();
+}

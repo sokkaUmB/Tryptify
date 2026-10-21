@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.player.legacy
 
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.player.PlayerDesignTokens
 
 import androidx.compose.animation.core.Spring
@@ -33,7 +34,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import tf.monochrome.android.ui.components.liquidGlass
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
 
@@ -56,10 +56,9 @@ fun LegacyPlayerActionDock(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .liquidGlass(
+            .materialSurface(
                 shape = RoundedCornerShape(PlayerDesignTokens.GlassCornerLarge),
                 tintAlpha = PlayerDesignTokens.GlassTintMedium,
-                borderAlpha = PlayerDesignTokens.GlassTintSoft,
             )
             .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,

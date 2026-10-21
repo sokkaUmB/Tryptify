@@ -3,6 +3,12 @@ package tf.monochrome.android.ui.player
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
@@ -40,10 +46,24 @@ internal fun AmbientVisualizerLayer(
     // So it is told the music is paused whenever nobody can see it: the app
     // in the background, the phone off, another screen in front.
     val shown = isPlaying && tf.monochrome.android.ui.components.rememberOnScreen()
+    // Music links on the opacity and the black point: handed to the render
+    // thread as they change, which reads them as it draws each frame.
+    val links = LocalVisualLinks.current
+    var view by remember { mutableStateOf<ProjectMOverlayView?>(null) }
+    LaunchedEffect(view, links, settings) {
+        val target = view ?: return@LaunchedEffect
+        snapshotFlow {
+            val live = links.ambient(settings)
+            if (live === settings) null else live.opacity to live.blackPoint
+        }.collect { live ->
+            if (live == null) target.updateLive(Float.NaN, Float.NaN) else target.updateLive(live.first, live.second)
+        }
+    }
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = { context ->
             ProjectMOverlayView(context, repository).apply {
+                view = this
                 updateSettings(settings)
                 updateAlbum(cover)
                 updateScrimTone(scrim.red, scrim.green, scrim.blue)

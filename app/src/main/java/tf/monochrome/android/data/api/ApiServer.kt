@@ -15,7 +15,34 @@ enum class ApiService(val label: String, val probePath: String) {
     QOBUZ("Qobuz", "/api/get-music?q=test&offset=0"),
     APPLE("Apple Music", "/api/apple/get-music?q=test&offset=0"),
     DEEZER("Deezer", "/api/deezer/get-music?q=test&offset=0"),
+
+    /**
+     * Stem separation for Trypt Mania's charts: a TryptMania Parser server
+     * (github.com/tryptz/TryptMania-Parser), which separates a song on a GPU
+     * and answers with the chart generator's envelopes. Not a catalog: it is
+     * never searched, only asked to separate.
+     */
+    STEMS("Stem separation", "/api/stems/info"),
+
+    /**
+     * Synced lyrics from the same TryptMania Parser server: it separates the
+     * vocals, hears them with Whisper and sends back when every word is
+     * sung, as lines of timed words. Given the plain lyrics the app already
+     * found, it keeps them word for word and only adds the times.
+     */
+    LYRICS("Synced lyrics", "/api/lyrics/info"),
+
+    /**
+     * Trypt Mania's rooms (TryptMania-Parser's `multiplayer/` service, in
+     * Rust): a host picks a chart, everyone with the song plays it from the
+     * same moment, scores live, results shared. Its socket is `/ws` beside
+     * this probe.
+     */
+    MULTIPLAYER("Multiplayer", "/api/multiplayer/info"),
 }
+
+/** What a TryptMania Parser server serves: Trypt Mania's charts, lyric times and rooms, never a catalog. */
+val TRYPT_MANIA_SERVICES: Set<ApiService> = setOf(ApiService.STEMS, ApiService.LYRICS, ApiService.MULTIPLAYER)
 
 /**
  * One API the user added under Settings › Connections, and what it was found
@@ -31,7 +58,24 @@ data class ApiServer(
     val services: Set<ApiService> = emptySet(),
     /** When [services] was last established, epoch millis; 0 = never checked. */
     val checkedAt: Long = 0L,
-)
+    /**
+     * For a stem separation server, what it separates on, as it says
+     * (`cuda` or `cpu`): Trypt Mania's Fast mode goes to a GPU, Slow to a CPU.
+     * Null when unknown — a server added before servers were asked.
+     */
+    val stemDevice: String? = null,
+) {
+    /** Whether this server separates on a GPU; null when it has not said. */
+    val separatesOnGpu: Boolean? get() = stemDevice?.let { it == "cuda" }
+
+    /**
+     * Listed under Trypt Mania rather than Streaming: a server that serves only
+     * Trypt Mania's services. One not checked yet, or that serves a catalog
+     * too, is a streaming one.
+     */
+    val isTryptMania: Boolean
+        get() = services.isNotEmpty() && services.all { it in TRYPT_MANIA_SERVICES }
+}
 
 object ApiServers {
 

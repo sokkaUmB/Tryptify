@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import tf.monochrome.android.data.local.db.LocalFacetTally
 import tf.monochrome.android.ui.components.FastScroller
 import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.detail.LocalFacet
 import tf.monochrome.android.ui.theme.MonoDimens
 import androidx.compose.ui.res.stringResource
@@ -77,11 +78,9 @@ enum class LibraryCategory(
 /**
  * The categories, as tiles.
  *
- * `headlineMedium` bold on a `liquidGlass` pane — the material the old page
- * list on Home used, before the tab bar replaced it — spaced 12dp so they read
- * as separate tiles rather than one striped slab, and **no hazeState**. This is inside the pager, which is
- * inside the app's one hazeSource, and a haze child within its own source is a
- * cycle Haze throws on at draw time.
+ * `headlineMedium` bold on a Material 3 surface (`materialSurface`, as every
+ * row), spaced 12dp so they read as separate tiles rather than one striped
+ * slab.
  *
  * No track counts. Every count would mean keeping that category's flow
  * collected for as long as the index is on screen, which is the opposite of
@@ -91,6 +90,16 @@ enum class LibraryCategory(
 fun LibraryIndexList(
     onSelect: (LibraryCategory) -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * The library galaxy, as one more tile after the categories. It is not a
+     * category: those open in place, and this opens a screen of its own.
+     */
+    onGalaxy: (() -> Unit)? = null,
+    /**
+     * Trypt Mania, the Glyph rhythm mode, as the tile under the galaxy. Like
+     * the galaxy it opens a screen of its own rather than a category.
+     */
+    onTryptMania: (() -> Unit)? = null,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
@@ -101,32 +110,48 @@ fun LibraryIndexList(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(LibraryCategory.entries, key = { it.id }, contentType = { "category" }) { category ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = MonoDimens.listItemPaddingH)
-                    .liquidGlass(shape = MonoDimens.shapeMd)
-                    .bounceClick { onSelect(category) }
-                    .padding(horizontal = 24.dp, vertical = 20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    category.icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(MonoDimens.iconMd),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(MonoDimens.spacingLg))
-                Text(
-                    text = stringResource(category.label),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            CategoryTile(category.icon, stringResource(category.label)) { onSelect(category) }
+        }
+        if (onGalaxy != null) {
+            item(key = "galaxy", contentType = "category") {
+                CategoryTile(tf.monochrome.android.ui.discover.galaxy.SystemGlyph, stringResource(R.string.library_galaxy), onGalaxy)
             }
         }
+        if (onTryptMania != null) {
+            item(key = "trypt_mania", contentType = "category") {
+                CategoryTile(Icons.Default.SportsEsports, stringResource(R.string.trypt_mania_beta), onTryptMania)
+            }
+        }
+    }
+}
+
+/** One of the index's tiles: a glyph and a name on glass. */
+@Composable
+private fun CategoryTile(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = MonoDimens.listItemPaddingH)
+            .materialSurface(shape = MonoDimens.shapeMd)
+            .bounceClick(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(MonoDimens.iconMd),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.width(MonoDimens.spacingLg))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

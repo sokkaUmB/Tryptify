@@ -12,6 +12,14 @@ class ApiServerTest {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Test
+    fun `only a server that serves nothing but Trypt Mania is listed under it`() {
+        assertTrue(ApiServer("https://a", setOf(ApiService.STEMS, ApiService.LYRICS)).isTryptMania)
+        assertTrue(ApiServer("https://b", setOf(ApiService.MULTIPLAYER)).isTryptMania)
+        assertTrue("a catalog makes it a streaming one", !ApiServer("https://c", setOf(ApiService.TIDAL, ApiService.STEMS)).isTryptMania)
+        assertTrue("one not checked yet is streaming", !ApiServer("https://d").isTryptMania)
+    }
+
+    @Test
     fun `a typed address becomes a base url`() {
         assertEquals("https://hifi.example.com", ApiServers.normalizeUrl("hifi.example.com"))
         assertEquals("https://hifi.example.com", ApiServers.normalizeUrl("  https://hifi.example.com/// "))
@@ -50,7 +58,11 @@ class ApiServerTest {
     fun `the same address in two old fields becomes one server`() {
         val servers = ApiServers.fromLegacy("https://hifi.example.com", "https://hifi.example.com", null)
         assertEquals(1, servers.size)
-        assertEquals(ApiService.entries.toSet(), servers.single().services)
+        // Every catalog the old fields could name; stem separation came after them.
+        assertEquals(
+            setOf(ApiService.TIDAL, ApiService.QOBUZ, ApiService.APPLE, ApiService.DEEZER),
+            servers.single().services,
+        )
     }
 
     @Test

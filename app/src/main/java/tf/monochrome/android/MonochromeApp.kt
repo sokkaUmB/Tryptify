@@ -72,6 +72,9 @@ class MonochromeApp : Application(), Configuration.Provider, SingletonImageLoade
     lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
+    lateinit var subsonicRepository: tf.monochrome.android.data.subsonic.SubsonicRepository
+
+    @Inject
     lateinit var authManager: SupabaseAuthManager
 
     @Inject
@@ -158,6 +161,10 @@ class MonochromeApp : Application(), Configuration.Provider, SingletonImageLoade
                 // player even before MediaScanner / our scanner have
                 // populated the artwork cache.
                 add(AudioFileCoverFetcher.Factory(this@MonochromeApp))
+                // A Subsonic server's covers, which songs carry as
+                // subsonic-cover:// references so the sign-in in the real URL
+                // never leaves the app (see Subsonic.coverArtRef).
+                add(tf.monochrome.android.data.subsonic.SubsonicCoverMapper { subsonicRepository.current.value })
             }
             .build()
     }
@@ -187,11 +194,26 @@ class MonochromeApp : Application(), Configuration.Provider, SingletonImageLoade
         appScope.launch {
             tf.monochrome.android.audio.dsp.DspNativeLoader.ensureLoaded()
         }
+        // The chart server this build ships with, under Settings › Connections
+        // the first time (BuiltInServer), so Trypt Mania can chart at once.
+        appScope.launch {
+            runCatching { preferencesProvider.get().seedBuiltInServer(BuildConfig.BUILT_IN_CPU_SERVER, BuildConfig.BUILT_IN_ROOMS_SERVER) }
+        }
         // libusb gets the same off-thread warm-up so the dlopen + libusb_init
         // don't land on the audio thread the first time the user toggles
         // exclusive USB output.
         appScope.launch {
             runCatching { tf.monochrome.android.audio.usb.UsbNativeLoader.ensureLoaded() }
+        }
+        // Charts are separated on a server now. A stem model the player
+        // imported, and the NPU's compiled copy of it, are hundreds of
+        // megabytes nothing will read again.
+        appScope.launch {
+            runCatching {
+                java.io.File(filesDir, "stem-models").deleteRecursively()
+                java.io.File(filesDir, "stem_npu_cache").deleteRecursively()
+                deleteSharedPreferences("stem_accelerators")
+            }
         }
         // Wire the Exclusive USB DAC toggle to actual driver lifecycle
         // and start publishing real status to Settings UI. Without this,

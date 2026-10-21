@@ -1,0 +1,44 @@
+# Tryptify Cloud on Cloudflare Workers. Secrets are NOT here: set them with
+#   wrangler secret put CREEM_API_KEY
+#   wrangler secret put CREEM_WEBHOOK_SECRET
+name = "tryptify-cloud"
+main = "src/worker.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+# Its address on the product's own domain. The workers.dev address keeps
+# working, for app builds made before it.
+routes = [{ pattern = "cloud.tryptify.com", custom_domain = true }]
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tryptify-cloud"
+database_id = "b2b03937-98bd-4fec-a132-ce0d0b932454"
+
+# The listeners' music (phase 1). Downloads from R2 are free; storage is
+# $0.015 per GB-month, the figure the plans were priced with.
+[[r2_buckets]]
+binding = "MUSIC"
+bucket_name = "tryptify-cloud-music"
+
+# Creem, live. Product ids are not secrets. For test mode, set
+# CREEM_API_BASE = "https://test-api.creem.io" with the test products' ids
+# and test-mode secrets.
+[vars]
+# Where Creem sends a buyer after paying: their account page, which shows the new plan.
+CREEM_SUCCESS_URL = "https://tryptify.com/account?paid=1"
+CREEM_PRODUCT_LITE_MONTHLY = "prod_63elKtKRItGQSMCIfqquAz"
+CREEM_PRODUCT_LITE_YEARLY = "prod_1bjumyDR0OUeJWohM5rPWy"
+CREEM_PRODUCT_PLUS_MONTHLY = "prod_28Df3920dPkS1izcsr6VGO"
+CREEM_PRODUCT_PLUS_YEARLY = "prod_1HSF4zKQOe2zwqn6ulQXcF"
+CREEM_PRODUCT_MAX_MONTHLY = "prod_4b9i4eCaYxDS9QwrZKhYV2"
+CREEM_PRODUCT_MAX_YEARLY = "prod_6G4ubzzqvCaJKaamWsnHMt"
+CREEM_PRODUCT_LITE_MONTHLY_TRIAL = "prod_56tTODaE022GeT50ruLqXj"
+CREEM_PRODUCT_PLUS_MONTHLY_TRIAL = "prod_OSmi11W9RYftN5oUWt9rz"
+CREEM_PRODUCT_MAX_MONTHLY_TRIAL = "prod_6dOHBryZ66HGZnk9wjwydV"
+
+# The daily cleanup: lapsed libraries and abandoned uploads (src/cleanup.ts).
+[triggers]
+crons = ["17 4 * * *"]

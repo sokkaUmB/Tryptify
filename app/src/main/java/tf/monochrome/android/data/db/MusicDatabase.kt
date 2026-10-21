@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import tf.monochrome.android.data.db.dao.DownloadDao
+import tf.monochrome.android.data.db.dao.LyricsCacheDao
 import tf.monochrome.android.data.db.dao.EqPresetDao
 import tf.monochrome.android.data.db.dao.FavoriteDao
 import tf.monochrome.android.data.db.dao.HistoryDao
@@ -74,7 +75,7 @@ import tf.monochrome.android.data.local.db.ScanStateEntity
         CollectionTrackArtistCrossRef::class,
         CollectionAlbumArtistCrossRef::class
     ],
-    version = 15,
+    version = 20,
     exportSchema = false
 )
 abstract class MusicDatabase : RoomDatabase() {
@@ -83,6 +84,7 @@ abstract class MusicDatabase : RoomDatabase() {
     abstract fun playEventDao(): PlayEventDao
     abstract fun playlistDao(): PlaylistDao
     abstract fun downloadDao(): DownloadDao
+    abstract fun lyricsCacheDao(): LyricsCacheDao
     abstract fun eqPresetDao(): EqPresetDao
     abstract fun localMediaDao(): LocalMediaDao
     abstract fun collectionDao(): CollectionDao
@@ -243,6 +245,204 @@ abstract class MusicDatabase : RoomDatabase() {
         val MIGRATION_14_15 = object : Migration(14, 15) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE downloaded_tracks ADD COLUMN isDolbyAtmos INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * Tempo, key and dynamic range for scanned local tracks, which the
+         * library galaxy draws its planets from. All three are nullable with
+         * no default, which is how Room checks a `Float?` (REAL) and an
+         * `Int?` (INTEGER) field. Existing rows start empty: tempo and key are
+         * filled in from their tags once, after the upgrade
+         * (ScanCoordinator.backfillMusicalTagsIfStale), and dynamic range as
+         * each track is played through.
+         */
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `local_tracks` ADD COLUMN `bpm` REAL")
+                db.execSQL("ALTER TABLE `local_tracks` ADD COLUMN `camelotKey` INTEGER")
+                db.execSQL("ALTER TABLE `local_tracks` ADD COLUMN `dynamicRange` REAL")
+            }
+        }
+
+        /**
+         * v16 → v17: the sampler and the pattern looper. Four new tables and
+         * nothing touched that already existed, so an upgrade keeps the whole
+         * library, every playlist and every saved preset.
+         *
+         * Every statement below has to be byte-for-byte what Room generates
+         * from the annotations on `SamplerEntities.kt`, down to the index
+         * names and the `ON UPDATE NO ACTION` clauses Room writes whether you
+         * asked for them or not. Room validates the schema on open, and the
+         * builder still carries `fallbackToDestructiveMigration` — so a
+         * mismatch here does not fail loudly, it silently drops the user's
+         * entire database. That is the same trap documented on 11→12.
+         */
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `sampler_samples` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`name` TEXT NOT NULL, " +
+                        "`nameKey` TEXT NOT NULL, " +
+                        "`filePath` TEXT NOT NULL, " +
+                        "`durationMs` INTEGER NOT NULL, " +
+                        "`sampleRate` INTEGER NOT NULL, " +
+                        "`channelCount` INTEGER NOT NULL, " +
+                        "`frameCount` INTEGER NOT NULL, " +
+                        "`category` TEXT NOT NULL, " +
+                        "`tags` TEXT NOT NULL, " +
+                        "`sourceTrackTitle` TEXT, " +
+                        "`sourceArtist` TEXT, " +
+                        "`sourceTimestampMs` INTEGER, " +
+                        "`captureSource` TEXT, " +
+                        "`bpm` REAL, " +
+                        "`musicalKey` TEXT, " +
+                        "`gain` REAL NOT NULL, " +
+                        "`waveformPath` TEXT, " +
+                        "`favorite` INTEGER NOT NULL, " +
+                        "`createdAt` INTEGER NOT NULL)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_sampler_samples_category` " +
+                        "ON `sampler_samples` (`category`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_sampler_samples_createdAt` " +
+                        "ON `sampler_samples` (`createdAt`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_sampler_samples_nameKey` " +
+                        "ON `sampler_samples` (`nameKey`)"
+                )
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `sampler_patterns` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`bankSlot` INTEGER NOT NULL, " +
+                        "`name` TEXT NOT NULL, " +
+                        "`lengthSteps` INTEGER NOT NULL, " +
+                        "`stepsPerBeat` INTEGER NOT NULL, " +
+                        "`beatsPerBar` INTEGER NOT NULL, " +
+                        "`bpmOverride` REAL, " +
+                        "`createdAt` INTEGER NOT NULL, " +
+                        "`updatedAt` INTEGER NOT NULL)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_sampler_patterns_bankSlot` " +
+                        "ON `sampler_patterns` (`bankSlot`)"
+                )
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `sampler_pattern_channels` (" +
+                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`patternId` INTEGER NOT NULL, " +
+                        "`position` INTEGER NOT NULL, " +
+                        "`name` TEXT NOT NULL, " +
+                        "`sampleId` INTEGER, " +
+                        "`volume` REAL NOT NULL, " +
+                        "`pan` REAL NOT NULL, " +
+                        "`pitch` REAL NOT NULL, " +
+                        "`sampleStart` REAL NOT NULL, " +
+                        "`sampleEnd` REAL NOT NULL, " +
+                        "`attackMs` REAL NOT NULL, " +
+                        "`releaseMs` REAL NOT NULL, " +
+                        "`filterHz` REAL NOT NULL, " +
+                        "`reverse` INTEGER NOT NULL, " +
+                        "`muted` INTEGER NOT NULL, " +
+                        "`soloed` INTEGER NOT NULL, " +
+                        "`enabled` INTEGER NOT NULL, " +
+                        "`colorArgb` INTEGER NOT NULL, " +
+                        "FOREIGN KEY(`patternId`) REFERENCES `sampler_patterns`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_sampler_pattern_channels_patternId` " +
+                        "ON `sampler_pattern_channels` (`patternId`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_sampler_pattern_channels_sampleId` " +
+                        "ON `sampler_pattern_channels` (`sampleId`)"
+                )
+
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `sampler_pattern_steps` (" +
+                        "`channelId` INTEGER NOT NULL, " +
+                        "`stepIndex` INTEGER NOT NULL, " +
+                        "`enabled` INTEGER NOT NULL, " +
+                        "`velocity` INTEGER NOT NULL, " +
+                        "`pitch` INTEGER NOT NULL, " +
+                        "`probability` INTEGER NOT NULL, " +
+                        "`pan` INTEGER NOT NULL, " +
+                        "`sampleStart` INTEGER NOT NULL, " +
+                        "`locks` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`channelId`, `stepIndex`), " +
+                        "FOREIGN KEY(`channelId`) REFERENCES `sampler_pattern_channels`(`id`) " +
+                        "ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_sampler_pattern_steps_channelId` " +
+                        "ON `sampler_pattern_steps` (`channelId`)"
+                )
+            }
+        }
+
+        /**
+         * v17 → v18: stem provenance. Two nullable columns on samples, saying
+         * which stem a sample is and which sample it was cut from.
+         *
+         * Both nullable with no default, so every existing row is already
+         * valid and the upgrade is two ALTERs and nothing else. `sourceSampleId`
+         * is deliberately not a foreign key — deleting the source a stem came
+         * from must not delete the stem, which by then is a finished sample of
+         * its own.
+         */
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `sampler_samples` ADD COLUMN `stemType` TEXT")
+                db.execSQL("ALTER TABLE `sampler_samples` ADD COLUMN `sourceSampleId` INTEGER")
+            }
+        }
+
+        /**
+         * 18 → 19: independent speed per channel, and per-step speed locks.
+         *
+         * All three columns are NOT NULL with defaults that mean "unchanged" —
+         * 1.0x, not linked, no lock — so every pattern already in the library
+         * keeps playing exactly as it did. A nullable column would have been
+         * the easier migration and the wrong one: the engine would then have
+         * to decide what null means on every trig.
+         */
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `sampler_pattern_channels` " +
+                        "ADD COLUMN `speed` REAL NOT NULL DEFAULT 1.0",
+                )
+                db.execSQL(
+                    "ALTER TABLE `sampler_pattern_channels` " +
+                        "ADD COLUMN `linked` INTEGER NOT NULL DEFAULT 0",
+                )
+                db.execSQL(
+                    "ALTER TABLE `sampler_pattern_steps` " +
+                        "ADD COLUMN `speedCode` INTEGER NOT NULL DEFAULT 0",
+                )
+            }
+        }
+
+        /**
+         * v19 → v20: the sampler and the pattern looper are gone, and their
+         * four tables with them. Children first, so no foreign key is left
+         * pointing at a dropped table even with foreign keys enforced. The
+         * migrations that built them stay above: an install still on v16 has
+         * to walk through them to get here.
+         */
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS `sampler_pattern_steps`")
+                db.execSQL("DROP TABLE IF EXISTS `sampler_pattern_channels`")
+                db.execSQL("DROP TABLE IF EXISTS `sampler_patterns`")
+                db.execSQL("DROP TABLE IF EXISTS `sampler_samples`")
             }
         }
     }

@@ -36,11 +36,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,6 +55,11 @@ import tf.monochrome.android.domain.model.UnifiedTrack
 import tf.monochrome.android.ui.components.AddToPlaylistSheet
 import tf.monochrome.android.ui.components.CoverImage
 import tf.monochrome.android.ui.components.CreatePlaylistDialog
+import tf.monochrome.android.ui.components.SearchAction
+import tf.monochrome.android.ui.components.SearchOverlay
+import tf.monochrome.android.ui.components.TrackListToolbar
+import tf.monochrome.android.ui.components.TrackSort
+import tf.monochrome.android.ui.components.TrackSortSaver
 import tf.monochrome.android.ui.components.TrackSelectionBar
 import tf.monochrome.android.ui.components.UnifiedTrackContextMenuHost
 import tf.monochrome.android.ui.components.rememberTrackSelectionState
@@ -60,17 +67,53 @@ import tf.monochrome.android.ui.player.PlayerViewModel
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.player.preview.SongPreview
+import tf.monochrome.android.ui.components.rememberHoldToPreview
+import tf.monochrome.android.ui.components.songPreviewHold
 
 @Composable
 fun DownloadsScreen(
     navController: NavController,
     viewModel: DownloadsViewModel = hiltViewModel(),
     playerViewModel: PlayerViewModel = hiltViewModel(),
+    /**
+     * Whether the search bar is open, for a host whose app bar carries the
+     * search button — the Library. Null where there is no such bar (the
+     * Download centre route): the screen then keeps it itself and puts the
+     * button in its own toolbar.
+     */
+    searchOpen: Boolean? = null,
+    onSearchOpenChange: (Boolean) -> Unit = {},
 ) {
     // Null until the list has loaded (see DownloadsViewModel.downloadedTracks).
     val loadedTracks by viewModel.downloadedTracks.collectAsStateWithLifecycle()
     val downloadedTracks = loadedTracks.orEmpty()
     val albumGroups by viewModel.albumGroups.collectAsStateWithLifecycle()
+
+    // How the list is being looked at, not what is in it: screen state, as on
+    // Liked Songs, and saveable so a rotation keeps the order and the query.
+    var ownSearchOpen by rememberSaveable { mutableStateOf(false) }
+    val isSearchOpen = searchOpen ?: ownSearchOpen
+    val setSearchOpen: (Boolean) -> Unit = { open ->
+        if (searchOpen == null) ownSearchOpen = open else onSearchOpenChange(open)
+    }
+    var query by rememberSaveable { mutableStateOf("") }
+    // Closed from either button, the query goes with it — a hidden filter
+    // still thinning the list is a list that looks like it lost tracks.
+    LaunchedEffect(isSearchOpen) { if (!isSearchOpen) query = "" }
+    var sort by rememberSaveable(stateSaver = TrackSortSaver) { mutableStateOf(TrackSort()) }
+    val visibleTracks = remember(downloadedTracks, query, sort) {
+        downloadedTracks.applyDownloadSearchAndSort(query, sort)
+    }
+    // Searching narrows the album cards too: an album stays while any of its
+    // tracks matches, so "Satomi" keeps DJ Satomi's albums above the rows.
+    val visibleAlbumGroups = remember(albumGroups, visibleTracks, query) {
+        if (query.isBlank()) albumGroups
+        else {
+            val ids = visibleTracks.mapTo(HashSet()) { it.id }
+            albumGroups.filter { group -> group.tracks.any { it.id in ids } }
+        }
+    }
     val playlists by playerViewModel.playlists.collectAsStateWithLifecycle()
 
     // Surface delete failures (e.g. a sideloaded file the provider won't remove)
@@ -86,11 +129,14 @@ fun DownloadsScreen(
     BackHandler(enabled = selection.active) { selection.clear() }
 
     var menuTrack by remember { mutableStateOf<UnifiedTrack?>(null) }
+    // The menu's song by its download id, which selection goes by.
+    var menuSelectId by remember { mutableStateOf<Long?>(null) }
     UnifiedTrackContextMenuHost(
         track = menuTrack,
         onDismissRequest = { menuTrack = null },
         navController = navController,
         playerViewModel = playerViewModel,
+        onSelect = menuSelectId?.let { id -> { selection.toggle(id) } },
     )
     var showAddToPlaylistForSelection by remember { mutableStateOf(false) }
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
@@ -172,10 +218,11 @@ fun DownloadsScreen(
         return
     }
 
-    // Materialize unified-track lists once per recomposition. The full list
-    // drives 'tap a track to play within the entire downloads queue', the
+    // Materialize unified-track lists once per recomposition. The visible list
+    // drives 'tap a track to play within downloads' — what is on screen, in
+    // the order it is on screen, so a search or a sort is also the queue. The
     // per-album lists drive 'tap an album card to play that album in order'.
-    val allUnified = downloadedTracks.map { it.toUnifiedTrack() }
+    val visibleUnified = visibleTracks.map { it.toUnifiedTrack() }
 
     Column(modifier = Modifier.fillMaxSize()) {
     AnimatedVisibility(visible = selection.active) {
@@ -189,17 +236,46 @@ fun DownloadsScreen(
                 )
                 selection.clear()
             },
+            onAddToParty = tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                {
+                    party.unified(downloadedTracks.filter { it.id in selection.selectedIds }.map { it.toUnifiedTrack() })
+                    selection.clear()
+                }
+            },
             onAddToPlaylist = { showAddToPlaylistForSelection = true },
             onDelete = { showDeleteConfirm = true },
             deleteContentDescription = stringResource(R.string.delete_downloads)
         )
     }
 
+    // Pinned above the list, as on Liked Songs, so the sort is in reach from
+    // anywhere down a long list rather than only from its top.
+    TrackListToolbar(
+        sort = sort,
+        onSortChange = { sort = it },
+        orders = DOWNLOAD_TRACK_ORDERS,
+        trailing = if (searchOpen == null) {
+            { SearchAction(open = isSearchOpen, onToggle = { setSearchOpen(!isSearchOpen) }) }
+        } else {
+            null
+        },
+    )
+
+    SearchOverlay(
+        open = isSearchOpen,
+        query = query,
+        onQueryChange = { query = it },
+        placeholder = stringResource(R.string.search_downloads),
+        onClose = { setSearchOpen(false) },
+    ) { searchTopInset ->
     LazyColumn(
-        contentPadding = PaddingValues(bottom = tf.monochrome.android.ui.navigation.bottomChromePadding),
+        contentPadding = PaddingValues(
+            top = searchTopInset,
+            bottom = tf.monochrome.android.ui.navigation.bottomChromePadding,
+        ),
         modifier = Modifier.fillMaxSize()
     ) {
-        if (albumGroups.isNotEmpty()) {
+        if (visibleAlbumGroups.isNotEmpty()) {
             item {
                 tf.monochrome.android.devedit.DevEditable("downloads_albums_header", Modifier.fillMaxWidth()) {
                 Text(
@@ -214,7 +290,7 @@ fun DownloadsScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(albumGroups, key = { it.title + it.artistName }) { group ->
+                    items(visibleAlbumGroups, key = { it.title + it.artistName }) { group ->
                         AlbumCard(
                             group = group,
                             onClick = {
@@ -232,14 +308,25 @@ fun DownloadsScreen(
                 tf.monochrome.android.devedit.DevEditable("downloads_tracks_header", Modifier.fillMaxWidth()) {
                 Text(
                     text = stringResource(R.string.filter_tracks),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium),
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 )
                 }
             }
         }
 
-        items(downloadedTracks, key = { it.id }) { track ->
+        if (visibleTracks.isEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.no_tracks_match, query.trim()),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(24.dp)
+                )
+            }
+        }
+
+        items(visibleTracks, key = { it.id }) { track ->
             DownloadedTrackRow(
                 track = track,
                 onClick = {
@@ -247,15 +334,19 @@ fun DownloadsScreen(
                         selection.toggle(track.id)
                     } else {
                         val tappedUnified = track.toUnifiedTrack()
-                        playerViewModel.playUnifiedTrack(tappedUnified, allUnified)
+                        playerViewModel.playUnifiedTrack(tappedUnified, visibleUnified)
                     }
                 },
                 onLongClick = { selection.toggle(track.id) },
-                onMoreClick = { menuTrack = track.toUnifiedTrack() },
+                onMoreClick = {
+                    menuSelectId = track.id
+                    menuTrack = track.toUnifiedTrack()
+                },
                 selectionMode = selection.active,
                 selected = track.id in selection.selectedIds,
             )
         }
+    }
     }
     }
 }
@@ -312,10 +403,14 @@ private fun DownloadedTrackRow(
     selectionMode: Boolean,
     selected: Boolean,
 ) {
+    // Holding plays the song's preview until the finger lifts; Select is in its menu.
+    val unified = remember(track) { track.toUnifiedTrack() }
+    val holdToPreview = rememberHoldToPreview(unified)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(onClick = onClick, onLongClick = holdToPreview ?: onLongClick)
+            .songPreviewHold(SongPreview.keyOf(unified), RectangleShape)
             .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

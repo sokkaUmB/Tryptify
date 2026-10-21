@@ -28,6 +28,7 @@ class AppLanguageTest {
         assertEquals("fr", match("fr-CA"))
         assertEquals("es", match("es-MX"))
         assertEquals("tr", match("tr-TR"))
+        assertEquals("it", match("it-CH"))
         assertEquals("ja", match("ja-JP"))
         assertEquals("en", match("en-GB"))
     }
@@ -83,5 +84,6 @@ class AppLanguageTest {
         assertEquals("日本語", names["ja"])
         assertEquals("Türkçe", names["tr"])
         assertEquals("Deutsch", names["de"])
+        assertEquals("Italiano", names["it"])
     }
 }

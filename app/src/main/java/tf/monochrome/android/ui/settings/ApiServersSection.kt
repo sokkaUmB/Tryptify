@@ -49,16 +49,44 @@ import tf.monochrome.android.data.api.ApiService
 import tf.monochrome.android.data.api.ProbeResult
 import tf.monochrome.android.domain.model.SourceType
 import tf.monochrome.android.ui.components.SourcePill
-import tf.monochrome.android.ui.components.liquidGlass
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.ui.components.materialSurface
 
-/** The pill a detected service wears: the same brand pill Search uses. */
-private fun ApiService.sourceType(): SourceType = when (this) {
+/** The brand pill a detected catalog wears, the one Search uses; null for a service that is not a catalog. */
+private fun ApiService.sourceType(): SourceType? = when (this) {
     ApiService.TIDAL -> SourceType.API
     ApiService.QOBUZ -> SourceType.QOBUZ
     ApiService.APPLE -> SourceType.APPLE
     ApiService.DEEZER -> SourceType.DEEZER
+    ApiService.STEMS -> null
+    ApiService.LYRICS -> null
+    ApiService.MULTIPLAYER -> null
+}
+
+/** A detected service: its brand pill, or a plain one with its name. */
+@Composable
+private fun ServicePill(service: ApiService, stemDevice: String? = null) {
+    val source = service.sourceType()
+    if (source != null) {
+        SourcePill(source)
+        return
+    }
+    val ink = MaterialTheme.colorScheme.onSurface
+    androidx.compose.material3.Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(999.dp), color = ink.copy(alpha = 0.1f)) {
+        Text(
+            // A stem server says what it separates on: Trypt Mania's Fast mode
+            // goes to the GPU one, Slow to the CPU one.
+            text = when {
+                service != ApiService.STEMS || stemDevice == null -> service.label
+                stemDevice == "cuda" -> "${service.label} · GPU"
+                else -> "${service.label} · CPU"
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = ink,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    }
 }
 
 /**
@@ -93,15 +121,28 @@ internal fun ApiServersSection(viewModel: SettingsViewModel) {
             modifier = Modifier.padding(vertical = 8.dp),
         )
     }
-    servers.forEachIndexed { index, server ->
-        ApiServerCard(
-            server = server,
-            checking = server.url in checking,
-            canMoveUp = index > 0,
-            onMoveUp = { viewModel.moveApiUp(server.url) },
-            onRecheck = { viewModel.recheckApi(server.url) },
-            onRemove = { confirmRemove = server.url },
+    // Two groups: the catalogs that search and play, and Trypt Mania's
+    // servers (charts, lyric times, rooms). Each keeps its own order; ↑ moves
+    // a server above the one before it in its group.
+    val (game, streaming) = servers.partition { it.isTryptMania }
+    for ((title, group) in listOf(stringResource(R.string.streaming) to streaming, stringResource(R.string.trypt_mania) to game)) {
+        if (group.isEmpty()) continue
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
         )
+        group.forEachIndexed { index, server ->
+            ApiServerCard(
+                server = server,
+                checking = server.url in checking,
+                canMoveUp = index > 0,
+                onMoveUp = { viewModel.moveApiUp(server.url) },
+                onRecheck = { viewModel.recheckApi(server.url) },
+                onRemove = { confirmRemove = server.url },
+            )
+        }
     }
 
     Spacer(Modifier.height(8.dp))
@@ -143,9 +184,16 @@ private fun ApiServerCard(
     onRecheck: () -> Unit,
     onRemove: () -> Unit,
 ) {
+    // The build's own chart server: shown by its host (its path is its
+    // secret), marked as built in, and with nothing to remove it.
+    val builtIn = tf.monochrome.android.data.api.BuiltInServer.isBuiltIn(
+        server.url,
+        tf.monochrome.android.BuildConfig.BUILT_IN_CPU_SERVER,
+        tf.monochrome.android.BuildConfig.BUILT_IN_ROOMS_SERVER,
+    )
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
-            .liquidGlass(shape = RoundedCornerShape(8.dp)),
+            .materialSurface(shape = RoundedCornerShape(8.dp)),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(8.dp),
     ) {
@@ -155,7 +203,12 @@ private fun ApiServerCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = server.url.substringAfter("://"),
+                    text = if (builtIn) {
+                        tf.monochrome.android.data.api.BuiltInServer.shownAs(server.url) +
+                            " · " + stringResource(R.string.api_built_in)
+                    } else {
+                        server.url.substringAfter("://")
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -177,7 +230,7 @@ private fun ApiServerCard(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         ApiService.entries.filter { it in server.services }
-                            .forEach { SourcePill(it.sourceType()) }
+                            .forEach { ServicePill(it, server.stemDevice) }
                     }
                 }
             }
@@ -190,8 +243,10 @@ private fun ApiServerCard(
                 if (checking) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 else Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.api_check_again))
             }
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.api_remove))
+            if (!builtIn) {
+                IconButton(onClick = onRemove) {
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.api_remove))
+                }
             }
         }
     }
@@ -282,7 +337,7 @@ private fun ProbeResultView(result: ProbeResult) {
         Text(stringResource(R.string.api_serves), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(4.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            ApiService.entries.filter { it in result.services }.forEach { SourcePill(it.sourceType()) }
+            ApiService.entries.filter { it in result.services }.forEach { ServicePill(it, result.stemDevice) }
         }
     }
     if (result.reasons.isNotEmpty()) {

@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
+import tf.monochrome.android.ui.glyph.LocalAppTvShader
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.luminance
@@ -70,7 +71,7 @@ internal fun Modifier.liquidGlass(
     val backdrop = LocalPlayerBackdrop.current
     if (LocalLowPerformance.current.disableLiquidGlass) return this
     if (!enabled || !fx.liquidGlass || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return this
-    return this.then(liquidGlassModifier(tint, fx, backdrop, rayLight))
+    return this.then(liquidGlassModifier(tint, fx, LocalVisualLinks.current, backdrop, rayLight))
 }
 
 /**
@@ -124,6 +125,63 @@ private var frameClockEpochNanos = -1L
 private val frameClockSeconds = mutableFloatStateOf(0f)
 
 /**
+ * The 3D letter wave's own clock: seconds of wave, not of time. Each frame it
+ * moves on by the frame's length times the wave speed (with its music link),
+ * so a new speed speeds the wave up or slows it down from where it is.
+ *
+ * It was the app clock multiplied by the speed, which made the speed a
+ * multiplier on everything the clock had counted since the app started:
+ * every step of the slider threw the letters to a new pose ten minutes in,
+ * dragging it scrambled them, and a music link on it would have shaken them
+ * every frame. One for the whole app, as [frameClockSeconds] is, so every line
+ * and row rides the one wave, and a line composed later joins it in step.
+ */
+private val letterWaveSeconds = mutableFloatStateOf(0f)
+
+@Volatile
+private var letterWaveFrameNanos = -1L
+
+/**
+ * Where the wave wraps: 20π is a whole number of turns of every term the
+ * letters use (1.5 rad/s and 0.8 rad/s), so the wrap has no seam, and the
+ * float never grows past where it loses its fine steps.
+ */
+private const val LETTER_WAVE_WRAP = (20.0 * Math.PI).toFloat()
+
+/**
+ * The 3D letter wave's clock ([letterWaveSeconds]), run while anything draws
+ * the wave and stopped by the same switches as [rememberFrameSeconds]: "Disable
+ * animations" and the CRT effect over the whole app. [speed] is read each
+ * frame, outside composition, so a linked speed moves it with no
+ * recomposition; read the clock in a layer block.
+ */
+@Composable
+internal fun rememberLetterWaveSeconds(speed: () -> Float): State<Float> {
+    val currentSpeed by androidx.compose.runtime.rememberUpdatedState(speed)
+    if (!LocalLowPerformance.current.disableAnimations && !LocalAppTvShader.current) {
+        LaunchedEffect(Unit) {
+            while (true) {
+                withFrameNanos { now ->
+                    // Every line runs this loop; the first one each frame moves
+                    // the shared wave, the rest see the frame already counted.
+                    val last = letterWaveFrameNanos
+                    if (now != last) {
+                        letterWaveFrameNanos = now
+                        // A first frame, or one after the loop slept (the screen
+                        // was off, the lyrics closed), adds nothing: no jump.
+                        val dt = if (last < 0L || now < last) 0f
+                        else ((now - last) / 1_000_000_000f).coerceAtMost(0.1f)
+                        letterWaveSeconds.floatValue =
+                            (letterWaveSeconds.floatValue + dt * currentSpeed()) % LETTER_WAVE_WRAP
+                    }
+                }
+            }
+        }
+    }
+    return letterWaveSeconds
+}
+
+/**
  * Per-frame clock in seconds on a shared app-wide timeline. Read it from draw
  * or layout lambdas (graphicsLayer, drawBehind) so animation never recomposes.
  *
@@ -144,7 +202,12 @@ internal fun rememberFrameSeconds(animated: Boolean = true): State<Float> {
     // most expensive thing the setting touches: while the player or the mini
     // player is on screen this pins the process at display refresh rate, and
     // the mini player is mounted by the nav host on every tab.
-    if (animated && !LocalLowPerformance.current.disableAnimations) {
+    // Under the CRT effect over the whole app the glass holds still too: the
+    // app is one layer through two full-screen shader passes, and every
+    // frame of glass motion re-ran both over every pixel — a phone running
+    // hot on the library screen (seen on device). The tube and the mask
+    // hide a breath of glass anyway.
+    if (animated && !LocalLowPerformance.current.disableAnimations && !LocalAppTvShader.current) {
         LaunchedEffect(Unit) {
             while (true) {
                 withFrameNanos { now ->
@@ -194,12 +257,12 @@ internal fun Modifier.fxaa(): Modifier {
     // Nothing left to anti-alias once the glass relight is gone.
     if (LocalLowPerformance.current.disableLiquidGlass) return this
     if (!fx.fxaa || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return this
-    return this.then(fxaaModifier(fx.fxaaStrength))
+    return this.then(fxaaModifier(fx, LocalVisualLinks.current))
 }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-private fun fxaaModifier(strength: Float): Modifier {
+private fun fxaaModifier(fx: tf.monochrome.android.domain.model.LyricsFxSettings, live: VisualLinkLive): Modifier {
     val shader = remember {
         runCatching { RuntimeShader(FXAA_SRC) }
             .onSuccess { LyricsDebug.log("FXAA shader compiled") }
@@ -208,7 +271,8 @@ private fun fxaaModifier(strength: Float): Modifier {
     } ?: return Modifier
     return Modifier.graphicsLayer {
         if (size.minDimension > 0f) {
-            shader.setFloatUniform("uStrength", strength)
+            // Read here, so a music link on the strength moves it each frame.
+            shader.setFloatUniform("uStrength", live.lyrics(fx).fxaaStrength)
             renderEffect = RenderEffect
                 .createRuntimeShaderEffect(shader, "content")
                 .asComposeRenderEffect()
@@ -221,9 +285,11 @@ private fun fxaaModifier(strength: Float): Modifier {
 private fun liquidGlassModifier(
     tint: Color,
     fx: tf.monochrome.android.domain.model.LyricsFxSettings,
+    live: VisualLinkLive,
     backdrop: PlayerBackdrop,
     rayLight: LyricRayLight?,
 ): Modifier {
+    val baseFx = fx
     val shader = remember {
         runCatching { RuntimeShader(LIQUID_GLASS_SRC) }
             .onSuccess { LyricsDebug.log("liquid-glass shader compiled") }
@@ -242,6 +308,9 @@ private fun liquidGlassModifier(
 
     return Modifier.backdropAnchor(anchor).graphicsLayer {
         if (size.minDimension > 0f) {
+            // This frame's settings, music links included: read here, in the
+            // layer block, so a link redraws the glass and recomposes nothing.
+            val fx = live.lyrics(baseFx)
             shader.setFloatUniform("uSize", size.width, size.height)
             shader.setFloatUniform("uTime", timeSec.value)
             shader.setFloatUniform("uTilt", tilt.value.x, tilt.value.y)
@@ -342,11 +411,20 @@ val LocalPlayerGlass = compositionLocalOf { tf.monochrome.android.domain.model.P
  * that can change, so this never alters the shape of a caller's composition.
  */
 @Composable
-fun rememberLiquidGlassAvailable(): Boolean {
+fun rememberLiquidGlassAvailable(): Boolean = rememberLiquidGlassAvailable(LocalPlayerGlass.current)
+
+/**
+ * The same, for a pane drawn with [glass] rather than the screen's
+ * [LocalPlayerGlass]. A pane asks of its own settings: the screen's can be
+ * another material, or the default where no screen provides one, and asked
+ * of those a pane with its glass on could be told the shader will not run
+ * and draw its slab as a faint smudge.
+ */
+@Composable
+fun rememberLiquidGlassAvailable(glass: tf.monochrome.android.domain.model.PlayerGlassSettings): Boolean {
     val compiles = remember { liquidGlassCompiles }
     val flat = LocalLowPerformance.current.disableLiquidGlass
-    val enabled = LocalPlayerGlass.current.enabled
-    return compiles && !flat && enabled
+    return compiles && !flat && glass.enabled
 }
 
 /**
@@ -482,15 +560,7 @@ fun PlayerGlassHaze(
             // otherwise recompose this on every frame it runs.
             .graphicsLayer { alpha = fade.value }
             .clip(shape)
-            .hazeEffect(
-                state = haze,
-                style = dev.chrisbanes.haze.HazeStyle(
-                    backgroundColor = frostBg,
-                    blurRadius = g.hazeBlurDp.dp,
-                    tints = listOf(dev.chrisbanes.haze.HazeTint(frostTint)),
-                    noiseFactor = 0f,
-                ),
-            ),
+            .glassFrost(state = haze, glass = g, ground = frostBg, isDark = isDark),
     )
 }
 
@@ -544,6 +614,38 @@ val LocalPlayerGlassGround = compositionLocalOf { PlayerGlassGround }
 fun playerFrostTint(glass: tf.monochrome.android.domain.model.PlayerGlassSettings, isDark: Boolean): Color {
     val base = if (isDark) Color.Black.copy(alpha = 0.32f) else Color.White.copy(alpha = 0.26f)
     return base.copy(alpha = (base.alpha * glass.hazeTint).coerceIn(0f, 1f))
+}
+
+/**
+ * A haze pane frosted by [glass]: its Backdrop blur, and [playerFrostTint]
+ * over it toward [ground]. The one recipe every frosted pane uses.
+ *
+ * The blur and the tint are set in Haze's own block, which it re-runs when a
+ * value read there changes, without a recomposition: so a music link on
+ * Backdrop blur or tint moves the frost every frame and rebuilds nothing.
+ */
+@Composable
+fun Modifier.glassFrost(
+    state: dev.chrisbanes.haze.HazeState,
+    glass: tf.monochrome.android.domain.model.PlayerGlassSettings,
+    ground: Color,
+    isDark: Boolean = ground.luminance() <= 0.5f,
+): Modifier {
+    val links = LocalVisualLinks.current
+    val area = LocalGlassArea.current
+    return hazeEffect(
+        state = state,
+        style = dev.chrisbanes.haze.HazeStyle(
+            backgroundColor = ground,
+            blurRadius = glass.hazeBlurDp.dp,
+            tints = listOf(dev.chrisbanes.haze.HazeTint(playerFrostTint(glass, isDark))),
+            noiseFactor = 0f,
+        ),
+    ) {
+        val g = links.glass(glass, area)
+        blurRadius = g.hazeBlurDp.dp
+        tints = listOf(dev.chrisbanes.haze.HazeTint(playerFrostTint(g, isDark)))
+    }
 }
 
 /**
@@ -605,7 +707,7 @@ internal fun Modifier.playerGlass(
 @Composable
 private fun playerGlassModifier(
     tint: Color,
-    g: tf.monochrome.android.domain.model.PlayerGlassSettings,
+    base: tf.monochrome.android.domain.model.PlayerGlassSettings,
     bulgeCenter: Offset,
     bulgeAmount: () -> Float,
     bulgeRadiusFraction: Float,
@@ -619,7 +721,7 @@ private fun playerGlassModifier(
     // scaled by uLiquid, so at zero it renders identically frame to frame and
     // has no reason to drive a clock. This is the mini player, mounted app-wide
     // by the nav host, so the gate reaches every screen.
-    val timeSec = rememberFrameSeconds(animated = g.surfaceMotion > 0f)
+    val timeSec = rememberFrameSeconds(animated = base.surfaceMotion > 0f)
     // The same argument for the sensor. Every uTilt term in the shader is
     // multiplied by uTiltAmount, and tilt reactivity defaults to zero, so at
     // the default this surface's pixels do not depend on the phone's attitude
@@ -629,12 +731,17 @@ private fun playerGlassModifier(
     // times a second even with surface motion at zero. The surfaces that do
     // read tilt — the lyric glass, the panel, a non-zero reactivity here —
     // still acquire it, and they share the one listener as before.
-    val tilt = if (g.tiltReactivity > 0f) rememberGravityTilt() else NoTilt
+    val tilt = if (base.tiltReactivity > 0f) rememberGravityTilt() else NoTilt
     val backdrop = LocalPlayerBackdrop.current
     val anchor = rememberBackdropAnchor()
     val scrim = remember(backdrop.dominant) { backdropScrimTone(backdrop.dominant) }
+    // The music links move this glass in the layer block alone, so a linked
+    // setting redraws this layer each frame and recomposes nothing.
+    val links = LocalVisualLinks.current
+    val area = LocalGlassArea.current
     return Modifier.backdropAnchor(anchor).graphicsLayer {
         if (size.minDimension > 0f) {
+            val g = links.glass(base, area)
             shader.setFloatUniform("uSize", size.width, size.height)
             shader.setFloatUniform("uTime", timeSec.value)
             shader.setFloatUniform("uTilt", tilt.value.x, tilt.value.y)

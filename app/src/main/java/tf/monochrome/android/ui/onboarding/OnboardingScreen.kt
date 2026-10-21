@@ -189,8 +189,7 @@ internal fun OnboardingStepScaffold(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = MonoDimens.spacingXl)
             )
             if (subtitle != null) {

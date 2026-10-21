@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.sp
 import tf.monochrome.android.audio.dsp.SnapinType
 import tf.monochrome.android.audio.dsp.model.FxTapFrame
 import tf.monochrome.android.audio.dsp.model.PluginInstance
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.mixer.FLKnobControl
 import tf.monochrome.android.ui.mixer.ParamDef
 import tf.monochrome.android.ui.mixer.getParamDefs
@@ -65,7 +65,7 @@ import tf.monochrome.android.R
 /**
  * One Serum-style stackable effect module in the FX chain.
  *
- * The base surface is `liquidGlass` over `MaterialTheme` colours so it tracks
+ * The base surface is `materialSurface` over `MaterialTheme` colours so it tracks
  * the OS/app theme; the category [accent] appears only as the left stripe, the
  * tinted title, and the active bypass glow.
  */
@@ -86,6 +86,8 @@ fun FxCard(
     onOversample: (Int) -> Unit,
     onPreset: (FxPreset) -> Unit,
     modifier: Modifier = Modifier,
+    /** Each knob's music link key, where knobs can follow the music; null for none. */
+    linkKeyFor: (paramIndex: Int) -> String? = { null },
 ) {
     val bypassed = plugin.bypassed
     val chevronRotation by animateFloatAsState(
@@ -98,11 +100,9 @@ fun FxCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(MonoDimens.shapeMd)
-            .liquidGlass(
+            .materialSurface(
                 shape = MonoDimens.shapeMd,
                 tintAlpha = if (dragging) 0.28f else if (expanded) 0.20f else 0.12f,
-                borderAlpha = if (dragging) MonoDimens.glassBorderAlpha * 2.5f
-                              else MonoDimens.glassBorderAlpha
             )
     ) {
         Row(
@@ -200,9 +200,9 @@ fun FxCard(
 
                 val defs = getParamDefs(plugin.type)
                 if (plugin.type == SnapinType.EQ_10BAND) {
-                    Eq10BandKnobs(defs, plugin, accent, onParam)
+                    Eq10BandKnobs(defs, plugin, accent, onParam, linkKeyFor)
                 } else {
-                    KnobGrid(defs, plugin, accent, onParam)
+                    KnobGrid(defs, plugin, accent, onParam, linkKeyFor)
                 }
 
                 DryWetRow(plugin.dryWet, accent, onDryWet)
@@ -280,6 +280,7 @@ private fun KnobGrid(
     plugin: PluginInstance,
     accent: Color,
     onParam: (Int, Float) -> Unit,
+    linkKeyFor: (Int) -> String? = { null },
 ) {
     val columns = 4
     val rows = (defs.size + columns - 1) / columns
@@ -302,7 +303,8 @@ private fun KnobGrid(
                         onValueChange = { onParam(paramIndex, it) },
                         modifier = Modifier.weight(1f),
                         steps = def.steps,
-                        default = def.default
+                        default = def.default,
+                        linkKey = linkKeyFor(paramIndex),
                     )
                 } else {
                     Spacer(modifier = Modifier.weight(1f))
@@ -322,6 +324,7 @@ private fun Eq10BandKnobs(
     plugin: PluginInstance,
     accent: Color,
     onParam: (Int, Float) -> Unit,
+    linkKeyFor: (Int) -> String? = { null },
 ) {
     // Param 0 = preamp; then 5 params per band.
     if (defs.isNotEmpty()) {
@@ -335,7 +338,8 @@ private fun Eq10BandKnobs(
                 onValueChange = { onParam(0, it) },
                 modifier = Modifier.weight(1f),
                 steps = def.steps,
-                default = def.default
+                default = def.default,
+                linkKey = linkKeyFor(0),
             )
             Spacer(modifier = Modifier.weight(3f))
         }
@@ -363,7 +367,8 @@ private fun Eq10BandKnobs(
                     onValueChange = { onParam(paramIndex, it) },
                     modifier = Modifier.weight(1f),
                     steps = def.steps,
-                    default = def.default
+                    default = def.default,
+                    linkKey = linkKeyFor(paramIndex),
                 )
             }
         }

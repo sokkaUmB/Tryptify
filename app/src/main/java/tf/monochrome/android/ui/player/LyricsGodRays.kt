@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import tf.monochrome.android.domain.model.LyricsFxSettings
+import tf.monochrome.android.domain.model.VisualLinkTargets
 import tf.monochrome.android.performance.LocalLowPerformance
 import kotlin.math.PI
 import kotlin.math.cos
@@ -107,7 +108,8 @@ internal fun Modifier.lyricGodRays(
  */
 @Stable
 internal class LyricRayLight(
-    val fx: LyricsFxSettings,
+    /** The saved settings: what composition may read (a switch, a layer choice). */
+    val baseFx: LyricsFxSettings,
     accent: Color,
     val moving: Boolean,
     private val time: State<Float>,
@@ -122,12 +124,22 @@ internal class LyricRayLight(
     private val lettersBox: () -> Rect?,
     /** The length every distance in the light is a share of, px: the window's short side. */
     private val scale: Float,
+    /** The music links moving any of these settings; read in the draw phase through [fx]. */
+    private val live: VisualLinkLive = VisualLinkLive.None,
 ) {
+    /**
+     * This frame's settings: [baseFx] with whatever the music links are moving.
+     * Reads snapshot state the links write every frame, so read it only in a
+     * draw or layer block — composition reads [baseFx].
+     */
+    val fx: LyricsFxSettings get() = live.lyrics(baseFx)
+
     /** The light's colour: the album accent, a third of the way to white. */
     val color: Color = lerp(accent, Color.White, 0.35f)
 
     /** This frame's light in root px. Null until the lyrics have been laid out. */
     private fun frameInRoot(): RayFrame? {
+        val fx = this.fx
         val box = lettersBox()?.takeIf { it.width > 0f && it.height > 0f } ?: return null
         if (scale <= 0f) return null
         val t = if (moving) time.value else 0f
@@ -206,20 +218,22 @@ internal fun rememberLyricRayLight(
     fx: LyricsFxSettings = LocalLyricsFx.current,
     /** Who this light is for, in the Debug Log's rays report. */
     debugName: String = "lyrics",
+    live: VisualLinkLive = LocalVisualLinks.current,
 ): LyricRayLight? {
     if (!fx.godRays) return null
     if (LocalLowPerformance.current.disableLiquidGlass) return null
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return null
     // A clock only when something on the rays moves: the dust, the orbit or
-    // the sway. Still rays redraw only when the lyrics under them do.
-    val moving = GodRayGeometry.isMoving(fx)
+    // the sway — set, or moved by a music link. Still rays redraw only when
+    // the lyrics under them do.
+    val moving = GodRayGeometry.isMoving(fx) || VisualLinkTargets.movesRayClock(live.linkedKeys)
     val time = rememberFrameSeconds(animated = moving)
     val tilt = if (fx.godRayTilt > 0f) rememberGravityTilt() else NoTilt
     val window = LocalWindowInfo.current.containerSize
     val scale = min(window.width, window.height).toFloat()
-    val light = remember(fx, accent, moving, time, tilt, pulse, band, lettersBox, scale) {
+    val light = remember(fx, accent, moving, time, tilt, pulse, band, lettersBox, scale, live) {
         RaysProbe.lightsBuilt++
-        LyricRayLight(fx, accent, moving, time, tilt, pulse, band, lettersBox, scale)
+        LyricRayLight(fx, accent, moving, time, tilt, pulse, band, lettersBox, scale, live)
     }
     // Keyed on nothing, so a light rebuilt every recomposition still gets
     // reported, as a high "lights built", instead of restarting the timer.

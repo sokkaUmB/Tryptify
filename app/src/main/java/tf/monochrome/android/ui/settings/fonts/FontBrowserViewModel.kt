@@ -9,13 +9,18 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import tf.monochrome.android.data.fonts.FontImportReport
 import tf.monochrome.android.data.fonts.FontLibrary
 import tf.monochrome.android.data.fonts.ImportedFont
 import tf.monochrome.android.data.preferences.PreferencesManager
+import tf.monochrome.android.domain.model.TypeRole
+import tf.monochrome.android.domain.model.TypeStyleOverride
+import tf.monochrome.android.domain.model.TypographySettings
 import javax.inject.Inject
 
 /** The key the built-in default is listed under; its stored id is null. */
@@ -38,12 +43,17 @@ class FontBrowserViewModel @Inject constructor(
     private val library: FontLibrary,
 ) : ViewModel() {
 
-    /** The font in use, as a listing key. */
-    val activeKey: StateFlow<String> = preferences.customFontUri
-        .map { it ?: DEFAULT_FONT_KEY }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, DEFAULT_FONT_KEY)
-
     val imported: StateFlow<List<ImportedFont>> = library.imported
+
+    /**
+     * The font in use, as a listing key. A font chosen as one file of a family
+     * the library now lists as one entry (its other cuts imported since) is
+     * that entry.
+     */
+    val activeKey: StateFlow<String> = combine(preferences.customFontUri, library.imported) { id, fonts ->
+        if (id == null) return@combine DEFAULT_FONT_KEY
+        fonts.firstOrNull { font -> font.files.any { it.absolutePath == id } }?.id ?: id
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, DEFAULT_FONT_KEY)
 
     private val _picked = MutableStateFlow<String?>(null)
 
@@ -56,6 +66,28 @@ class FontBrowserViewModel @Inject constructor(
 
     private val _report = MutableStateFlow<FontImportReport?>(null)
     val report: StateFlow<FontImportReport?> = _report.asStateFlow()
+
+    /** The typography table: per text style, its font, weight, size and spacing. */
+    val typography: StateFlow<TypographySettings> = preferences.typography
+        .stateIn(viewModelScope, SharingStarted.Eagerly, TypographySettings.DEFAULT)
+
+    // Edits read the stored table, not the state above, which can lag a fast
+    // second edit and would write the first one away.
+    private val typographyLock = Mutex()
+
+    private fun editTypography(change: (TypographySettings) -> TypographySettings) {
+        viewModelScope.launch {
+            typographyLock.withLock { preferences.setTypography(change(preferences.typography.first())) }
+        }
+    }
+
+    fun setTypographyStyle(role: TypeRole, style: TypeStyleOverride) = editTypography { it.with(role, style) }
+
+    /** Every style back to the app's own; the page's Width, which has its own control, stays. */
+    fun resetTypography() = editTypography { TypographySettings(widthPercent = it.widthPercent) }
+
+    /** How wide every style's letters are drawn, unless a style says otherwise. */
+    fun setTypographyWidth(percent: Int) = editTypography { it.withWidth(percent) }
 
     private val _pendingDelete = MutableStateFlow<ImportedFont?>(null)
     val pendingDelete: StateFlow<ImportedFont?> = _pendingDelete.asStateFlow()
@@ -110,6 +142,13 @@ class FontBrowserViewModel @Inject constructor(
             // first, so it is never pointed at a file that is gone.
             if (activeKey.value == font.id) preferences.setCustomFontUri(null)
             if (_picked.value == font.id) _picked.value = null
+            // Likewise any text style that used it goes back to the main font.
+            val gone = font.files.map { it.absolutePath }.toSet()
+            editTypography { table ->
+                TypeRole.entries.fold(table) { t, role ->
+                    if (t[role].fontId in gone) t.with(role, t[role].copy(fontId = null)) else t
+                }
+            }
             library.delete(font)
         }
     }

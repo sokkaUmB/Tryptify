@@ -3,7 +3,7 @@ package tf.monochrome.android.domain.model
 import kotlinx.serialization.Serializable
 
 /**
- * The Wave Candy scope on the artwork, and the kick punch that goes with it.
+ * The Wave Candy scope on the artwork, and the swell its lines take on a kick.
  * Stored as one JSON blob and synced with the rest of the settings; every
  * field is clamped on the way in and out, so a hand-edited or newer blob
  * cannot put the scope somewhere it cannot draw.
@@ -26,10 +26,12 @@ data class WaveCandySettings(
     val albumColor: Boolean = false,
     /** What sets the line off the cover. */
     val glow: WaveGlow = WaveGlow.NEON,
-    /** The cover punching in on each kick. */
+    /**
+     * The lines swelling on each kick. The cover itself no longer moves: its
+     * punch, and the strength saved for it, were taken out; a blob that still
+     * carries `kickZoom` reads past it.
+     */
     val kickEnabled: Boolean = true,
-    /** How far the cover punches in on a kick, as a fraction (0.05 = 5%). */
-    val kickZoom: Float = 0.05f,
     /** 0 = only the hardest kicks, 1 = everything with low end. */
     val kickSensitivity: Float = 0.5f,
 ) {
@@ -37,7 +39,6 @@ data class WaveCandySettings(
         windowMs = windowMs.coerceIn(MIN_WINDOW_MS, MAX_WINDOW_MS),
         gain = gain.coerceIn(0.25f, 3f),
         thicknessDp = thicknessDp.coerceIn(0.5f, 4f),
-        kickZoom = kickZoom.coerceIn(0f, 0.12f),
         kickSensitivity = kickSensitivity.coerceIn(0f, 1f),
     )
 

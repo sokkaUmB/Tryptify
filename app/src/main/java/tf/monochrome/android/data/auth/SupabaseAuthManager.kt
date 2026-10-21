@@ -12,7 +12,9 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.CodeVerifierCache
 import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Discord
 import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.OAuthProvider
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.createSupabaseClient
@@ -20,6 +22,10 @@ import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,9 +51,17 @@ private class SharedPrefsCodeVerifierCache(context: Context) : CodeVerifierCache
 
 data class UserProfile(
     val id: String,
+    /** The name the sign-in provider gave (Google's). Never shown as the account's name. */
     val displayName: String?,
     val email: String?,
-    val photoUrl: String?
+    val photoUrl: String?,
+    /**
+     * The name the listener chose in the app; null until they choose one.
+     * Display only: it is not unique and can change at any time, so nothing
+     * is ever keyed by it. Synced data is keyed by [id], the account the
+     * listener signed in with (Google or email).
+     */
+    val username: String? = null,
 )
 
 @Singleton
@@ -92,6 +106,19 @@ class SupabaseAuthManager @Inject constructor(
 
     private val auth get() = supabase.auth
 
+    /** The signed-in account's access token, for a server of ours to check with Supabase; null signed out. */
+    fun accessToken(): String? = runCatching { auth.currentSessionOrNull()?.accessToken }.getOrNull()
+
+    /**
+     * The name other players see: the name chosen in the app, else the
+     * provider's, else the email's first part; null when nobody is signed in.
+     */
+    fun playerName(): String? = _userProfile.value?.let { profile ->
+        profile.username?.takeIf { it.isNotBlank() }
+            ?: profile.displayName?.takeIf { it.isNotBlank() }
+            ?: profile.email?.substringBefore('@')?.takeIf { it.isNotBlank() }
+    }
+
     private val _userProfile = MutableStateFlow<UserProfile?>(null)
     val userProfile: StateFlow<UserProfile?> = _userProfile.asStateFlow()
 
@@ -126,18 +153,28 @@ class SupabaseAuthManager @Inject constructor(
      * then opens it in a Custom Tab. The app receives the callback via:
      *   tf.monotrypt.android://login-callback?code=...
      */
-    suspend fun signInWithGoogle(context: Context) {
+    suspend fun signInWithGoogle(context: Context) = signInWithOAuth(context, Google, "Google")
+
+    /**
+     * Discord, the same Supabase OAuth flow as Google: the provider is
+     * switched on (with a Discord application's client id and secret) in the
+     * Supabase dashboard, under Authentication › Providers, and the callback
+     * comes back through the same deep link.
+     */
+    suspend fun signInWithDiscord(context: Context) = signInWithOAuth(context, Discord, "Discord")
+
+    private suspend fun signInWithOAuth(context: Context, provider: OAuthProvider, name: String) {
         oauthCallbackReceived = false
         _isSigningIn.value = true
         _errorMessage.value = null
         _successMessage.value = null
         try {
-            val url = auth.getOAuthUrl(Google)
+            val url = auth.getOAuthUrl(provider)
             Log.d("SupabaseAuth", "OAuth URL: $url")
             val customTab = CustomTabsIntent.Builder().build()
             customTab.launchUrl(context, Uri.parse(url))
         } catch (e: Exception) {
-            _errorMessage.value = "Google sign-in failed: ${parseAuthError(e)}"
+            _errorMessage.value = "$name sign-in failed: ${parseAuthError(e)}"
             _isSigningIn.value = false
         }
     }
@@ -322,11 +359,35 @@ class SupabaseAuthManager @Inject constructor(
         }
     }
 
+    /**
+     * Set the account's username: the name the app shows, chosen in the app
+     * and separate from the name Google gives. Saved as `username` in the
+     * user's metadata, so it follows the account to every device; Google
+     * rewrites only its own keys (`full_name`, `name`) on sign-in.
+     */
+    suspend fun updateUsername(name: String): Result<UserProfile> = try {
+        val user = auth.updateUser {
+            data = buildJsonObject { put(USERNAME_KEY, name) }
+        }
+        val profile = user.toProfile()
+        _userProfile.value = profile
+        Result.success(profile)
+    } catch (e: Exception) {
+        Result.failure(Exception(parseAuthError(e), e))
+    }
+
     private fun UserInfo.toProfile() = UserProfile(
         id = id ?: "",
-        displayName = userMetadata?.get("full_name")?.toString()?.removeSurrounding("\"")
-            ?: userMetadata?.get("name")?.toString()?.removeSurrounding("\""),
+        displayName = metadataString("full_name") ?: metadataString("name"),
         email = email,
-        photoUrl = userMetadata?.get("avatar_url")?.toString()?.removeSurrounding("\"")
+        photoUrl = metadataString("avatar_url"),
+        username = metadataString(USERNAME_KEY),
     )
+
+    private fun UserInfo.metadataString(key: String): String? =
+        (userMetadata?.get(key) as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+
+    private companion object {
+        const val USERNAME_KEY = "username"
+    }
 }

@@ -73,9 +73,17 @@ class CrashLogger @Inject constructor(
         prefs.edit().putBoolean(KEY_SAVE_REPORTS, enabled).apply()
     }
 
+    /** What the last process noted ([CrashBreadcrumbs]), read before this one writes over it. */
+    @Volatile private var previousCrumbs: Map<String, String> = emptyMap()
+
     fun install() {
         if (installed) return
         installed = true
+        runCatching {
+            val crumbs = context.getSharedPreferences(CRUMBS, Context.MODE_PRIVATE)
+            previousCrumbs = crumbs.all.mapValues { it.value.toString() }
+            CrashBreadcrumbs.attach(crumbs)
+        }
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
@@ -123,6 +131,9 @@ class CrashLogger @Inject constructor(
             appendLine("reason:    ${if (exit.reason == ApplicationExitInfo.REASON_ANR) "ANR (not responding)" else "native crash"}")
             appendLine("status:    ${exit.status}")
             appendLine("detail:    ${exit.description}")
+            // Where the app was: the tombstone of a render-thread crash names
+            // no screen of its own.
+            previousCrumbs.toSortedMap().forEach { (key, value) -> appendLine("${"$key:".padEnd(10)} $value") }
             appendLine()
             when {
                 trace == null -> appendLine("(no trace kept by the system)")
@@ -226,7 +237,25 @@ class CrashLogger @Inject constructor(
     companion object {
         private const val TAG = "CrashLogger"
         private const val PREFS = "crash_logger"
+        private const val CRUMBS = "crash_breadcrumbs"
         private const val KEY_LAST_EXIT = "last_reported_exit"
         private const val KEY_SAVE_REPORTS = "save_reports"
+    }
+}
+
+/**
+ * A few words on where the app is (the screen, the CRT effect), kept on disk
+ * as they change so a native crash's report, written by the next launch, can
+ * say what was on screen. Nothing until [CrashLogger.install] attaches it.
+ */
+object CrashBreadcrumbs {
+    @Volatile private var prefs: android.content.SharedPreferences? = null
+
+    internal fun attach(store: android.content.SharedPreferences) {
+        prefs = store
+    }
+
+    fun note(key: String, value: String?) {
+        prefs?.edit()?.putString(key, value ?: "-")?.apply()
     }
 }

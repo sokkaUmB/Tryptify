@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import tf.monochrome.android.ui.theme.FontFamilies
 import tf.monochrome.android.ui.theme.FontFileInspector
 import tf.monochrome.android.ui.theme.FontFormat
 import tf.monochrome.android.ui.theme.FontInspection
@@ -22,16 +23,25 @@ import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** A font the listener imported, as the library lists it. */
+/**
+ * A font the listener imported, as the library lists it: one family, however
+ * many files its variations came in (see [FontFamilies]).
+ */
 data class ImportedFont(
+    /** The file that stands for the family ([ImportedFamily.representative]). */
     val file: File,
     /** The name the font gives itself, or the file's name when it gives none. */
     val name: String,
     /** False for a file that cannot be read as a font — listed so it can be deleted. */
     val usable: Boolean,
+    /** Every file of the family, [file] among them. */
+    val files: List<File> = listOf(file),
 ) {
     /** The id stored as the active font: imports are addressed by path. */
     val id: String get() = file.absolutePath
+
+    /** How many weights and slopes it came as: 1 for a single file. */
+    val styles: Int get() = files.size
 }
 
 /** Why a picked file did not join the library. */
@@ -127,25 +137,36 @@ class FontLibrary @Inject constructor(
         }
     }
 
+    /** Deletes the font: every file of its family. */
     suspend fun delete(font: ImportedFont) = withContext(Dispatchers.IO) {
         lock.withLock {
-            font.file.delete()
+            font.files.forEach { it.delete() }
             _imported.value = scan()
         }
     }
 
-    private fun scan(): List<ImportedFont> =
-        dir.listFiles().orEmpty()
-            .filter { it.isFile && it.extension.lowercase() in FONT_EXTENSIONS }
-            .map { file ->
-                when (val inspection = FontFileInspector.inspect(file)) {
-                    is FontInspection.Font ->
-                        ImportedFont(file, inspection.displayName(fallback = file.nameWithoutExtension), usable = true)
-                    is FontInspection.Rejected ->
-                        ImportedFont(file, file.nameWithoutExtension, usable = false)
-                }
+    /**
+     * The library: a font's variations as one entry, named after its family,
+     * and a file that cannot be read as a font as an entry of its own, so it
+     * can be deleted.
+     */
+    private fun scan(): List<ImportedFont> {
+        val files = dir.listFiles().orEmpty().filter { it.isFile && it.extension.lowercase() in FONT_EXTENSIONS }
+        val cuts = files.mapNotNull { FontFamilies.cutOf(it) }
+        val readable = cuts.map { it.file }.toSet()
+        val families = FontFamilies.group(cuts).map { family ->
+            val lead = family.representative.file
+            val name = if (family.hasVariations) {
+                family.name
+            } else {
+                (FontFileInspector.inspect(lead) as? FontInspection.Font)
+                    ?.displayName(fallback = lead.nameWithoutExtension) ?: family.name
             }
-            .sortedBy { it.name.lowercase() }
+            ImportedFont(lead, name, usable = true, files = family.files)
+        }
+        val broken = files.filter { it !in readable }.map { ImportedFont(it, it.nameWithoutExtension, usable = false) }
+        return (families + broken).sortedBy { it.name.lowercase() }
+    }
 
     private sealed interface CopyResult {
         data class Ok(val sha256: String) : CopyResult

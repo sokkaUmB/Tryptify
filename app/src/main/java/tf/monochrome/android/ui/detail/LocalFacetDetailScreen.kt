@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.detail
 
+import androidx.compose.foundation.combinedClickable
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -66,6 +67,9 @@ import tf.monochrome.android.ui.components.SearchAction
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import tf.monochrome.android.R
+import tf.monochrome.android.player.preview.SongPreview
+import tf.monochrome.android.ui.components.rememberHoldToPreview
+import tf.monochrome.android.ui.components.songPreviewHold
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -242,17 +246,22 @@ private fun FacetTrackRow(
     onMoreClick: () -> Unit,
     navController: NavController
 ) {
+    // Holding plays the song's preview until the finger lifts.
+    val holdToPreview = rememberHoldToPreview(track)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs),
+            .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
+            .clip(MonoDimens.shapeMd)
+            .combinedClickable(onClick = onClick, onLongClick = holdToPreview),
         shape = MonoDimens.shapeMd,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = MonoDimens.cardAlpha),
-        onClick = onClick
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                // On the row, above the card's own tint, which would cover it.
+                .songPreviewHold(SongPreview.keyOf(track), MonoDimens.shapeMd)
                 .height(MonoDimens.listRowHeight)
                 .padding(horizontal = MonoDimens.listItemPaddingH),
             verticalAlignment = Alignment.CenterVertically
@@ -294,10 +303,13 @@ private fun FacetTrackRow(
                 )
             }
             // Where it plays from — on this screen, the device.
-            tf.monochrome.android.ui.components.SourcePill(track.sourceType)
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(6.dp))
+            val badges = tf.monochrome.android.ui.theme.rowBadges()
+            if (badges.source) {
+                tf.monochrome.android.ui.components.SourcePill(track.sourceType)
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(6.dp))
+            }
             val badge = track.qualityBadge
-            if (badge != null) {
+            if (badges.quality && badge != null) {
                 Surface(
                     shape = RoundedCornerShape(999.dp),
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
@@ -311,11 +323,13 @@ private fun FacetTrackRow(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
             }
-            Text(
-                text = track.formattedDuration,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (badges.duration) {
+                Text(
+                    text = track.formattedDuration,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             IconButton(onClick = onAddToQueue, modifier = Modifier.size(32.dp)) {
                 Icon(
                     Icons.AutoMirrored.Filled.PlaylistAdd,

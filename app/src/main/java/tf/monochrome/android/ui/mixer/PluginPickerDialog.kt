@@ -25,7 +25,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import tf.monochrome.android.audio.dsp.SnapinType
 import tf.monochrome.android.ui.mixer.fxchain.FxChainColors
-import tf.monochrome.android.ui.theme.MonoDimens
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
 
@@ -36,7 +35,8 @@ fun PluginPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = MonoDimens.cardAlpha),
+        // Opaque: at card alpha the FX chain's chips and labels read through the plugin names.
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         title = { Text(stringResource(R.string.mixer_add_plugin)) },
         text = {
             Column(

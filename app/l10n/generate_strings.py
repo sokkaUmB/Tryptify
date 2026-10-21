@@ -21,7 +21,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 RES = os.path.join(HERE, '..', 'src', 'main', 'res')
 LANGS = {  # column -> values folder
     'en': 'values', 'zh': 'values-zh-rCN', 'ja': 'values-ja', 'fr': 'values-fr',
-    'es': 'values-es', 'tr': 'values-tr', 'de': 'values-de',
+    'es': 'values-es', 'tr': 'values-tr', 'de': 'values-de', 'it': 'values-it',
 }
 # Plural categories each language actually distinguishes (CLDR). A <plurals>
 # must give exactly these: an English-style one/other pair in Japanese is
@@ -29,8 +29,9 @@ LANGS = {  # column -> values folder
 PLURAL_FORMS = {
     'en': ['one', 'other'], 'zh': ['other'], 'ja': ['other'], 'tr': ['one', 'other'],
     'fr': ['one', 'many', 'other'], 'es': ['one', 'many', 'other'], 'de': ['one', 'other'],
+    'it': ['one', 'many', 'other'],
 }
-NON_TRANSLATABLE = {'app_name'}
+NON_TRANSLATABLE = {'app_name', 'trypt_mania'}
 
 def french_spacing(s):
     """French puts a space before : ; ? ! and it has to be non-breaking, or a

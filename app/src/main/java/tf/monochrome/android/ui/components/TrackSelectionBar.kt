@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +38,10 @@ fun TrackSelectionBar(
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
     deleteContentDescription: String = stringResource(R.string.action_delete),
+    /** "Find album art" for the selected songs, where they are files on the phone. */
+    onFindAlbumArt: (() -> Unit)? = null,
+    /** "Add to party" for the selected songs, while a listening party is on. */
+    onAddToParty: (() -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -69,12 +74,30 @@ fun TrackSelectionBar(
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
+            if (onAddToParty != null) {
+                IconButton(onClick = onAddToParty) {
+                    Icon(
+                        imageVector = tf.monochrome.android.ui.party.ListeningPartyIcon,
+                        contentDescription = stringResource(R.string.action_add_to_party),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
             IconButton(onClick = onAddToPlaylist) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                     contentDescription = stringResource(R.string.action_add_to_playlist),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
+            }
+            if (onFindAlbumArt != null) {
+                IconButton(onClick = onFindAlbumArt) {
+                    Icon(
+                        imageVector = Icons.Default.ImageSearch,
+                        contentDescription = stringResource(R.string.action_find_album_art),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
             if (onDelete != null) {
                 IconButton(onClick = onDelete) {

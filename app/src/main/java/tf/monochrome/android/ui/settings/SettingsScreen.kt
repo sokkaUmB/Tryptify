@@ -1,6 +1,7 @@
 package tf.monochrome.android.ui.settings
 
 import tf.monochrome.android.ui.components.UiText
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.navigation.popBackStackSafe
 import tf.monochrome.android.ui.theme.goToPage
 import android.content.ActivityNotFoundException
@@ -21,6 +22,7 @@ import tf.monochrome.android.R
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -57,7 +59,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Cloud
@@ -97,7 +101,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Button
 import android.content.Context
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import tf.monochrome.android.domain.model.NowPlayingViewMode
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -144,7 +147,6 @@ import tf.monochrome.android.ui.eq.EqViewModel
 import tf.monochrome.android.ui.eq.EqProfileMiniGraph
 import tf.monochrome.android.domain.model.EqPreset
 import tf.monochrome.android.ui.components.bounceClick
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.navigation.Screen
 import tf.monochrome.android.ui.theme.selectableThemes
 import tf.monochrome.android.ui.theme.themeDisplayNames
@@ -167,6 +169,10 @@ import tf.monochrome.android.ui.theme.Paper
 import tf.monochrome.android.ui.theme.ColorBlend
 import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.filled.MusicNote
+import tf.monochrome.android.ui.musiclinks.LinkedTrackMarker
+import tf.monochrome.android.ui.musiclinks.LocalMusicLinkHost
+import tf.monochrome.android.ui.musiclinks.musicLinkColor
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
@@ -184,11 +190,12 @@ import androidx.compose.ui.res.pluralStringResource
 //
 // The labels here are ids — English, stable, what the search index and the dev
 // editor key on. What a chip says comes from [settingsTabLabelRes].
-private val settingsTabs = listOf("Appearance", "Fonts", "Visual Studio", "Audio", "Equalizer", "Library", "Downloads", "Connections", "Radio", "System", "About")
+private val settingsTabs = listOf("Appearance", "Fonts", "Theme Store", "Visual Studio", "Audio", "Equalizer", "Library", "Downloads", "Connections", "Radio", "System", "About")
 
 private val settingsTabLabels: Map<String, Int> = mapOf(
     "Appearance" to R.string.settings_tab_appearance,
     "Fonts" to R.string.fonts_title,
+    "Theme Store" to R.string.theme_store_title,
     "Visual Studio" to R.string.settings_tab_visual_studio,
     "Audio" to R.string.settings_tab_audio,
     "Equalizer" to R.string.settings_tab_equalizer,
@@ -236,6 +243,9 @@ internal fun settingsLinkRoute(label: String): String? = settingsLinkTabs[label]
 /** The tabs that are pages of the pager, in chip order. */
 private val settingsPages: List<String> = settingsTabs.filter { it !in settingsLinkTabs }
 
+/** The page ids, for the Every Corner achievement to count against. */
+internal val settingsPageIds: List<String> get() = settingsPages
+
 /**
  * Index of the About tab, where the What's New panel lives. Derived from
  * [settingsTabs] rather than written down, so reordering the tabs can't leave a
@@ -278,6 +288,10 @@ fun SettingsScreen(
     // Tab changes slide normally; with "Disable animations" on they jump.
     val animateTabs = !tf.monochrome.android.ui.theme.reduceMotion()
     val selectedTab = settingsPager.currentPage
+    // Every Corner counts the pages seen. Keyed on the page, so a chip tap, a
+    // swipe, a search jump and a deep link landing all count alike.
+    val achievements = tf.monochrome.android.ui.stats.rememberAchievementStore()
+    LaunchedEffect(selectedTab) { achievements?.settingsTabOpened(settingsPages[selectedTab]) }
 
     // Toast one-shot ViewModel messages (font import, backup import, …) from
     // one always-composed collector, regardless of which tab is showing.
@@ -451,8 +465,19 @@ fun SettingsScreen(
                                 onOpenFonts = {
                                     settingsScope.launch { settingsPager.goToPage(settingsTabIndex("Fonts"), animateTabs) }
                                 },
+                                onOpenThemeStore = {
+                                    settingsScope.launch { settingsPager.goToPage(settingsTabIndex("Theme Store"), animateTabs) }
+                                },
                             )
-                            "Fonts" -> tf.monochrome.android.ui.settings.fonts.FontBrowserPage()
+                            "Fonts" -> tf.monochrome.android.ui.settings.fonts.FontBrowserPage(
+                                fontSize = { FontSizeSection(viewModel) },
+                            )
+                            // The store as a page of Settings: its own header
+                            // gives way to the chips, its search and undo stay.
+                            "Theme Store" -> tf.monochrome.android.ui.themestore.ThemeStoreScreen(
+                                navController = navController,
+                                embedded = true,
+                            )
                             "Audio" -> AudioTab(viewModel, navController)
                             "Equalizer" -> EqualizerTab(navController, viewModel)
                             "Library" -> LibrarySettingsTab(viewModel)
@@ -570,7 +595,7 @@ private fun EqualizerTab(
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .liquidGlass(shape = RoundedCornerShape(10.dp))
+                        .materialSurface(shape = RoundedCornerShape(10.dp))
                         .bounceClick(onClick = { eqViewModel.loadPreset(preset.id) })
                 ) {
                     EqProfileMiniGraph(
@@ -599,7 +624,7 @@ private fun EqualizerTab(
                             Text(
                                 preset.name,
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
                                 color = if (isActive) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
@@ -707,11 +732,27 @@ private tailrec fun android.content.Context.findActivityOrSelf(): android.conten
 }
 
 @Composable
-private fun AppearanceTab(viewModel: SettingsViewModel, navController: NavController, onOpenFonts: () -> Unit) {
-    SettingsTabContent {
-        AppearanceControls(viewModel, onOpenFonts = onOpenFonts)
-        Spacer(modifier = Modifier.height(16.dp))
-        InterfaceControls(viewModel, navController)
+private fun AppearanceTab(
+    viewModel: SettingsViewModel,
+    navController: NavController,
+    onOpenFonts: () -> Unit,
+    onOpenThemeStore: () -> Unit,
+) {
+    // The CRT effect's sliders take music links here as in the Studio: a ♪ by
+    // each, and the sheet and editor over this page.
+    StudioMusicLinkScope {
+        SettingsTabContent {
+            AppearanceControls(
+                viewModel,
+                onOpenFonts = onOpenFonts,
+                onOpenThemeStore = onOpenThemeStore,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            InterfaceControls(viewModel, navController)
+            Spacer(modifier = Modifier.height(16.dp))
+            // Last of all: the whole app through an old TV.
+            CrtEffectSetting(viewModel)
+        }
     }
 }
 
@@ -719,7 +760,7 @@ private fun AppearanceTab(viewModel: SettingsViewModel, navController: NavContro
 private enum class CustomColorTarget { Accent, Background }
 
 @Composable
-private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> Unit) {
+private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> Unit, onOpenThemeStore: () -> Unit) {
     val themeName by viewModel.theme.collectAsStateWithLifecycle()
     val dynamicColors by viewModel.dynamicColors.collectAsStateWithLifecycle()
     val dynamicColorMenus by viewModel.dynamicColorMenus.collectAsStateWithLifecycle()
@@ -728,9 +769,7 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
     // Only to show what "Match blend" currently works out to; the slider does
     // not change it.
     val themePaper by viewModel.themePaper.collectAsStateWithLifecycle()
-    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
     val customFontUri by viewModel.customFontUri.collectAsStateWithLifecycle()
-    val followSystemFontScale by viewModel.fontScaleFollowSystem.collectAsStateWithLifecycle()
     val glowBehindArt by viewModel.glowBehindArt.collectAsStateWithLifecycle()
     val artGlowRadius by viewModel.artGlowRadius.collectAsStateWithLifecycle()
     val artGlowBrightness by viewModel.artGlowBrightnessPct.collectAsStateWithLifecycle()
@@ -747,6 +786,13 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
 
         SettingsGroupHeader(stringResource(R.string.settings_theme))
         SettingItem(title = stringResource(R.string.settings_color_theme), subtitle = themeDisplayNames[themeName] ?: themeName, onClick = { showThemeDropdown = true })
+        // A whole look, made by somebody else or shared by you: colours, glass,
+        // lyrics, fonts and music links in one go.
+        SettingItem(
+            title = stringResource(R.string.theme_store_title),
+            subtitle = stringResource(R.string.theme_store_settings_desc),
+            onClick = onOpenThemeStore,
+        )
         DropdownMenu(expanded = showThemeDropdown, onDismissRequest = { showThemeDropdown = false }) {
             // What may be *chosen* is narrower than what may be *named*: the
             // subtitle above still reads the full catalogue, so a stored key
@@ -861,6 +907,7 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
                     onCommit = { viewModel.setArtGlowRadius(it) },
                     label = { stringResource(R.string.settings_glow_radius_value, it) },
                     subtitle = stringResource(R.string.settings_how_far_the_halo_reaches_past_the_cover_s_edge),
+                    linkKey = "lyrics.artGlowRadiusDp",
                 )
                 IntSettingSlider(
                     value = artGlowBrightness,
@@ -868,6 +915,9 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
                     onCommit = { viewModel.setArtGlowBrightness(it) },
                     label = { stringResource(R.string.settings_glow_brightness_value, it) },
                     subtitle = stringResource(R.string.settings_peak_strength_of_the_halo_on_a_kick),
+                    linkKey = "lyrics.artGlowBrightness",
+                    // The slider is in percent, the link in the setting's own 0 to 0.6.
+                    linkScale = 100f,
                 )
             }
         }
@@ -875,57 +925,7 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
         Spacer(modifier = Modifier.height(16.dp))
         SettingsGroupHeader(stringResource(R.string.settings_typography))
 
-        // Font size: five fixed steps, or hand over to the OS setting.
-        SettingSwitchItem(
-            title = stringResource(R.string.settings_use_system_font_size),
-            subtitle = stringResource(R.string.settings_follow_the_size_set_in_android_settings_display),
-            checked = followSystemFontScale,
-            onCheckedChange = { viewModel.setFontScaleFollowSystem(it) }
-        )
-
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Text(
-                stringResource(R.string.settings_font_size),
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (followSystemFontScale) MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onSurface
-            )
-
-            // A legacy value from the old free-form slider (e.g. 1.37) won't equal
-            // any step, so select the closest one instead of leaving nothing
-            // highlighted. Picking a chip then writes the exact step back.
-            val selectedPreset = remember(fontScale) {
-                FONT_SCALE_PRESETS.minByOrNull { kotlin.math.abs(it.scale - fontScale) }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FONT_SCALE_PRESETS.forEach { preset ->
-                    tf.monochrome.android.ui.mixer.GlassChoiceChip(
-                        label = stringResource(preset.label),
-                        selected = !followSystemFontScale && preset == selectedPreset,
-                        accent = MaterialTheme.colorScheme.primary,
-                        enabled = !followSystemFontScale,
-                        onClick = { viewModel.setFontScale(preset.scale) },
-                    )
-                }
-            }
-
-            Text(
-                stringResource(R.string.settings_preview_the_quick_brown_fox_jumps_over_the_lazy),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 12.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
+        // The font size moved to the Fonts page, beside the fonts it scales.
         // Font Library: one row over to the Fonts chip, whose page previews
         // every font in its own letters before it is chosen. The row carries
         // the active font's name so it still answers "what am I using?", and
@@ -942,8 +942,6 @@ private fun AppearanceControls(viewModel: SettingsViewModel, onOpenFonts: () -> 
 @Composable
 private fun InterfaceControls(viewModel: SettingsViewModel, navController: NavController) {
     val explicit by viewModel.showExplicitBadges.collectAsStateWithLifecycle()
-    val playerDynamicColor by viewModel.playerDynamicColor.collectAsStateWithLifecycle()
-    val playerBlurredBackground by viewModel.playerBlurredBackground.collectAsStateWithLifecycle()
 
     SettingsGroupHeader(stringResource(R.string.settings_display))
     SettingSwitchItem(
@@ -952,6 +950,36 @@ private fun InterfaceControls(viewModel: SettingsViewModel, navController: NavCo
         checked = explicit,
         onCheckedChange = { viewModel.setShowExplicitBadges(it) }
     )
+    // Song row badges: all of them at once, then each. Every one takes line
+    // width from the artist and album beside it.
+    val rowBadges by viewModel.rowBadges.collectAsStateWithLifecycle()
+    SettingSwitchItem(
+        title = stringResource(R.string.settings_row_badges),
+        subtitle = stringResource(R.string.settings_row_badges_summary),
+        checked = rowBadges.any,
+        onCheckedChange = {
+            viewModel.setRowBadges(
+                if (it) tf.monochrome.android.data.preferences.RowBadges()
+                else tf.monochrome.android.data.preferences.RowBadges.NONE
+            )
+        }
+    )
+    for ((badge, title, subtitle) in listOf(
+        Triple(tf.monochrome.android.data.preferences.RowBadge.SOURCE, R.string.settings_row_badge_source, R.string.settings_row_badge_source_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.QUALITY, R.string.settings_row_badge_quality, R.string.settings_row_badge_quality_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.FORMAT, R.string.settings_row_badge_format, R.string.settings_row_badge_format_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.DOWNLOAD, R.string.settings_row_badge_download, R.string.settings_row_badge_download_summary),
+        Triple(tf.monochrome.android.data.preferences.RowBadge.DURATION, R.string.settings_row_badge_duration, R.string.settings_row_badge_duration_summary),
+    )) {
+        Box(modifier = Modifier.padding(start = 16.dp)) {
+            SettingSwitchItem(
+                title = stringResource(title),
+                subtitle = stringResource(subtitle),
+                checked = rowBadges.shows(badge),
+                onCheckedChange = { viewModel.setRowBadges(rowBadges.with(badge, it)) }
+            )
+        }
+    }
     val romaji by viewModel.romajiLyrics.collectAsStateWithLifecycle()
     SettingSwitchItem(
         title = stringResource(R.string.settings_romaji_lyrics),
@@ -993,35 +1021,16 @@ private fun InterfaceControls(viewModel: SettingsViewModel, navController: NavCo
         }
     }
 
-    Spacer(modifier = Modifier.height(16.dp))
-    SettingsGroupHeader(stringResource(R.string.settings_now_playing))
-    val viewMode by viewModel.nowPlayingViewMode.collectAsStateWithLifecycle()
-    var showModeDropdown by remember { mutableStateOf(false) }
-    SettingItem(
-        title = stringResource(R.string.settings_view_mode), 
-        subtitle = stringResource(R.string.settings_view_mode_summary, viewModeLabel(viewMode)), 
-        onClick = { showModeDropdown = true }
-    )
-    DropdownMenu(expanded = showModeDropdown, onDismissRequest = { showModeDropdown = false }) {
-        NowPlayingViewMode.entries.forEach { mode ->
-            DropdownMenuItem(
-                text = { Text(viewModeLabel(mode)) },
-                onClick = { viewModel.setNowPlayingViewMode(mode); showModeDropdown = false }
-            )
-        }
-    }
+    // Server lyrics — a song the race leaves without word timing goes to the
+    // chart server, which hears the vocals and times every word (ServerLyricsEngine).
+    val serverLyrics by viewModel.serverLyrics.collectAsStateWithLifecycle()
     SettingSwitchItem(
-        title = stringResource(R.string.settings_dynamic_player_color),
-        subtitle = stringResource(R.string.settings_tint_the_player_from_album_art_needs_dynamic),
-        checked = playerDynamicColor,
-        onCheckedChange = { viewModel.setPlayerDynamicColor(it) }
+        title = stringResource(R.string.settings_server_lyrics),
+        subtitle = stringResource(R.string.settings_server_lyrics_subtitle),
+        checked = serverLyrics,
+        onCheckedChange = { viewModel.setServerLyrics(it) }
     )
-    SettingSwitchItem(
-        title = stringResource(R.string.settings_blurred_album_background),
-        subtitle = stringResource(R.string.settings_behind_the_player_and_the_mixer_the_album_art),
-        checked = playerBlurredBackground,
-        onCheckedChange = { viewModel.setPlayerBlurredBackground(it) }
-    )
+
 
     Spacer(modifier = Modifier.height(16.dp))
 }
@@ -1062,7 +1071,6 @@ internal fun VisualizerSettings(
     val meshX by viewModel.visualizerMeshX.collectAsStateWithLifecycle()
     val meshY by viewModel.visualizerMeshY.collectAsStateWithLifecycle()
     val targetFps by viewModel.visualizerTargetFps.collectAsStateWithLifecycle()
-    val audioDelayMs by viewModel.visualizerAudioDelayMs.collectAsStateWithLifecycle()
     val vsyncEnabled by viewModel.visualizerVsyncEnabled.collectAsStateWithLifecycle()
     val showFps by viewModel.visualizerShowFps.collectAsStateWithLifecycle()
     val fullscreen by viewModel.visualizerFullscreen.collectAsStateWithLifecycle()
@@ -1237,14 +1245,13 @@ internal fun VisualizerSettings(
         )
 
         // The visualizer is fed from inside the playback chain, so it always
-        // sees audio slightly before the output device plays it. Wired output
-        // hides that; Bluetooth does not.
-        IntSettingSlider(
-            value = audioDelayMs,
-            valueRange = 0f..ProjectMAudioBus.MAX_DELAY_MS.toFloat(),
-            onCommit = { viewModel.setVisualizerAudioDelayMs(it) },
-            label = { if (it == 0) stringResource(R.string.settings_audio_delay_off) else stringResource(R.string.settings_audio_delay_ms, it) },
-            subtitle = stringResource(R.string.settings_holds_the_visualizer_back_to_match_what_you_hear),
+        // sees audio slightly before the output device plays it. How long it
+        // waits is the output's own, set once for the whole app.
+        Text(
+            text = stringResource(R.string.settings_bluetooth_sync_set_there),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 8.dp),
         )
 
         SettingSwitchItem(
@@ -1354,14 +1361,37 @@ private fun IntSettingSlider(
     label: @Composable (Int) -> String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    /**
+     * The music link key, as on the CRT's sliders: a note beside the label,
+     * green while linked, and the link's reach under the track. [linkScale]
+     * is how many of this slider's steps make one of the setting's own units.
+     */
+    linkKey: String? = null,
+    linkScale: Float = 1f,
 ) {
     var local by remember(value) { mutableFloatStateOf(value.toFloat()) }
+    val linkHost = if (linkKey != null) LocalMusicLinkHost.current else null
     Spacer(modifier = Modifier.height(8.dp))
-    Text(
-        label(local.toInt()),
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurface,
-    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            label(local.toInt()),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (linkHost != null && linkKey != null) {
+            val moveLabel = stringResource(R.string.music_link_move_with_music)
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = moveLabel,
+                tint = if (linkHost.isLinked(linkKey)) musicLinkColor() else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                modifier = Modifier
+                    .clickable(onClickLabel = moveLabel) { linkHost.open(linkKey) }
+                    .padding(6.dp)
+                    .size(18.dp),
+            )
+        }
+    }
     if (subtitle != null) {
         Text(
             subtitle,
@@ -1376,6 +1406,9 @@ private fun IntSettingSlider(
         valueRange = valueRange,
         modifier = modifier.fillMaxWidth(),
     )
+    if (linkHost != null && linkKey != null && linkHost.isLinked(linkKey)) {
+        LinkedTrackMarker(linkKey, linkHost, valueRange.start / linkScale, valueRange.endInclusive / linkScale)
+    }
 }
 
 // ─── Tab 3: Scrobbling ─────────────────────────────────────────────────
@@ -1554,6 +1587,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
     // owned them.
     val gapless by viewModel.gaplessPlayback.collectAsStateWithLifecycle()
     val crossfade by viewModel.crossfadeDuration.collectAsStateWithLifecycle()
+    val exclusiveUsb by viewModel.usbExclusiveBitPerfectEnabled.collectAsStateWithLifecycle()
     val gaplessNoResample by viewModel.gaplessNoResample.collectAsStateWithLifecycle()
     val qualities by viewModel.qualities.collectAsStateWithLifecycle()
     val tidalAtmos by viewModel.tidalAtmosPreferred.collectAsStateWithLifecycle()
@@ -1598,17 +1632,25 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         )
 
         // Sits under the gapless toggle because the two decide the same thing:
-        // what happens between one track and the next. They're also mutually
-        // exclusive in effect — any blend above 0s overlaps the tracks, so the
-        // gapless hand-off steps aside for it.
+        // what happens between one track and the next. A blend above 0s
+        // overlaps the tracks, so the gapless hand-off steps aside for it; and
+        // a blend needs gapless on (CrossfadeRamp.blends), so with it off the
+        // slider is greyed and says why, rather than look set and do nothing.
+        // The same with the exclusive USB DAC on (CrossfadeRamp.blendMs): no
+        // blend and no second player then, and the value set waits for it.
+        val blendAvailable = gapless && !exclusiveUsb
         Text(
             text = if (crossfade == 0) stringResource(R.string.settings_blend_gapless) else stringResource(R.string.settings_blend_seconds, crossfade),
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (blendAvailable) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.settingsAnchor(stringResource(R.string.search_crossfade)),
         )
         Text(
-            text = if (crossfade == 0) {
+            text = if (exclusiveUsb) {
+                stringResource(R.string.settings_blend_off_exclusive)
+            } else if (!gapless) {
+                stringResource(R.string.settings_blend_needs_gapless)
+            } else if (crossfade == 0) {
                 stringResource(R.string.settings_blend_zero_desc)
             } else {
                 stringResource(R.string.settings_blend_desc, crossfade)
@@ -1619,6 +1661,7 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         Slider(
             value = crossfade.toFloat(),
             onValueChange = { viewModel.setCrossfadeDuration(it.toInt()) },
+            enabled = blendAvailable,
             valueRange = 0f..12f,
             steps = 11,
             modifier = Modifier.fillMaxWidth()
@@ -1719,6 +1762,15 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+        SettingsGroupHeader(stringResource(R.string.trypt_mania_beta))
+        OutlinedButton(
+            onClick = { navController.navigateTool(Screen.Glyph) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.trypt_mania_beta))
+        }
+
         // One group, not two. "Spatial Audio" held nothing but the Atmos row,
         // and that row is the multichannel renderer's own settings — channel
         // map, downmix coefficients, binaural render. It belongs against the
@@ -1726,10 +1778,11 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         // above the downmix toggle instead of under a heading of its own.
         Spacer(modifier = Modifier.height(16.dp))
         SettingsGroupHeader(stringResource(R.string.settings_output))
+        BluetoothSyncRow(navController)
         DspBlockSizeSelector(viewModel)
 
         Spacer(modifier = Modifier.height(8.dp))
-        UsbBitPerfectToggle(viewModel)
+        OutputToggles(viewModel)
 
         Spacer(modifier = Modifier.height(8.dp))
         SettingItem(
@@ -1816,8 +1869,6 @@ private fun AudioTab(viewModel: SettingsViewModel, navController: NavController)
         )
     }
 }
-
-
 
 // User-facing DSP buffer (block) size selector. Smaller = lower latency
 // + more JNI / native overhead per second; larger = lower CPU at the
@@ -2032,25 +2083,12 @@ private fun ChannelDetectorCard(viewModel: SettingsViewModel) {
 }
 
 /**
- * Settings switch that pins the player's output to an attached USB Audio
- * Class DAC via setPreferredAudioDevice. The device-name line below the
- * switch updates live as the DAC plugs / unplugs.
+ * Where the audio goes: hi-res on Android's own output, and the exclusive USB
+ * DAC path that bypasses it. (A third switch pinned Android's output to a USB
+ * DAC; exclusive mode is the bit-perfect path, so it went.)
  */
 @Composable
-private fun UsbBitPerfectToggle(viewModel: SettingsViewModel) {
-    val enabled by viewModel.usbBitPerfectEnabled.collectAsStateWithLifecycle()
-    val deviceName by viewModel.usbOutputDeviceName.collectAsStateWithLifecycle()
-    SettingSwitchItem(
-        title = stringResource(R.string.settings_usb_dac_bit_perfect_routing),
-        subtitle = when {
-            !enabled -> stringResource(R.string.settings_usb_off)
-            deviceName != null -> stringResource(R.string.settings_usb_on_device, deviceName!!)
-            else -> stringResource(R.string.settings_usb_on_waiting)
-        },
-        checked = enabled,
-        onCheckedChange = { viewModel.setUsbBitPerfectEnabled(it) },
-    )
-
+private fun OutputToggles(viewModel: SettingsViewModel) {
     val hiResHal by viewModel.hiResHalOutputEnabled.collectAsStateWithLifecycle()
     SettingSwitchItem(
         title = stringResource(R.string.settings_hi_res_output_bluetooth_speaker),
@@ -2199,6 +2237,10 @@ private fun BypassDiagnosticsCard(
                                 "async feedback ✓"
                             else "no feedback EP (open-loop)"
                         )
+                        diagnostics.hardwareVolumeLabel()?.let {
+                            append(" · ")
+                            append(it)
+                        }
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -2670,6 +2712,13 @@ private fun DiscordPresenceControls(viewModel: SettingsViewModel) {
 private fun ConnectionsTab(viewModel: SettingsViewModel) {
     SettingsTabContent {
         ApiServersSection(viewModel)
+        Spacer(modifier = Modifier.height(20.dp))
+        // The listener's own library server, under the catalogue APIs it sits
+        // beside in Search.
+        SubsonicSection()
+        Spacer(modifier = Modifier.height(20.dp))
+        // The paid storage that plays through that same Subsonic client.
+        CloudSection()
         Spacer(modifier = Modifier.height(20.dp))
         ScrobblingControls(viewModel)
         Spacer(modifier = Modifier.height(20.dp))
@@ -3273,7 +3322,6 @@ private fun LitGroupHeader(title: String, badge: String? = null) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
             color = primary,
             modifier = Modifier.weight(1f),
         )
@@ -3660,8 +3708,10 @@ private fun LibrarySettingsTab(viewModel: SettingsViewModel) {
         ) {
             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(if (isScanning) "Scanning…" else "Rescan Library Now")
+            Text(stringResource(if (isScanning) R.string.settings_scanning_library else R.string.settings_rescan_library_now))
         }
+
+        MusicFolders(viewModel)
 
         val titleFromFileName by viewModel.localTitleFromFileName.collectAsStateWithLifecycle()
         SettingSwitchItem(
@@ -3874,7 +3924,85 @@ private fun WhatsNewPanel(highlight: Boolean) {
 }
 
 /**
- * Import playlists from a connected Spotify account.
+ * The folders the library is scanned from, with + to add one and a remove on
+ * each: the same list Library › Local shows and changes (the user's folder
+ * roots), so the two places cannot disagree. Removing asks first, as there,
+ * and says the files stay; an empty list scans the whole phone, and says so.
+ */
+@Composable
+private fun MusicFolders(viewModel: SettingsViewModel) {
+    val context = LocalContext.current
+    val folders by viewModel.musicFolders.collectAsStateWithLifecycle()
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree(),
+    ) { uri ->
+        if (uri != null) {
+            // Kept across restarts, as Library › Local's picker keeps it.
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val path = tf.monochrome.android.util.safTreeUriToPath(uri)
+            if (path == null) {
+                android.widget.Toast.makeText(context, context.getString(R.string.folder_unscannable), android.widget.Toast.LENGTH_LONG).show()
+            } else {
+                viewModel.addMusicFolder(path)
+            }
+        }
+    }
+    var removing by remember { mutableStateOf<tf.monochrome.android.ui.library.FolderToExclude?>(null) }
+    removing?.let { folder ->
+        tf.monochrome.android.ui.library.ExcludeFolderDialog(
+            folder = folder,
+            onDismiss = { removing = null },
+            onConfirm = { viewModel.removeMusicFolder(folder.path) },
+        )
+    }
+
+    val title = stringResource(R.string.settings_music_folders)
+    Spacer(modifier = Modifier.height(12.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth().settingsAnchor(title),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                stringResource(if (folders.isEmpty()) R.string.settings_music_folders_whole_phone else R.string.settings_music_folders_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = { picker.launch(null) }) {
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_folder), tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+    folders.forEach { path ->
+        val name = path.trimEnd('/').substringAfterLast('/').ifBlank { path }
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.Folder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text(path, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            }
+            IconButton(onClick = { removing = tf.monochrome.android.ui.library.FolderToExclude(path, name) }) {
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove_folder))
+            }
+        }
+    }
+}
+
+/**
+ * Import a Spotify playlist from its link, with or without an account, and
+ * with one, from your own playlists and Liked Songs.
  *
  * Was a group on the System tab, between the app sign-in and the backup
  * controls. It produces playlists, so it belongs with the library — and
@@ -3899,58 +4027,73 @@ private fun PlaylistImportSection() {
             if (success) importUrl = ""
         }
 
-        // Connect / disconnect lives on the Connections tab with every other
-        // account; this section keeps only the import it feeds. Both read the
-        // same SpotifyImportViewModel, so linking there lights this up without
-        // leaving Settings.
-        Text(
-            if (spotifyConnected) {
-                "Connected as ${spotifyUserName ?: "…"}. Paste a playlist link, or pick from your library."
-            } else {
-                "Connect Spotify on the Connections tab to import your playlists."
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 8.dp)
+        // The link import, as Library › Playlists › New playlist has it: no
+        // account needed, a public playlist read from its link, looked up as
+        // it is pasted so its cover, name and length show before anything is
+        // imported. The account (Connections tab) adds browsing your own
+        // playlists and Liked Songs, and lists past the public 100 songs.
+        var strictAlbumMatch by remember { mutableStateOf(false) }
+        val preview = tf.monochrome.android.ui.components.rememberSpotifyLinkPreview(importUrl.ifBlank { null })
+        tf.monochrome.android.ui.components.SpotifyLinkField(link = importUrl, onLinkChange = { importUrl = it }) { trailing ->
+            androidx.compose.material3.OutlinedTextField(
+                value = importUrl,
+                onValueChange = { importUrl = it },
+                label = { Text(stringResource(R.string.settings_spotify_playlist_url)) },
+                placeholder = { Text(stringResource(R.string.import_spotify_link_hint)) },
+                trailingIcon = trailing,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        tf.monochrome.android.ui.components.LinkPreviewCard(preview)
+        SettingSwitchItem(
+            title = stringResource(R.string.strict_album_matching),
+            subtitle = stringResource(R.string.strict_album_matching_detail),
+            checked = strictAlbumMatch,
+            onCheckedChange = { strictAlbumMatch = it },
         )
-
-        Spacer(modifier = Modifier.height(12.dp))
-        androidx.compose.material3.OutlinedTextField(
-            value = importUrl,
-            onValueChange = { importUrl = it },
-            label = { Text(stringResource(R.string.settings_spotify_playlist_url)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            enabled = spotifyConnected,
-            supportingText = if (!spotifyConnected) {
-                { Text(stringResource(R.string.settings_connect_spotify_on_the_connections_tab_to_enable)) }
-            } else null
-        )
+        // A playlist Spotify could not be asked about may still import; one
+        // it says is not there, or text that is no link, will not.
+        val linkReady = preview is tf.monochrome.android.ui.components.LinkPreview.Found ||
+            preview is tf.monochrome.android.ui.components.LinkPreview.Unreachable
         Spacer(modifier = Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
-                onClick = { spotifyViewModel.importByUrl(context, importUrl, onResult = onImportResult) },
-                enabled = spotifyConnected && importUrl.isNotBlank() && !isImporting
+                onClick = {
+                    val name = (preview as? tf.monochrome.android.ui.components.LinkPreview.Found)?.name
+                    spotifyViewModel.importByUrl(context, importUrl.trim(), strictAlbumMatch, name, onImportResult)
+                },
+                enabled = linkReady && !isImporting
             ) {
                 Text(stringResource(R.string.settings_import_playlist))
             }
-            OutlinedButton(
-                onClick = {
-                    spotifyViewModel.loadMyPlaylists()
-                    showSpotifyPicker = true
-                },
-                enabled = spotifyConnected && !isImporting
-            ) {
-                Text(stringResource(R.string.settings_browse_my_playlists))
+            if (spotifyConnected) {
+                OutlinedButton(
+                    onClick = {
+                        spotifyViewModel.loadMyPlaylists()
+                        showSpotifyPicker = true
+                    },
+                    enabled = !isImporting
+                ) {
+                    Text(stringResource(R.string.settings_browse_my_playlists))
+                }
             }
         }
+        Text(
+            if (spotifyConnected) stringResource(R.string.settings_connected_as, spotifyUserName ?: "…")
+            else stringResource(R.string.settings_spotify_browse_needs_connect),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp)
+        )
 
         when (val progress = importProgress) {
             is tf.monochrome.android.data.import_.ImportProgress.Fetching -> {
                 Spacer(modifier = Modifier.height(8.dp))
                 androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 Text(
-                    "Fetching playlist from ${progress.source}…",
+                    stringResource(R.string.import_fetching, progress.source),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -3962,7 +4105,7 @@ private fun PlaylistImportSection() {
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "Matching ${progress.current}/${progress.total}, ${progress.matched} found",
+                    stringResource(R.string.import_matching, progress.current, progress.total, progress.matched),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -3970,14 +4113,18 @@ private fun PlaylistImportSection() {
             is tf.monochrome.android.data.import_.ImportProgress.Done -> {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Imported ${progress.matched} of ${progress.total} tracks into '${progress.playlistName}'",
+                    stringResource(
+                        R.string.import_done_toast,
+                        androidx.compose.ui.res.pluralStringResource(R.plurals.tracks_of_total, progress.total, progress.matched, progress.total),
+                        progress.playlistName,
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 if (progress.unmatched.isNotEmpty()) {
                     var showUnmatched by remember { mutableStateOf(false) }
                     TextButton(onClick = { showUnmatched = !showUnmatched }) {
-                        Text(if (showUnmatched) "Hide unmatched tracks" else "Show ${progress.unmatched.size} unmatched tracks")
+                        Text(stringResource(if (showUnmatched) R.string.settings_hide_unmatched else R.string.playlist_fix_show_unmatched))
                     }
                     if (showUnmatched) {
                         progress.unmatched.forEach { line ->
@@ -4245,13 +4392,51 @@ private fun PaperSwatch(
     }
 }
 
-/** What the player's view-mode picker calls each mode, in the reader's language. */
+
+/**
+ * The font size: five fixed steps, or the size set in Android. On the Fonts
+ * page, beside the fonts it scales.
+ */
 @Composable
-private fun viewModeLabel(mode: NowPlayingViewMode): String = stringResource(
-    when (mode) {
-        NowPlayingViewMode.COVER_ART -> R.string.settings_view_cover_art
-        NowPlayingViewMode.LYRICS -> R.string.mode_lyrics
-        NowPlayingViewMode.QUEUE -> R.string.queue
-        NowPlayingViewMode.VISUALIZER -> R.string.visualizer
+internal fun FontSizeSection(viewModel: SettingsViewModel) {
+    val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
+    val followSystemFontScale by viewModel.fontScaleFollowSystem.collectAsStateWithLifecycle()
+    // A legacy value from the old free-form slider (e.g. 1.37) won't equal
+    // any step, so select the closest one instead of leaving nothing
+    // highlighted. Picking a step then writes the exact step back.
+    val selectedPreset = remember(fontScale) {
+        FONT_SCALE_PRESETS.indexOf(FONT_SCALE_PRESETS.minByOrNull { kotlin.math.abs(it.scale - fontScale) })
     }
-)
+    // Compact, on the Fonts page's text panel: the five steps on one line as
+    // percentages beside their label, and Android's size as a switch under it.
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.typo_size),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.width(64.dp),
+            )
+            tf.monochrome.android.ui.settings.fonts.CompactSegmented(
+                labels = FONT_SCALE_PRESETS.map { "${(it.scale * 100).roundToInt()}%" },
+                descriptions = FONT_SCALE_PRESETS.map { stringResource(it.label) },
+                selected = if (followSystemFontScale) null else selectedPreset,
+                enabled = !followSystemFontScale,
+                onSelect = { viewModel.setFontScale(FONT_SCALE_PRESETS[it].scale) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.settings_use_system_font_size),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f).padding(start = 64.dp),
+            )
+            Switch(
+                checked = followSystemFontScale,
+                onCheckedChange = { viewModel.setFontScaleFollowSystem(it) },
+                modifier = Modifier.scale(0.8f),
+            )
+        }
+    }
+}

@@ -2,18 +2,349 @@
 
 ## [Unreleased]
 
+### Added
+
+#### Listening parties
+- **Listen together, in sync.** Start a party from your profile or join one with its code; Invite shares a link that opens in the app. Everyone hears the same moment of the same song, and the party page shows who's listening and whether you're in sync.
+- **Guests on the web.** Anyone without the app joins from the link in a web browser, sees the song, the queue and the chat, and can vote to skip and add songs. The app's guest list marks them On the web. A website guest can't be the host.
+- **A shared Up next.** Add to party is in every song menu, and Add all puts a whole album or playlist in at once. Vote skip moves on once enough of the party agrees.
+- **Chat**, in a panel under Up next, with joins and additions in the same thread.
+- **Your phone's songs, shared.** Songs you add from files on the phone or your downloads are streamed to those without them while they're in the queue, one at a time; nobody keeps them, and ending the party deletes them from the server.
+- **Everyone plays at the host's speed**, vinyl style or not, within a second of the host. A listener plays the host's exact Qobuz or Deezer song, and only the host's own press pauses the party.
+- **Host controls**: Make host hands the seat on, Take out removes someone, and End the party for everyone sends everyone out.
+- **It stays connected in the background**, with a notification while it does, and while it is on, a round button over Search in the nav bar takes you back to it.
+- **It plays as your Tryptify account**, on the rooms server Trypt Mania's multiplayer uses. A rooms server from before parties says so instead.
+
+#### Tryptify Cloud
+- **Your music, stored for you.** Settings › Connections › Tryptify Cloud: plans from 100 GB, a 7-day free trial with 20 GB, and a storage meter. Upload to Tryptify Cloud from a song's menu; uploads carry on in the background with a progress notification.
+- **It plays like your own server**: one tap connects it as the Subsonic server, with its own device password, and your library is in Library › My server.
+- **Files are kept as uploaded**: FLAC, ALAC and WAV stay lossless, with their covers.
+- **Manage or cancel the subscription** from the same page. Your library, devices and uploads are also at tryptify.com/account.
+
+#### Sign in with Discord
+- **Continue with Discord** sits under Continue with Google on the signed-out profile, and on tryptify.com/account.
+
+#### Italian
+- **Tryptify speaks Italian**, the eighth language, in Settings › Appearance › Language, or Android's own app languages list. It started from a contributor's translation of 1.9.4.
+
+#### Your own music server
+- **Play your library from Navidrome, Gonic, Airsonic-Advanced, Ampache or any other Subsonic-compatible server.** Connect it under Settings › Connections › Music server (Subsonic) with its address, your username and your password.
+- **A new Library page, My server**, next to Local: your albums (sorted by name, artist, newest, recently played, most played or random) and artists, an album's songs, and Shuffle all. Its songs are in Search too, marked My server.
+- **A home address just works.** Type `192.168.1.20:4533` or `localhost:4533` and Tryptify uses http; an address copied from the server's web page loses the page part by itself.
+- **Your password isn't stored.** Tryptify keeps a sign-in token. Only a server that refuses tokens (an old one, or an LDAP user on Navidrome) gets the password itself, and Settings says so. Neither is synced to your account, and neither leaves the phone: covers reach Discord, party guests, the widget and the lock screen as pictures, never as links.
+- **How to set up**, in the same place: which server to run, which address to type at home, on the phone itself or away, and what to check when it won't connect.
+- Songs from your server can't be downloaded or shared as files from Tryptify; they're already yours, on your server.
+
+#### Trypt Mania in your stats
+- **A Trypt Mania card on Account › Listening stats**: whole songs played and on how many charts, your best grade, full combos, and the accuracy of your last ten songs with an arrow for better or worse than the ten before. It counts all time, so it shows even when the range you picked has no plays. Its arrow opens Trypt Mania.
+- **Grades, not scores.** Points grow with your combo now, so an older run's score would look worse than it was. The card and the achievements compare grades and accuracy only. Training Ground segments don't count as songs.
+- **Three Trypt Mania achievements**: Unbroken (a full combo), Double A (an AA grade) and Chart Hopper (25 different charts). The achievement pill announces them like the others.
+
+#### Open songs from other apps
+- **Tryptify can now be the app that plays a song.** Open an audio file from a file manager, a chat or Downloads, pick Tryptify, and it plays straight away.
+- **It isn't added to your library unless you ask.** A pill at the top shows the song with Add to library, and the same option is in Now Playing's ⋮ menu while it plays. Adding copies it to Music/Tryptify, where the library finds it. Until then it plays from a temporary copy that Tryptify clears by itself.
+- **A song already in your library plays as that song**, so its plays and likes stay together.
+- **When a file can't be opened, the pill says why**: not audio, no permission from the app that sent it, missing, empty, larger than 2 GB, or not enough free space.
+
+#### A pill when you complete an achievement
+- **Finish an achievement and a glass pill drops in at the top**, over whatever is open: its icon in a gold ring that fills, "Achievement unlocked" and its name, and View, which opens it in Account › Listening stats › Achievements. It goes away by itself after four seconds.
+- **Each one shows once.** One finished while the app was closed shows the next time it's open, and the ones you'd finished before this update don't all pop up at once.
+
+#### Bluetooth sync for the whole app
+- **One delay per device, measured once, used everywhere.** Settings › Audio › Bluetooth sync shows how late the output playing now plays. Measure opens Trypt Mania's tap test: tap along to the clicks you hear, apply, and you're back in Settings. You can also nudge it 5 ms at a time.
+- **Each pair of headphones keeps its own.** The value switches by itself when another device connects. A device you never measured uses the value for Bluetooth in general, and the phone speaker and wired headphones stay at none unless you set them.
+- **The lyrics, the music-linked visuals, the visualizer and Trypt Mania all wait the same amount.** Before, they had three separate sliders: the lyrics' Bluetooth delay, the visualizer's audio delay and Trypt Mania's offset. Those are gone, and your existing value carried over to Bluetooth: Trypt Mania's if you had measured one, otherwise the lyrics', otherwise the visualizer's.
+- **Trypt Mania's Sync tab says which device it's saving for.** A delay can be up to a second now; the tap test reads up to half a second.
+
+#### Themes carry the CRT effect
+- **A theme can carry your CRT effect now**: whether it's on, its look, every slider, and whether it draws over the whole app or only the lyrics. It's a part of its own, CRT effect, so you choose whether to publish it and whether to put it on, like the others.
+- **Before, the CRT never travelled with a theme**, so a theme made with the effect over the lyrics came out without it. Older app versions skip the part.
+
+#### A live board while a room plays
+- **Everyone's score is on a board down the left side while a room plays**, as in osu!: place, name, score and combo, best first, with your own card lit. If you're further down than the cards shown, you stay pinned at the bottom with your real place.
+- **Overtakes animate.** When someone moves up, the cards slide into their new order and the climber glows green with a ▲; scores roll up as they arrive. With reduced motion on, the cards just move.
+
+#### Share the song with your room
+- **A player without the song no longer has to sit it out.** In a Trypt Mania room, the host gets Share the song with the room while someone is missing it, and once it's up they get Get the song, with its size: one tap downloads it, plays from it and readies them. The chart already came with the pick, so that's everything they need.
+- **Progress shows as it goes**, and a failure says why. A shared song is kept only while the room is on that chart, and runs on it don't count towards your own scores, since the chart is the host's.
+- **It needs the updated rooms server.** On an older one the buttons don't show.
+
+#### Orbitron ships with the app
+- **Orbitron is a built-in font now**, in Settings › Fonts with the others: a wide, squared-off display face with a sci-fi console feel, every weight from Regular to Black. Pick it for the whole app or for single text styles in the typography table.
+- **It covers Latin letters only.** Turkish's ğ, ş and İ, and Japanese and Chinese, are drawn in the phone's own font.
+
+#### Zoom for the CRT effect
+- **A Zoom slider sets the picture's size on the tube**, from 60% to 120%, in Settings › Appearance › CRT effect, the Lyrics FX tab and Trypt Mania's Graphics. It works like a TV's picture-size knob: the glass keeps its curve while the picture inside it grows or shrinks.
+- **Zoom out to frame the curve.** Under 100% the whole bowed edge of the picture shows inside the screen, with the frame round it.
+- **Zoom in to fill the corners.** Over 100% the picture fills the dark corners a curve leaves. It stops at 120% so the tab bar stays on screen.
+- **Taps follow the zoom**, as they follow the curve. Your looks and saved presets keep their size: anything saved before reads as 100%.
+
+### Changed
+
+#### APIs in two groups
+- **Settings › Connections › APIs lists Streaming and Trypt Mania apart.** The servers that search and play (TIDAL, Qobuz, Apple Music, Deezer) are under Streaming; the ones that only chart, time lyrics or run rooms for Trypt Mania are under Trypt Mania. ↑ moves a server above the one before it in its own group, which is the order that decides which server is used.
+
+#### Player Visuals Studio's tabs are glass pills
+- **Player, UI panels, Lyrics and Visualizer are glass pills now**, like the chips at the top of Settings, instead of underlined tabs that broke "UI panels" and "Visualizer" over two lines. They scroll sideways if they don't fit, and the one you're on scrolls into view.
+
+#### Music links in Settings › Appearance
+- **The CRT effect's sliders in Settings › Appearance can move with the music**, as they do in Player Visuals Studio: tap the ♪ beside one, or press and hold it. It's the same link in both places and on the Music links page.
+- **Curve and tilt can move with the music too.** Taps still land where you see them: each touch keeps the tube's shape from the moment your finger goes down until it lifts, so a held finger doesn't drift with the beat. Zoom stays as you set it.
+- **The glow behind album art links as well**: its radius and brightness, in Settings › Appearance under Glow behind album art. It moves in the player's cover view, where it's drawn.
+
+#### The Theme Store has its own page in Settings
+- **Theme Store is a tab of Settings now, right after Fonts**, instead of a row under Appearance that opened another screen. Search and undo are at the top of the page; Appearance's row and Settings search take you to the tab.
+
+#### Precision AutoEQ gets target pills and a filter editor
+- **Targets are pills under the graph**, one tap each, with Import at the end. The target you've imported and picked has a × to delete it.
+- **Under the pills, each filter has a coloured chip**, and for the one picked its type, and its frequency, gain and Q as pills you swipe or tap to type. Dragging a dot on the graph picks that filter.
+- **The graph is the one Precision AutoEQ always had**, and everything else stays: smoothing, preamp, the algorithm, AutoEq, tone, automatic preamp, the headphone model, export, saved profiles and the full band list.
+
+#### Trypt Mania's score multiplies with your combo
+- **Points grow with the combo, as in osu!.** Each step is worth its judgement's points (Marvelous 300, Perfect 285, Great 210, Good 120, Boo 30) times 1 + (combo − 1) ÷ 25, so the 26th step of a combo is worth twice the first. A Good, a Boo, a miss or a mine starts it over.
+- **There's no top score any more**: a long chart played clean scores far more than a short one. The percent and the grade still say how well you played, and they still rank your high scores; points break ties there, and rank the players in a room, where everyone needs this version for a fair race.
+- **Runs saved before keep the points they had**, on the old scale out of 1,000,000.
+
+#### Trypt Mania is marked as a beta
+- **Its name says (Beta)** on the Library tile, the song list and in Settings, and a small BETA sits under the logo on its menu, in every language.
+
+#### Trypt Mania plays over the player's background
+- **The arrows are now over the same background as the music player**: the song's cover, blurred and darkened, over a wash and a glow in its album colours. It is the player's own background, so it follows the player's colour settings and changes when they do.
+- **The arcade pad, the speakers and the stage lights are gone** from behind the play, so the only thing moving is the arrows.
+- **The ambient visualizer stays in the player.** It can only run on one screen at a time, and the game's music does not feed it.
+- **Trypt Mania takes the colour of the song you pick.** Choose a song on the wheel and the app's dynamic colours fade to its album colour within half a second, whatever your "Blend between tracks" length is (a shorter one is kept). The whole app follows that one song while the mode is open, tab bar and "Tint the menus too" included, so two songs never colour the screen at once; when you leave, the playing track takes over again. The colours stay readable on every menu.
+
+### Fixed
+- **Golden Ears and the Quality card agree on what Hi-Res is.** The achievement counted "HI-RES" or "HI RES" tags the card called lossy, and missed "HIRES", which the card counted.
+- **Night means one thing in your stats: 9 pm to 5 am.** The Night owl listening type, the share of night listening, the clock chart's Night row and the Night Owl achievement used four different windows, so a 4 am peak made you an "Early bird". Night Owl now counts plays from midnight to 5 am.
+
+#### The Fonts page no longer freezes the app with many fonts
+- **Each font chip reads its font in the background now**, at the one weight it shows, and the chip shows in the normal font for the moment it takes. Before, every chip read its font in the frame that drew it, and every imported one read your whole font library again to find its family, so with a lot of fonts installed the page froze the app.
+- **A font file is read once** while the app runs, and the page keeps what it loaded, so scrolling the chips away and back is instant.
+
+#### Trypt Mania's results page has its own background
+- **The results page paints the theme's background under its cards**, so nothing of the song that just played shows through it.
+- **Album colours arriving mid-run no longer restart the game's screens.** When a song with cover colours followed one without, everything in the mode was rebuilt.
+
+## [1.9.4]
+
+### Added
+
+#### Trypt Mania
+- **Trypt Mania has its own tile** in Library › Local, under Library galaxy: a StepMania-style rhythm game played on your own music. It plays through a player of its own, so nothing it plays reaches your queue, scrobbles or Discord status.
+- **A start menu.** Trypt Mania opens on Play, Multiplayer, Map editor, Packs and Settings, with the leaderboard in the top bar, over a demo chart that plays itself in your noteskin. Map editor, Packs and Settings share one row, each name under its icon and shrinking to fit (down to 9 sp) rather than wrapping in a wide font. Back from the music wheel comes back here.
+- **The menus are the app's own.** The tab bar stays on the menus and steps aside only while a chart is played, practised or edited, and the mini player never shows; the top bar, search, buttons and chips are the ones every other screen uses, and follow the theme. Back pauses a run before it leaves it, and closes the search before it leaves the list.
+- **The music wheel.** Play opens StepMania's music wheel. Songs sit in folders made by the sort (Pack by default: one per imported pack and one for your library), one folder open at a time, on a wrapping arc you turn by dragging, flinging, or with the arrow and Page keys. The wheel chooses the song it rests on, and a tap on the centre opens a folder or the song's options. A soft swish plays as each song turns into the middle, as a game sound on the media volume so it is heard with the ringer off. `#DISPLAYBPM` is read as StepMania reads it, so the wheel, the card and the BPM sort show the tempo a chart advertises (??? for a hidden one), while play keeps the real timing.
+- **Sort the songs** by Pack, Mapped, Name, Duration or BPM from the top bar; choosing the same key again turns it round. The leaderboard follows the same order, and the choice is kept.
+- **Song previews from the drop.** Resting on a song plays twelve seconds of it from its drop, looping and fading, as StepMania's song wheel plays a sample, and the song's picture (its chart's background, else its cover) comes up behind the wheel. New charts carry the drop as StepMania's #SAMPLESTART; for other songs it is found from the song's loudness and remembered, so the next visit starts at once. A preview pauses the app's music while it plays, and can be turned off in Settings › More.
+- **A card for each song.** A glass card over the wheel shows the chart's Groove Radar (stream, voltage, air, freeze and chaos, worked out as StepMania's `CalculateRadarValues` does), its tempo with a light on the beat, its level as stars cut through the glass and a graph of its notes per second. Glass pills under it pick the difficulty, Train or Play, and your best grade sits on the card. A song with no chart offers Generate chart.
+- **Charts made from your songs.** Any MP3 or FLAC in your library can be charted: Generate chart on the wheel, ⋮ › Generate a chart from a file, or Play in Trypt Mania from a song's menu anywhere in the app, which finds the song, charts it if it has no chart and puts it on the wheel. The built-in chart server splits the song into stems and answers with the envelopes the chart generator reads: the drums set the tempo and the beat grid, and the vocals, melody and bass place arrows on the tune, turn long sung notes into freeze arrows and step with the tune as it rises and falls, in five difficulties from Beginner to Challenge. Songs wait in a line kept on disk and are charted in the background under a notification, as many at once as the server has copies, with one more uploading ahead.
+- **A chart server built in, Fast or Slow.** Charting works from the first launch: the built-in chart server is in Settings › Connections, marked Built in, shown only by its host and never removable. Trypt Mania › Settings › More › Chart processing picks Slow (a CPU server, minutes a song) or Fast (a GPU server you add, seconds a song, falling back to a CPU server). A folder heading offers Chart N songs and ⋮ offers Chart every song without one; both ask first, with each mode's time and cost.
+- **StepMania packs.** Trypt Mania › Packs browses StepMania Online inside the app (its own site only, over https, without JavaScript) and imports a pack with one tap, in the background, with its progress in a notification. Import a pack ZIP… brings in a file, and Link unpacked songs (folder)… reads a folder of unpacked songs where it is: only each song's chart is kept, as the `.ssc` the game reads, and the music and art stay in the folder. An archive is unpacked with the guards one from the internet needs: no entry outside its folder, every entry bounded as it inflates, a total cap, only charts, music, art and `Pack.ini` kept, and all or nothing per pack. An `.sm` is converted to `.ssc`, and only dance-single charts are kept. The songs join the wheel and get scores like any other, and a removed pack keeps your scores.
+- **Your charts as a pack.** Every chart you make is saved to a folder you pick as the Tryptify pack, `Tryptify/<song>/<song>.ssc` with its music and its cover (named by `#JACKET`), ready for StepMania's or ITGmania's Songs folder. Save as ZIP… makes one file that imports back like any pack. Editing an imported song saves the app's own copy; a pack's files are never written.
+- **Player options with the song playing on them.** A live playfield at the top runs the chosen chart on autoplay, in time with the song's preview, and shows every option as you set it: the speed, Mirror, Hidden, Reverse, Mini, the receptors and the noteskin, with your explosions and god rays. Under it one line says what is set (C550 reads at 550 BPM · Mirror · Reverse), and the options sit under three glass tabs, Speed, Notes and Judge, with the speed on a stepper and a ruler.
+- **StepMania's Player Options before every song**, as a page of the app, with Start above the tab bar. Play on the song card opens it: Speed Type (XMod, CMod, MMod) and Speed (0.25x to 8x, C100 to C1000, M200 to M1000, with the speed it reads at), Rate, Turn (Mirror, Left, Right, Shuffle), Appearance (Hidden, Sudden, Stealth), Scroll (Reverse puts the receptors at the top), Mini, Receptors (Shown or Hidden: StepMania's Dark, named for what it does; while they are hidden the readout under the life bar says No receptors), Judge (J1 to Justice), Fail and Noteskin. Everything but the rate is kept between sessions.
+- **The chosen option is filled.** Selected choices, the tabs and Start are a solid pill with the label knocked out, so they read as chosen in every theme, where an accent label would be grey in some and look disabled.
+- **StepMania's scoring.** Dance points, the percent truncated to hundredths, the default theme's seventeen grades (AAAA down to D-, and F), the FULL COMBO banners, and its life bar with all four fail types (Immediate, Immediate Continue, End of Song, Off), including the five steps a bar waits after a miss before it refills and the tenth a full bar loses on any loss.
+- **StepMania's rules for combos and holds.** A Good breaks the combo, as it does in StepMania's dance mode, a released hold has StepMania's quarter of a second to be caught again, and a roll its half second between taps.
+- **A tap is judged when your finger lands**, not when the app next handled input, which could be most of a frame later.
+- **The rules run in C++.** Judgement, scoring, the beat map and the notes the playfield draws each frame are worked out natively, in `monochrome_glyph`, with a Kotlin twin for where the library does not load: the native tests check the numbers the Kotlin tests do. A frame builds no list of notes, and the scan starts where the settled notes end instead of at the first one.
+- **StepMania's retro arrows** — the "retro" dance noteskin from StepMania, MIT licensed, with its notice in the app. Taps are coloured by beat (red 4ths, blue 8ths, green 12ths, yellow 16ths…), holds and rolls brighten while they are held, and the mine, receptors and explosions are the skin's own. The art is pixel art and is enlarged by whole pixels, so it stays sharp at any lane width.
+- **Retro glass** — the same arrows in the app's glass: tinted see-through bodies in each note's colour, a lit rim and a highlight. It is made from your UI panel glass settings, so the notes change with the sliders that change the mini player and the panels, and with glass removed it is the plain retro skin. It is the default noteskin, beside Retro and Classic (Trypt Mania's own vector arrows). Pick one under Noteskin in Player options, or under Notes in the pause panel or Training Ground; the choice is kept.
+- **StepMania's look.** On the playfield, text in Roboto and Roboto Condensed, the typefaces StepMania's default theme is drawn in; its judgement sprites (FLAWLESS!! to MISS..., early and late), grade art and colours; READY, GO! before the music; a results screen where the grade stamps down, the percent and counts count up and the full combo banner sweeps in; and receptors that flash on the beat.
+- **The judgement is still.** StepMania's sprite appears, holds and fades, with the combo beneath it.
+- **Hit notes flash with god rays** — a brief white-hot flash of the struck arrow, streaming shafts of light through the lyrics' own god-ray effect, and every glyph near it catches the light. Off with reduced motion or with glass removed for performance, and on Android 13 and later.
+- **Hit rays follow the combo.** White to start, then yellow, orange and red at each fifty, and a turning rainbow from two hundred. A broken combo drops back to white.
+- **A miss streams red rays** from the arrow it missed, in place of the cracked-glass mark, which is kept for when the rays are off.
+- **A dance stage behind the notes.** The lanes sit over an arcade dance pad tilted away into a room made from the song's blurred, darkened cover, between two speaker cabinets that pump on the chart's beat. A lane's panel glows while it is held and flashes on a hit. The stage is drawn once into its own layer, so the playfield's redraws never repaint it, and reduced motion keeps it still.
+- **TV shaders.** Settings › Graphics › TV shader draws Scanlines, Diagonal, Triangular, Wave, CRT or CRT-Royale over the game, Training Ground's playfield and the options' preview, on Android 13 and later and where the app allows its blur. It draws on whole phone pixels, so its lines repeat exactly instead of beating against the screen's pixels as moiré, with Pixel size, Strength and Brightness sliders (and Scanlines, Mask, Glow and Sharpness for the CRT) over a live preview. It has the same presets as the app's CRT effect. The pause menu is drawn outside it.
+- **Landscape.** Held sideways, the four lanes are a centred column on whole-pixel lanes, 40% of the width to start and anywhere from 25% to 100% in Settings › Graphics. The touch zones follow the drawn lanes, and the screen either side belongs to the outer lanes, so a thumb at the edge still presses Left or Right.
+- **Graphics settings** in Settings: hit god rays on or off and their quality, the light they throw on the notes, explosions, the beat flash and the combo burst.
+- **Results.** A ring of the run's judgements unrolls around a glass disc holding your grade as the percent counts up, and DDR's evaluation lines count up under it; a tap on a judgement lights its arc. A timing card draws a curve of how early or late you hit, and when your recent runs lean one way, Centre my timing moves your audio offset for you. Play again, Songs and Practise your weakest section are underneath.
+- **High scores on this phone.** The ten best runs of each chart and difficulty, best first by percent, under the name you set. The song card shows your best grade and percent on the chosen difficulty, and runs at another rate or judge are marked. Nothing leaves the phone.
+- **A leaderboard on the Trypt Mania page.** The leaderboard button in the top bar, on the start menu and the music wheel, opens every chart you have a full run on, a card a song, its difficulties as chips and the chosen one's ten best runs. Offline: nothing leaves the phone.
+- **Training Ground.** Train on the song card loops a section, slows it down with or without the pitch, and adds the metronome, Mirror, Shuffle or a ghost of your timing. Challenge gauntlets (Streams, Jumps, Holds, Alternating, Timing control) loop the parts of your own chart that train one skill. A loop is scored on the notes inside it, so a clean pass reads as 100 %. Its waveform is drawn as the song decodes, and the decode stops when you move on, so picking songs never holds a whole song in memory.
+- **A map editor.** Pick a song and a difficulty, a new one included, and chart on a beat grid: snaps from 4ths to 32nds, Tap, Hold, Mine and Erase, undo, the song's waveform and measure numbers beside the grid, the song playing under it, and Test to play the chart from just before the playhead and come back. Songs without a chart can be charted from nothing at their tempo, which can be set. Saving rewrites only that chart in the song's simfile, every other one kept as written, and is checked by reading it back first. With a keyboard, 1 to 4 place notes, the arrows move and Space plays.
+- **Play with a keyboard.** Two keys a lane, the arrows and D F J K to start with; tap a key cap in Settings and press the key you want, and Test lights each lane as its keys go down. A key is judged at the moment it went down, held keys do not repeat, and Escape pauses.
+- **An audio offset**, in Sync, for phones and headphones that send sound out late: the arrows and every judgement allow for it, up to 500 ms. It can be read from your own recent runs and applied in one tap, or found with Tap to sync: a pad you tap along to a 140 BPM click track, each tap timed on the clock a lane press is judged on, the median distance from the clicks being the offset.
+- **Settings**, under four tabs: Controls, Sync, Graphics and More (song previews, the wheel's swish, the metronome, your name on the scores and chart processing).
+- **Multiplayer rooms.** Multiplayer on the start menu plays as your Tryptify account, on the rooms server the build carries, listed under Settings › Connections as Multiplayer. Join an open room or one by its code, or make your own, with a line of chat. The host picks a chart and its text travels with the pick, so everyone plays the host's notes and a phone needs only the song, matched by the chart's hash or by title, artist and length. Each phone measures its clock against the server's and READY, GO! counts down to the moment the server names; scores go round the room four times a second, and the results rank the room. A room's song cannot be paused or restarted.
+
+#### Music links
+- **Effects that move with the music.** Sliders on every tab of Player Visuals Studio (the lyrics, the player and UI panels glass, the CRT effect and the ambient visualizer) can follow the kick, vocals, snare, hi-hats or a range you pick. Tap the ♪ beside a slider, or press and hold it, and choose Move with the music, then set how far, which way and how snappy; the rest (quiet limit, boost, smoothing, rest when silent and a formula) is under More options. The editor fills the screen and closes only on Cancel, Done or Back. Links are read only in draw and layer blocks, like the bass pulse, so the player does not recompose with the music, and your own setting is never written: presets and the slider keep what you set. Surface motion, tilt, quality steps and the CRT's pixel size, curve and tilt are left out on purpose.
+- **Mixer knobs that move with the music.** Press and hold a smooth knob in the mixer's effects and choose Move with the music. It can listen to the song as it comes into the mixer, or to what reaches that knob's bus. You hear the link while you shape it, and Cancel puts the knob back. On the audio thread each link measures its band with a high-pass and a low-pass over the mono sum, as block RMS, and runs the same follower and formula as the visual links (`mod_route.h`): no FFT, no allocation and no lock beyond the one the engine already holds. The knob's own value is what is saved, so a mix saved mid-song is the mix that was set. Links are saved with the mix and its presets, under `knobLinks`, which older builds ignore; `mod_route_test` holds the native follower to the Kotlin side's numbers. Knobs that click between steps say they cannot follow the music.
+- **Every link on one page.** Music links, from the ♪ at the top of Player Visuals Studio, lists every link by where it is (lyrics, player, UI panels, CRT effect, visualizer and mixer knobs), with pause, change and remove. One switch, Music links on, holds them all at your own values without removing any.
+
+#### Theme Store
+- **Share your look.** Settings › Theme Store › Share my look puts your colours, lyrics, glass, font, visualizers, maps and music links up as one theme, in the store or only by its code. Nothing personal goes with it: a font you imported, your Bluetooth delay and your quality settings are put back to their defaults before a pack leaves the phone. A pack is held to what the sliders allow and capped at 64 KB. The app draws the theme's picture as you share it, with its own renderers, and sends it as a WebP under 150 KB. Needs an account.
+- **Try someone else's.** Two themes to a row under Popular, New and Mine, each with a picture of how it really looks, plus a search and Have a code? for one that isn't listed. Every theme previews live on the real player first, and Use this theme has a switch for each part, so you can keep your own font or colours. Your look before is saved for a one-tap undo.
+- **The store has a server of its own** (`server/theme-store`), with its own database. Sign-in stays your Tryptify account: the app sends the session's token and the server checks it, holding no secret. `ThemeStoreWireTest` holds the app and the server to the same theme parts, size cap and error codes, and a deleted pack says so instead of reading as a network failure.
+
+#### CRT effect
+- **The whole app through an old TV.** Settings › Appearance › CRT effect, the last setting there and off until you turn it on, draws every screen as Scanlines, Diagonal, Triangular, Wave, CRT or CRT-Royale. The TV shader sits on the activity's root layer, so every screen is under it, and Trypt Mania leaves its own TV layer off beneath it. Draw over puts it on the whole app or on the lyrics only. Android 13 and later, with the glass effects on. While it covers the app the glass runs no frame clock, since every frame of glass motion would re-run both full-screen passes.
+- **CRT-Royale.** A consumer TV up close, from crt-royale (GPL-2.0-or-later) with its passes folded into one program: beams that widen as they brighten, an aperture grille, slot or shadow mask, and light that halates, diffuses and blooms through the glass, each with its own slider. It is the heaviest of the looks to draw.
+- **The tube's glass, over any look.** Chromatic shift pulls red and blue apart, and Curve, top & bottom and Curve, sides bow the picture like a tube; a tap still lands on what you see under your finger, because every touch goes through the same warp. Tilt, Bezel, Rounded corners, Vignette and Glass glare frame it. Old TV look sets all of it in one tap, and every slider has its own reset.
+- **CRT presets.** Default, Arcade, Trinitron, Living room and VHS, then your own: Save keeps the look on screen, Export writes it to a `.crt.json` file and Import brings one in, every slider held to its range. The presets and every CRT control are also at the end of Player Visuals Studio › Lyrics and in Trypt Mania's Graphics, all reading one store, so a look saved in one place is there in the others.
+- **Lyrics on a curved tube.** Curve: top & bottom and Curve: sides, under 3D Letter Wave in Player Visuals Studio › Lyrics, bow the lyrics like an old CRT screen. The shader sits on the lyric layer inside the copy the backdrop lights from, so the shadow and god rays bend with the letters. Curve chooses all the lyrics, the sung line or the sung word. Android 13 and later.
+
+#### Fonts
+- **A typography table.** Settings › Fonts has a table of every kind of text in the app, Material's fifteen styles from big numbers to badges, each with its own font, weight from Thin to Black, size, width and letter spacing. Each style's name is drawn as the app draws it. A style you leave alone follows the main font, each has its own reset, and Reset all puts every one back. Fonts load at all nine weights, so a variable font draws each, and deleting an imported font hands the styles that used it back to the main font.
+- **Letter width.** The Width slider on the Fonts page makes every letter narrower or wider, from 70% to 130%, and a style in the table can have a width of its own. A font made with a width axis, such as IBM Plex Sans, is declared at that width and draws its own narrow letters; any other is squeezed or stretched.
+
+#### Library
+- **Your library as a galaxy.** Library galaxy, under Folders in Library, shows every artist on your phone as a star beside their genre on the genre map, drawn by the genre galaxy's own renderer. Artists whose genre isn't recognised float above and below the disc, and each star is placed from its own key, so a growing library moves nothing.
+- **Albums in orbit.** An artist's first album orbits nearest and each later one further out, a planet as big as its album is long; albums you play a lot glow brighter. After eight albums the rest form an asteroid belt, and an album's extra tracks a ring. Tap a moon to play it, long-press a star to list every album and track. A moon is labelled without the "03 Artist - " some rips write into the title tag, when the track's own tags confirm both.
+- **Planets drawn from their sound.** An album's atmosphere is the colour of its key round the Camelot wheel, a loud master hazes it wider, its cover turns at the album's tempo, and its night side is as deep as its dynamic range. A track's moon goes round at the track's tempo and glows in its key. Tempo, key and ReplayGain come from your tags, read in the scan's one tag pass (and once, in the background, for tracks scanned before). A local track's dynamic range is measured the first time it plays through, by a passive tap at the head of the chain that keeps a reading only from a whole, clean play.
+- **Works offline.** Everything on it comes from the music and play history on your phone.
+- **Hold a song to hear it.** Press and hold a song in any list to hear up to 25 seconds of it; let go and it stops. It starts at the song's drop when Trypt Mania has found one, and the row fills from the left as it plays. The preview has a player of its own and takes passing audio focus, so the music already playing pauses and carries on when you let go, and a preview never reaches the queue or your scrobbles. Streams preview at 320 kbps so they start at once.
+- **Search and sort Downloads.** The Downloads page has the same sort toolbar and search bar as Liked Songs, with file size as a sort of its own. Search matches title, artist and album, and tapping a song queues the list as shown.
+- **Choose a song row's badges.** Settings › Appearance › Song row badges turns off the source (Local, Qobuz, TIDAL), quality, format, download and length marks on every song list, one by one or all at once, so a song's artist and album get the whole line. A download in progress still shows, and the choice syncs with your settings.
+- **Import a Spotify playlist from its link.** Create playlist opens on a link box: paste a Spotify playlist link (or tap Paste) and it shows the playlist's cover, name and length, fills in the name, and imports it. No exportify.net and no file. Any public playlist works without signing in, read from Spotify's own embed page, and Spotify then shares its first 100 songs; a longer one says so. With Spotify connected, your own playlists come in whole. Six songs are matched at once, so a long playlist imports in a fraction of the time. Exported files are on the File tab, as before.
+- **Exportify inside the app.** For what a link can't bring (a private playlist, Liked Songs, a playlist over 100 songs) the link box has Open Exportify. exportify.net opens inside the app: sign in with any Spotify account, Free included, tap Export beside a playlist or Export All, and the file is handed to the app through a web message listener that answers only exportify.net, so it comes straight into your library, with no file to find. An import keeps going if you leave the screen, and an Export All ZIP's entries are bounded as they inflate.
+- **Track info.** A song's menu (its ⋮) has Track info: its file's format, sample rate, bit depth, bitrate, length and size, and every tag in it by name, ReplayGain and MusicBrainz included, ready to select and copy. A streamed song shows its download or cached copy, recognised by its first bytes, or else what the app knows of it; Track info never fetches. The menu itself is glass now, drawn in the nav host's glass overlay over the list it came from rather than as a sheet in a window of its own. It slides up from above the bottom bar instead of covering it, and turns to Track info and back as a page.
+
+#### Discover
+- **Search the galaxy.** A search button on both galaxies opens the app's glass search bar under the title, finds a genre by any of its names ("dnb" finds drum and bass) or an artist, and flies there.
+- **One sky, two galaxies.** Your library galaxy sits in the genre galaxy's sky, on the same stage: camera, clock, glass, full screen and look sheet. Switch between them from the title bar and the camera is handed over, so the view stays where it was.
+
+#### Lyrics
+- **Lyrics timed by ear.** A song with no word-timed lyrics is sent to the built-in chart server after fifteen seconds of play, so a song you skip is never sent. The server listens to the vocals and times every word, keeping the words the app already found, and the answer is kept with the song's lyrics, so every later play uses it. Settings › Appearance › Server lyrics turns this off.
+- **Time lyrics on the server, by hand.** Time lyrics on the server is in the player's ⋮ menu and under an empty lyrics view. A song that isn't on your phone is downloaded first and kept. Several songs are timed at once, up to eight, under a notification that names each song and its stage.
+- **A lyrics editor.** Player ⋮ › Edit lyrics shows the lyrics as the player draws them, with the song's controls and Stamp now, which gives the selected line (or word, in Words mode) the current moment and moves to the next. Lines can be nudged, shifted together, edited, inserted, deleted or split into words, with undo and redo. Paste plain words or an LRC, Share as LRC, and Save; Forget saved lyrics goes back to looking them up. `LrcFormat` is the one LRC reader and writer, line-timed and word-timed, for every player and the editor.
+- **Word-timed .lrc with your downloads.** With Settings › Downloads › Download Lyrics on, words timed by the server or saved in the editor are written beside the song's download as a word-timed .lrc, in place of the line-timed one.
+
+#### Equalizer
+- **Your EQ on a Nothing Ear.** Export to Nothing Ear, the QR button beside Export EQ on the Precision AutoEQ screen, fits your EQ, bass and treble included, into the earbuds' eight bands and writes them as a Nothing X QR code: base64 of a gzipped payload of eight gain, frequency and Q bells and a name, the format read from a real export. The bells are placed where the EQ is furthest from them, then refined together with Levenberg-Marquardt, and the dialog says how close the eight bands come. Scan it in Nothing X under Equalizer › Advanced, or tap Save image to scan it from another screen, and the earbuds play it without the app.
+
+#### Account and stats
+- **Your own picture and name.** The account button in the top bar is glass: your picture (or initials) when you're signed in, a Sign in pill when you're not. The Account page picks a picture from your photos, cropped to 512 px and kept on this phone, or goes back to your Google one, and you choose a username of your own instead of showing your Google name. The username is kept in the account's own metadata, which Google does not rewrite on sign-in, so it follows you to every device.
+- **Listening stats, rebuilt.** Account › Listening stats is a column of glass cards: time listened against the period before, your listening type from an hour-by-weekday grid, top artist, on repeat, discovery, a streak calendar and audio quality. Dig deeper opens charts of sessions, months, variety, track lengths, sources, weekdays, albums and tracks; tap a bar and it says what it holds. Every chart reads one report built from the plays themselves, on local days, so they agree on what a day, a session or a new artist is, and a play of a local file counts as local, not as a stream.
+- **Achievements.** Goals beside your stats, from 25 new artists in 30 days and a 30-day streak to trying every settings page and every plugin. Tap one to see what is left to do and a button that takes you there. They stay on your phone in a log of their own, so clearing settings keeps them, and an unlock is kept even if its count later falls.
+
+### Changed
+
+#### Look
+- **Titles over descriptions.** A title is SemiBold and the line under it Regular, two weights apart, and titles are a size smaller (`titleLarge`, `titleMedium` and `bodyLarge` at 17, 15 and 15 sp). Titles that were bold or black (sheets, headers, Settings, Discover cards, the Theme Store) are lighter. Line heights are unchanged, so no row changes height.
+
+#### Fonts
+- **A condensed Fonts page.** The font you are trying is one row with its Use button. Under it one panel holds the text size, moved here from Appearance with Use system font size, and Width. The fonts are chips drawn in their own letters: hold an imported one to delete it, or tap + Import.
+
+#### Library
+- **Select is in the song menu.** Holding a song now plays its preview, so choosing several songs starts from Select in a song's ⋮ menu. After that a tap adds or removes a song, as before.
+- **Short tracks in your library.** A library scan no longer leaves out tracks under 30 seconds, so intros, interludes and skits are in your albums. With no folders picked, a short file comes in only when its folder also holds a longer one, so voice notes and app sounds stay out; in the folders you pick, every length comes in. The Atmos music-video probe still opens only videos of 30 seconds or more.
+
+#### Discover
+- **Galaxy and Timeline are two pills.** The panel at the bottom of the map is two glass pills now, the same on both galaxies. Surprise me is in the title bar, and how much you have explored is under the title.
+- **A stronger zoom.** A pinch zooms further than the fingers move, starts at once, and stays on the planet you are zooming toward. Tapping a planet or a star brings it closer.
+
+#### Now playing
+- **Long titles show in full.** A song title too long for the player rests at its start, slides along to show the rest of itself, rests, then slides back, instead of ending in "…"; a tap starts it over. The slide is a layer translation read at draw time, so it does not recompose the player.
+- **Glass Visualizer and Waveform buttons**, like Timer, Sound, Speed and Mixer above them, and the top bar's speed (or BPM) pill is the same glass button, in the player's own material.
+- **A glass pill picks the speed unit.** In the Speed panel, Multiplier, Semitones and BPM are marked by a pill of glass instead of a solid fill. It slides to the one you tap, and you can drag it freely along the bar; it settles on the nearest when you let go.
+- **The cover holds still.** The cover no longer punches in on each kick drum. Wave Candy's Kick punch swells the scope's lines instead, and the Punch strength slider is gone.
+
+#### Playback
+- **Blends need gapless.** Blend between tracks only runs with Gapless playback on. A blend plays the outgoing song on a second player; with gapless off there is now only ever the one, and each song plays on its own from start to end. The blend slider is greyed out while gapless is off, and says why. Turning gapless off during a blend ends it.
+- **No blends in exclusive mode.** With Exclusive USB DAC on, Blend between tracks is greyed out and says why, and no second player is made: a blend mixes two songs, and exclusive mode is the bit-perfect path. Songs play one at a time, gapless with Gapless playback on, and the blend you set comes back when exclusive mode is turned off. Turning exclusive mode on during a blend ends it.
+
+#### Exclusive USB DAC
+- **More DACs in exclusive mode.** DACs in USB Audio 3.0's basic mode (BADD) describe no formats of their own, and exclusive mode used to give up on them. Apple's USB-C to 3.5 mm adapter is one, because Android always puts it in that mode. The driver now reads each alt setting's format from its packet size, by the spec's fixed table, and they play at 48 kHz, in 24-bit. Full UAC3 is refused plainly rather than read with UAC2's layout.
+- **DACs at their full output.** The DAC's own volume is unmuted and set to full, never past 0 dB, whenever a song starts, as USB Audio Player Pro does: only the Feature Units the stream passes through are touched, so a microphone's never is. Android's volume never reaches a DAC in exclusive mode, so a DAC left turned down stayed down. The app's volume is the only volume now, and still starts at −24 dB. The DAC card shows the result, as HW vol 0 dB.
+- **One volume bar.** The player no longer draws a DAC volume bar of its own. The volume keys bring up the DAC's bar at the top of the screen on every screen, the player included, and it hides again 2.5 seconds after the last press.
+- **The DAC card shows the DAC's release**, as rev, where it used to be labelled as the USB version: `UsbDevice.getVersion()` is the device's release number.
+
 ### Fixed
 
-#### The mixer crashed on smaller screens
-- **Opening the mixer crashed on a Galaxy A35** with "ending radius must be > 0". A knob is drawn for 64 dp, but a row of them in an effect card squeezes each one narrower on a smaller screen, and the knob's body was its size minus fixed margins. At 30 dp or less that left a body of zero, and Android refuses to draw a round gradient of radius zero. Now the whole knob shrinks with the space it gets, margins, ticks and pointer included, so a small knob is a smaller knob, and the gradient is skipped if there's no body to draw. The send knob on the channel strips had the same pattern and the same guard now.
-- **Samsung's per-frame frame-rate lines are left out of the debug log.** One UI logs them one or two a frame. They were 820 of the 946 lines in the A35's log, and they push everything else out of the buffer.
+#### Look
+- **No grey band when the bar folds.** Scrolling a list folds the mini player into the nav bar and back, and each fold crossfaded the full-width bar with the folded pill, so the bar's slab and shadow showed at half opacity across the bottom of the screen. Now the row going fades out before the one coming fades in.
+
+#### Fonts
+- **Imported fonts in all their weights.** A font imported as one file per weight came in as a separate font for each file, and every weight was drawn from the one you picked. Each file's weight and slant are now read from the font itself, and a family's files are one font, each file drawn at its own weight and slant, in the app and in the lyrics; deleting it deletes them all.
+
+#### Library
+- **Recently played keeps your local songs.** A song tapped in the app, and a local song the player moved on to by itself, were never written to Recently played, so local listening hardly showed there. Every track change now goes through one place, matched to its queue entry by its catalogue id or the library id it was queued under, and a song is recorded once it starts playing, whatever it plays from, and counted once (a repeat counts again). Pull down on the Library page to refresh the list.
+- **Track info for MP4 files.** A 5.1 AAC file showed "-14" channels and a bit depth, and ALAC showed as AAC. Format, channels, rate and depth now come from the audio track's own sample entry in the file: "AAC-LC" with "6 (5.1)", "ALAC" at its real depth, E-AC-3 marked when it carries Dolby Atmos.
+
+#### Now playing
+- **The visualizer no longer flashes with vsync off.** With vsync disabled it flashed and disappeared between frames, the background visualizer showing the bare cover every other frame. Frames the frame-rate cap held back were still put on screen, empty; the render threads now wait for the next frame instead, and the background visualizer shows its last frame rather than one it did not draw.
+- **Glass corners on the audio tools sheet.** Its glass slab was square under a rounded clip, so its glass edge stopped short of each corner and the corners looked cut off. The edge now runs all the way round, as on the pills; the mixer's channel strips get the same edge, and `GlassSlabCornerTest` checks every glass slab in the UI for it.
+- **BPM at the right tempo.** The Speed panel's BPM read hardcore and DnB at half and some slow songs at double, and stopped at 200. It now takes the fastest count whose beats nearly all hold a kick or a snare, however loud each one is in the mix, up to 250, and settles on what most of its readings agree on rather than the first. A song on your phone with a BPM tag shows its tag at once; a tap on the number still measures it from the audio. One known miss: a DnB two-step whose snare sits far under its kick can still read at half.
+- **Panels read in light themes.** With dynamic colour in a light theme, the Speed panel, the audio tools and the preset browser had dark text on dark glass and lost their outlines. The player's panes now work their ink out against the player's own dark background, so their text is light and their pills and switches show.
+
+#### Lyrics
+- **Songs named by number.** Untagged songs named like "2-05 Song" or "CD1 - 05 - Song" are searched without the number, and no longer get "01" or "CD1" as their artist. Refresh the library once to fix songs already scanned.
+- **Compilations.** Songs on a Various Artists album are searched under their own artist.
+- **The right lyrics for your own files.** Songs on your phone are no longer looked up on TIDAL by a made-up number, which could bring back another song's lyrics.
+
+#### Playback
+- **Seeking in ALAC files from Apple.** They are fragmented MP4 without an index, which the player treated as unseekable with no known length, so the seek bar would not move them. A file on your phone is now indexed when it opens, by its fragments' headers alone, and seeks like any other. An Apple Music stream is not: indexing one meant reading the whole stream before the first note, so it starts at once and plays through, as before.
+
+#### Equalizer
+- **The preamp turns bass and treble down too.** With the AutoEQ correction off, the Preamp was dropped, so a bass boost played at full level and the Preamp slider did nothing. It now applies whenever the correction or a tone knob changes the sound, by one rule for the in-app processor, the system-wide effect and the EQ screen; with neither, the audio passes untouched, as before.
+
+#### Exclusive USB DAC
+- **DACs that refused every song.** Some DACs were turned away with "no alt setting matches" whatever played. Those whose packets are sized exactly to their rate, Apple's adapter included, play now. A song at a rate the DAC can't take, such as 44.1 kHz on a basic-mode DAC, says so and plays through Android instead.
+- **A full-volume burst between songs.** A song change could play a moment of noise at the DAC's full volume, whatever the volume was set to, with gapless on or off. Exclusive mode sets the DAC to 0 dB and turns the volume down in software, and the samples were limited only after that: a sample far past full scale, such as a decoder's 16-bit samples read as float, came out at full scale. Every sample is now limited before the volume, and one that is not a number is silence. The player that plays the outgoing song during a crossfade also decodes as the main one does now, with the fix for Samsung's FLAC decoder (16-bit files reported as float) it was missing.
+
+#### Mixer
+- **The Add Plugin dialog is opaque.** It drew its container at card alpha, so the FX chain's preset chips, MIX and Add Effect read through the plugin names. A dialog has no haze to blur what is behind it, so it is a solid surface now.
 
 ### Removed
 
-#### The pane behind the Player tab's preview
-- **The Studio drew its transport on a `GlassPanel` wearing `LocalMiniPlayerGlass`** — the UI panels blob, tuned on the next tab over. The largest surface in the Player preview was the one thing those sliders did not control: move a Player slider and everything moved except the surface behind it, move a UI panels slider and nothing on that tab moved at all, because UI panels previewed only the mini player bar.
-- **The real player has no pane there.** The transport and the dock are punched slabs floating straight over the artwork, and the invariants forbid a haze pane under one — an opaque frosted backdrop is exactly what flattens them. The preview was showing a construction that does not exist.
-- **It moved to the UI panels tab**, above the mini player, where the two faces of that one material — the floating sheet and the bar — are previewed together and both answer to the sliders under them.
+#### Look
+- **The old frosted glass on lists.** Song rows, library tiles, folders, cards, the mixer and the EQ are plain Material 3 surfaces now, with liquid glass on or off, instead of the dark frosted pane with its bright rim, and they always draw, even on the lowest-end phones, where the frosted pane drew nothing. The app has two looks, liquid glass and Material 3, and `MaterialSurfaceTest` keeps the third from coming back. Where the panels' glass can't run, the nav bar is Android's own Material 3 bar.
+- **The Now Playing group in Settings.** Its rows repeated settings found elsewhere: View Mode is what a tap on the artwork changes, and the player's tint follows Appearance › Dynamic Colors. If you had turned Dynamic Player Color or Blurred Album Background off, they are on again.
+
+#### Exclusive USB DAC
+- **USB DAC bit-perfect routing.** It pointed Android's output at a USB DAC, still through Android's own mixer, and fought exclusive mode over the device. Exclusive USB DAC is the bit-perfect path, so it is the one switch now; the first-run setup says where to find it, and a settings search for "bit perfect" or "usb dac" finds it.
+
+## [1.9.3]
+
+### Added
+
+#### Release radar
+- **A row near the top of "For you": new releases from the artists you play,** with a count of how many are new and a NEW badge on each one out since your last visit (the last two weeks on a first visit). It reads the discographies of your dozen most-played artists on the service the Discover switch is on, keeps the last 60 days, and opens the album on tap.
+- **Right about "new" and "by this artist".** Nothing dated in the future (a pre-order isn't out) and nothing dated by year alone. A compilation credited to someone else ("Various Artists") is not a new release from an artist who appears on it, while a joint credit ("Push & Ferry Corsten") is. Deluxe, explicit and remastered editions of one release count once. `ReleaseRadar` holds the rules and `ReleaseRadarTest` checks them.
+- **Never in the first shelf's way.** It loads after the feed's first page, asks three artists at a time with a budget each, and keeps the answer for six hours per service, on disk too, so reopening Discover doesn't ask again. An answer from a service that couldn't be reached isn't kept, so "offline on the train" never reads as "nothing new". Pull to refresh asks again. With nothing new, the row isn't shown at all.
+
+#### Swipe to discover
+- **A stack of 15 songs a day, one card at a time: right keeps it, left skips it.** It opens from a card at the top of "For you", which shows how far through today's stack you are. It is a screen of its own because a sideways swipe on a Discover page already changes the page.
+- **Dealt from three places, in turn:** today's discovery genre, the genres next door to yours, and artists placed next to the ones you play. Everything comes from the service the Discover switch is on. No song you have liked or skipped in the last 30 days, no song twice (matched by artist and title, so the same recording on another service counts), and never one artist on two cards in a row while there is anyone else to put between them. `SwipeDeck` holds those rules and `SwipeDeckTest` checks them.
+- **Each card plays as it comes up, from about a third of the way in**, past the intro. The seek waits until the player reports this song with a length that matches the card, so it never seeks the previous song, and a 30-second preview plays from the start.
+- **Keeping hearts the song,** so it lands in Liked songs, and liked songs are what the feed and tomorrow's stack are seeded from. Undo takes back the last swipe, including a heart the deck added (never one you already had). The card moves the instant you swipe; the save follows.
+- **The end of the stack** shows what you kept, saves it as a playlist if you want ("Kept from Discover · date"), deals another round from further down the same sources, or takes you back.
+- **The stack, your place in it and your skips are kept in a file of their own,** so leaving halfway resumes on the same card, and swiping never rewrites the whole settings file.
+- **Glass from Visual Studio:** the info panel is the UI panels material, frosting the card's own cover behind the screen. The KEEP and SKIP stamps fade in while drawing only, so dragging a card does not recompose it every frame.
+
+#### Discover: choose TIDAL, Qobuz or Deezer
+- **A three-way switch at the top of the feed picks the service Discover finds its music on.** Every shelf, genre chart, genre play, Top 100 and today's pick follows it. Discover was Qobuz-only all the way down; `DiscoveryCatalog` is now the one place it searches, opens artists and albums, and tags tracks to play from the service they were found on, so a Qobuz id is never played as the TIDAL track with the same number.
+- **A service with no server under Settings › Connections is shown, disabled.** If the chosen one loses its server, the switch says what is missing instead of the page quietly going empty, and the empty-page message names the chosen service rather than always saying Qobuz.
+- **Deezer says what it does.** Its tracks play from Qobuz when Qobuz has the recording and as 30-second previews when it doesn't, and the switch shows that note when Deezer is picked. Deezer publishes no similar-artists list, so "Because you play…" artist rows come up short there rather than borrowing another service's artists, whose ids would open nothing.
+- **Switching back is instant.** Built pages are filed per service, and chart matches and artist top tracks are cached per service, in memory and on disk. Qobuz keeps the cache keys it had, so nothing saved before the switch existed is thrown away.
+
+#### Discover, rebuilt around today
+- **Today's discovery heads "For you".** One genre, picked for you and kept all day: a neighbour of the genres you heart and play, within two steps on the genre graph and over a strong link, that you have not been to yet. The card names the genres it sits beside, or says the pick is somewhere new when it is not near any of them, so it never claims a link that isn't there. Play, Radio, keep it in your genres, or open it on the map. It changes at midnight, never twice in a row, and playing it does not swap it out: the day's pick is stored, because it was picked from the genres you had not explored yet. `DailyDiscovery` does the picking; `DailyDiscoveryTest` checks it against the real graph.
+- **Your genre galaxy.** A card with the whole genre map as stars, the genres you have explored lit in their family's colour, today's pick ringed as the next to light, and a count of how many of the 771 you have been to. Upgrading counts the recent genres you already had, so nobody starts at zero. Tap it to open the map on today's pick.
+- **The genre of the day**, with the start of its history from the researched Wikipedia text, credited and linked as the map's panel does. Drawn from documented genres three steps out from yours when there are enough, and from the best-known ones otherwise. "Read the history" opens the map on it with the history already expanded. The history file loads only when this card is on screen, never at startup.
+- **Less pinned above the feed.** The sort control scrolls with the feed, and the Genre map and World radio buttons became cards between the shelves, so the first shelf starts a row higher. The mood and genre rails stay pinned.
+- **Play shows that it heard you.** Playing a genre waits on its chart, so the button shows a spinner until the music starts and ignores a second tap, which used to queue the genre twice.
+
+#### Glass cards scroll their list
+- **`GlassPanel` takes `blockTouchesBelow`.** Its backstop swallows touches the content does not want, which is right over a map (a stray tap would select the nearest genre) and wrong in a list: it swallowed drags too, so a swipe that started on a pane could not scroll the page. The font browser's preview and import panes, and Discover's cards, pass `false`; the maps are unchanged.
+
+#### A font browser
+- **Fonts has its own chip in Settings**, next to Appearance, and its page draws every font in its own letters. Appearance keeps a Font Library row that goes there. The old list was collapsed inside Appearance and drew every name in the current font, so nothing showed what a font looked like until it already was the whole interface. A tap now only previews — your own sample text, a song row, a heading, at any weight — and "Use" is what changes the app. Settings search for "font" lands there.
+- **Imports are checked before they are kept.** `FontFileInspector` reads the sfnt structure directly: a known signature, a table directory that fits in the file, and `head`, `cmap` and outlines (`glyf` or `CFF `/`CFF2`). Web fonts (WOFF/WOFF2) and Type 1 fonts are refused by name; a text file, a truncated font or a broken header as "not a font". The platform then has to load it too. The old importer copied whatever was picked and pasted `.ttf` on, so a wrong pick became an entry the app silently could not render.
+- **Several files at once, named by the font, never overwriting.** Each import is stored under the family it declares — its style too for a static cut, never the default instance of a variable one ("Fraunces", not "Fraunces Black") — and a name already taken gets the next number. The old importer kept the picker's file name, so a second "font.ttf" replaced the first; a font already in the library, by content, is now refused as a duplicate. The report says what was added and why anything was skipped.
+- **Glass from Visual Studio, like everywhere else.** The preview and import panes are `GlassPanel`s in the UI panels material (`LocalMiniPlayerGlass`) over the screen's own backdrop — a sibling haze source, never the app-wide one — and the cards are row glass. "Remove liquid glass" flattens them the same as the rest of the app.
+- **Deleting asks first**, and deleting the font in use returns the app to Inter before the file goes. An imported file that cannot be read stays listed, drawn in the default font, so it can be deleted rather than crash a render.
+
+#### Repair and Regenerate, on top of a playlist
+- **Repair relinks the songs whose id plays a different song.** A playlist row stores a bare number, and which catalogue it belongs to is remembered apart from it, in `QobuzIdRegistry`. Lose that — a playlist pulled from the cloud onto a new device — and a Qobuz or Deezer id plays as the TIDAL track with the same number, under this row's title. Repair searches each row's own catalogue for its title and artist: an id the search lists as this song is right; one it lists as another song is wrong; an unlisted TIDAL id is asked about directly (`/info/`). A wrong id whose own catalogue turns up elsewhere is put back without rewriting the row; otherwise the row takes the closest sure match.
+- **Regenerate finds every song again on a chosen service, with an optional fallback**, from the catalogues Settings › Connections serves (TIDAL, Qobuz, Deezer). A row already on the chosen service stays unless it is proven wrong; a song found on neither stays as it was.
+- **Matching is by title, artist and length, never a first hit.** `TrackMatcher` folds case, accents and punctuation, drops featured-artist credits, and reads versions both ways a catalogue writes them (`(Space Club Mix)`, ` — Radio Mix`). Two different versions are two different songs; labels that name no other recording (remaster years, "Original Mix", "Album Version") are ignored; a version shown on one side only — TIDAL's search results carry none — needs the lengths to agree within 3 s. A replacement's id must be known to its catalogue alone, or the player and the source tag could disagree about where it plays from.
+- **Downloaded songs, and songs a file on the device answers for, are never touched** — they play from disk whatever the id says, and rewriting one would detach it from its download. A row with no sure match is left, never removed, and listed in the summary.
+- **Rows keep their place and their sync.** `PlaylistDao.replacePlaylistTrack` rewrites a row at its position and date added; both keys go through the outbox (the old one's delete, the new one's upsert), so no pull brings a wrong id back. Each row is written under `NonCancellable`, so Stop never leaves one half-done. The job runs on `PlaylistFixer`'s own scope and outlives the screen.
 
 ### Changed
 
@@ -92,31 +423,14 @@ The debug log showed frames of 0.7 to 0.9 s. The main thread recorded each frame
 - **The galaxy stops completely** when the app is in the background, the phone is off, or another screen covers it. That covers its clock, every shader and its music tap.
 - **The same goes for work elsewhere that used to keep going in the background:** the ambient visualizer's render thread, the music-analysis taps (lyrics' bass pulse, EQ, Settings), the loudness meter, the tilt sensor behind the glass, and projectM's audio feed. The feed now runs only while a visualizer is actually on screen, not whenever the engine setting is on.
 
-### Fixed
-
-#### A selected glass chip swallowed its row
-- **In a row of chips the selected one stretched to the full width** and squeezed everything beside it: the galaxy's settings showed "Dust" one letter per line next to a full-width "Less". Its accent rim filled all the room it was offered. It now matches the chip.
-
-#### Real glass on every button and pill
-- **Every pill, chip and glass button is now the real glass, from the Visual Studio UI panels settings.** That covers the moods, the TIDAL · Qobuz · Deezer switch and the sort on Discover, the Settings tabs, the font filters, the presets, the EQ, search and stats filters, and the deck's buttons. They were drawing a slab at a tenth of the tint, which left the shader nothing to bevel. On screen it was the flat grey of the low-performance fallback, even on phones that run the real glass. Now each one is a small `GlassPanel`: the frost or live lens, then a solid slab the shader bevels and bends, with a rim as round as the pill. Move a UI panels slider and every pill follows. The player's own buttons keep the player's material.
-- **No stock Material chips are left.** Settings, the font browser, the Studio, the EQ, Search, Stats, Oxford, Crossfeed and the sleep timer all use the app's glass pill.
-- **Discover has no sky behind it now.** The starfield backdrop is gone. The page is plain, and its cards and pills are the UI panels glass over it.
-
 #### Swipe to discover's controls are in the mini player
 - **While the deck is up, the mini player stops showing the song and shows ✕ skip, undo and ♥ keep**, punched into its glass the way play and skip are, in the same place and at the same height. Swiping along the bar skips or keeps too. The bar was showing the same song as the card above it, with play and skip that fought the deck's own buttons. The round buttons under the card are gone, so the card gets the room. When the deck closes, the bar goes back to the track.
-
-#### Discover's pills and search bar match the rest of the app
-- **Every pill on Discover is the app's liquid glass** — the moods, the genre row, the genres you can subtract from a mix, the TIDAL · Qobuz · Deezer switch and the sort. They are `GlassChoiceChip`, the Library section switcher's pill, so they frost, swell under the finger and mark the selected one with an accent rim like everywhere else. The chip gained an optional icon (a tick on combined moods, a heart on hearted genres, a cross on subtractable ones) and an `enabled` flag; its existing uses are unchanged.
-- **The genre search bar is one slim row**, like every other glass search bar. It carried a second line ("Browse the map", and "no match"), which made it twice their height; the map is now a pill at the end of the genre row, and "no match" shows there too.
 
 #### The galaxy's links flow, the way time does
 - **The family links are starry, smoky trails now, not hard lines.** Each link swirls between its two genres in 3D and slowly undulates. Along it there is no line at all, only a scatter of stardust.
 - **A comet runs every link, always from the older genre to the newer one.** It has a bright star at its head, soft smoke in its family's colour that spreads and thins behind it, and sparkles twinkling in the smoke. The whole map visibly flows forward in time. A parent and child that began the same year flow parent to child.
 - **The comets never march in step:** each has its own phase.
 - **Still cheap.** It is drawn in one batch per family, with the smoke made from the family's own cloud sprite.
-
-#### Glass buttons no longer stay pressed
-- **A glass pill or button you tapped stayed half swollen.** That covered the genre map's glyph pills, every chip, the deck and the cards. The press animation's value was copied into the glass only when the button recomposed, and the animation never made it recompose. So the swell froze at whatever it was when your finger lifted. The old faint slab hid it; the solid glass showed it. The animation now writes into the glass itself every frame, so every press settles back.
 
 #### The genre galaxy's look, tuned on the map
 - **A tune button in the map's title bar opens a glass sheet**, in the dock's place, so every change shows on the galaxy as you make it. It has five groups:
@@ -145,10 +459,8 @@ The debug log showed frames of 0.7 to 0.9 s. The main thread recorded each frame
 - **Tapping a star travels there.** The camera glides, pulling back on long trips so you see where you are heading, with a light blur while it moves. Touching the map takes the controls back. Tap the selected star again to go back to it after looking around.
 - **Planets and moons.** The genre you stop on gets a solar system from its chart. Its most-played artists are planets, the most popular nearest and biggest, each wearing its cover when the chart has one. Their charted tracks are moons. Tap a planet to fly in close enough to read its moons, and tap a moon to play that track. The chart is fetched only once you have stayed on a genre for a moment, so flying past genres costs nothing.
 - **Sized right on every screen.** Everything is in dp and centred in the part of the screen the panels leave visible. The old map sized its dots and lines in raw pixels, so they came out a third of the size on a phone. Names never land under the title or the panels.
-- **The genre panel stays below the title bar.** With Top 100 open it used to grow up under the status bar, where tapping its close button pulled down the notifications. It now stops a strip of map short of the title, keeps its top row (path, history, heart, close) fixed, scrolls the rest, and scrolls to the chart when you open it.
 - **Your galaxy lights up as you listen.** Genres you have opened or played burn brighter. Hearted genres carry a dashed ring. "You are here" is a warm diamond with its name, and a dashed line runs from it to the genre you have selected.
 - **Controls you can read.** The bar keeps Surprise me and Recentre. Collapse, expand, dot size and constellations are gone: they belonged to the flat map. With no genre open, a glass bar at the bottom holds Galaxy / Timeline, how many of the 771 genres you have explored, a legend, and Surprise me. The caption under the title says what a star's size and place mean in each layout.
-- **The genre panel is the app's glass.** It carried its own older copy of the glass, without the lens corner every other pane bends with. It is now the shared `GlassPanel`, still in the Visual Studio UI panels material. It shows where the genre sits ("Electronic › Trance ›", each step tappable), and its facts line is translated instead of hard-coded English.
 - **Lighter where it needs to be.** Low-performance mode drops the sky shader (for a flat sky with drawn stars), the god rays, the blur, the twinkle and the turn, and uses less dust. Reduced motion holds the galaxy still and jumps instead of gliding.
 - `GalaxyScene` (both layouts, the dust and the core) and `PlanetSystem` (artists into planets, tracks into moons) are pure and seeded. `GalaxyMathTest` and `PlanetSystemTest` check them, and `GenreGalaxyTest` checks Surprise me and You are here.
 
@@ -158,52 +470,66 @@ The debug log showed frames of 0.7 to 0.9 s. The main thread recorded each frame
 - **Nothing changes for a station nobody tuned.** `RadioStyle` is a view of the same `RadioPlannerWeights`, still stored and synced under the same keys. Balanced is exactly the shipped defaults, `RadioStyleTest` proves the ranking of a fixed station is identical, and that Familiar and Adventurous move it the way their names say. Settings made with the old sliders are read back by what they did.
 - **Genre and era say when they can't help:** they need the starting song's genre and year, which songs from playlists often don't carry, and the dial now says so.
 
+#### Six glass themes tuned on device lead the roster, and Float is the starting look
+- **Float, Opal, Ripple, Glint, Blurred and Frosted Ripple** come first in `PlayerGlassSettings.PRESETS`, ahead of Clear, Tinted and Tilt. They are `TRYPTGLASS1` codes tuned on a phone, with the personal fields (`sampleRings`, `miniProgressBar`, `tintColor`, `previewBg`) left out, so applying one keeps the listener's own.
+- **`INITIAL` is `FLOAT`**: half a body of glass, a broad mirror shoulder and the deepest, softest shadow on the roster. Only a setting never saved, or reset, takes it. Like Clear before it, it is still, with no surface motion and no tilt, so the app-wide mini player runs no frame clock and holds no gravity sensor until the listener picks a theme that moves.
+- **Opal's surface motion is 0.** Its code carried 0.0069, too little to see, and anything above 0 runs a frame clock under the mini player on every screen.
+- **Ripple and Frosted Ripple move, and Glint and Blurred follow tilt**, because that is what those looks are; each costs the battery only while it is chosen.
+- **A light frost grain is allowed.** `no preset uses the frost grain` became `no preset uses more than a light frost grain`, capped at 0.15. Blurred carries 0.03 and Frosted Ripple 0.11, as tuned on device; the heavy grain that read as noise on the rim stays out.
+
+### Fixed
+
+#### A selected glass chip swallowed its row
+- **In a row of chips the selected one stretched to the full width** and squeezed everything beside it: the galaxy's settings showed "Dust" one letter per line next to a full-width "Less". Its accent rim filled all the room it was offered. It now matches the chip.
+
+#### Real glass on every button and pill
+- **Every pill, chip and glass button is now the real glass, from the Visual Studio UI panels settings.** That covers the moods, the TIDAL · Qobuz · Deezer switch and the sort on Discover, the Settings tabs, the font filters, the presets, the EQ, search and stats filters, and the deck's buttons. They were drawing a slab at a tenth of the tint, which left the shader nothing to bevel. On screen it was the flat grey of the low-performance fallback, even on phones that run the real glass. Now each one is a small `GlassPanel`: the frost or live lens, then a solid slab the shader bevels and bends, with a rim as round as the pill. Move a UI panels slider and every pill follows. The player's own buttons keep the player's material.
+- **No stock Material chips are left.** Settings, the font browser, the Studio, the EQ, Search, Stats, Oxford, Crossfeed and the sleep timer all use the app's glass pill.
+- **Discover's page is plain**, and its cards and pills are the UI panels glass over it.
+
+#### Discover's pills and search bar match the rest of the app
+- **Every pill on Discover is the app's liquid glass** — the moods, the genre row, the genres you can subtract from a mix, the TIDAL · Qobuz · Deezer switch and the sort. They are `GlassChoiceChip`, the Library section switcher's pill, so they frost, swell under the finger and mark the selected one with an accent rim like everywhere else. The chip gained an optional icon (a tick on combined moods, a heart on hearted genres, a cross on subtractable ones) and an `enabled` flag; its existing uses are unchanged.
+- **The genre search bar is one slim row**, like every other glass search bar. It carried a second line ("Browse the map", and "no match"), which made it twice their height; the map is now a pill at the end of the genre row, and "no match" shows there too.
+
+#### Glass buttons no longer stay pressed
+- **A glass pill or button you tapped stayed half swollen.** That covered the genre map's glyph pills, every chip, the deck and the cards. The press animation's value was copied into the glass only when the button recomposed, and the animation never made it recompose. So the swell froze at whatever it was when your finger lifted. The old faint slab hid it; the solid glass showed it. The animation now writes into the glass itself every frame, so every press settles back.
+
+#### The mixer crashed on smaller screens
+- **Opening the mixer crashed on a Galaxy A35** with "ending radius must be > 0". A knob is drawn for 64 dp, but a row of them in an effect card squeezes each one narrower on a smaller screen, and the knob's body was its size minus fixed margins. At 30 dp or less that left a body of zero, and Android refuses to draw a round gradient of radius zero. Now the whole knob shrinks with the space it gets, margins, ticks and pointer included, so a small knob is a smaller knob, and the gradient is skipped if there's no body to draw. The send knob on the channel strips had the same pattern and the same guard now.
+- **Samsung's per-frame frame-rate lines are left out of the debug log.** One UI logs them one or two a frame. They were 820 of the 946 lines in the A35's log, and they push everything else out of the buffer.
+
+#### Plays recorded in the background reach the account again
+- **Two in three play uploads were refused**, and every refused one carried the anon key rather than the listener's token. Supabase's edge log for one day: 123 `play_events` inserts and 126 `play_history` inserts answered 401 with `role = anon`, against 68 and 67 that went through signed in. None of the refused requests had an expired user token; they had no user token at all.
+- **The Supabase Kotlin client parks the session when the app leaves the foreground.** On Android its lifecycle observer stops the refresh job and sets the session status to `Initializing`, and `currentSessionOrNull()` answers null for any status but `Authenticated`. The request then falls back to the anon key, and the client's own expired-token check never runs, because there is no user token to check. Tryptify records plays from the playback service with the screen off, so that was most of them.
+- **`enableLifecycleCallbacks = false`** keeps the session and its refresh job alive for as long as the process is. A token that expires anyway, because the device slept through the scheduled refresh, is refreshed by the client before the next request that carries it.
+- **`requireValidSession = true` on Postgrest** makes a call with no session throw `SessionRequiredException` on the device instead of going out as anon. An anon insert at least failed loudly. An anon update or delete matches no rows under RLS and returns success, so a delete queued in `SyncOutbox` could be settled without having happened, and the next pull would bring the row back.
+- **Plays refused before this release go up by themselves.** They are still on the device with no cloud row id, and used to wait for somebody to press Sync now, so most never reached the account's stats. `LibraryRestoreCoordinator` now uploads them after its pull on every launch, through `SupabaseSyncRepository.uploadUnsyncedPlayEvents`, which Sync now uses too.
+- **Safe to repeat on every launch.** Each batch of 200 first asks which of its plays the cloud already holds, by track and millisecond (`matchPlays`, pinned by `PlayEventBackfillTest`), and adopts those rows: a play whose upload landed and whose reply was lost is not inserted twice. The rest go up in one bulk insert instead of one request per play. Plays from the last ten minutes are left to the push that follows the play, which they could otherwise race. A local row that duplicates a cloud row the device already holds — the cloud copy came down in a pull — is dropped, so stats count that play once.
+- **The bulk insert row has no defaults** (`SbPlayEventUpload`). A bulk insert names the union of every row's keys, and a row that leaves one out sends NULL for it; with `duration = 0` or `artist_name = ""` left out as defaults, the NOT NULL columns would refuse the whole batch.
+
+#### The track catalog fills for the first time
+- **`ensure_catalog_track` had answered 404 to every call it was ever sent.** PostgREST matches a body's top-level keys to the function's parameter names, and the function's one parameter is `p jsonb`; sent bare, the payload named a function with parameters `source`, `source_ref`, `title` and so on that does not exist. No play had a `track_uuid` and the catalog tables were empty. The payload now goes as `{"p": …}`.
+- **The function was rebuilt before it started taking writes**, as migration `catalog_unique_names_and_race_safe_ensure`. Its artist and album lookups compared `lower(name)` and `is not distinct from`, which no index could serve, so every miss would have scanned the whole shared catalog. Unique indexes on `lower(name)` and on `(primary_artist_id, lower(title))` make each lookup one probe and stop two calls creating the same artist or album twice; creating a new track is serialised per source key with a transaction-scoped advisory lock. All cost nothing to add while the tables were empty.
+- **A track played again skips the call**: resolved ids are kept per process, keyed by source and source ref.
+
+#### play_history is no longer written
+- **Nothing ever read it.** Every play inserted a row, and every Sync now inserted up to 500 more with no conflict key, so they piled up as duplicates. Its prune trigger, which ran on every insert, was a third of all the database time the app used, before it was rewritten to use its index. Every play still goes to `play_events`; the table and its rows stay, unwritten.
+
+#### One device row per install
+- **`DeviceRegistry` inserted a new `user_devices` row on every sign-in**, because the cached row id was cleared on sign-out and nothing else identified the install: 774 rows for 327 accounts, one with 87. A cached id whose row had gone was worse, because the update matched nothing and the dead id went onto every play.
+- **It now upserts on `(user_id, local_id)`**, where `local_id` is `DeviceIdProvider`'s per-install id, which already survived sign-out and already claimed to be this key. The column and its unique constraint went in first, as migration `user_devices_keyed_by_local_id`; older app versions send no `local_id`, and nulls never collide.
+
+#### Playlists restore in one paged request
+- **The launch restore fetched each playlist's tracks separately**, one round trip per playlist. It now asks for all of them together, 50 playlists to a request.
+- **Paged, because the server truncates silently.** PostgREST caps a response at 1,000 rows by default, and one account already holds 1,577 playlist tracks. Pages follow the primary key's order and continue until one comes back empty, so a lower cap cannot cut the list short either.
+
+#### The visualizer's preset was half of all API traffic
+- **`visualizer_preset_id` is no longer a synced setting.** It is the preset on screen, rewritten on every Next on the visualizer and every per-track rotation, and every rewrite was a full settings sync: a read of the account's settings row and a write of the whole thing. In one day that was 1,616 of about 3,650 requests to Supabase. Two accounts, both with the visualizer on, made 694 of the 737 writes, most of them 2–15 seconds apart.
+- **It stays on the device**, so the visualizer still opens on the last preset shown. Favourite presets and the rotation mode and interval still sync; those are the choices. A value already in the cloud is ignored on pull, because import only applies allow-listed keys.
+
+## [1.9.2]
+
 ### Added
-
-#### Release radar
-- **A row near the top of "For you": new releases from the artists you play,** with a count of how many are new and a NEW badge on each one out since your last visit (the last two weeks on a first visit). It reads the discographies of your dozen most-played artists on the service the Discover switch is on, keeps the last 60 days, and opens the album on tap.
-- **Right about "new" and "by this artist".** Nothing dated in the future (a pre-order isn't out) and nothing dated by year alone. A compilation credited to someone else ("Various Artists") is not a new release from an artist who appears on it, while a joint credit ("Push & Ferry Corsten") is. Deluxe, explicit and remastered editions of one release count once. `ReleaseRadar` holds the rules and `ReleaseRadarTest` checks them.
-- **Never in the first shelf's way.** It loads after the feed's first page, asks three artists at a time with a budget each, and keeps the answer for six hours per service, on disk too, so reopening Discover doesn't ask again. An answer from a service that couldn't be reached isn't kept, so "offline on the train" never reads as "nothing new". Pull to refresh asks again. With nothing new, the row isn't shown at all.
-
-#### Swipe to discover
-- **A stack of 15 songs a day, one card at a time: right keeps it, left skips it.** It opens from a card at the top of "For you", which shows how far through today's stack you are. It is a screen of its own because a sideways swipe on a Discover page already changes the page.
-- **Dealt from three places, in turn:** today's discovery genre, the genres next door to yours, and artists placed next to the ones you play. Everything comes from the service the Discover switch is on. No song you have liked or skipped in the last 30 days, no song twice (matched by artist and title, so the same recording on another service counts), and never one artist on two cards in a row while there is anyone else to put between them. `SwipeDeck` holds those rules and `SwipeDeckTest` checks them.
-- **Each card plays as it comes up, from about a third of the way in**, past the intro. The seek waits until the player reports this song with a length that matches the card, so it never seeks the previous song, and a 30-second preview plays from the start.
-- **Keeping hearts the song,** so it lands in Liked songs, and liked songs are what the feed and tomorrow's stack are seeded from. Undo takes back the last swipe, including a heart the deck added (never one you already had). The card moves the instant you swipe; the save follows.
-- **The end of the stack** shows what you kept, saves it as a playlist if you want ("Kept from Discover · date"), deals another round from further down the same sources, or takes you back.
-- **The stack, your place in it and your skips are kept in a file of their own,** so leaving halfway resumes on the same card, and swiping never rewrites the whole settings file.
-- **Glass from Visual Studio:** the info panel and the round Skip, Undo and Keep buttons are the UI panels material, frosting the card's own cover behind the screen. The KEEP and SKIP stamps fade in while drawing only, so dragging a card does not recompose it every frame.
-
-#### Discover: choose TIDAL, Qobuz or Deezer
-- **A three-way switch at the top of the feed picks the service Discover finds its music on.** Every shelf, genre chart, genre play, Top 100 and today's pick follows it. Discover was Qobuz-only all the way down; `DiscoveryCatalog` is now the one place it searches, opens artists and albums, and tags tracks to play from the service they were found on, so a Qobuz id is never played as the TIDAL track with the same number.
-- **A service with no server under Settings › Connections is shown, disabled.** If the chosen one loses its server, the switch says what is missing instead of the page quietly going empty, and the empty-page message names the chosen service rather than always saying Qobuz.
-- **Deezer says what it does.** Its tracks play from Qobuz when Qobuz has the recording and as 30-second previews when it doesn't, and the switch shows that note when Deezer is picked. Deezer publishes no similar-artists list, so "Because you play…" artist rows come up short there rather than borrowing another service's artists, whose ids would open nothing.
-- **Switching back is instant.** Built pages are filed per service, and chart matches and artist top tracks are cached per service, in memory and on disk. Qobuz keeps the cache keys it had, so nothing saved before the switch existed is thrown away.
-
-#### Discover, rebuilt around today
-- **Today's discovery heads "For you".** One genre, picked for you and kept all day: a neighbour of the genres you heart and play, within two steps on the genre graph and over a strong link, that you have not been to yet. The card names the genres it sits beside, or says the pick is somewhere new when it is not near any of them, so it never claims a link that isn't there. Play, Radio, keep it in your genres, or open it on the map. It changes at midnight, never twice in a row, and playing it does not swap it out: the day's pick is stored, because it was picked from the genres you had not explored yet. `DailyDiscovery` does the picking; `DailyDiscoveryTest` checks it against the real graph.
-- **Your genre galaxy.** A card with the whole genre map as stars, the genres you have explored lit in their family's colour, today's pick ringed as the next to light, and a count of how many of the 771 you have been to. Upgrading counts the recent genres you already had, so nobody starts at zero. Tap it to open the map on today's pick.
-- **The genre of the day**, with the start of its history from the researched Wikipedia text, credited and linked as the map's panel does. Drawn from documented genres three steps out from yours when there are enough, and from the best-known ones otherwise. "Read the history" opens the map on it with the history already expanded. The history file loads only when this card is on screen, never at startup.
-- **The page has a sky.** The genre map, drawn as a starfield in the colour of today's genre, sits behind the page and drifts up as the feed scrolls. The cards are the app's glass in the UI panels material from Visual Studio, frosting that sky as a sibling haze source. "Remove liquid glass" flattens them like everything else.
-- **Less pinned above the feed.** The sort control scrolls with the feed, and the Genre map and World radio buttons became cards between the shelves, so the first shelf starts a row higher. The mood and genre rails stay pinned.
-- **Play shows that it heard you.** Playing a genre waits on its chart, so the button shows a spinner until the music starts and ignores a second tap, which used to queue the genre twice.
-
-#### Glass cards scroll their list
-- **`GlassPanel` takes `blockTouchesBelow`.** Its backstop swallows touches the content does not want, which is right over a map (a stray tap would select the nearest genre) and wrong in a list: it swallowed drags too, so a swipe that started on a pane could not scroll the page. The font browser's preview and import panes, and Discover's cards, pass `false`; the maps are unchanged.
-
-#### A font browser
-- **Fonts has its own chip in Settings**, next to Appearance, and its page draws every font in its own letters. Appearance keeps a Font Library row that goes there. The old list was collapsed inside Appearance and drew every name in the current font, so nothing showed what a font looked like until it already was the whole interface. A tap now only previews — your own sample text, a song row, a heading, at any weight — and "Use" is what changes the app. Settings search for "font" lands there.
-- **Imports are checked before they are kept.** `FontFileInspector` reads the sfnt structure directly: a known signature, a table directory that fits in the file, and `head`, `cmap` and outlines (`glyf` or `CFF `/`CFF2`). Web fonts (WOFF/WOFF2) and Type 1 fonts are refused by name; a text file, a truncated font or a broken header as "not a font". The platform then has to load it too. The old importer copied whatever was picked and pasted `.ttf` on, so a wrong pick became an entry the app silently could not render.
-- **Several files at once, named by the font, never overwriting.** Each import is stored under the family it declares — its style too for a static cut, never the default instance of a variable one ("Fraunces", not "Fraunces Black") — and a name already taken gets the next number. The old importer kept the picker's file name, so a second "font.ttf" replaced the first; a font already in the library, by content, is now refused as a duplicate. The report says what was added and why anything was skipped.
-- **Glass from Visual Studio, like everywhere else.** The preview and import panes are `GlassPanel`s in the UI panels material (`LocalMiniPlayerGlass`) over the screen's own backdrop — a sibling haze source, never the app-wide one — and the cards are row glass. "Remove liquid glass" flattens them the same as the rest of the app.
-- **Deleting asks first**, and deleting the font in use returns the app to Inter before the file goes. An imported file that cannot be read stays listed, drawn in the default font, so it can be deleted rather than crash a render.
-
-#### Repair and Regenerate, on top of a playlist
-- **Repair relinks the songs whose id plays a different song.** A playlist row stores a bare number, and which catalogue it belongs to is remembered apart from it, in `QobuzIdRegistry`. Lose that — a playlist pulled from the cloud onto a new device — and a Qobuz or Deezer id plays as the TIDAL track with the same number, under this row's title. Repair searches each row's own catalogue for its title and artist: an id the search lists as this song is right; one it lists as another song is wrong; an unlisted TIDAL id is asked about directly (`/info/`). A wrong id whose own catalogue turns up elsewhere is put back without rewriting the row; otherwise the row takes the closest sure match.
-- **Regenerate finds every song again on a chosen service, with an optional fallback**, from the catalogues Settings › Connections serves (TIDAL, Qobuz, Deezer). A row already on the chosen service stays unless it is proven wrong; a song found on neither stays as it was.
-- **Matching is by title, artist and length, never a first hit.** `TrackMatcher` folds case, accents and punctuation, drops featured-artist credits, and reads versions both ways a catalogue writes them (`(Space Club Mix)`, ` — Radio Mix`). Two different versions are two different songs; labels that name no other recording (remaster years, "Original Mix", "Album Version") are ignored; a version shown on one side only — TIDAL's search results carry none — needs the lengths to agree within 3 s. A replacement's id must be known to its catalogue alone, or the player and the source tag could disagree about where it plays from.
-- **Downloaded songs, and songs a file on the device answers for, are never touched** — they play from disk whatever the id says, and rewriting one would detach it from its download. A row with no sure match is left, never removed, and listed in the summary.
-- **Rows keep their place and their sync.** `PlaylistDao.replacePlaylistTrack` rewrites a row at its position and date added; both keys go through the outbox (the old one's delete, the new one's upsert), so no pull brings a wrong id back. Each row is written under `NonCancellable`, so Stop never leaves one half-done. The job runs on `PlaylistFixer`'s own scope and outlives the screen.
 
 #### Deezer, from the trypt-hifi catalog
 - **Search asks the instance's Deezer routes alongside TIDAL and Qobuz**: `/api/deezer/get-music`, `get-album`, `get-artist` and `preview`, on whichever API serves them. They come back in the Qobuz envelopes, so search and album detail reuse the Qobuz decoding; only the artist payload (object-shaped `releases`, a string `id`) has its own model, `DeezerArtistEnvelope`, with `DeezerModelsTest` pinning real payloads.
@@ -219,6 +545,35 @@ The debug log showed frames of 0.7 to 0.9 s. The main thread recorded each frame
 #### Brand pills on search results
 - **`SourcePill`** puts each catalog's mark and colour on track rows, under album and artist cards and on the source filter chips, with a lifted shade on dark themes where the brand colour is too dark to read. The Qobuz and Deezer marks are cut from the brands' own artwork.
 - **A downloaded track reads as Local**, and the Local filter includes it: `StreamResolver` already plays the file, whichever catalog it came from.
+
+### Changed
+
+#### Search keeps its filter pills
+- **Home never handed the floating search bar's height to the results**, so the bar sat on the type and source pills. It is the list's top `contentPadding` now, as the Search bars invariant asks.
+- **The source row shows for every type** and filters albums and artists too, by catalog tags the view model records as results arrive, rather than disappearing on anything but Tracks.
+- **The pills stay up while a query runs**, instead of the whole list being swapped for a spinner on every keystroke.
+
+## [1.9.0]
+
+### Fixed
+
+#### What you change on the phone reaches your account, and your account no longer undoes it
+- **Deleted things stay deleted.** Favourites and playlists only went up when Sync was pressed, and a delete never went up at all, so an unliked song, a deleted playlist or a track taken off one came back on the next launch once a sync had ever carried it up. Every library edit is now written to Room and then queued in a small per-account outbox (`SyncOutbox`, its own DataStore) until Supabase accepts it. It flushes after each edit, before every pull and at the start of a manual sync, an upsert re-reads its row when it is sent, and the pull skips any row whose delete is still waiting.
+- **Changes made offline catch up.** Favourites, playlists, and EQ and mixer presets edited without a connection are sent once you are back online. Preset deletes used to be sent once, fire-and-forget.
+- **Devices no longer wipe each other's settings.** A push uploaded this device's snapshot in place of the cloud row, and a snapshot only holds the keys set on this device. Pushes now read the cloud row and merge into it as raw JSON, so they can add or change keys but never remove one, and write nothing if the cloud can't be read. Both directions go through the last snapshot the device and the cloud agreed on, so a setting changed offline is not undone at the next launch, and a stale value here can't overwrite a newer one set elsewhere.
+- **Signing in keeps trying to restore your settings.** The sign-in pull must actually reach the cloud before anything is pushed; it retries with backoff instead of carrying on with the device's own settings, which could then overwrite the copy saved to your account.
+- **Waiting changes stay with their account.** Nothing is recorded while signed out, and a flush stops if the account changes under it, so one account's edits never land in another. The push helpers report whether Supabase accepted the row, so Sync no longer reports success for a backup that isn't there.
+- **Known limitation: a delete on one phone can still come back from another.** A second device that presses Sync before it has picked up the delete uploads its own copy again, because a manual sync re-uploads every local row. Fixing that needs a `deleted_at` tombstone on the server.
+
+### Changed
+
+#### Downloads carry their tags, with the cover inside
+- **Downloaded FLACs carry their own tags.** Vorbis comments were only written for THX or versioned tracks, but Qobuz's FLACs arrive stripped, so players that go by embedded tags alone (Auxio, Symfonium, MediaStore) filed ordinary downloads with no title, album or order. Every FLAC is now tagged, with TRACKNUMBER and DISCNUMBER, ALBUMARTIST so a record with featured guests stays one album, DATE (from the album's release date only) and GENRE.
+- **Cover art is inside the file.** The cover is fetched once and used twice: embedded as the front-cover picture, built from the raw bytes since Android has no `javax.imageio`, and still saved as cover.jpg beside the file. Only JPEG or PNG under 4 MB is embedded, and a picture the source already carried is kept. Bare TIDAL cover ids are now turned into a URL before fetching, so TIDAL downloads, which were getting no cover at all, get one.
+
+## [1.8.9]
+
+### Added
 
 #### Ambient MilkDrop: the visualizer inside the album atmosphere
 - **A second composition of the engine, not a change to the first.** The hero visualizer replaces the artwork — an opaque black surface at the cover's aspect ratio, or fullscreen. Ambient mode draws the same preset *into* the player's background, over the blurred cover and its scrim, under the glass. Both ship; ambient is off until asked for, because it changes what the player looks like and that should not arrive with an update.
@@ -250,7 +605,6 @@ The debug log showed frames of 0.7 to 0.9 s. The main thread recorded each frame
 - **Its own branch in the pager, not a `LibraryScreen` section.** The globe is full-bleed and brings its own top bar and gestures; `LibraryScreen` wraps its sections in chrome none of that wants. `LIBRARY_PAGE_IDS` excludes it alongside Home and Discover, and `AppPagesTest` checks both halves of that split — that the self-drawn set is exactly those three, and that the pager really has a branch for the globe. Without one the id falls through to `else -> LibraryScreen`, which has no section by that name: a blank page and no other symptom.
 - **The back arrow became the page list.** There is no back stack to pop from a page.
 - **Two migration tests changed meaning, correctly.** They asserted an exact resolved order, which held only while no page had been added since the flat list shipped. They now assert what is actually guaranteed: the stored order survives intact and new pages are added on top of it, rather than the whole list being pinned to a literal that any new page breaks.
-- **The `AppLink` mechanism added a commit ago is gone.** It existed for exactly one entry, and that entry is a page now — generic machinery with no users is worse than adding it back when a second case turns up.
 
 #### Radio plays as a queue instead of one station at a time
 - **`playRadioStation` set a queue of exactly one**, which is why Next did nothing on a station: there was nowhere to go. A city's stations are an ordinary queue — the same shape `playAllUnified` builds — and the transport does not need to know its entries happen to be live streams.
@@ -258,9 +612,6 @@ The debug log showed frames of 0.7 to 0.9 s. The main thread recorded each frame
 - **The tapped row is passed as an index, not looked up.** The station directory is third-party and does not promise unique uuids — the panel's list is deliberately unkeyed for that reason — so searching for the tapped station can land on a different row with the same id.
 - **Repeated ids are collapsed before the queue is built**, because two entries sharing an id would fight over one slot in the unified-track registry, the second overwriting the first, and both would then play the same stream while the queue claimed to hold two. `planRadioQueue` is pure and `RadioQueueTest` proves the property that matters over every list and every tap: whatever was tapped is what plays, even when rows in front of it were dropped.
 - Search results still play alone: a station found by search is not "the list of the city", and the city's list is a network round trip that would delay playback.
-- **It was a button partway down Discover**, which meant finding it required already knowing it was there. It is one tap from Home now, and in the jump sheet on every other page, because that list is the app's answer to "where is everything".
-- **Links are kept apart from `APP_PAGES`.** That list drives the pager, the stored page order and `LIBRARY_PAGE_IDS`, and every id in it needs a branch in `LibraryScreen` — a nav route in there would be a page that draws nothing. `APP_LINKS` is a separate list of real destinations, drawn under the pages by the same row composable so a link cannot end up looking like a different kind of thing from a page.
-- **`onOpenRoute` is required, not defaulted.** A call site that forgot it would render tiles that look tappable and do nothing; making it mandatory turned that into three compile errors instead. `AppPagesTest` resolves each link's `Screen` object from its declaration and checks the nav host really registers a `composable()` for it — matching the route text alone would pass on the declaration and prove nothing.
 
 #### Visual Studio is a settings page of its own, right after Appearance
 - **It was one row under a "Now Playing Appearance" header at the bottom of Appearance** — a heading over a single item, which is a category that has not admitted to being one yet. Appearance is the app's chrome: theme, fonts, colours. The Studio is what the player looks like while it is playing, which is a different thing to go and look for, and it has just grown an Ambient tab.
@@ -346,17 +697,29 @@ The debug log showed frames of 0.7 to 0.9 s. The main thread recorded each frame
 
 ### Changed
 
-#### Six glass themes tuned on device lead the roster, and Float is the starting look
-- **Float, Opal, Ripple, Glint, Blurred and Frosted Ripple** come first in `PlayerGlassSettings.PRESETS`, ahead of Clear, Tinted and Tilt. They are `TRYPTGLASS1` codes tuned on a phone, with the personal fields (`sampleRings`, `miniProgressBar`, `tintColor`, `previewBg`) left out, so applying one keeps the listener's own.
-- **`INITIAL` is `FLOAT`**: half a body of glass, a broad mirror shoulder and the deepest, softest shadow on the roster. Only a setting never saved, or reset, takes it. Like Clear before it, it is still, with no surface motion and no tilt, so the app-wide mini player runs no frame clock and holds no gravity sensor until the listener picks a theme that moves.
-- **Opal's surface motion is 0.** Its code carried 0.0069, too little to see, and anything above 0 runs a frame clock under the mini player on every screen.
-- **Ripple and Frosted Ripple move, and Glint and Blurred follow tilt**, because that is what those looks are; each costs the battery only while it is chosen.
-- **A light frost grain is allowed.** `no preset uses the frost grain` became `no preset uses more than a light frost grain`, capped at 0.15. Blurred carries 0.03 and Frosted Ripple 0.11, as tuned on device; the heavy grain that read as noise on the rim stays out.
+#### Presses and page changes
+- **Every press in the app now uses the player's spring.** The old one settled slowly and visibly oscillated — barely noticeable on a small glyph, but on a full-width tile it was the wobble that read as jank. The dock already had the spring that felt right, so that one is now shared.
+- **Picking a page opens it at once** instead of sliding the pager through every page in between — Home to Downloads swept across five of them. That slide was there to follow a finger, and there is no finger any more.
 
-#### Search keeps its filter pills
-- **Home never handed the floating search bar's height to the results**, so the bar sat on the type and source pills. It is the list's top `contentPadding` now, as the Search bars invariant asks.
-- **The source row shows for every type** and filters albums and artists too, by catalog tags the view model records as results arrive, rather than disappearing on anything but Tracks.
-- **The pills stay up while a query runs**, instead of the whole list being swapped for a spinner on every keystroke.
+#### Recently Played opens in place
+- **Overview showed five rows and no way to the rest.** Home used to carry the full history and is the page list now, so five was all that was left of it. "See All" opens the section where it is — the history is one list and it is already loaded.
+
+#### The track playing is coloured in the list
+- **Its row is tinted and its title takes the accent**, in the catalogue rows, the local songs list and the folder browser. The tint alone is easy to miss on a dark row.
+
+#### Shuffle is on the player, and the sleep timer moved
+- **Shuffle takes the dock's second slot**, next to Lyrics. It was buried in the top bar's overflow menu — two taps and a read of "Shuffle: On" away from a mode you flip constantly. The dock's existing active state lights the glyph and its bloom while shuffle is on, exactly as Lyrics already does.
+- **The sleep timer takes the Output card's place in Audio tools** rather than losing its home. Output was the weakest of the four: a hardcoded "Default" that never reflected the real route, and a tap that only opened Settings — which the top bar's headphone button does already. The timer card shows the minutes left instead of "Off".
+- **`ic_glass_shuffle` is drawn to the dock's house style** — filled quads with solid corner arrowheads rather than strokes — so the punch leaves a clean hole and the glass shader has real edges to bevel.
+
+#### The transport glyphs are built from arithmetic
+- **Play, pause and the chevrons are generated rather than hand-placed.** A polygon with radius-r corners is that polygon inset by r, filled and stroked at width 2r with round joins, so play is three nodes rather than eight and each pause bar is four rather than twelve.
+- **The chevrons' proportions are read off the reference** instead of guessed, which is what puts the two apart rather than nested. They are scaled to sit with the play triangle rather than out-measure it.
+- **Pause stops short of stadium ends**, which read as too round beside play.
+
+#### The album-art glow has a radius and brightness of its own
+- **The cover bloom had no settings.** It read the same two knobs the Studio's Glow section tunes for the lyric line, so turning the lyric glow down took the album halo with it. The two have a pair each now, and the cover's appear under the switch that draws them.
+- **The new fields are nullable, and null means "follow the lyric glow"** — which is what the cover bloom already did, so an upgrade changes nothing on screen and the sliders open on the glow that is there rather than on a default. Moving a slider pins that field and ends the following.
 
 #### Play and pause morph instead of swapping
 - **The disc is the only control on the player that changes shape, and it changed it on one frame.** `drawPlayPauseSymbol` branched on `isPlaying` and drew either a triangle or two bars. Everything else about the button moves — the press dome, the bulge, the shader's own liquid — so the one hard cut in the transport was where it read as a set of images rather than an object.
@@ -369,34 +732,33 @@ The debug log showed frames of 0.7 to 0.9 s. The main thread recorded each frame
 
 ### Fixed
 
-#### Plays recorded in the background reach the account again
-- **Two in three play uploads were refused**, and every refused one carried the anon key rather than the listener's token. Supabase's edge log for one day: 123 `play_events` inserts and 126 `play_history` inserts answered 401 with `role = anon`, against 68 and 67 that went through signed in. None of the refused requests had an expired user token; they had no user token at all.
-- **The Supabase Kotlin client parks the session when the app leaves the foreground.** On Android its lifecycle observer stops the refresh job and sets the session status to `Initializing`, and `currentSessionOrNull()` answers null for any status but `Authenticated`. The request then falls back to the anon key, and the client's own expired-token check never runs, because there is no user token to check. Tryptify records plays from the playback service with the screen off, so that was most of them.
-- **`enableLifecycleCallbacks = false`** keeps the session and its refresh job alive for as long as the process is. A token that expires anyway, because the device slept through the scheduled refresh, is refreshed by the client before the next request that carries it.
-- **`requireValidSession = true` on Postgrest** makes a call with no session throw `SessionRequiredException` on the device instead of going out as anon. An anon insert at least failed loudly. An anon update or delete matches no rows under RLS and returns success, so a delete queued in `SyncOutbox` could be settled without having happened, and the next pull would bring the row back.
-- **Plays refused before this release go up by themselves.** They are still on the device with no cloud row id, and used to wait for somebody to press Sync now, so most never reached the account's stats. `LibraryRestoreCoordinator` now uploads them after its pull on every launch, through `SupabaseSyncRepository.uploadUnsyncedPlayEvents`, which Sync now uses too.
-- **Safe to repeat on every launch.** Each batch of 200 first asks which of its plays the cloud already holds, by track and millisecond (`matchPlays`, pinned by `PlayEventBackfillTest`), and adopts those rows: a play whose upload landed and whose reply was lost is not inserted twice. The rest go up in one bulk insert instead of one request per play. Plays from the last ten minutes are left to the push that follows the play, which they could otherwise race. A local row that duplicates a cloud row the device already holds — the cloud copy came down in a pull — is dropped, so stats count that play once.
-- **The bulk insert row has no defaults** (`SbPlayEventUpload`). A bulk insert names the union of every row's keys, and a row that leaves one out sends NULL for it; with `duration = 0` or `artist_name = ""` left out as defaults, the NOT NULL columns would refuse the whole batch.
+#### The player was charging itself for the navigation bar twice
+- **The nav host reserves the navigation bar's height under every detail route, and the player then inset itself again** — its content column, the pull handle and both bottom sheets all carried `navigationBarsPadding`. Plain padding does not consume a window inset, so the two stacked.
+- **With 3-button navigation that was a whole second button bar**, and the portrait hero paid for it: the album square is `min(width, height)`, so once the region ran shorter than it is wide the artwork stopped being width-bound and shrank, leaving gutters down both sides and a flat strip of theme background under the buttons.
+- **The player joins the two maps as a full-bleed route.** It already insets everything interactive, so the controls stay clear of the buttons while the backdrop runs to the bottom edge — and the hero gets the bar's height back.
 
-#### The track catalog fills for the first time
-- **`ensure_catalog_track` had answered 404 to every call it was ever sent.** PostgREST matches a body's top-level keys to the function's parameter names, and the function's one parameter is `p jsonb`; sent bare, the payload named a function with parameters `source`, `source_ref`, `title` and so on that does not exist. No play had a `track_uuid` and the catalog tables were empty. The payload now goes as `{"p": …}`.
-- **The function was rebuilt before it started taking writes**, as migration `catalog_unique_names_and_race_safe_ensure`. Its artist and album lookups compared `lower(name)` and `is not distinct from`, which no index could serve, so every miss would have scanned the whole shared catalog. Unique indexes on `lower(name)` and on `(primary_artist_id, lower(title))` make each lookup one probe and stop two calls creating the same artist or album twice; creating a new track is serialised per source key with a transaction-scoped advisory lock. All cost nothing to add while the tables were empty.
-- **A track played again skips the call**: resolved ids are kept per process, keyed by source and source ref.
+#### The glass frosted white over a dark backdrop on a light theme
+- **The player's frost was asking the wrong surface which way to wash.** The player is drawn on `dynamicPlayerBackground`, which washes the album colour toward black and ends on `BackgroundBlack` — dark under every theme, which is why the player's chrome is hardcoded white and why the system bars read their luminance off that colour. The frost asked `MaterialTheme.colorScheme.background` instead.
+- **On a light theme that answered light**, so the recipe returned white at 0.26 and laid it over a near-black ground, and `HazeStyle.backgroundColor` was handed the same wrong ground: a milky grey slab with the glyphs washed out of it.
+- **`PlayerGlassGround` names that ground once**, next to `playerFrostTint`, which exists for the same reason — the recipe had been written out by hand in three places and was free to drift. The dock, the transport, the player panes, the audio-tools sheet and the mixer strips all read it. The mixer draws the same brush, so its strips had the identical bug.
+- **`isDark` still comes from `luminance()` rather than a hardcoded `true`**, so if the player's ground ever lightens the frost follows it instead of silently lying.
+- **The frost recipe itself is unchanged.** This only fixes which backdrop it is asked about.
 
-#### play_history is no longer written
-- **Nothing ever read it.** Every play inserted a row, and every Sync now inserted up to 500 more with no conflict key, so they piled up as duplicates. Its prune trigger, which ran on every insert, was a third of all the database time the app used, before it was rewritten to use its index. Every play still goes to `play_events`; the table and its rows stay, unwritten.
+#### The press dome travelled across the dock
+- **The dome slid in from the previously pressed button.** It had been given a glide spring so it would follow a finger moving between slots, but Compose never hands a press from one sibling `clickable` to the next, so that gesture cannot happen. All the glide did was animate the dome across from wherever it last bloomed.
+- **The centre is placed on the last pressed slot again**, not animated to it.
+- **`PressSpring` stays.** One interruptible spring driving the dome's rise and fall and the glyph's squeeze was the actual fix for the press stutter — a tween carries no velocity, so releasing mid-bounce snapped the dome still before easing off — and it is not what made the dome travel.
 
-#### One device row per install
-- **`DeviceRegistry` inserted a new `user_devices` row on every sign-in**, because the cached row id was cleared on sign-out and nothing else identified the install: 774 rows for 327 accounts, one with 87. A cached id whose row had gone was worse, because the update matched nothing and the dead id went onto every play.
-- **It now upserts on `(user_id, local_id)`**, where `local_id` is `DeviceIdProvider`'s per-install id, which already survived sign-out and already claimed to be this key. The column and its unique constraint went in first, as migration `user_devices_keyed_by_local_id`; older app versions send no `local_id`, and nulls never collide.
+#### A lens of light sat across the scrubber
+- **`drawCircle`'s center and radius say what shape to fill; they say nothing about the brush.** `Brush.radialGradient` given neither centres itself on the draw scope and takes `minDimension / 2`, so the album glow's gradient ran from mid-screen over half the width while the disc it filled was meant to sit at three tenths of the height and reach eight tenths of the width. The light was never behind the hero — it was behind the transport, and it ran out there. `drawGlow` and `drawArtGlow` pass both to the brush; this one did not.
+- **The falloff was two stops**, so alpha fell in a straight line and then stopped dead at the rim. Losing all of the slope in one step is a kink, and the eye picks a kink out of a smooth field as a ring. It falls on a smoothstep now and arrives at nothing with no slope left; the stops cross the old straight line at the half-way mark, so the halo keeps the weight it had.
+- **It also faded to `Color.Transparent`, which is transparent black.** Stops interpolate unpremultiplied, so the RGB was being dragged toward black as the alpha came off — a grey film going away rather than light. It fades to the album colour at zero alpha now, and only the alpha moves.
+- **The glow is bigger and softer under the artwork** as a result, because that is the shape the numbers always described.
 
-#### Playlists restore in one paged request
-- **The launch restore fetched each playlist's tracks separately**, one round trip per playlist. It now asks for all of them together, 50 playlists to a request.
-- **Paged, because the server truncates silently.** PostgREST caps a response at 1,000 rows by default, and one account already holds 1,577 playlist tracks. Pages follow the primary key's order and continue until one comes back empty, so a lower cap cannot cut the list short either.
-
-#### The visualizer's preset was half of all API traffic
-- **`visualizer_preset_id` is no longer a synced setting.** It is the preset on screen, rewritten on every Next on the visualizer and every per-track rotation, and every rewrite was a full settings sync: a read of the account's settings row and a write of the whole thing. In one day that was 1,616 of about 3,650 requests to Supabase. Two accounts, both with the visualizer on, made 694 of the 737 writes, most of them 2–15 seconds apart.
-- **It stays on the device**, so the visualizer still opens on the last preset shown. Favourite presets and the rotation mode and interval still sync; those are the choices. A value already in the cloud is ignored on pull, because import only applies allow-listed keys.
+#### A lit dock glyph glowed square
+- **The bloom was blurred inside a box its own size.** A blur can only smear the pixels it is handed, and `Unbounded` treats everything past the layer as transparent, so the glow was cut off a few dp out from the strokes — `ic_glass_shuffle` spans 2.0 to 21.4 of its 24-unit viewport, leaving about 3dp of margin against an 11dp blur.
+- **The bloom now sits in a box with 16dp of padding each side**, reached with `requiredSize` so the overflow is never reported to the slot: the punch geometry places the holes from the row's paddings, and a taller slot would walk them off the glyphs.
+- **The blur also moved outside the alpha layer**, which is the lesson the slab's own shadow already carries. A layer at partial alpha composites through an offscreen buffer its own size, and that cut the spill back to a hard-edged rectangle on every frame of the fade.
 
 #### Recording a baseline profile no longer means cooking a phone
 - **`useConnectedDevices = true` was the only option**, so generating a profile meant running the app flat out on a handset for several minutes — five launches, three pages, a scroll and a search each — with the screen on the whole time. That is enough sustained load to heat a phone, which is a poor reason not to have a profile at all.
@@ -545,63 +907,12 @@ The debug log showed frames of 0.7 to 0.9 s. The main thread recorded each frame
 #### Scanner bookkeeping
 - **`lastFullScan` advances when a full scan runs.** It was pinned to the first scan an install ever ran, so it recorded when the library was first indexed rather than when it was last rebuilt — and the incremental scan reads it as a watermark.
 
-## [1.8.9]
+### Removed
 
-### Changed
-
-#### Presses and page changes
-- **Every press in the app now uses the player's spring.** The old one settled slowly and visibly oscillated — barely noticeable on a small glyph, but on a full-width tile it was the wobble that read as jank. The dock already had the spring that felt right, so that one is now shared.
-- **Picking a page opens it at once** instead of sliding the pager through every page in between — Home to Downloads swept across five of them. That slide was there to follow a finger, and there is no finger any more.
-
-#### Recently Played opens in place
-- **Overview showed five rows and no way to the rest.** Home used to carry the full history and is the page list now, so five was all that was left of it. "See All" opens the section where it is — the history is one list and it is already loaded.
-
-#### The track playing is coloured in the list
-- **Its row is tinted and its title takes the accent**, in the catalogue rows, the local songs list and the folder browser. The tint alone is easy to miss on a dark row.
-
-#### Shuffle is on the player, and the sleep timer moved
-- **Shuffle takes the dock's second slot**, next to Lyrics. It was buried in the top bar's overflow menu — two taps and a read of "Shuffle: On" away from a mode you flip constantly. The dock's existing active state lights the glyph and its bloom while shuffle is on, exactly as Lyrics already does.
-- **The sleep timer takes the Output card's place in Audio tools** rather than losing its home. Output was the weakest of the four: a hardcoded "Default" that never reflected the real route, and a tap that only opened Settings — which the top bar's headphone button does already. The timer card shows the minutes left instead of "Off".
-- **`ic_glass_shuffle` is drawn to the dock's house style** — filled quads with solid corner arrowheads rather than strokes — so the punch leaves a clean hole and the glass shader has real edges to bevel.
-
-#### The transport glyphs are built from arithmetic
-- **Play, pause and the chevrons are generated rather than hand-placed.** A polygon with radius-r corners is that polygon inset by r, filled and stroked at width 2r with round joins, so play is three nodes rather than eight and each pause bar is four rather than twelve.
-- **The chevrons' proportions are read off the reference** instead of guessed, which is what puts the two apart rather than nested. They are scaled to sit with the play triangle rather than out-measure it.
-- **Pause stops short of stadium ends**, which read as too round beside play.
-
-#### The album-art glow has a radius and brightness of its own
-- **The cover bloom had no settings.** It read the same two knobs the Studio's Glow section tunes for the lyric line, so turning the lyric glow down took the album halo with it. The two have a pair each now, and the cover's appear under the switch that draws them.
-- **The new fields are nullable, and null means "follow the lyric glow"** — which is what the cover bloom already did, so an upgrade changes nothing on screen and the sliders open on the glow that is there rather than on a default. Moving a slider pins that field and ends the following.
-
-### Fixed
-
-#### The player was charging itself for the navigation bar twice
-- **The nav host reserves the navigation bar's height under every detail route, and the player then inset itself again** — its content column, the pull handle and both bottom sheets all carried `navigationBarsPadding`. Plain padding does not consume a window inset, so the two stacked.
-- **With 3-button navigation that was a whole second button bar**, and the portrait hero paid for it: the album square is `min(width, height)`, so once the region ran shorter than it is wide the artwork stopped being width-bound and shrank, leaving gutters down both sides and a flat strip of theme background under the buttons.
-- **The player joins the two maps as a full-bleed route.** It already insets everything interactive, so the controls stay clear of the buttons while the backdrop runs to the bottom edge — and the hero gets the bar's height back.
-
-#### The glass frosted white over a dark backdrop on a light theme
-- **The player's frost was asking the wrong surface which way to wash.** The player is drawn on `dynamicPlayerBackground`, which washes the album colour toward black and ends on `BackgroundBlack` — dark under every theme, which is why the player's chrome is hardcoded white and why the system bars read their luminance off that colour. The frost asked `MaterialTheme.colorScheme.background` instead.
-- **On a light theme that answered light**, so the recipe returned white at 0.26 and laid it over a near-black ground, and `HazeStyle.backgroundColor` was handed the same wrong ground: a milky grey slab with the glyphs washed out of it.
-- **`PlayerGlassGround` names that ground once**, next to `playerFrostTint`, which exists for the same reason — the recipe had been written out by hand in three places and was free to drift. The dock, the transport, the player panes, the audio-tools sheet and the mixer strips all read it. The mixer draws the same brush, so its strips had the identical bug.
-- **`isDark` still comes from `luminance()` rather than a hardcoded `true`**, so if the player's ground ever lightens the frost follows it instead of silently lying.
-- **The frost recipe itself is unchanged.** This only fixes which backdrop it is asked about.
-
-#### The press dome travelled across the dock
-- **The dome slid in from the previously pressed button.** It had been given a glide spring so it would follow a finger moving between slots, but Compose never hands a press from one sibling `clickable` to the next, so that gesture cannot happen. All the glide did was animate the dome across from wherever it last bloomed.
-- **The centre is placed on the last pressed slot again**, not animated to it.
-- **`PressSpring` stays.** One interruptible spring driving the dome's rise and fall and the glyph's squeeze was the actual fix for the press stutter — a tween carries no velocity, so releasing mid-bounce snapped the dome still before easing off — and it is not what made the dome travel.
-
-#### A lens of light sat across the scrubber
-- **`drawCircle`'s center and radius say what shape to fill; they say nothing about the brush.** `Brush.radialGradient` given neither centres itself on the draw scope and takes `minDimension / 2`, so the album glow's gradient ran from mid-screen over half the width while the disc it filled was meant to sit at three tenths of the height and reach eight tenths of the width. The light was never behind the hero — it was behind the transport, and it ran out there. `drawGlow` and `drawArtGlow` pass both to the brush; this one did not.
-- **The falloff was two stops**, so alpha fell in a straight line and then stopped dead at the rim. Losing all of the slope in one step is a kink, and the eye picks a kink out of a smooth field as a ring. It falls on a smoothstep now and arrives at nothing with no slope left; the stops cross the old straight line at the half-way mark, so the halo keeps the weight it had.
-- **It also faded to `Color.Transparent`, which is transparent black.** Stops interpolate unpremultiplied, so the RGB was being dragged toward black as the alpha came off — a grey film going away rather than light. It fades to the album colour at zero alpha now, and only the alpha moves.
-- **The glow is bigger and softer under the artwork** as a result, because that is the shape the numbers always described.
-
-#### A lit dock glyph glowed square
-- **The bloom was blurred inside a box its own size.** A blur can only smear the pixels it is handed, and `Unbounded` treats everything past the layer as transparent, so the glow was cut off a few dp out from the strokes — `ic_glass_shuffle` spans 2.0 to 21.4 of its 24-unit viewport, leaving about 3dp of margin against an 11dp blur.
-- **The bloom now sits in a box with 16dp of padding each side**, reached with `requiredSize` so the overflow is never reported to the slot: the punch geometry places the holes from the row's paddings, and a taller slot would walk them off the glyphs.
-- **The blur also moved outside the alpha layer**, which is the lesson the slab's own shadow already carries. A layer at partial alpha composites through an offscreen buffer its own size, and that cut the spill back to a hard-edged rectangle on every frame of the fade.
+#### The pane behind the Player tab's preview
+- **The Studio drew its transport on a `GlassPanel` wearing `LocalMiniPlayerGlass`** — the UI panels blob, tuned on the next tab over. The largest surface in the Player preview was the one thing those sliders did not control: move a Player slider and everything moved except the surface behind it, move a UI panels slider and nothing on that tab moved at all, because UI panels previewed only the mini player bar.
+- **The real player has no pane there.** The transport and the dock are punched slabs floating straight over the artwork, and the invariants forbid a haze pane under one — an opaque frosted backdrop is exactly what flattens them. The preview was showing a construction that does not exist.
+- **It moved to the UI panels tab**, above the mini player, where the two faces of that one material — the floating sheet and the bar — are previewed together and both answer to the sliders under them.
 
 ## [1.8.8]
 

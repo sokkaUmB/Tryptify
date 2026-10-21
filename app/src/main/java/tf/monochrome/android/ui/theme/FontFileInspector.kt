@@ -51,7 +51,25 @@ sealed interface FontInspection {
         /** Carries an `fvar` table: one file renders every weight. */
         val variable: Boolean,
         val format: FontFormat,
+        /** Its weight, 1 to 1000 (OS/2 `usWeightClass`): 300 Light, 400 Regular, 700 Bold. */
+        val weight: Int = 400,
+        val italic: Boolean = false,
+        /**
+         * The family its cuts share, to group them by: the typographic family,
+         * else the legacy one with any weight or slope word taken off the end
+         * (an old font says "Inter Light" / "Regular" for what a new one says
+         * "Inter" / "Light").
+         */
+        val groupFamily: String? = family,
+        /**
+         * A variable font's axes by tag ("wght", "wdth"…), each with the range it
+         * spans. A font with "wdth" draws condensed and wide letters itself.
+         */
+        val axes: Map<String, ClosedFloatingPointRange<Float>> = emptyMap(),
     ) : FontInspection {
+        /** The span of its width axis, in percent of normal, or null when it has none. */
+        val widthAxis: ClosedFloatingPointRange<Float>? get() = axes["wdth"]
+
         /**
          * The name to show: the family, with its style when the style says
          * more than "the usual one", so two static cuts of one family stay
@@ -116,6 +134,7 @@ object FontFileInspector {
     private const val MAX_TABLES = 512
     private const val MAX_NAME_RECORDS = 4096
     private const val MAX_NAME_LENGTH = 512
+    private const val MAX_AXES = 64
 
     fun inspect(file: File): FontInspection =
         runCatching { FileFontSource(file).use { inspect(it) } }
@@ -167,13 +186,61 @@ object FontFileInspector {
         if ("head" !in tables || "cmap" !in tables || !hasOutlines) return reject()
 
         val names = tables["name"]?.let { (offset, length) -> readNames(source, offset, length) }.orEmpty()
+        // OS/2 carries the weight and the italic bit; head's macStyle is the
+        // older place for the slope, for a font without OS/2.
+        val os2 = tables["OS/2"]?.first
+        val weight = os2?.let { source.u16(it + 4) }?.takeIf { it in 1..1000 } ?: 400
+        val italic = os2?.let { source.u16(it + 62) }?.let { it and 1 != 0 }
+            ?: tables["head"]?.first?.let { source.u16(it + 44) }?.let { it and 2 != 0 }
+            ?: false
         return FontInspection.Font(
             family = names[16] ?: names[1],
             style = names[17] ?: names[2],
             variable = "fvar" in tables,
             format = if (version == TAG_OTTO) FontFormat.OPENTYPE_CFF else FontFormat.TRUETYPE,
+            weight = weight,
+            italic = italic,
+            groupFamily = names[16] ?: names[1]?.let(::withoutStyleWords),
+            axes = tables["fvar"]?.let { (offset, length) -> readAxes(source, offset, length) }.orEmpty(),
         )
     }
+
+    /**
+     * The `fvar` table's axes: after a 16-byte header naming where the axis
+     * records start and how many there are, each record is a 4-byte tag, then
+     * its minimum, default and maximum as 16.16 fixed-point numbers.
+     */
+    private fun readAxes(source: FontSource, tableOffset: Long, tableLength: Long): Map<String, ClosedFloatingPointRange<Float>> {
+        val arrayOffset = source.u16(tableOffset + 4) ?: return emptyMap()
+        val count = source.u16(tableOffset + 8) ?: return emptyMap()
+        val size = source.u16(tableOffset + 10) ?: return emptyMap()
+        if (count > MAX_AXES || size < 20) return emptyMap()
+        val axes = LinkedHashMap<String, ClosedFloatingPointRange<Float>>()
+        for (i in 0 until count) {
+            val rec = tableOffset + arrayOffset + i.toLong() * size
+            if (rec + 20 > tableOffset + tableLength) break
+            val tag = source.read(rec, 4)?.let { String(it, Charsets.ISO_8859_1) } ?: break
+            val min = source.fixed(rec + 4) ?: break
+            val max = source.fixed(rec + 12) ?: break
+            if (min <= max) axes[tag] = min..max
+        }
+        return axes
+    }
+
+    private fun FontSource.fixed(offset: Long): Float? = u32(offset)?.let { it.toInt() / 65536f }
+
+    /** "Inter Light" → "Inter", "Source Sans Pro Bold Italic" → "Source Sans Pro"; never empty. */
+    internal fun withoutStyleWords(family: String): String {
+        val words = family.trim().split(Regex("\\s+")).toMutableList()
+        while (words.size > 1 && words.last().lowercase().replace("-", "") in STYLE_WORDS) words.removeAt(words.lastIndex)
+        return words.joinToString(" ")
+    }
+
+    private val STYLE_WORDS = setOf(
+        "thin", "hairline", "extralight", "ultralight", "light", "book", "regular", "normal",
+        "medium", "semibold", "demibold", "bold", "extrabold", "ultrabold", "black", "heavy",
+        "italic", "oblique",
+    )
 
     /**
      * The best string for each name id in the `name` table: Windows Unicode in

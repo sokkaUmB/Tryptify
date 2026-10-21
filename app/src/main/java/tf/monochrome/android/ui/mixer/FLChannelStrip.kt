@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.mixer
 
+import tf.monochrome.android.ui.player.glassFrost
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,11 +47,9 @@ import dev.chrisbanes.haze.hazeEffect
 import tf.monochrome.android.audio.dsp.model.BusConfig
 import tf.monochrome.android.audio.dsp.model.BusLevels
 import tf.monochrome.android.domain.model.PlayerGlassSettings
-import tf.monochrome.android.performance.LocalLowPerformance
 import tf.monochrome.android.performance.LocalPerformanceProfile
 import tf.monochrome.android.ui.components.bounceClick
 import tf.monochrome.android.ui.components.bounceCombinedClick
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.components.toggleSemantics
 import tf.monochrome.android.ui.navigation.LocalMiniPlayerGlass
 import tf.monochrome.android.ui.player.LocalPlayerGlass
@@ -209,7 +208,6 @@ fun FLChannelStrip(
     // signal its badge and border already give.
     val paneAccent = lerp(colors.surfaceContainerHigh, accent, if (isSelected) 0.5f else 0.3f)
     val tint = if (glass.tintColor != 0) Color(glass.tintColor) else paneAccent
-    val flat = LocalLowPerformance.current.disableLiquidGlass
     val allowHaze = LocalPerformanceProfile.current.allowHazeBlur
     // The mixer draws `dynamicPlayerBackground` too — see [PlayerGlassGround].
     val frostBg = LocalPlayerGlassGround.current
@@ -253,24 +251,18 @@ fun FLChannelStrip(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .hazeEffect(
-                            state = hazeState,
-                            style = HazeStyle(
-                                backgroundColor = frostBg,
-                                blurRadius = glass.hazeBlurDp.dp,
-                                // The app's one frost recipe, scaled by the
-                                // listener's Backdrop tint. Thin on purpose:
-                                // most of what reads through should be the art.
-                                tints = listOf(HazeTint(playerFrostTint(glass, isDark))),
-                                noiseFactor = 0f,
-                            )
-                        )
+                        // The app's one frost recipe, scaled by the listener's
+                        // Backdrop tint. Thin on purpose: most of what reads
+                        // through should be the art.
+                        .glassFrost(state = hazeState, glass = glass, ground = frostBg, isDark = isDark)
                 )
             }
             Canvas(
                 modifier = Modifier
                     .matchParentSize()
-                    .playerGlass(tint = tint)
+                    // Its corner, so the rim runs round it rather than a
+                    // 2px bevel from the fill's alpha (docs/ui-invariants.md).
+                    .playerGlass(tint = tint, lensCorner = PlayerDesignTokens.GlassCornerSmall)
             ) {
                 val r = PlayerDesignTokens.GlassCornerSmall.toPx()
                 drawRoundRect(color = tint, cornerRadius = CornerRadius(r, r))
@@ -279,29 +271,10 @@ fun FLChannelStrip(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(stripBrush, stripShape)
-                    .then(
-                        // liquidGlass drops itself on LOW-tier devices; the
-                        // `flat` check is the listener's own "off" switch.
-                        //
-                        // Deliberately NOT handed the haze source. This tier
-                        // stands on the near-opaque channel gradient, and a
-                        // blur pane draws OVER that fill rather than through
-                        // it — the gradient would be hidden and the strip left
-                        // with only frost to be legible against. The blurred
-                        // artwork belongs to the shader tier, where the slab is
-                        // see-through by design.
-                        if (flat) {
-                            Modifier
-                        } else {
-                            Modifier.liquidGlass(
-                                shape = stripShape,
-                                tintAlpha = PlayerDesignTokens.GlassTintSoft,
-                                borderAlpha = if (isSelected) 0.16f else 0.06f,
-                                showRefraction = isSelected
-                            )
-                        }
-                    )
+                    // The Material 3 strip: the channel gradient alone. It
+                    // used to wear the old frosted pane over the gradient,
+                    // rim and all, which is gone (see materialSurface).
+                    .background(stripBrush, stripShape),
             )
         }
 

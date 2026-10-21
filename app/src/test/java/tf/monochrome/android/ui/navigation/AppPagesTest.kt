@@ -71,11 +71,12 @@ class AppPagesTest {
         // while no page had been added since the flat list shipped. World radio
         // is the first, so the guarantee is now the useful half of that: the
         // migrated order survives intact, and anything added arrives on top of
-        // it rather than reshuffling it.
+        // it rather than reshuffling it. My server (the Subsonic page) is the
+        // second.
         val migrated = migrateLegacyPageOrder(legacyDefault)
         val reconciled = reconcilePageOrder(migrated)
         assertEquals(migrated, reconciled.filter { it in migrated })
-        assertEquals(listOf(RADIO_PAGE_ID), reconciled - migrated.toSet())
+        assertEquals(listOf(RADIO_PAGE_ID, SUBSONIC_PAGE_ID), reconciled - migrated.toSet())
     }
 
     /** A legacy order missing sections still ends up with every page. */
@@ -96,7 +97,7 @@ class AppPagesTest {
         assertEquals(stored, resolved.filter { it in stored })
         // A page that install predates is still added — that is reconcile's
         // job, and it does not make the legacy order win.
-        assertEquals(listOf(RADIO_PAGE_ID), resolved - stored.toSet())
+        assertEquals(listOf(RADIO_PAGE_ID, SUBSONIC_PAGE_ID), resolved - stored.toSet())
     }
 
     /**
@@ -107,7 +108,10 @@ class AppPagesTest {
     @Test
     fun `a stored order that still names Overview drops it and nothing else moves`() {
         val stored = listOf("home", "discover", RADIO_PAGE_ID, "overview", "downloads", "local", "playlists", "favorites")
-        assertEquals(stored - "overview", resolvePageOrder(stored, legacyDefault))
+        // My server postdates this order, so it arrives after Local, its
+        // canonical predecessor; every page the user placed stays put.
+        val expected = (stored - "overview").toMutableList().apply { add(indexOf("local") + 1, SUBSONIC_PAGE_ID) }
+        assertEquals(expected, resolvePageOrder(stored, legacyDefault))
     }
 
     // ── Older devices on the same account ───────────────────────────────
@@ -115,10 +119,12 @@ class AppPagesTest {
     /** A reorder here must not move Overview on a synced device that still has it. */
     @Test
     fun `a written order keeps Overview where the stored order had it`() {
-        val stored = listOf("home", "discover", RADIO_PAGE_ID, "local", "overview", "playlists", "favorites", "downloads")
+        // My server is placed last so that moving Playlists up one still swaps
+        // it with Local, which is what puts Overview's position to the test.
+        val stored = listOf("home", "discover", RADIO_PAGE_ID, "local", "overview", "playlists", "favorites", "downloads", SUBSONIC_PAGE_ID)
         val reordered = moveLibrarySection(reconcilePageOrder(stored), "playlists", -1)
         assertEquals(
-            listOf("home", "discover", RADIO_PAGE_ID, "playlists", "local", "overview", "favorites", "downloads"),
+            listOf("home", "discover", RADIO_PAGE_ID, "playlists", "local", "overview", "favorites", "downloads", SUBSONIC_PAGE_ID),
             keepLegacyIds(reordered, stored),
         )
     }
@@ -296,7 +302,7 @@ class AppPagesTest {
     @Test
     fun `with Local hidden the library route lands on the next library page`() {
         val pages = visiblePages(DEFAULT_PAGE_ORDER, setOf("local"))
-        assertEquals(pages.indexOf("playlists"), landingPageIndex(pages, Screen.Library.route))
+        assertEquals(pages.indexOf(SUBSONIC_PAGE_ID), landingPageIndex(pages, Screen.Library.route))
     }
 
     /** visiblePages keeps one section, so the route still lands in the Library. */
@@ -351,7 +357,7 @@ class AppPagesTest {
 
     @Test
     fun `the library pages are everything but Home, Discover and Radio`() {
-        assertEquals(listOf("local", "playlists", "favorites", "downloads"), LIBRARY_PAGE_IDS)
+        assertEquals(listOf("local", SUBSONIC_PAGE_ID, "playlists", "favorites", "downloads"), LIBRARY_PAGE_IDS)
     }
 
     // ── Cross-file guards ────────────────────────────────────────────────

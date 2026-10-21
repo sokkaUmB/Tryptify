@@ -30,6 +30,7 @@ import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
+import dev.chrisbanes.haze.HazeArea
 import dev.chrisbanes.haze.HazeState
 import kotlin.math.ceil
 
@@ -128,12 +129,21 @@ internal fun Modifier.liveGlassLens(
     // `HazeStyle.backgroundColor`; the lens lays [ground] down first.
     val pageColor = ground.copy(alpha = 1f)
     val effect = remember { LensEffectCache() }
+    // The sources this pane has been seen inside. Its own layer re-records
+    // apart from its source's (when it alone is invalidated), and Haze's
+    // "recording now" flag is only up during the source's own recording, so
+    // a source caught once is left out for good.
+    val inside = remember { java.util.Collections.newSetFromMap(java.util.WeakHashMap<HazeArea, Boolean>()) }
+    // Music links move this pane's blur and bend in the draw block alone.
+    val links = LocalVisualLinks.current
+    val area = LocalGlassArea.current
     return this
         .onGloballyPositioned { anchor.screen = it.positionOnScreen() }
         .clip(shape)
         .drawBehind {
             redraw.intValue
             if (size.minDimension <= 0f) return@drawBehind
+            val glass = links.glass(glass, area)
             // See LIVE_LENS_BLUR_SHARE for why a fifth. The slider is the only
             // say: 0 is crisp, unblurred refraction. A 6dp floor was tried and
             // taken out on device — at 0 the listener wants clear glass.
@@ -193,6 +203,16 @@ internal fun Modifier.liveGlassLens(
                 scale(1f / k, pivot = Offset.Zero) {
                     hazeState.areas
                         .filter { it.windowId == null || it.windowId == windowId }
+                        // A source drawing its content right now is one this
+                        // pane sits inside: drawn here, its layer would hold
+                        // this pane, which holds it, and the render thread
+                        // walked that loop until its stack ran out (a native
+                        // crash, seen on device). Haze's own blur skips them
+                        // the same way.
+                        .filterNot { area ->
+                            if (HazeContentDrawing.isDrawing(area)) inside.add(area)
+                            area in inside
+                        }
                         .sortedBy { it.zIndex }
                         .forEach { area ->
                             val layer = area.contentLayer ?: return@forEach
@@ -288,6 +308,23 @@ private const val REDUCED_LENS_MIN_BLUR_PX = 12f
 private const val LENS_TAG = "LiveGlassLens"
 
 /** One-shot flags for the lens's own diagnostics, so they log once per process. */
+/**
+ * Haze's own "this source is recording its content" flag on a [HazeArea],
+ * which its blur reads to leave out a source it sits inside. Internal to
+ * Haze, so read by its compiled name, kept through R8 (proguard-rules.pro).
+ * Where it cannot be read nothing is left out, as before.
+ */
+internal object HazeContentDrawing {
+    private val getter: java.lang.reflect.Method? = runCatching {
+        HazeArea::class.java.getMethod("getContentDrawing\$haze_release")
+    }.onFailure {
+        android.util.Log.w(LENS_TAG, "Haze's contentDrawing flag is not readable; a lens inside its source would loop", it)
+    }.getOrNull()
+
+    fun isDrawing(area: HazeArea): Boolean =
+        getter?.let { runCatching { it.invoke(area) as? Boolean }.getOrNull() } ?: false
+}
+
 private object LensDiagnostics {
     @Volatile var warnedEmpty = false
 }

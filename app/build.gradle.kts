@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Properties
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -53,8 +54,8 @@ android {
         applicationId = "tf.monotrypt.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 193
-        versionName = "1.9.3"
+        versionCode = 194
+        versionName = "1.9.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -66,6 +67,24 @@ android {
             "\"${localProperties.getProperty("spotify.clientId") ?: "c9e571c8b81948feb6573014a3efdd2c"}\"",
         )
         buildConfigField("String", "SPOTIFY_REDIRECT_URI", "\"tryptify://spotify-callback\"")
+
+        // The Theme Store's API (server/theme-store, a Railway Function). It
+        // holds no secret: every call carries the listener's Supabase session,
+        // which the server checks against the project's public keys.
+        buildConfigField(
+            "String",
+            "THEME_STORE_URL",
+            "\"${localProperties.getProperty("themeStore.url") ?: "https://theme-store-production-a3db.up.railway.app"}\"",
+        )
+
+        // Tryptify Cloud (server/cloud, a Cloudflare Worker): the paid personal
+        // Subsonic-API music storage. Like the Theme Store it holds no secret;
+        // calls carry the listener's Supabase session.
+        buildConfigField(
+            "String",
+            "TRYPTIFY_CLOUD_URL",
+            "\"${localProperties.getProperty("tryptifyCloud.url") ?: "https://cloud.tryptify.com"}\"",
+        )
 
         // Last.fm application key, shared by every install — CHARTS ONLY.
         //
@@ -88,6 +107,30 @@ android {
             "LASTFM_API_KEY",
             "\"${localProperties.getProperty("lastfm.apiKey") ?: "153452aaeaa3e666645274b3a9e5bb0a"}\"",
         )
+
+        // The Trypt Mania chart server every install starts with (Slow, a
+        // CPU server on Railway), its secret path and all. From
+        // local.properties (`tryptmania.cpuServer`) or the
+        // TRYPTMANIA_CPU_SERVER environment variable, never the repository:
+        // a build without either ships no server, and charting waits for one
+        // under Settings › Connections. Anyone with the APK can read it.
+        buildConfigField(
+            "String",
+            "BUILT_IN_CPU_SERVER",
+            "\"${(localProperties.getProperty("tryptmania.cpuServer") ?: System.getenv("TRYPTMANIA_CPU_SERVER") ?: "").trim()}\"",
+        )
+        // The rooms server for Trypt Mania's multiplayer (TryptMania-Parser's
+        // multiplayer/ service on Railway), the same way: local.properties
+        // `tryptmania.roomsServer` or TRYPTMANIA_ROOMS_SERVER.
+        val roomsServer = (localProperties.getProperty("tryptmania.roomsServer") ?: System.getenv("TRYPTMANIA_ROOMS_SERVER") ?: "").trim()
+        buildConfigField("String", "BUILT_IN_ROOMS_SERVER", "\"$roomsServer\"")
+        // Listening party invites (https://<rooms host>/…/party/<code>) open
+        // in the app: the manifest claims the built-in rooms server's host,
+        // and that server's /.well-known/assetlinks.json vouches for the app.
+        // Only the host goes in, never the secret path. Without a built-in
+        // server it claims a host that cannot exist.
+        manifestPlaceholders["partyLinkHost"] =
+            runCatching { URI(roomsServer).host }.getOrNull()?.takeIf { it.isNotBlank() } ?: "party.invalid"
 
         externalNativeBuild {
             cmake {
@@ -171,6 +214,15 @@ android {
         }
     }
 
+    testOptions {
+        unitTests {
+            // Robolectric needs the merged resources and the manifest to
+            // inflate anything; without this a Compose test fails on the first
+            // theme lookup rather than on an assertion.
+            isIncludeAndroidResources = true
+        }
+    }
+
     androidResources {
         // Lists the app's languages for the system, from the values-* folders,
         // so Android 13+ offers it under Settings › App languages. Needs
@@ -179,6 +231,25 @@ android {
         // Stored as-is in the APK; the zip's entries are already deflated, so
         // letting AAPT re-compress it would only slow down runtime extraction.
         noCompress += "presets.zip"
+    }
+
+    testOptions {
+        unitTests.all {
+            // Name the failures in the log.
+            //
+            // By default Gradle prints "There were failing tests. See the
+            // report at ..." and nothing else, which on CI means the one thing
+            // needed to fix the build is the one thing not in the build output
+            // — it is inside an HTML artifact you have to download and unzip.
+            // Printing the test name and the assertion turns a ten-minute
+            // round trip into reading the log.
+            it.testLogging {
+                events("failed")
+                exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+                showStackTraces = true
+                showCauses = true
+            }
+        }
     }
 }
 
@@ -290,6 +361,8 @@ dependencies {
     // JAudioTagger — write Vorbis comments into downloaded FLACs (THX designation)
     // and read them back on rescan. Pure JVM; only text tags are touched.
     implementation(libs.jaudiotagger)
+    // QR codes for the Nothing Ear EQ export
+    implementation(libs.zxing.core)
 
     // Hilt
     implementation(libs.hilt.android)
@@ -346,6 +419,8 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.core.splashscreen)
     implementation(libs.browser)
+    // Exportify inside the app: a web message listener only exportify.net can post to.
+    implementation(libs.webkit)
 
     // Media (Android Auto)
     implementation(libs.media)
@@ -379,4 +454,12 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    // Compose tests run on the JVM under Robolectric so `testDebugUnitTest`
+    // covers them. A separate instrumented suite would need a device and would
+    // therefore not run on most changes.
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

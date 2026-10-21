@@ -122,11 +122,335 @@ object WhatsNew {
     /** Moving from one song to the next: crossfades and gapless. */
     private const val PLAYBACK = "Playback"
 
+    /** Where lyrics come from, and what they are searched by. */
+    private const val LYRICS = "Lyrics"
+
     /** The projectM visualizer, its preset browser and its rotation. */
     private const val VISUALIZER = "Visualizer"
 
+    /** Settings and knobs that follow a part of the song, and the page that lists them. */
+    private const val MUSIC_LINKS = "Music links"
+
+    /** Sharing a whole look, and taking someone else's. */
+    private const val THEME_STORE = "Theme Store"
+
+    /** The rhythm game in Library › Local, its charts, packs and rooms. */
+    private const val TRYPT_MANIA = "Trypt Mania"
+
+    /** The old-TV look over the whole app or the lyrics. */
+    private const val CRT_EFFECT = "CRT effect"
+
+    /** The Fonts page: the main font, its width and the typography table. */
+    private const val FONTS = "Fonts"
+
+    /** The account button and page, listening stats and achievements. */
+    private const val STATS = "Account and stats"
+
+    /** How late each output plays, and everything that waits for it. */
+    private const val BLUETOOTH_SYNC = "Bluetooth sync"
+
     /** Newest first. */
     val releases: List<WhatsNewRelease> = listOf(
+        WhatsNewRelease(
+            versionCode = 194,
+            versionName = "1.9.4",
+            entries = listOf(
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = TRYPT_MANIA,
+                    title = "A rhythm game on your own music",
+                    body = "Trypt Mania, in Library › Local, plays your songs by StepMania's rules and in its look. Charts are made for you on the built-in chart server, and Multiplayer plays the same chart with friends in a room.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = TRYPT_MANIA,
+                    title = "Charts, packs and a map editor",
+                    body = "Chart any MP3 or FLAC, import StepMania packs or browse StepMania Online, and chart by hand in the Map editor. Your charts are saved as a pack StepMania and ITGmania can play.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = TRYPT_MANIA,
+                    title = "Points that grow with your combo",
+                    body = "Each step is worth more the longer your combo, as in osu!: the 26th is worth twice the first, and a miss starts it over. The game plays over your player's own background.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = TRYPT_MANIA,
+                    title = "A live scoreboard and a shared song",
+                    body = "In a room, everyone's score runs down the side, cards sliding as places change, and the host can send the song to anyone who doesn't have it.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = CRT_EFFECT,
+                    title = "The app through an old TV",
+                    body = "Settings › Appearance › CRT effect draws every screen, or only the lyrics, as Scanlines, CRT, CRT-Royale and more, with a curved tube, a bezel and presets of your own. Android 13 and later.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = CRT_EFFECT,
+                    title = "Zoom, and themes that carry it",
+                    body = "A Zoom slider from 60% to 120% sizes the picture on the tube, to frame the curve or fill the corners. A theme can carry your CRT effect too.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = FONTS,
+                    title = "A typography table",
+                    body = "Settings › Fonts gives each of 15 kinds of text its own font, weight, size, width and spacing. The Width slider makes every letter narrower or wider, and a font imported as several files is one font with all its weights.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = FONTS,
+                    title = "Orbitron",
+                    body = "A wide, squared-off display font is built in, every weight from Regular to Black. Latin letters only.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = MUSIC_LINKS,
+                    title = "Effects that move with the music",
+                    body = "Sliders on every tab of Player Visuals Studio, the CRT effect's too, can follow the kick, vocals, snare, hi-hats or a range you pick. Tap the ♪ beside a slider, or press and hold it, and choose Move with the music.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = MUSIC_LINKS,
+                    title = "Mixer knobs that move with the music",
+                    body = "Press and hold a smooth knob in the mixer's effects and choose Move with the music. You hear the link while you shape it, and Cancel puts the knob back. Links are saved with the mix and its presets.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = MUSIC_LINKS,
+                    title = "Every link on one page",
+                    body = "Music links, from the ♪ at the top of Player Visuals Studio, lists every link with pause, change and remove, and one switch that pauses them all.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = THEME_STORE,
+                    title = "Share your look",
+                    body = "Settings › Theme Store. Share your colours, lyrics, glass, font, visualizers, maps and music links as one theme, in the store or only by its code. Nothing personal goes with it. Needs an account.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = THEME_STORE,
+                    title = "Try someone else's",
+                    body = "Every theme previews live on the real player before you use it, and has a switch for each part, so you can keep your own font or colours. Your look before is saved for a one-tap undo.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = EQUALIZER,
+                    title = "Your EQ on a Nothing Ear",
+                    body = "Export to Nothing Ear, on the EQ screen, fits your EQ into the earbuds' eight bands as a QR code. Scan it in Nothing X under Equalizer › Advanced, and the earbuds play it without the app.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = BLUETOOTH_SYNC,
+                    title = "Bluetooth sync for the whole app",
+                    body = "Settings › Audio › Bluetooth sync. Measure it once per device with Trypt Mania's tap test, and the lyrics, the visuals, the visualizer and the game all wait for your headphones.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Open songs from other apps",
+                    body = "Pick Tryptify to open an audio file from a file manager, a chat or Downloads and it plays. Add to library, on the pill or in the player's menu, keeps it in Music/Tryptify.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Your library as a galaxy",
+                    body = "Library galaxy, under Folders in Library, shows every artist on your phone as a star beside their genre, their albums as planets and their tracks as moons. It works offline.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Albums in orbit",
+                    body = "An artist's first album orbits nearest and each later one further out. Albums you play a lot glow brighter. Tap a moon to play it; long-press a star to list every album and track.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = LIBRARY,
+                    title = "Short tracks in your library",
+                    body = "A library scan no longer leaves out tracks under 30 seconds, so intros, interludes and skits are in your albums. Over the whole phone, a short clip on its own, like a voice note, stays out; in folders you pick, every length comes in.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Track info",
+                    body = "A song's menu (its ⋮) has Track info: its file's format, sample rate, bit depth and bitrate, and every tag in it, ready to copy. The menu itself is glass.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Choose a song row's badges",
+                    body = "Settings › Appearance › Song row badges turns off the source, quality, format, download and length marks on every song list, one by one or all at once, so a song's artist and album get the whole line.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LIBRARY,
+                    title = "Hold a song to hear it",
+                    body = "Press and hold a song in any list to hear up to 25 seconds of it, from its drop when one is known; let go and it stops. Choosing several songs now starts from Select in a song's ⋮ menu.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = PLAYLISTS,
+                    title = "Import a Spotify playlist from its link",
+                    body = "In Create playlist, paste a Spotify playlist link: it shows the playlist's cover, name and length, then imports it. No file and no account needed; without one, Spotify shares a playlist's first 100 songs.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = PLAYLISTS,
+                    title = "Exportify inside the app",
+                    body = "For a private playlist, Liked Songs or one over 100 songs, Create playlist opens Exportify inside the app. Sign in with any Spotify account, Free included, tap Export, and the playlist comes straight into your library.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = DISCOVER,
+                    title = "Search the galaxy",
+                    body = "A search button on both galaxies finds a genre, by any of its names, or an artist, and flies there.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = DISCOVER,
+                    title = "One sky, two galaxies",
+                    body = "Your library galaxy sits in the genre galaxy's sky. Switch between them from the title bar and the view stays where it was.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = DISCOVER,
+                    title = "Galaxy and Timeline are two pills",
+                    body = "The panel at the bottom of the map is now two glass pills. Surprise me is in the title bar, and how much you have explored is under the title.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = DISCOVER,
+                    title = "A stronger zoom",
+                    body = "A pinch zooms further, starts at once, and stays on the planet you are zooming toward. Tapping a planet or a star brings it closer.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = PLAYER,
+                    title = "Glass Visualizer and Waveform buttons",
+                    body = "They are real glass now, like Timer, Sound, Speed and Mixer above them.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = PLAYER,
+                    title = "BPM at the right tempo",
+                    body = "The Speed panel's BPM no longer reads hardcore and most DnB at half, or slow songs at double, and goes up to 250. A song on your phone with a BPM tag shows its tag at once.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = PLAYER,
+                    title = "Panels read in light themes",
+                    body = "With dynamic colour in a light theme, the Speed panel, the audio tools and the preset browser had dark text on dark glass and lost their outlines. Their text is light and their pills show.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = LYRICS,
+                    title = "Lyrics for songs named by number",
+                    body = "Untagged songs named like \"2-05 Song\" or \"CD1 - 05 - Song\" are searched without the number, and no longer get \"01\" or \"CD1\" as their artist. Refresh the library once to fix songs already scanned.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = LYRICS,
+                    title = "Lyrics for compilations",
+                    body = "Songs on a Various Artists album are searched under their own artist, so they find their lyrics.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = LYRICS,
+                    title = "The right lyrics for your own files",
+                    body = "Songs on your phone are no longer looked up on TIDAL by a made-up number, which could bring back another song's lyrics.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = PLAYBACK,
+                    title = "Blends need gapless",
+                    body = "Blend between tracks only runs with Gapless playback on. With it off, each song plays on its own from start to end, and the blend slider is greyed out.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = PLAYBACK,
+                    title = "No blends in exclusive mode",
+                    body = "With Exclusive USB DAC on, the blend slider is greyed out: a blend mixes two songs, and exclusive mode is the bit-perfect path. Songs play one at a time, gapless with Gapless playback on, and your blend comes back when it is off.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = USB_DAC,
+                    title = "More DACs in exclusive mode",
+                    body = "Exclusive mode now drives DACs that run in USB Audio 3.0's basic mode, like Apple's USB-C headphone adapter, which Android always puts in that mode. They play at 48 kHz, in 24-bit.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = USB_DAC,
+                    title = "DACs at their full output",
+                    body = "The DAC's own volume is unmuted and set to full when a song starts, so only the app's volume turns it down. The DAC card shows it as HW vol 0 dB.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = USB_DAC,
+                    title = "One volume bar",
+                    body = "The player no longer has a DAC volume bar of its own. The volume keys bring up the DAC's bar at the top of the screen everywhere, the player included.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = USB_DAC,
+                    title = "No full-volume burst between songs",
+                    body = "A song change could play a moment of noise at the DAC's full volume, whatever the volume was set to. Samples that aren't audio are now held to the volume set, and a crossfade's outgoing song gets Samsung's 16-bit fix too.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = USB_DAC,
+                    title = "DACs that refused every song",
+                    body = "Some DACs, Apple's adapter among them, were turned away with \"no alt setting matches\" whatever played. A song at a rate the DAC can't take now says so, and plays through Android instead.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.REMOVED,
+                    section = USB_DAC,
+                    title = "USB DAC bit-perfect routing",
+                    body = "It pointed Android's output at a USB DAC, still through Android's own mixer. Exclusive USB DAC is the bit-perfect path, so it is the one switch now.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = LYRICS,
+                    title = "Lyrics timed word by word",
+                    body = "Songs without word-timed lyrics are timed on the server after 15 seconds of play (Settings › Appearance › Server lyrics), and Player ⋮ › Edit lyrics lets you stamp each line or word yourself.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.NEW,
+                    section = STATS,
+                    title = "Listening stats and achievements",
+                    body = "Account › Listening stats: glass cards, charts of how you listen, your Trypt Mania play and achievements to chase. The account button shows your own picture, and you pick your own username.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = LOOK,
+                    title = "Lighter lists",
+                    body = "Song rows, tiles, folders and cards are plain Material 3 surfaces instead of the old frosted glass, and titles are SemiBold over Regular descriptions.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = EQUALIZER,
+                    title = "Precision AutoEQ's targets and filters",
+                    body = "Targets are pills under its graph, and under them each filter has a chip and pills for its type, frequency, gain and Q. Drag a dot on the graph to pick it.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.CHANGED,
+                    section = EQUALIZER,
+                    title = "The preamp turns bass and treble down too",
+                    body = "With the AutoEQ correction off, the Preamp did nothing and a bass boost played at full level. It now applies whenever the correction or a tone knob changes the sound.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.REMOVED,
+                    section = BLUETOOTH_SYNC,
+                    title = "Separate delay sliders",
+                    body = "The lyrics' Bluetooth delay and the visualizer's audio delay are the one Bluetooth sync now. Your value carried over.",
+                ),
+                WhatsNewEntry(
+                    kind = WhatsNewKind.REMOVED,
+                    section = LOOK,
+                    title = "The Now Playing group in Settings",
+                    body = "Its rows repeated settings found elsewhere: View Mode is a tap on the artwork, and the player's tint follows Appearance › Dynamic Colors.",
+                ),
+            ),
+        ),
         WhatsNewRelease(
             versionCode = 193,
             versionName = "1.9.3",

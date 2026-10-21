@@ -5,6 +5,20 @@
 **Effort units:** solo-developer weeks (assume full-time, includes tests + docs)
 **Commit convention:** author as `tryptz`, no co-author trailers, no tool attribution.
 
+> **Progress at 1.9.4 (checked against `281c07a2`).** Two PRs of the sequence
+> are done: PR-A (the flag registry) and PR-B (the PCM harness). Two more are
+> partly done by work that went in outside this plan: PR-F (the player's Audio
+> Pipeline panel shows the path, but nothing classifies it) and PR-N (the
+> queue survives process death; shuffle is still unseeded). Everything else is
+> not started. None of the nine declared flags is read by anything yet.
+>
+> The baseline below has moved: the database is at schema **v20**, not v13
+> (v13→v14 added `playback_state` and `playback_queue`; later ones added
+> Atmos on downloads, tempo, key and dynamic range on `local_tracks`, and
+> sampler tables that v20 drops again), so every "v13→v14 … v17→v18" below
+> starts at v20→v21 instead. `exportSchema` is still `false`. Each workstream
+> in §2 and each PR in §5 carries its own status line.
+
 ---
 
 ## 0. Verified Current Baseline
@@ -193,6 +207,15 @@ function before editing it, because line numbers drift.
 ## 2. Workstreams
 
 ### P0.0 — Contracts, feature flags, structured events *(net-new)*
+
+**Status: partly.** FeatureFlag registry *done* (`data/preferences/FeatureFlags.kt`,
+`FeatureFlagRegistryTest`, `9143f545`: nine flags, all off, account-scoped ones
+folded into `SETTINGS_SYNC_KEYS`). PCM harness *done* (`app/src/test/.../audio/golden/`,
+`97cca3af`; signals are generated in code and compared in LSBs, and no reference
+WAV files are committed). SourceProvider, OutputBackend, ProcessingPlan,
+`playback_events` and schema export *not started* (only the `PLAYBACK_EVENTS`
+and `OUTPUT_BACKEND_SEAM` flags exist).
+
 - **SourceProvider** interface; adapters per `PlaybackSource` variant;
   `resolveUnifiedTrack`'s `when` becomes dispatch over providers; `ResolvedMedia` is the
   return type (extended, not replaced). The `isQobuzTrack` guard moves *into* the Qobuz
@@ -214,6 +237,17 @@ function before editing it, because line numbers drift.
   bit-comparison utility, prerequisite for P0.1/P0.4 gates.
 
 ### P0.1 — Audio truth: migrate the label into a verified state
+
+**Status: partly.** The player's Audio Pipeline panel (`audio/pipeline/AudioPipeline.kt`,
+`AudioPipelineSnapshot`, `ui/player/AudioPipelinePanel.kt`, `aade6ca9`) shows
+track, decoder, resampler, DSP, loudness and output for the playing track, with
+an unknown field shown as a dash, tested by `AudioPipelineSnapshotTest`. *Not
+started:* the PASS / DEGRADED / UNKNOWN classification, persisting it with
+events, and anything reading the `AUDIO_PATH_SNAPSHOT` flag. Of the two label
+keys, `usb_bit_perfect_enabled` was removed with its setting rather than
+migrated (`58ba7e73`: Exclusive USB DAC is the bit-perfect path);
+`usb_exclusive_bit_perfect_enabled` is that switch and is still read.
+
 - **`AudioPathSnapshot`** aggregates decoder format (from `Format`), processing activity
   (each processor's `isActive()`/config via `TryptifyAudioProcessorChain`), and output truth
   (from `BypassDiagnostics` + `LibusbAudioSink` bypass state).
@@ -225,6 +259,13 @@ function before editing it, because line numbers drift.
   path), DEGRADED (with reason: resample / DSP active / bypass down), UNKNOWN.
 
 ### P0.2 — Device profiles + backends
+
+**Status: not started.** No device profiles, no AAudio/Oboe code (only the
+`AAUDIO_OUTPUT` and `OUTPUT_BACKEND_SEAM` flags), no route state machine. The
+exclusive USB path now logs why it stood down (`c7b92290`) instead of failing
+silently, which is reporting, not a transaction. `cast-framework` and
+media3-cast are still declared in `app/build.gradle.kts` with no code using them.
+
 - `OutputDeviceProfileEntity` (pattern: `MixPresetEntity`/`EqPresetEntity`) keyed on
   fingerprint: USB VID/PID (small addition to `LibusbUacDriver`/`UsbExclusiveController` —
   `BypassDiagnostics` already carries the rest), `UsbAudioRouter` device info,
@@ -238,6 +279,12 @@ function before editing it, because line numbers drift.
   No Cast backend work in this roadmap.
 
 ### P0.3 — Formats, CUE, DSD *(scope reduced)*
+
+**Status: not started.** No `FormatDecodingTest`, CUE parser, format sniffer or
+DoP (only the `CUE_SHEETS` and `DOP_OUTPUT` flags). Some decoding fixes went in
+outside the plan, such as 32-bit float WAVs and WAV tags (`ae317906`) and
+16-bit streamed FLAC (`f4247118`).
+
 - Step 1 is **verification, not implementation**: extend/add `FormatDecodingTest` asserting
   AIFF/ALAC/WavPack/APE/TAK/Opus/DSF/DFF decode through the FFmpeg extension (tiny real-file
   fixtures per codec, JVM where possible, instrumented if not). Record results in the plan
@@ -248,6 +295,10 @@ function before editing it, because line numbers drift.
 - **Codec licensing gate** before shipping any bundled decoder binaries.
 
 ### P0.4 — SRC + dither
+
+**Status: not started.** Only the `OUTPUT_RESAMPLER` and `OUTPUT_DITHER` flags
+exist. Dither is still `MixBusProcessor`'s own TPDF.
+
 - **Reuse `SincKernel`** (proven windowed-sinc, tested via `VariRateAudioProcessorTest`) for
   a deterministic output-rate SRC processor; `VariRateAudioProcessor` stays speed/pitch-only.
   Insert as the final processor in `TryptifyAudioProcessorChain` (and in the bypass chain's
@@ -257,6 +308,15 @@ function before editing it, because line numbers drift.
   `AudioPathSnapshot`.
 
 ### P0.5 — Network providers
+
+**Status: not started.** No `SourceProvider` adapters, no UPnP/SMB/WebDAV, no
+Keystore storage. Note for PR-S1: Deezer playback (`5394fe57`) added
+`data/cache/DeezerStreamCacheManager.kt`, `DeezerStreamUri.kt` and
+`DeezerPartialDataSource.kt` as a copy of the Qobuz cache rather than a
+generalisation of it, which is the parallel cache R9 warns about. Its reason,
+in the code: Deezer and Qobuz ids share one number range, so one cache keyed by
+id alone could not say which catalogue a file came from.
+
 - Formalize existing providers (HiFi/Qobuz catalogue, Qobuz partial streaming, Apple, radio,
   collections) as `SourceProvider` adapters — mostly refactor, low net-new.
 - **Segmented caching is not net-new.** Any "shared segmented cache" must **extend
@@ -269,12 +329,23 @@ function before editing it, because line numbers drift.
   plaintext in DataStore). Ship with a DataStore→Keystore migration for existing keys.
 
 ### P0.6 — Reliability & diagnostics
+
+**Status: not started.** No diagnostic bundle and no detach/reattach harness. A
+host test of the USB DAC driver against stubbed libusb exists
+(`app/src/main/cpp/usb/tests/uac_driver_test.cpp`, run by
+`app/src/main/cpp/dsp/tests/run_host_tests.sh`); it tests the driver, not a
+detach cycle.
+
 - Diagnostic bundle ZIP: `DebugLogBuffer`/`DebugLogCollector` output + `BypassDiagnostics` +
   recent `playback_events` + device/build info; explicit user consent flow.
 - USB detach/reattach cycle test harness; long-run soak script on device matrix.
 - `ImportanceMediaCodecAdapterFactory` already mitigates MediaCodec dropouts — keep, document.
 
 ### P1.1 — Unified catalog
+
+**Status: not started.** No ratings, play/skip counter columns or artist
+cross-refs; play counts are still counted from `play_events`.
+
 - Additive migration on the **single** `MusicDatabase`: ratings, play/skip counters on local
   + unified tables, multi-value artist/genre normalization (`local_track_artists` cross-refs
   following the collections cross-ref pattern).
@@ -286,6 +357,15 @@ function before editing it, because line numbers drift.
   tables.
 
 ### P1.2 — Queue persistence + seeded shuffle
+
+**Status: partly.** Persistence *done*, without the flag (`75849a1d`): v13→v14
+added `playback_state` and `playback_queue`, `player/PlaybackStateRepository.kt`
+stores the queue as JSON with its pre-shuffle order and the play head, and on
+restore puts each entry's `UnifiedTrack` back in `UnifiedTrackRegistry` before
+the queue is published. Seeded shuffle *not started*: `QueueManager` still calls
+an unseeded `shuffle()`; un-shuffle already restores the original order because
+that order is persisted. The `QUEUE_PERSISTENCE` flag is read by nothing.
+
 - Persist logical identity: `UnifiedTrack` is already `@Serializable` — persist queue as a
   `queue_items` table (additive migration; preferred) or JSON (pattern: `DOWNLOAD_QUEUE_JSON`
   at `PreferencesManager.kt:348/979`). Restore on process death; `UnifiedTrackRegistry`
@@ -294,24 +374,46 @@ function before editing it, because line numbers drift.
   PRNG; persist the seed so un-shuffle restores original order.
 
 ### P1.2b — Smart playlists
+
+**Status: not started.**
+
 - Rule AST (JSON), evaluator over `MusicDatabase` DAO queries, persisted as `smart_playlist`
   table (additive). Backup/sync coverage included.
 
 ### P1.3 — Tag writing
+
+**Status: not started.** The library's tags are read only. (Downloads already
+write tags into their own files as they are saved, in `TrackDownloader`; that
+predates this plan and is not a library tag writer.)
+
 - Extend `data/local/tags/`: writer with atomic rewrite (temp-file + rename), respecting
   `LocalLibraryRevision`; `MetadataOverrideEntity` for non-destructive overrides where
   rewrite is unsafe. Artwork embedding alongside `AudioFileCoverFetcher`.
 
 ### P1.4 — Playlist export + M3U/PLS/WPL
+
+**Status: not started.** No M3U/PLS/WPL parser or playlist export. (The
+Exportify screen, `ui/library/ExportifyScreen.kt`, is another way to *import*
+Spotify playlists, not an export.)
+
 - Import exists (CSV, Spotify). Add: M3U/M3U8/PLS/WPL parsers into `data/import_/`; export
   for all supported formats; extended-M3U metadata (duration/title) written losslessly.
 
 ### P1.6 — External audio capture
+
+**Status: not started.** No `PlaybackSource.ExternalCapture`. The only
+`AudioPlaybackCapture` use is the debug screen recorder's own sound
+(`debug/DebugScreenRecorder.kt`).
+
 - `AudioPlaybackCapture` (API 29+): new `PlaybackSource.ExternalCapture` variant; DSP entry
   via `TryptifyAudioProcessorChain`; output via the `OutputBackend` seam. Usage-visibility
   gating surfaced in UI.
 
 ### P1.7 — Backup/sync completion
+
+**Status: not started** (its inputs, P0.2, P1.1 and P1.2b, are not built; the
+account-scoped flags already sync through `SETTINGS_SYNC_KEYS`).
+
 - Extend `BackupManager` + `SettingsSyncCoordinator` for: device profiles (P0.2), flags,
   smart-list ASTs, ratings/counters (P1.1), queue (P1.2). Versioned backup envelope; keep
   legacy fallback.
@@ -360,36 +462,48 @@ function before editing it, because line numbers drift.
 ## 5. Ordered PR Sequence
 
 1. **PR-A** (E0.0): `FeatureFlag` registry + sync-allow-list policy + tests.
+   *Done* (`9143f545`).
 2. **PR-B** (E0.0): PCM golden-fixture harness + reference fixtures.
+   *Done* as a harness of generated signals (`97cca3af`); no reference WAV
+   fixtures committed.
 3. **PR-C** (E0.0): schema export on (v13 JSON committed) + `playback_events` table
    (v13→v14 additive migration) + `MigrationTestHelper` target + emission at
    `buildAudioSink`/`StreamResolver` failure points; absorb `StartError` codes.
+   *Not started*; the schema is v20 now, so it starts at v20→v21.
 4. **PR-D** (E0.0): `SourceProvider` interface + adapters over existing `PlaybackSource`
    resolvers; `ResolvedMedia` unchanged externally; **Qobuz id-routing golden test lands in
-   this PR** (R8).
+   this PR** (R8). *Not started.*
 5. **PR-E** (E0.0): `ProcessingPlan` enumeration of `TryptifyAudioProcessorChain`
-   (+ bypass chain).
+   (+ bypass chain). *Not started.*
 6. **PR-F** (E0.1): `AudioPathSnapshot` + `BypassDiagnostics` extension + settings-UI
-   verified-state card + legacy key migration.
+   verified-state card + legacy key migration. *Partly*: the Audio Pipeline
+   panel (`aade6ca9`) shows the path; no classification, and one legacy key
+   was removed rather than migrated (`58ba7e73`). See P0.1.
 7. **PR-G** (E0.0/E0.2): `OutputBackend` extraction of `LibusbAudioSink` delegate/bypass;
-   route-switch transactionalization.
-8. **PR-H** (E0.3): codec decode verification tests + documented matrix.
+   route-switch transactionalization. *Not started.*
+8. **PR-H** (E0.3): codec decode verification tests + documented matrix. *Not started.*
 9. **PR-I** (E0.4): SincKernel-based output-rate SRC + dither stage + clipping reporter.
-10. **PR-J** (E0.2): `OutputDeviceProfileEntity` (v14→v15) + profile store.
-11. **PR-K** (E0.2): AAudio/Oboe backend (flag-gated).
-12. **PR-L** (E0.5): Keystore credential migration.
-13. **PR-M** (E0.6): diagnostic bundle + USB cycle harness.
-14. **PR-N** (E1.2): queue persistence (v15→v16) + seeded shuffle.
-15. **PR-O** (E1.1): ratings/counters/normalization (v16→v17).
-16. **PR-P** (E1.2b): smart playlists (v17→v18).
-17. **PR-Q** (E1.3): tag writer + overrides.
-18. **PR-R** (E1.4): M3U/PLS/WPL import + export.
+   *Not started.*
+10. **PR-J** (E0.2): `OutputDeviceProfileEntity` (v14→v15) + profile store. *Not started.*
+11. **PR-K** (E0.2): AAudio/Oboe backend (flag-gated). *Not started.*
+12. **PR-L** (E0.5): Keystore credential migration. *Not started.*
+13. **PR-M** (E0.6): diagnostic bundle + USB cycle harness. *Not started.*
+14. **PR-N** (E1.2): queue persistence (v15→v16) + seeded shuffle. *Partly*:
+    persistence shipped as v13→v14 without the flag (`75849a1d`); shuffle is
+    unseeded. See P1.2.
+15. **PR-O** (E1.1): ratings/counters/normalization (v16→v17). *Not started.*
+16. **PR-P** (E1.2b): smart playlists (v17→v18). *Not started.*
+17. **PR-Q** (E1.3): tag writer + overrides. *Not started.*
+18. **PR-R** (E1.4): M3U/PLS/WPL import + export. *Not started.*
 19. **PR-S1** (E0.5): generalize `QobuzStreamCacheManager`/`QobuzStreamUri` into a
-    provider-agnostic segmented cache, Qobuz behavior byte-identical.
+    provider-agnostic segmented cache, Qobuz behavior byte-identical. *Not
+    started*; Deezer's cache is a second copy now (see P0.5).
 20. **PR-S2…S4** (E0.5): UPnP/DLNA, SMB2/3, WebDAV — each its own PR on top of PR-S1.
-21. **PR-T** (E1.6): external capture.
-22. **PR-U** (E1.7): backup/sync scope extension.
+    *Not started.*
+21. **PR-T** (E1.6): external capture. *Not started.*
+22. **PR-U** (E1.7): backup/sync scope extension. *Not started.*
 23. **PR-V** (housekeeping): cast-framework dep removal (pending go/no-go G2).
+    *Not started*: both cast dependencies are still declared and unused.
 
 Each PR: `./gradlew :app:compileDebugKotlin` + `:app:testDebugUnitTest` green; invariant
 tests (`LightSchemesTest`, `CustomSchemeTest`, `GlobeLandClipTest`, `SettingsSearchIndexTest`)

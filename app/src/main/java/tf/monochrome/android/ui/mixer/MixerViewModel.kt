@@ -30,7 +30,13 @@ class MixerViewModel @Inject constructor(
     private val spatialStore: tf.monochrome.android.audio.dsp.spatial.SpatialPlacementStore,
     private val channelDetector: tf.monochrome.android.audio.dsp.ChannelDetectorProcessor,
     atmosProcessor: tf.monochrome.android.audio.atmos.AtmosAudioProcessor,
+    /** The song's spectrum, for the knob link editor's band picture. */
+    val spectrumAnalyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap,
+    private val achievements: tf.monochrome.android.data.achievements.AchievementStore,
 ) : ViewModel() {
+
+    /** Knobs that follow the music: making, changing and polling them. */
+    val knobLinks = KnobLinkEditing(dspManager)
 
     // ── Spatial map ─────────────────────────────────────────────────────
 
@@ -125,6 +131,7 @@ class MixerViewModel @Inject constructor(
     fun pollTick() {
         dspManager.pollLevels()
         dspManager.pollFxTap(_selectedBusIndex.value)
+        knobLinks.poll()
     }
 
     private val _showPluginPicker = MutableStateFlow(false)
@@ -240,7 +247,7 @@ class MixerViewModel @Inject constructor(
             // Remove the old plugin and insert the replacement at the same slot
             // so the chain's processing order is preserved.
             if (slotIndex in bus.plugins.indices) dspManager.removePlugin(busIndex, slotIndex)
-            dspManager.addPlugin(busIndex, slotIndex, type)
+            if (dspManager.addPlugin(busIndex, slotIndex, type) >= 0) recordPlugin(busIndex, type)
             return
         }
         val busIndex = _selectedBusIndex.value
@@ -249,8 +256,13 @@ class MixerViewModel @Inject constructor(
             _showPluginPicker.value = false
             return
         }
-        dspManager.addPlugin(busIndex, bus.plugins.size, type)
+        if (dspManager.addPlugin(busIndex, bus.plugins.size, type) >= 0) recordPlugin(busIndex, type)
         _showPluginPicker.value = false
+    }
+
+    /** Plugin Collector and Signal Chain count every plugin that lands in a chain. */
+    private fun recordPlugin(busIndex: Int, type: SnapinType) {
+        achievements.pluginInserted(type.name, buses.value.getOrNull(busIndex)?.plugins?.size ?: 0)
     }
 
     fun movePlugin(busIndex: Int, fromSlot: Int, toSlot: Int) {

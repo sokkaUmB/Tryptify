@@ -79,8 +79,7 @@ fun FeatureTourStep(onDone: () -> Unit) {
                 )
                 Text(
                     text = stringResource(slide.title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = MonoDimens.spacingLg)
                 )

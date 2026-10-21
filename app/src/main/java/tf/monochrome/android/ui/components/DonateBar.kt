@@ -37,7 +37,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import tf.monochrome.android.R
-import tf.monochrome.android.performance.LocalPerformanceProfile
 import tf.monochrome.android.ui.theme.MonoDimens
 import androidx.compose.ui.res.stringResource
 
@@ -91,28 +90,17 @@ fun DonateBar(
 ) {
     var neverAgain by remember { mutableStateOf(false) }
 
-    // `liquidGlass` returns the modifier untouched on LOW-tier devices — no
-    // blur, no tint, no rim — which for a list row is right and for a bar is
-    // not: a notice with no surface under it is text loose on the page. The
-    // solid container is what it falls back to there, and it is transparent
-    // wherever the glass will actually draw.
-    val glassy = LocalPerformanceProfile.current.allowHazeBlur
-    val content = if (glassy) {
-        MaterialTheme.colorScheme.onSurface
-    } else {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    }
+    // A Material 3 notice, in both of the app's looks: the primary container.
+    // A row's surface (materialSurface) is for rows; a bar asking for
+    // something stands out from them.
+    val content = MaterialTheme.colorScheme.onPrimaryContainer
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs)
-            // No hazeState on purpose. This sits inside the app's one
-            // hazeSource, and a haze child within its own source is the cycle
-            // that crashes at draw time — the same rule every row follows.
-            .liquidGlass(shape = MonoDimens.shapeMd),
+            .padding(horizontal = MonoDimens.listItemPaddingH, vertical = MonoDimens.spacingXs),
         shape = MonoDimens.shapeMd,
-        color = if (glassy) Color.Transparent else MaterialTheme.colorScheme.primaryContainer,
+        color = MaterialTheme.colorScheme.primaryContainer,
     ) {
         Column(modifier = Modifier.padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -186,11 +174,7 @@ fun DonateBar(
                     colors = CheckboxDefaults.colors(
                         checkedColor = content,
                         uncheckedColor = content.copy(alpha = 0.6f),
-                        checkmarkColor = if (glassy) {
-                            MaterialTheme.colorScheme.surface
-                        } else {
-                            MaterialTheme.colorScheme.primaryContainer
-                        },
+                        checkmarkColor = MaterialTheme.colorScheme.primaryContainer,
                     ),
                 )
                 Spacer(modifier = Modifier.width(10.dp))

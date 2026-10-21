@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <string>
+#include <vector>
 #include "dsp_engine.h"
 #include "multilane_engine.h"
 #include <android/log.h>
@@ -298,6 +299,33 @@ Java_tf_monochrome_android_audio_dsp_MixBusProcessor_nativeLoadStateJson(
         engine->forEach([&](DspEngine& e) { e.loadStateJson(state); });
         env->ReleaseStringUTFChars(stateJson, json);
     }
+}
+
+// ── Music links on knobs ────────────────────────────────────────────────
+
+/** Replaces every knob link on every lane; [data] is KnobLinkCodec.toNative's flat form. */
+extern "C" JNIEXPORT void JNICALL
+Java_tf_monochrome_android_audio_dsp_MixBusProcessor_nativeSetModRoutes(
+    JNIEnv* env, jobject /*thiz*/, jlong enginePtr, jfloatArray data) {
+    auto* engine = getEngine(enginePtr);
+    if (!engine || !data) return;
+    const jsize len = env->GetArrayLength(data);
+    std::vector<float> copy(static_cast<size_t>(len));
+    if (len > 0) env->GetFloatArrayRegion(data, 0, len, copy.data());
+    engine->forEach([&](DspEngine& e) { e.setModRoutes(copy.data(), static_cast<int>(len)); });
+}
+
+/** [id, bus, value, strength] per link into [out]; returns the floats written. */
+extern "C" JNIEXPORT jint JNICALL
+Java_tf_monochrome_android_audio_dsp_MixBusProcessor_nativeGetModValues(
+    JNIEnv* env, jobject /*thiz*/, jlong enginePtr, jfloatArray out) {
+    auto* engine = getEngine(enginePtr);
+    if (!engine || !out) return 0;
+    float buf[modroute::MAX_ROUTES * 4];
+    const jsize cap = std::min<jsize>(env->GetArrayLength(out), modroute::MAX_ROUTES * 4);
+    const int n = engine->getModValues(buf, static_cast<int>(cap));
+    if (n > 0) env->SetFloatArrayRegion(out, 0, n, buf);
+    return n;
 }
 
 // ── Adding and removing buses ───────────────────────────────────────────

@@ -154,7 +154,6 @@ fun HeadphoneSelectScreen(
                 Text(
                     stringResource(R.string.eq_database),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = selectedRig?.label ?: "All rigs",
@@ -424,7 +423,7 @@ private fun MeasurementRowItem(
             Text(
                 headphone.name,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

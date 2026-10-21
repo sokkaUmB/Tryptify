@@ -26,7 +26,7 @@ import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
 
 /**
- * Settings › Wave Candy: the scope over the artwork and its kick punch, with
+ * Settings › Wave Candy: the scope over the artwork and its swell on a kick, with
  * a live preview of the scope itself. Lives under the spectrum settings, which
  * own the analyzer it draws from — the preview runs while those are on.
  */
@@ -101,14 +101,11 @@ internal fun WaveCandySettingsSection(
     }
     SettingSwitchItem(
         title = stringResource(R.string.wavecandy_kick_punch),
-        subtitle = stringResource(R.string.wavecandy_the_cover_punches_in_on_each_kick_drum),
+        subtitle = stringResource(R.string.wavecandy_the_lines_swell_on_each_kick_drum),
         checked = settings.kickEnabled,
         onCheckedChange = { onChange(settings.copy(kickEnabled = it)) },
     )
     if (settings.kickEnabled) {
-        WaveSlider(stringResource(R.string.wavecandy_punch_strength), settings.kickZoom, 0f..0.12f, { "${(it * 100).toInt()}%" }) {
-            onChange(settings.copy(kickZoom = it))
-        }
         WaveSlider(stringResource(R.string.wavecandy_kick_sensitivity), settings.kickSensitivity, 0f..1f, { "${(it * 100).toInt()}%" }) {
             onChange(settings.copy(kickSensitivity = it))
         }

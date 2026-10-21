@@ -1,6 +1,12 @@
 package tf.monochrome.android.ui.settings
 
+import tf.monochrome.android.ui.player.LocalGlassArea
+import tf.monochrome.android.domain.model.LinkArea
+import tf.monochrome.android.ui.player.lyricCurvature
+import kotlin.math.roundToInt
 import tf.monochrome.android.ui.navigation.popBackStackSafe
+import tf.monochrome.android.ui.navigation.navigateTool
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -11,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -56,8 +63,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -69,6 +74,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -128,6 +134,7 @@ import tf.monochrome.android.domain.model.LyricsFxPreset
 import tf.monochrome.android.domain.model.LyricsFxSettings
 import tf.monochrome.android.domain.model.PlayerGlassPreset
 import tf.monochrome.android.domain.model.PlayerGlassSettings
+import tf.monochrome.android.domain.model.StudioLook
 import tf.monochrome.android.domain.model.Track
 import tf.monochrome.android.ui.components.MiniPlayer
 import tf.monochrome.android.visualizer.AmbientVisualizerSettings
@@ -150,6 +157,7 @@ import tf.monochrome.android.ui.player.lyricFitWidth
 import tf.monochrome.android.ui.player.rememberWrappedLyricLayout
 import tf.monochrome.android.ui.player.LocalBeatPulse
 import tf.monochrome.android.ui.player.rememberFrameSeconds
+import tf.monochrome.android.ui.player.rememberLetterWaveSeconds
 import tf.monochrome.android.ui.player.LocalLyricGlyphAnchors
 import tf.monochrome.android.ui.player.LocalLyricsFx
 import tf.monochrome.android.ui.player.LyricGlyphAnchors
@@ -181,6 +189,17 @@ import tf.monochrome.android.ui.navigation.LocalBottomChromeInset
 import androidx.compose.material3.RadioButton
 import kotlinx.coroutines.flow.SharingStarted
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import tf.monochrome.android.data.repository.MusicLinksRepository
+import tf.monochrome.android.domain.model.VisualLinkTargets
+import tf.monochrome.android.ui.musiclinks.LinkedTrackMarker
+import tf.monochrome.android.ui.musiclinks.LocalMusicLinkHost
+import tf.monochrome.android.ui.musiclinks.musicLinkColor
+import tf.monochrome.android.ui.player.LocalVisualLinks
+import tf.monochrome.android.ui.player.rememberVisualLinkDriver
 
 @HiltViewModel
 class LyricsFxStudioViewModel @Inject constructor(
@@ -190,7 +209,12 @@ class LyricsFxStudioViewModel @Inject constructor(
     queueManager: tf.monochrome.android.player.QueueManager,
     /** The player's own beat analyzer, so the preview of the playing song pulses with it. */
     val spectrumAnalyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap,
-) : ViewModel() {
+    musicLinksRepository: MusicLinksRepository,
+    private val achievements: tf.monochrome.android.data.achievements.AchievementStore,
+) : ViewModel(), CrtEffectPrefs {
+    /** The visual music links: the Lyrics tab's sliders make and change them, and its preview runs them. */
+    val musicLinks = VisualLinkEditing(viewModelScope, musicLinksRepository)
+
     /** The currently-playing lyrics + position, so the preview can show them live. */
     val currentLyrics: StateFlow<tf.monochrome.android.domain.model.Lyrics?> = nowPlayingLyrics.lyrics
     val currentPositionMs: StateFlow<Long> = nowPlayingLyrics.positionMs
@@ -256,9 +280,30 @@ class LyricsFxStudioViewModel @Inject constructor(
         viewModelScope.launch { preferences.setAmbientVisualizerHideCover(hide) }
     }
 
+    // Settings › Appearance › CRT effect, which the Lyrics tab ends with: the
+    // same preferences, so the two places never disagree.
+    override val appTvShader: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvShader> = preferences.appTvShader
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.glyph.engine.GlyphTvShader.OFF)
+    override val appTvTuning: StateFlow<tf.monochrome.android.glyph.engine.GlyphTvTuning> = preferences.appTvTuning
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), tf.monochrome.android.glyph.engine.GlyphTvTuning())
+    override val appTvOnLyrics: StateFlow<Boolean> = preferences.appTvOnLyrics
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    override fun setAppTvShader(shader: tf.monochrome.android.glyph.engine.GlyphTvShader) {
+        viewModelScope.launch { preferences.setAppTvShader(shader) }
+    }
+
+    override fun setAppTvTuning(tuning: tf.monochrome.android.glyph.engine.GlyphTvTuning) {
+        viewModelScope.launch { preferences.setAppTvTuning(tuning) }
+    }
+
+    override fun setAppTvOnLyrics(lyrics: Boolean) {
+        viewModelScope.launch { preferences.setAppTvOnLyrics(lyrics) }
+    }
+
     /** Fonts the user has imported (Settings › Appearance copies them here). */
-    private val _availableFonts = MutableStateFlow<List<File>>(emptyList())
-    val availableFonts: StateFlow<List<File>> = _availableFonts.asStateFlow()
+    private val _availableFonts = MutableStateFlow<List<tf.monochrome.android.ui.theme.ImportedFamily>>(emptyList())
+    val availableFonts: StateFlow<List<tf.monochrome.android.ui.theme.ImportedFamily>> = _availableFonts.asStateFlow()
 
     /** The user's own saved presets, alongside the built-in ones. */
     val customPresets: StateFlow<List<tf.monochrome.android.domain.model.LyricsFxPreset>> =
@@ -290,13 +335,13 @@ class LyricsFxStudioViewModel @Inject constructor(
         refreshFonts()
     }
 
-    /** Re-list the imported font files off the main thread (directory I/O). */
+    /**
+     * Re-list the imported fonts off the main thread (every file is opened):
+     * one entry per family, its variations together (FontFamilies).
+     */
     fun refreshFonts() {
         viewModelScope.launch(Dispatchers.IO) {
-            _availableFonts.value = File(context.filesDir, "custom_fonts").listFiles()
-                ?.filter { it.isFile && (it.extension.equals("ttf", true) || it.extension.equals("otf", true)) }
-                ?.sortedBy { it.name.lowercase(java.util.Locale.US) }
-                ?: emptyList()
+            _availableFonts.value = tf.monochrome.android.ui.theme.FontFamilies.scan(File(context.filesDir, "custom_fonts"))
         }
     }
 
@@ -399,8 +444,10 @@ class LyricsFxStudioViewModel @Inject constructor(
         update { it.withGlassOpticsFrom(_playerGlass.value) }
     }
 
-    fun applyPreset(preset: LyricsFxSettings) {
+    /** [name] is the preset's, for Lyric Stylist; null for a reset, which tries nothing new. */
+    fun applyPreset(preset: LyricsFxSettings, name: String? = null) {
         userTouched = true
+        name?.let(achievements::lyricsPresetApplied)
         // A theme changes only the look — keep the user's font, Bluetooth delay,
         // and glass sample count (personal/device settings) across the switch.
         val next = preset.withPersonalFrom(_fx.value).clamped()
@@ -483,6 +530,30 @@ fun LyricsFxStudioScreen(
     // rememberSaveable so it doesn't snap back to Lyrics after background
     // process death.
     var selectedTab by rememberSaveable { mutableStateOf(0) }
+    // Which tab is up, for a native crash's report.
+    SideEffect { tf.monochrome.android.debug.CrashBreadcrumbs.note("studiotab", selectedTab.toString()) }
+
+    // Music links. The preview runs the saved links with the one being edited
+    // in place of its saved version; the sliders mark which settings move and
+    // open the link sheet. The sheet and the editor are drawn over this screen
+    // in its own window, beside the haze source they frost.
+    val linkUi = remember { StudioLinkUi() }
+    val linkHaze = rememberHazeState()
+    val savedLinks = viewModel.musicLinks.links.collectAsStateWithLifecycle()
+    val previewLinks by viewModel.musicLinks.previewLinks.collectAsStateWithLifecycle()
+    val linkLive = rememberVisualLinkDriver(
+        tap = viewModel.spectrumAnalyzer,
+        links = previewLinks,
+        active = true,
+        delayMs = tf.monochrome.android.ui.player.LocalOutputSyncMs.current,
+    )
+    val linkHost = rememberVisualLinkHost(savedLinks, linkLive) { linkUi.sheetFor = it }
+    // Every setting a link can move, as saved: where a new link rests, and
+    // what the setting needs before it shows.
+    val tvTuning by viewModel.appTvTuning.collectAsStateWithLifecycle()
+    val tvLook by viewModel.appTvShader.collectAsStateWithLifecycle()
+    val ambientLook by viewModel.ambient.collectAsStateWithLifecycle()
+    val linkLook = StudioLook(fx, playerGlass, miniPlayerGlass, tvTuning, tvLook, ambientLook)
 
     // Preset save / import / share dialog state.
     var showSaveDialog by rememberSaveable { mutableStateOf(false) }
@@ -493,7 +564,18 @@ fun LyricsFxStudioScreen(
     // imported in Settings › Appearance since this screen opened shows up.
     LaunchedEffect(fx.customFont) { if (fx.customFont) viewModel.refreshFonts() }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize()) {
+    // Every tab's sliders can be linked, so the link host and the live values
+    // are over all of them: the previews draw with the links running.
+    CompositionLocalProvider(
+        LocalMusicLinkHost provides linkHost,
+        LocalVisualLinks provides linkLive,
+    ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .hazeSource(linkHaze),
+    ) {
         TopAppBar(
             title = { Text(stringResource(R.string.fx_player_visuals_studio)) },
             navigationIcon = {
@@ -501,26 +583,52 @@ fun LyricsFxStudioScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back))
                 }
             },
+            actions = {
+                // Every music link in one place, and the switch that pauses them all.
+                IconButton(onClick = { navController.navigateTool(tf.monochrome.android.ui.navigation.Screen.MusicLinks) }) {
+                    Icon(
+                        Icons.Default.MusicNote,
+                        contentDescription = stringResource(R.string.music_links_title),
+                        tint = if (savedLinks.value.isNotEmpty()) musicLinkColor() else LocalContentColor.current,
+                    )
+                }
+            },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         )
 
-        TabRow(
-            selectedTabIndex = selectedTab,
-            containerColor = Color.Transparent,
+        // The tabs as the app's glass pills, as Settings' chips are, rather than
+        // a Material TabRow: four labels squeezed into equal columns broke
+        // "UI panels" and "Visualizer" over two lines.
+        //
+        // Player chrome first, then the glass shared by every floating panel,
+        // then lyrics. "UI panels" rather than "Mini Player" because this blob
+        // stopped being just the bar: it is the material for the audio-tools
+        // sheet, the speed panel, the nav pill, the search bar and the map
+        // panels too. Visualizer is not glass at all — the player's background
+        // and its visualizer engine — but nowhere else is a change to what the
+        // player looks like at home.
+        val studioTabs = listOf(
+            stringResource(R.string.fx_player),
+            stringResource(R.string.fx_ui_panels),
+            stringResource(R.string.mode_lyrics),
+            stringResource(R.string.visualizer),
+        )
+        val tabPills = androidx.compose.foundation.lazy.rememberLazyListState()
+        LaunchedEffect(selectedTab) { tabPills.animateScrollToItem(selectedTab) }
+        androidx.compose.foundation.lazy.LazyRow(
+            state = tabPills,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Player chrome first, then the glass shared by every floating
-            // panel, then lyrics. "UI panels" rather than "Mini Player"
-            // because this blob stopped being just the bar: it is the material
-            // for the audio-tools sheet, the speed panel, the nav pill, the
-            // search bar and the map panels too.
-            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text(stringResource(R.string.fx_player)) })
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text(stringResource(R.string.fx_ui_panels)) })
-            Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text(stringResource(R.string.mode_lyrics)) })
-            // Not glass at all, unlike the other three — this is the player's
-            // background and its visualizer engine. It lives here because the
-            // screen is the Player Visuals Studio, and because there is nowhere
-            // else that a change to what the player looks like belongs.
-            Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text(stringResource(R.string.visualizer)) })
+            items(studioTabs.size) { index ->
+                tf.monochrome.android.ui.mixer.GlassChoiceChip(
+                    label = studioTabs[index],
+                    selected = selectedTab == index,
+                    accent = MaterialTheme.colorScheme.primary,
+                    onClick = { selectedTab = index },
+                )
+            }
         }
 
         // With the glass switched off app-wide, every control on these tabs still
@@ -598,6 +706,7 @@ fun LyricsFxStudioScreen(
                         value = opacity,
                         range = 0f..100f,
                         description = stringResource(R.string.fx_how_much_of_the_preset_reaches_the_screen_at_all),
+                        linkKey = "visualizer.opacity",
                         onChange = { opacity = it },
                         onChangeFinished = { viewModel.setAmbientOpacity(opacity.toInt()) },
                     )
@@ -607,6 +716,7 @@ fun LyricsFxStudioScreen(
                         value = blackPoint,
                         range = 0f..AmbientVisualizerSettings.MAX_BLACK_POINT.toFloat(),
                         description = stringResource(R.string.fx_how_much_of_the_dark_end_disappears_higher_hides),
+                        linkKey = "visualizer.blackPoint",
                         onChange = { blackPoint = it },
                         onChangeFinished = { viewModel.setAmbientBlackPoint(blackPoint.toInt()) },
                     )
@@ -735,7 +845,9 @@ fun LyricsFxStudioScreen(
         // Preview + presets are pinned above the scrolling sliders, so the
         // live example stays locked in view while you tune every parameter.
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            StudioPreview(fx, currentLyrics, viewModel.currentPositionMs, viewModel.spectrumAnalyzer)
+            Box {
+                StudioPreview(fx, currentLyrics, viewModel.currentPositionMs, viewModel.spectrumAnalyzer)
+            }
             Spacer(Modifier.height(12.dp))
 
             // Preset bar header: a Save button (store the current look) and an
@@ -774,7 +886,7 @@ fun LyricsFxStudioScreen(
                         label = name,
                         selected = fx.matchesPreset(preset),
                         accent = MaterialTheme.colorScheme.primary,
-                        onClick = { viewModel.applyPreset(preset) },
+                        onClick = { viewModel.applyPreset(preset, name) },
                     )
                 }
                 // The user's own saved presets. Tapping applies; the trailing
@@ -784,7 +896,7 @@ fun LyricsFxStudioScreen(
                         label = saved.name,
                         selected = fx.matchesPreset(saved.settings),
                         accent = MaterialTheme.colorScheme.primary,
-                        onClick = { viewModel.applyPreset(saved.settings) },
+                        onClick = { viewModel.applyPreset(saved.settings, saved.name) },
                         trailingContent = {
                             Icon(
                                 Icons.Default.Share,
@@ -968,12 +1080,14 @@ fun LyricsFxStudioScreen(
 
             item {
                 StudioSection(stringResource(R.string.fx_playback_sync))
-                FxSlider(
-                    stringResource(R.string.fx_bluetooth_sync_delay),
-                    "%+d ms".format(fx.bluetoothDelayMs.toInt()),
-                    fx.bluetoothDelayMs, -500f..1500f, steps = 39,
-                    description = stringResource(R.string.fx_delays_synced_lyrics_to_line_up_with_bluetooth),
-                ) { viewModel.update { s -> s.copy(bluetoothDelayMs = it) } }
+                // How long the lyrics wait is the output's own, set once for
+                // the whole app (Settings › Audio › Bluetooth sync).
+                Text(
+                    text = stringResource(R.string.settings_bluetooth_sync_set_there),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
             }
 
             item {
@@ -981,22 +1095,88 @@ fun LyricsFxStudioScreen(
                 FxSlider(
                     stringResource(R.string.fx_tilt), "%.0f°".format(fx.rotationDegrees) + if (fx.rotationDegrees < 0.5f) " (off)" else "",
                     fx.rotationDegrees, 0f..25f,
+                    linkKey = "lyrics.rotationDegrees",
                 ) { viewModel.update { s -> s.copy(rotationDegrees = it) } }
-                FxSlider(stringResource(R.string.fx_wave_speed), "%.2fx".format(fx.waveSpeed), fx.waveSpeed, 0.25f..3f) {
-                    viewModel.update { s -> s.copy(waveSpeed = it) }
-                }
+                FxSlider(
+                    stringResource(R.string.fx_wave_speed), "%.2fx".format(fx.waveSpeed), fx.waveSpeed, 0.25f..3f,
+                    linkKey = "lyrics.waveSpeed",
+                ) { viewModel.update { s -> s.copy(waveSpeed = it) } }
                 FxSlider(
                     stringResource(R.string.fx_wave_tightness), "%.2f rad/letter".format(fx.wavePhaseStep),
                     fx.wavePhaseStep, 0.05f..0.9f,
                     description = stringResource(R.string.fx_low_one_smooth_ribbon_high_choppy_per_letter),
                 ) { viewModel.update { s -> s.copy(wavePhaseStep = it) } }
-                FxSlider(stringResource(R.string.fx_wave_travel), "%.1f dp".format(fx.waveTravelDp), fx.waveTravelDp, 0f..8f) {
+                FxSlider(stringResource(R.string.fx_wave_travel), "%.1f dp".format(fx.waveTravelDp), fx.waveTravelDp, 0f..8f, linkKey = "lyrics.waveTravelDp") {
                     viewModel.update { s -> s.copy(waveTravelDp = it) }
                 }
                 FxSlider(
                     stringResource(R.string.fx_shadow_depth), "${(fx.shadowDepth * 100).toInt()}%", fx.shadowDepth, 0f..1f,
                     description = stringResource(R.string.fx_lyric_shadow_desc),
+                    linkKey = "lyrics.shadowDepth",
                 ) { viewModel.update { s -> s.copy(shadowDepth = it) } }
+                // Two angles, as the CRT effect's: the top and bottom edges'
+                // bow, and the sides'. Moving one pins the other where it is
+                // drawn, so a curve saved with one angle keeps its sides.
+                fun degreesReading(deg: Float) = "%.1f°".format(deg) + if (deg < 0.05f) " (off)" else ""
+                fun tenth(deg: Float) = (deg * 10f).roundToInt().div(10f).coerceIn(0f, 75f)
+                FxSlider(
+                    stringResource(R.string.fx_curvature),
+                    degreesReading(fx.curvatureDeg),
+                    fx.curvatureDeg, 0f..75f,
+                    description = stringResource(R.string.fx_curvature_desc),
+                    linkKey = "lyrics.curvatureDeg",
+                ) { viewModel.update { s -> s.copy(curvatureDeg = it, curvatureSideDeg = s.effectiveCurvatureSideDeg) } }
+                // The angle to a tenth of a degree, which a finger on the
+                // slider cannot place.
+                FxNudge(label = stringResource(R.string.fx_curvature), step = 0.1f, unit = "°") { delta ->
+                    viewModel.update { s ->
+                        s.copy(curvatureDeg = tenth(s.curvatureDeg + delta), curvatureSideDeg = s.effectiveCurvatureSideDeg)
+                    }
+                }
+                FxSlider(
+                    stringResource(R.string.fx_curvature_sides),
+                    degreesReading(fx.effectiveCurvatureSideDeg),
+                    fx.effectiveCurvatureSideDeg, 0f..75f,
+                    description = stringResource(R.string.fx_curvature_sides_desc),
+                    linkKey = "lyrics.curvatureSideDeg",
+                ) { viewModel.update { s -> s.copy(curvatureSideDeg = it) } }
+                FxNudge(label = stringResource(R.string.fx_curvature_sides), step = 0.1f, unit = "°") { delta ->
+                    viewModel.update { s -> s.copy(curvatureSideDeg = tenth(s.effectiveCurvatureSideDeg + delta)) }
+                }
+                // Said under the angles rather than greying them: they are kept,
+                // and come back when the CRT stops bowing every screen.
+                if (tf.monochrome.android.ui.glyph.appTubeCurved()) {
+                    Text(
+                        stringResource(R.string.fx_curvature_crt_app),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                // What the curve bends: every lyric as one tube, or a dome
+                // over the sung line or the sung word alone.
+                Text(
+                    stringResource(R.string.fx_curve_target),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    listOf(
+                        LyricsFxSettings.CURVE_ALL to R.string.fx_curve_all,
+                        LyricsFxSettings.CURVE_LINE to R.string.fx_curve_line,
+                        LyricsFxSettings.CURVE_WORD to R.string.fx_curve_word,
+                    ).forEach { (target, label) ->
+                        tf.monochrome.android.ui.mixer.GlassChoiceChip(
+                            label = stringResource(label),
+                            selected = fx.curvatureTarget == target,
+                            accent = MaterialTheme.colorScheme.primary,
+                            onClick = { viewModel.update { s -> s.copy(curvatureTarget = target) } },
+                        )
+                    }
+                }
             }
 
             item {
@@ -1006,7 +1186,7 @@ fun LyricsFxStudioScreen(
                     fx.bassReact, 0f..1f,
                     description = stringResource(R.string.fx_master_intensity_for_pump_and_glow),
                 ) { viewModel.update { s -> s.copy(bassReact = it) } }
-                FxSlider(stringResource(R.string.fx_pump_amount), "+${(fx.pumpAmount * 100).toInt()}%", fx.pumpAmount, 0f..0.25f) {
+                FxSlider(stringResource(R.string.fx_pump_amount), "+${(fx.pumpAmount * 100).toInt()}%", fx.pumpAmount, 0f..0.25f, linkKey = "lyrics.pumpAmount") {
                     viewModel.update { s -> s.copy(pumpAmount = it) }
                 }
                 FxSlider(
@@ -1025,10 +1205,10 @@ fun LyricsFxStudioScreen(
 
             item {
                 StudioSection(stringResource(R.string.fx_glow))
-                FxSlider(stringResource(R.string.settings_glow_radius), "+%.0f dp".format(fx.glowRadiusDp), fx.glowRadiusDp, 0f..160f) {
+                FxSlider(stringResource(R.string.settings_glow_radius), "+%.0f dp".format(fx.glowRadiusDp), fx.glowRadiusDp, 0f..160f, linkKey = "lyrics.glowRadiusDp") {
                     viewModel.update { s -> s.copy(glowRadiusDp = it) }
                 }
-                FxSlider(stringResource(R.string.settings_glow_brightness), "${(fx.glowBrightness * 100).toInt()}%", fx.glowBrightness, 0f..0.6f) {
+                FxSlider(stringResource(R.string.settings_glow_brightness), "${(fx.glowBrightness * 100).toInt()}%", fx.glowBrightness, 0f..0.6f, linkKey = "lyrics.glowBrightness") {
                     viewModel.update { s -> s.copy(glowBrightness = it) }
                 }
                 // "Glow behind album art" is a personal toggle, not a theme
@@ -1046,20 +1226,24 @@ fun LyricsFxStudioScreen(
                     stringResource(R.string.fx_glass_opacity), "${(fx.glassBodyOpacity * 100).toInt()}%",
                     fx.glassBodyOpacity, 0.2f..1f,
                     description = stringResource(R.string.fx_lower_lets_more_of_the_backdrop_read_through_the),
+                    linkKey = "lyrics.glassBodyOpacity",
                 ) { viewModel.update { s -> s.copy(glassBodyOpacity = it) } }
                 FxSlider(
                     stringResource(R.string.fx_refraction), "%.2f".format(fx.glassRefraction), fx.glassRefraction, 0f..0.4f,
                     description = stringResource(R.string.fx_how_hard_the_beveled_edges_lens_the_backdrop),
+                    linkKey = "lyrics.glassRefraction",
                 ) { viewModel.update { s -> s.copy(glassRefraction = it) } }
                 FxSlider(
                     stringResource(R.string.fx_edge_highlight), "${(fx.glassRimBrightness * 100).toInt()}%",
                     fx.glassRimBrightness, 0f..2f,
                     description = stringResource(R.string.fx_brightness_of_the_specular_glass_rim),
+                    linkKey = "lyrics.glassRimBrightness",
                 ) { viewModel.update { s -> s.copy(glassRimBrightness = it) } }
                 FxSlider(
                     stringResource(R.string.fx_chromatic_aberration), "${(fx.glassDispersion * 100).toInt()}%",
                     fx.glassDispersion, 0f..2f,
                     description = stringResource(R.string.fx_colour_fringing_where_the_edges_refract),
+                    linkKey = "lyrics.glassDispersion",
                 ) { viewModel.update { s -> s.copy(glassDispersion = it) } }
                 FxSlider(
                     stringResource(R.string.fx_bevel_samples), "${1 + 4 * fx.glassSampleRings} taps/px",
@@ -1085,14 +1269,17 @@ fun LyricsFxStudioScreen(
                 FxSlider(
                     stringResource(R.string.fx_roundness), "%.2f".format(fx.glassRoundness), fx.glassRoundness, 0.5f..2f,
                     description = stringResource(R.string.fx_rolls_the_glass_edge_from_a_sharp_bevel_to_a),
+                    linkKey = "lyrics.glassRoundness",
                 ) { viewModel.update { s -> s.copy(glassRoundness = it) } }
                 FxSlider(
                     stringResource(R.string.fx_depth_profondeur), "%.2f".format(fx.glassDepth), fx.glassDepth, 0.5f..2f,
                     description = stringResource(R.string.fx_lyric_depth_desc),
+                    linkKey = "lyrics.glassDepth",
                 ) { viewModel.update { s -> s.copy(glassDepth = it) } }
                 FxSlider(
                     stringResource(R.string.fx_frosted_blur), "${(fx.glassFrost * 100).toInt()}%", fx.glassFrost, 0f..1f,
                     description = stringResource(R.string.fx_frosts_the_glass_from_clear_to_misted),
+                    linkKey = "lyrics.glassFrost",
                 ) { viewModel.update { s -> s.copy(glassFrost = it) } }
             }
 
@@ -1101,6 +1288,7 @@ fun LyricsFxStudioScreen(
                 FxSlider(
                     stringResource(R.string.fx_light_angle), "${fx.glassLightAngleDeg.toInt()}°", fx.glassLightAngleDeg, 0f..360f,
                     description = stringResource(R.string.fx_direction_the_key_light_comes_from_and_where_the),
+                    linkKey = "lyrics.glassLightAngleDeg",
                 ) { viewModel.update { s -> s.copy(glassLightAngleDeg = it) } }
                 FxSlider(
                     stringResource(R.string.fx_tilt_reactivity), "${(fx.glassTiltReactivity * 100).toInt()}%",
@@ -1110,14 +1298,17 @@ fun LyricsFxStudioScreen(
                 FxSlider(
                     stringResource(R.string.fx_edge_width), "${(fx.glassEdgeWidth * 100).toInt()}%", fx.glassEdgeWidth, 0f..1f,
                     description = stringResource(R.string.fx_reflective_rim_thin_crisp_edge_to_a_broad_glassy),
+                    linkKey = "lyrics.glassEdgeWidth",
                 ) { viewModel.update { s -> s.copy(glassEdgeWidth = it) } }
                 FxSlider(
                     stringResource(R.string.fx_reflection), "${(fx.glassReflection * 100).toInt()}%", fx.glassReflection, 0f..2f,
                     description = stringResource(R.string.fx_how_much_of_the_room_environment_reflection),
+                    linkKey = "lyrics.glassReflection",
                 ) { viewModel.update { s -> s.copy(glassReflection = it) } }
                 FxSlider(
                     stringResource(R.string.fx_gloss), "${(fx.glassGloss * 100).toInt()}%", fx.glassGloss, 0f..1f,
                     description = stringResource(R.string.fx_highlight_polish_soft_frosted_wide_glint_to_a),
+                    linkKey = "lyrics.glassGloss",
                 ) { viewModel.update { s -> s.copy(glassGloss = it) } }
                 FxSlider(
                     stringResource(R.string.fx_surface_motion), "${(fx.glassSurfaceMotion * 100).toInt()}%",
@@ -1141,8 +1332,15 @@ fun LyricsFxStudioScreen(
                         stringResource(R.string.fx_aa_strength), "${(fx.fxaaStrength * 100).toInt()}%",
                         fx.fxaaStrength, 0f..1f,
                         description = stringResource(R.string.fx_how_hard_edges_are_smoothed_higher_softens_more),
+                        linkKey = "lyrics.fxaaStrength",
                     ) { viewModel.update { s -> s.copy(fxaaStrength = it) } }
                 }
+            }
+
+            // Last: the CRT effect (Settings › Appearance's own controls),
+            // so the lyrics can be set up for it without leaving the Studio.
+            item {
+                CrtEffectSetting(viewModel, header = { StudioSection(it) }, indent = 0.dp)
             }
 
             item {
@@ -1153,6 +1351,16 @@ fun LyricsFxStudioScreen(
                 ) { Text(stringResource(R.string.fx_reset_to_defaults)) }
             }
         }
+    }
+    }
+    StudioLinkOverlay(
+        ui = linkUi,
+        editing = viewModel.musicLinks,
+        look = linkLook,
+        live = linkLive,
+        tap = viewModel.spectrumAnalyzer,
+        hazeState = linkHaze,
+    )
     }
 }
 
@@ -1174,6 +1382,8 @@ private fun PlayerGlassTab(
     previewMini: Boolean = false,
     /** The playing track, for the UI panels preview's mini player; null shows a sample. */
     previewTrack: Track? = null,
+    /** Whose glass this tab tunes, for its sliders' music links. */
+    linkArea: LinkArea = if (previewMini) LinkArea.PANELS else LinkArea.PLAYER,
 ) {
     val context = LocalContext.current
     val accent = MaterialTheme.colorScheme.primary
@@ -1225,126 +1435,7 @@ private fun PlayerGlassTab(
                     track = previewTrack,
                 )
             } else {
-            // Live preview: the real transport buttons AND the action dock under the
-            // current button glass — the dock is the same hollowed-slab glass, so it
-            // tunes with these sliders exactly like the play button.
-            // The backdrop is a sibling of the pane above it, not its parent, so the
-            // pane can actually blur it — a haze effect cannot sample a layer it is
-            // drawn inside, and one that tries paints the source's flat colour.
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .hazeSource(previewHaze)
-                    .background(previewBgBrush),
-            )
-            // The preview's own backdrop, published to the chrome inside it,
-            // so the dock and the play disc frost something here exactly as
-            // they frost the player's background on the real screen. Without
-            // it Backdrop blur and Backdrop tint were two sliders whose effect
-            // you had to leave the Studio to see.
-            //
-            // Safe from the sample-your-own-layer trap: the source is the
-            // swatch above, which is a sibling of this content and not an
-            // ancestor of it.
-            CompositionLocalProvider(
-                LocalPlayerGlass provides glass,
-                LocalPlayerHaze provides previewHaze,
-                // Beside the haze it belongs to, so the dock's own frost
-                // gets it too.
-                LocalPlayerGlassGround provides previewGround,
-            ) {
-                // The transport as it actually sits on the player screen: straight
-                // over the backdrop, with nothing between. There was a GlassPanel
-                // here, on the argument that glass should be previewed over
-                // something rather than on a flat swatch — but the real player has
-                // no pane behind its transport (the invariants forbid one under a
-                // punched slab), and the pane it drew was the UI panels blob,
-                // tuned on the other tab. The swatch behind is the something.
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // Real transport icon: bigger skip + shape-accurate shadow,
-                        // exactly like the player.
-                        TransportIcon(
-                            painterResource(R.drawable.ic_glass_skip_previous_chevron), stringResource(R.string.action_previous), previewTint, {},
-                            size = PlayerDesignTokens.SkipIconSize,
-                        )
-                        // Solid glass disc with the play symbol punched out, plus the
-                        // same custom round drop shadow as the real play button.
-                        Box(
-                            Modifier.size(64.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            GlassDropShadow(
-                                color = lerp(Color.Black, previewTint, glass.shadowTint)
-                                    .copy(alpha = 0.28f + 0.55f * glass.shadowDepth),
-                                softness = glass.shadowSoftness,
-                                depth = glass.shadowDepth,
-                            )
-                            // The same frost and live lens the real disc gets
-                            // (PlayerTransportControls), so Backdrop blur, tint
-                            // and the lens move something here too, and the
-                            // disc reads the same as the dock beside it.
-                            PlayerGlassHaze(
-                                modifier = Modifier.matchParentSize(),
-                                shape = CircleShape,
-                                lensCorner = Dp.Infinity,
-                            )
-                            Box(
-                                Modifier.fillMaxSize().clip(CircleShape),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Canvas(
-                                    Modifier
-                                        .fillMaxSize()
-                                        .playerGlass(
-                                            previewTint,
-                                            lensCorner = Dp.Infinity,
-                                            liveUnder = rememberPlayerLiveLens(),
-                                        )
-                                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
-                                ) {
-                                    drawGlassPlayPauseDisc(morph = 0f, fill = previewTint)
-                                }
-                            }
-                        }
-                        TransportIcon(
-                            painterResource(R.drawable.ic_glass_skip_next_chevron), stringResource(R.string.action_next), previewTint, {},
-                            size = PlayerDesignTokens.SkipIconSize,
-                        )
-                    }
-                    // The real hollowed-slab dock, previewed under the same glass.
-                    PlayerActionDock(
-                        accent = accent,
-                        lyricsActive = false,
-                        shuffleActive = false,
-                        onLyrics = {},
-                        onShuffle = {},
-                        onMixer = {},
-                        onPlaylist = {},
-                    )
-                    // The glass thermometer scrubber, previewed at ~40%.
-                    GlassProgressTube(
-                        fraction = 0.4f,
-                        tint = previewTint,
-                        onSeek = {},
-                        onSeekFinished = {},
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-            Text(
-                text = stringResource(R.string.fx_preview),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.35f),
-                modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
-            )
+                PlayerChromePreview(glass = glass, hazeState = previewHaze)
             }
         }
         }
@@ -1466,10 +1557,12 @@ private fun PlayerGlassTab(
         FxSlider(
             stringResource(R.string.fx_glass_opacity), "${(glass.bodyOpacity * 100).toInt()}%", glass.bodyOpacity, 0f..1f,
             description = stringResource(R.string.fx_lower_makes_the_buttons_more_see_through_0_body),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "bodyOpacity"),
         ) { onUpdate { g -> g.copy(bodyOpacity = it) } }
         FxSlider(
             stringResource(R.string.fx_frosted_blur), "${(glass.frost * 100).toInt()}%", glass.frost, 0f..1f,
             description = stringResource(R.string.fx_frosts_the_glass_from_clear_to_misted),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "frost"),
         ) { onUpdate { g -> g.copy(frost = it) } }
         // Haze backdrop frost. Each tab's copy drives its own surfaces: the UI
         // blob frosts the mini player bar, the audio-tools sheet, the speed
@@ -1488,10 +1581,12 @@ private fun PlayerGlassTab(
             } else {
                 stringResource(R.string.fx_backdrop_blur_player)
             },
+            linkKey = VisualLinkTargets.glassKey(linkArea, "hazeBlurDp"),
         ) { onUpdate { g -> g.copy(hazeBlurDp = it) } }
         FxSlider(
             stringResource(R.string.fx_backdrop_tint), "${(glass.hazeTint * 100).toInt()}%", glass.hazeTint, 0f..2f,
             description = stringResource(R.string.fx_strength_of_the_frost_layer_s_darkening),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "hazeTint"),
         ) { onUpdate { g -> g.copy(hazeTint = it) } }
         FxSlider(
             stringResource(R.string.fx_surface_motion), "${(glass.surfaceMotion * 100).toInt()}%", glass.surfaceMotion, 0f..1f,
@@ -1502,24 +1597,29 @@ private fun PlayerGlassTab(
         FxSlider(
             stringResource(R.string.fx_roundness), "%.2f".format(glass.roundness), glass.roundness, 0.5f..2f,
             description = stringResource(R.string.fx_rolls_the_glass_edge_from_a_sharp_bevel_to_a),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "roundness"),
         ) { onUpdate { g -> g.copy(roundness = it) } }
         FxSlider(
             stringResource(R.string.fx_depth_profondeur), "%.2f".format(glass.depth), glass.depth, 0.5f..2f,
             description = stringResource(R.string.fx_how_thick_and_deep_the_relief_reads_higher_pops),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "depth"),
         ) { onUpdate { g -> g.copy(depth = it) } }
         FxSlider(
             stringResource(R.string.fx_refraction), "%.2f".format(glass.refraction), glass.refraction, 0f..0.4f,
             description = stringResource(R.string.fx_how_hard_the_beveled_edges_lens_the_backdrop),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "refraction"),
         ) { onUpdate { g -> g.copy(refraction = it) } }
         FxSlider(
             stringResource(R.string.fx_chromatic_aberration), "${(glass.dispersion * 100).toInt()}%", glass.dispersion, 0f..2f,
             description = stringResource(R.string.fx_colour_fringing_at_the_refracting_edges),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "dispersion"),
         ) { onUpdate { g -> g.copy(dispersion = it) } }
 
         StudioSection(stringResource(R.string.fx_light_reflections))
         FxSlider(
             stringResource(R.string.fx_light_angle), "${glass.lightAngleDeg.toInt()}°", glass.lightAngleDeg, 0f..360f,
             description = stringResource(R.string.fx_direction_the_key_light_comes_from_and_where_the),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "lightAngleDeg"),
         ) { onUpdate { g -> g.copy(lightAngleDeg = it) } }
         FxSlider(
             stringResource(R.string.fx_tilt_reactivity), "${(glass.tiltReactivity * 100).toInt()}%", glass.tiltReactivity, 0f..1.5f,
@@ -1528,32 +1628,39 @@ private fun PlayerGlassTab(
         FxSlider(
             stringResource(R.string.fx_edge_highlight), "${(glass.rimBrightness * 100).toInt()}%", glass.rimBrightness, 0f..2f,
             description = stringResource(R.string.fx_brightness_of_the_specular_glass_rim),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "rimBrightness"),
         ) { onUpdate { g -> g.copy(rimBrightness = it) } }
         FxSlider(
             stringResource(R.string.fx_edge_width), "${(glass.edgeWidth * 100).toInt()}%", glass.edgeWidth, 0f..1f,
             description = stringResource(R.string.fx_reflective_rim_thin_crisp_edge_to_a_broad_glassy),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "edgeWidth"),
         ) { onUpdate { g -> g.copy(edgeWidth = it) } }
         FxSlider(
             stringResource(R.string.fx_reflection), "${(glass.reflection * 100).toInt()}%", glass.reflection, 0f..2f,
             description = stringResource(R.string.fx_how_much_of_the_room_environment_reflection),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "reflection"),
         ) { onUpdate { g -> g.copy(reflection = it) } }
         FxSlider(
             stringResource(R.string.fx_gloss), "${(glass.gloss * 100).toInt()}%", glass.gloss, 0f..1f,
             description = stringResource(R.string.fx_highlight_polish_soft_frosted_wide_glint_to_a),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "gloss"),
         ) { onUpdate { g -> g.copy(gloss = it) } }
 
         StudioSection(stringResource(R.string.fx_drop_shadow))
         FxSlider(
             stringResource(R.string.fx_shadow_depth), "${(glass.shadowDepth * 100).toInt()}%", glass.shadowDepth, 0f..1f,
             description = stringResource(R.string.fx_drop_shadow_under_the_glass_buttons_and_dock),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "shadowDepth"),
         ) { onUpdate { g -> g.copy(shadowDepth = it) } }
         FxSlider(
             stringResource(R.string.fx_shadow_softness), "${(glass.shadowSoftness * 100).toInt()}%", glass.shadowSoftness, 0f..1f,
             description = stringResource(R.string.fx_blur_spread_of_the_drop_shadow),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "shadowSoftness"),
         ) { onUpdate { g -> g.copy(shadowSoftness = it) } }
         FxSlider(
             stringResource(R.string.fx_shadow_tint), "${(glass.shadowTint * 100).toInt()}%", glass.shadowTint, 0f..1f,
             description = stringResource(R.string.fx_colour_of_the_drop_shadow_neutral_black_to),
+            linkKey = VisualLinkTargets.glassKey(linkArea, "shadowTint"),
         ) { onUpdate { g -> g.copy(shadowTint = it) } }
 
         StudioSection(stringResource(R.string.fx_quality))
@@ -1830,13 +1937,15 @@ private val PreviewTabs = listOf(AppTab.HOME, AppTab.DISCOVER, AppTab.RADIO, App
  * the rim bend it.
  */
 @Composable
-private fun UiPanelsPreview(
+internal fun UiPanelsPreview(
     glass: PlayerGlassSettings,
     hazeState: HazeState,
     /** The page colour: the theme's, or the Background swatch's. */
     page: Color,
     /** The playing track; null shows a sample one. */
     track: Track?,
+    /** Drawn for a theme's store picture: no hint, no search bar, nothing that says "preview". */
+    picture: Boolean = false,
 ) {
     // The page's own ink, picked against the page: the swatch can make it any
     // colour, and theme text on a page it was not chosen for can vanish.
@@ -1866,8 +1975,8 @@ private fun UiPanelsPreview(
         //
         // The mini player and the tab bar read their glass from LocalPlayerGlass;
         // the nav host provides the mini player's settings there the same way.
-        CompositionLocalProvider(LocalPlayerGlass provides glass) {
-            Column(Modifier.align(Alignment.TopCenter).fillMaxWidth()) {
+        CompositionLocalProvider(LocalPlayerGlass provides glass, LocalGlassArea provides LinkArea.PANELS) {
+            if (!picture) Column(Modifier.align(Alignment.TopCenter).fillMaxWidth()) {
                 Text(
                     text = stringResource(R.string.fx_preview_drag_hint),
                     style = MaterialTheme.typography.labelSmall,
@@ -2069,14 +2178,29 @@ private fun PreviewCover(index: Int, modifier: Modifier, corner: Dp) {
 }
 
 @Composable
-private fun StudioPreview(
+internal fun StudioPreview(
     fx: LyricsFxSettings,
     lyrics: Lyrics?,
     positionMs: kotlinx.coroutines.flow.StateFlow<Long>,
     analyzer: tf.monochrome.android.audio.eq.SpectrumAnalyzerTap,
+    /** Drawn for a theme's store picture: the lyrics alone, without the reactivity label. */
+    picture: Boolean = false,
 ) {
     val anchors = remember { LyricGlyphAnchors() }
     val accent = MaterialTheme.colorScheme.primary
+    // What the preview draws, for a native crash's report, and nothing once
+    // it is gone, so the note never outlives the preview it describes.
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { tf.monochrome.android.debug.CrashBreadcrumbs.note("lyricsfx", "-") }
+    }
+    SideEffect {
+        tf.monochrome.android.debug.CrashBreadcrumbs.note(
+            "lyricsfx",
+            "curve=${fx.curvatureDeg}/${fx.effectiveCurvatureSideDeg} target=${fx.curvatureTarget} " +
+                "rays=${fx.godRays}${if (fx.godRaysOnTop) " on top" else ""} shadow=${fx.shadowDepth} " +
+                "lyrics=${if (lyrics?.isSynced == true) "song" else "sample"}",
+        )
+    }
     // Show the real currently-playing lyrics when there are synced lines; else a
     // synthetic sample so the preview is never empty.
     val playing = lyrics?.takeIf { it.isSynced && it.lines.isNotEmpty() }
@@ -2207,6 +2331,9 @@ private fun StudioPreview(
                     sampleFit.rowIndices.map { row -> row.joinToString(" ") { sampleWords[it] } }
                 }
                 val clock = rememberFrameSeconds()
+                // The letters ride the wave's own clock, which carries the speed.
+                val sampleLive = LocalVisualLinks.current
+                val waveClock = rememberLetterWaveSeconds { sampleLive.lyrics(fx).waveSpeed }
                 // The sample has no word timings, so "Follow the sung word" is
                 // shown by singing it one word per beat of the synthetic kick.
                 val rowSpans = remember(rowTexts, sampleStyle) {
@@ -2219,25 +2346,37 @@ private fun StudioPreview(
                 val followWord = fx.godRaysFollowWord
                 var blockBand by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
                 val rowBands = remember { mutableStateMapOf<Int, androidx.compose.ui.geometry.Rect>() }
+                // The word being "sung", one per beat, in root px; null until laid out.
+                val sampleWord: () -> androidx.compose.ui.geometry.Rect? = {
+                    if (wordSpans.isEmpty()) {
+                        null
+                    } else {
+                        val (row, from, to) = wordSpans[(clock.value * 2f).toInt().mod(wordSpans.size)]
+                        rowBands[row]?.let { band ->
+                            // The row is measured inside the pump's scale, the
+                            // spans outside it: scale them to the row as drawn.
+                            val advance = rowSpans.getOrNull(row)?.advance ?: 0f
+                            val k = if (advance > 0f) band.width / advance else 1f
+                            androidx.compose.ui.geometry.Rect(band.left + from * k, band.top, band.left + to * k, band.bottom)
+                        }
+                    }
+                }
                 androidx.compose.runtime.SideEffect {
                     letters.bandInRoot = {
                         val block = blockBand
-                        if (block == null || !followWord || wordSpans.isEmpty()) {
-                            block
-                        } else {
-                            val (row, from, to) = wordSpans[(clock.value * 2f).toInt().mod(wordSpans.size)]
-                            val band = rowBands[row]
-                            if (band == null) {
-                                block
-                            } else {
-                                // The row is measured inside the pump's scale, the
-                                // spans outside it: scale them to the row as drawn.
-                                val advance = rowSpans.getOrNull(row)?.advance ?: 0f
-                                val k = if (advance > 0f) band.width / advance else 1f
-                                androidx.compose.ui.geometry.Rect(band.left + from * k, band.top, band.left + to * k, band.bottom)
-                            }
-                        }
+                        if (block == null || !followWord) block else sampleWord() ?: block
                     }
+                }
+                // The curve over the sample: all of it, the block as the sung
+                // line, or the beat's word. None while the CRT effect bows the
+                // whole app, as in the player (appTubeCurved).
+                val appCurved = tf.monochrome.android.ui.glyph.appTubeCurved()
+                val curveLinks = LocalVisualLinks.current
+                val curveTarget = fx.curvatureTarget
+                val curveFocus: (() -> androidx.compose.ui.geometry.Rect?)? = when (curveTarget) {
+                    LyricsFxSettings.CURVE_LINE -> { { blockBand } }
+                    LyricsFxSettings.CURVE_WORD -> { { sampleWord() ?: blockBand } }
+                    else -> null
                 }
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -2252,7 +2391,14 @@ private fun StudioPreview(
                             .liquidGlass(tint = accent, rayLight = rayLight)
                             // Before the pump, so the copy pumps with the letters.
                             .captureLetters(letters)
-                            .bassBeat(pulse, fx, anchors),
+                            // Bent inside the copy, as in the player.
+                            .lyricCurvature(
+                                { if (appCurved) 0f else curveLinks.lyrics(fx).curvatureDeg },
+                                { if (appCurved) 0f else curveLinks.lyrics(fx).effectiveCurvatureSideDeg },
+                                curveFocus,
+                                wide = curveTarget == LyricsFxSettings.CURVE_WORD,
+                            )
+                            .bassBeat(pulse, fx, anchors, LocalVisualLinks.current),
                     ) {
                         // The ripple runs on across rows, as in the player.
                         var phaseBase = 0
@@ -2261,7 +2407,7 @@ private fun StudioPreview(
                                 text = rowText,
                                 style = sampleStyle,
                                 color = accent,
-                                time = clock,
+                                time = waveClock,
                                 phaseBase = phaseBase,
                                 modifier = Modifier.onGloballyPositioned { rowBands[row] = it.boundsInRoot() },
                             )
@@ -2272,7 +2418,7 @@ private fun StudioPreview(
             }
             }
         }
-        Text(
+        if (!picture) Text(
             // Report the current beat reactivity (Bass reaction) rather than a
             // fixed tempo — the synthetic beat only exists to drive the FX, and
             // what the preview is actually demonstrating is how reactive the
@@ -2399,7 +2545,7 @@ internal fun FxToggle(
 /** Collapsible picker over the fonts the user imported (Settings › Appearance). */
 @Composable
 private fun FontPicker(
-    fonts: List<File>,
+    fonts: List<tf.monochrome.android.ui.theme.ImportedFamily>,
     selectedPath: String,
     onSelect: (String) -> Unit,
 ) {
@@ -2413,7 +2559,9 @@ private fun FontPicker(
         return
     }
     var expanded by remember { mutableStateOf(false) }
-    val selectedName = fonts.firstOrNull { it.absolutePath == selectedPath }?.nameWithoutExtension
+    // Any file of a family selects the family: the path stored may be one of its cuts.
+    fun selects(family: tf.monochrome.android.ui.theme.ImportedFamily) = family.files.any { it.absolutePath == selectedPath }
+    val selectedName = fonts.firstOrNull(::selects)?.name
     Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
@@ -2433,12 +2581,12 @@ private fun FontPicker(
         }
         AnimatedVisibility(visible = expanded) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                fonts.forEach { file ->
-                    val isSelected = file.absolutePath == selectedPath
+                fonts.forEach { family ->
+                    val isSelected = selects(family)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSelect(file.absolutePath) }
+                            .clickable { onSelect(family.representative.file.absolutePath) }
                             .padding(vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -2449,7 +2597,7 @@ private fun FontPicker(
                             modifier = Modifier.padding(end = 12.dp),
                         )
                         Text(
-                            text = file.nameWithoutExtension,
+                            text = family.name,
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (isSelected) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurface,
@@ -2479,8 +2627,19 @@ internal fun FxSlider(
      * once per gesture rather than once per frame.
      */
     onChangeFinished: (() -> Unit)? = null,
+    /**
+     * The music link key for this setting ([VisualLinkTargets]), for one that
+     * can follow the music. It gets a note after its value — green while it is
+     * linked — and a press and hold on its row opens the link sheet. Only
+     * where the screen provides a [LocalMusicLinkHost]; elsewhere it is an
+     * ordinary slider.
+     */
+    linkKey: String? = null,
     onChange: (Float) -> Unit,
 ) {
+    val linkHost = if (linkKey != null) LocalMusicLinkHost.current else null
+    val linked = linkHost != null && linkKey != null && linkHost.isLinked(linkKey)
+    val moveLabel = stringResource(R.string.music_link_move_with_music)
     // Compact, since some fifty of these fill the Studio and at full size the
     // Lyrics tab alone scrolled about 3000 dp: the label and value share one
     // smaller row, the description folds away behind a tap on that row (ⓘ),
@@ -2494,7 +2653,19 @@ internal fun FxSlider(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(
-                    if (description != null) {
+                    if (linkHost != null && linkKey != null) {
+                        // Hold to link: a tap still folds the description out.
+                        Modifier
+                            .combinedClickable(
+                                onClick = { if (description != null) showDescription = !showDescription },
+                                onLongClickLabel = moveLabel,
+                                onLongClick = { linkHost.open(linkKey) },
+                            )
+                            .semantics {
+                                contentDescription = listOfNotNull("$label, $valueLabel", description).joinToString(". ")
+                                customActions = listOf(CustomAccessibilityAction(moveLabel) { linkHost.open(linkKey); true })
+                            }
+                    } else if (description != null) {
                         Modifier
                             .clickable { showDescription = !showDescription }
                             // TalkBack reads the description whether or not it
@@ -2528,6 +2699,20 @@ internal fun FxSlider(
                 color = MaterialTheme.colorScheme.primary.copy(alpha = if (enabled) 1f else DISABLED_ALPHA),
                 modifier = Modifier.padding(start = 8.dp),
             )
+            if (linkHost != null && linkKey != null) {
+                // The way in for anyone who never thinks to hold: a tap on the
+                // note opens the same sheet.
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = moveLabel,
+                    tint = if (linked) musicLinkColor() else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                    modifier = Modifier
+                        .padding(start = 2.dp)
+                        .clickable(onClickLabel = moveLabel) { linkHost.open(linkKey) }
+                        .padding(4.dp)
+                        .size(16.dp),
+                )
+            }
         }
         AnimatedVisibility(visible = description != null && showDescription) {
             Text(
@@ -2564,7 +2749,147 @@ internal fun FxSlider(
                 modifier = Modifier.fillMaxWidth().height(FX_SLIDER_HEIGHT),
             )
         }
+        if (linked && linkHost != null && linkKey != null) {
+            // The link's reach along the track, and where the music has it now.
+            LinkedTrackMarker(linkKey, linkHost, range.start, range.endInclusive)
+        }
     }
+}
+
+/**
+ * The player's own chrome under [glass]: the transport, the action dock and the
+ * scrubber, over a swatch that is their haze source. What the Player tab
+ * previews, and what a theme pack in the store shows for its player glass.
+ */
+@Composable
+internal fun BoxScope.PlayerChromePreview(
+    glass: PlayerGlassSettings,
+    hazeState: HazeState,
+    /** Drawn for a theme's store picture: without the "Preview" label. */
+    picture: Boolean = false,
+) {
+    val accent = MaterialTheme.colorScheme.primary
+    val previewTint = if (glass.tintColor != 0) Color(glass.tintColor) else accent
+    val previewBgBrush = if (glass.previewBg != 0) SolidColor(Color(glass.previewBg)) else previewBackground(accent)
+    val previewGround = if (glass.previewBg != 0) Color(glass.previewBg)
+        else lerp(Color.Black, accent, 0.22f)
+    val previewHaze = hazeState
+    // Live preview: the real transport buttons AND the action dock under the
+    // current button glass — the dock is the same hollowed-slab glass, so it
+    // tunes with these sliders exactly like the play button.
+    // The backdrop is a sibling of the pane above it, not its parent, so the
+    // pane can actually blur it — a haze effect cannot sample a layer it is
+    // drawn inside, and one that tries paints the source's flat colour.
+    Box(
+        Modifier
+            .matchParentSize()
+            .hazeSource(previewHaze)
+            .background(previewBgBrush),
+    )
+    // The preview's own backdrop, published to the chrome inside it,
+    // so the dock and the play disc frost something here exactly as
+    // they frost the player's background on the real screen. Without
+    // it Backdrop blur and Backdrop tint were two sliders whose effect
+    // you had to leave the Studio to see.
+    //
+    // Safe from the sample-your-own-layer trap: the source is the
+    // swatch above, which is a sibling of this content and not an
+    // ancestor of it.
+    CompositionLocalProvider(
+        LocalPlayerGlass provides glass,
+        LocalGlassArea provides LinkArea.PLAYER,
+        LocalPlayerHaze provides previewHaze,
+        // Beside the haze it belongs to, so the dock's own frost
+        // gets it too.
+        LocalPlayerGlassGround provides previewGround,
+    ) {
+        // The transport as it actually sits on the player screen: straight
+        // over the backdrop, with nothing between. There was a GlassPanel
+        // here, on the argument that glass should be previewed over
+        // something rather than on a flat swatch — but the real player has
+        // no pane behind its transport (the invariants forbid one under a
+        // punched slab), and the pane it drew was the UI panels blob,
+        // tuned on the other tab. The swatch behind is the something.
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Real transport icon: bigger skip + shape-accurate shadow,
+                // exactly like the player.
+                TransportIcon(
+                    painterResource(R.drawable.ic_glass_skip_previous_chevron), stringResource(R.string.action_previous), previewTint, {},
+                    size = PlayerDesignTokens.SkipIconSize,
+                )
+                // Solid glass disc with the play symbol punched out, plus the
+                // same custom round drop shadow as the real play button.
+                Box(
+                    Modifier.size(64.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    GlassDropShadow(glass = glass, tint = previewTint)
+                    // The same frost and live lens the real disc gets
+                    // (PlayerTransportControls), so Backdrop blur, tint
+                    // and the lens move something here too, and the
+                    // disc reads the same as the dock beside it.
+                    PlayerGlassHaze(
+                        modifier = Modifier.matchParentSize(),
+                        shape = CircleShape,
+                        lensCorner = Dp.Infinity,
+                    )
+                    Box(
+                        Modifier.fillMaxSize().clip(CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Canvas(
+                            Modifier
+                                .fillMaxSize()
+                                .playerGlass(
+                                    previewTint,
+                                    lensCorner = Dp.Infinity,
+                                    liveUnder = rememberPlayerLiveLens(),
+                                )
+                                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
+                        ) {
+                            drawGlassPlayPauseDisc(morph = 0f, fill = previewTint)
+                        }
+                    }
+                }
+                TransportIcon(
+                    painterResource(R.drawable.ic_glass_skip_next_chevron), stringResource(R.string.action_next), previewTint, {},
+                    size = PlayerDesignTokens.SkipIconSize,
+                )
+            }
+            // The real hollowed-slab dock, previewed under the same glass.
+            PlayerActionDock(
+                accent = accent,
+                lyricsActive = false,
+                shuffleActive = false,
+                onLyrics = {},
+                onShuffle = {},
+                onMixer = {},
+                onPlaylist = {},
+            )
+            // The glass thermometer scrubber, previewed at ~40%.
+            GlassProgressTube(
+                fraction = 0.4f,
+                tint = previewTint,
+                onSeek = {},
+                onSeekFinished = {},
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+    if (!picture) Text(
+        text = stringResource(R.string.fx_preview),
+        style = MaterialTheme.typography.labelSmall,
+        color = Color.White.copy(alpha = 0.35f),
+        modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
+    )
 }
 
 /** Room kept clear above the Studio sample for the reactivity label, and the same below. */
@@ -2588,4 +2913,28 @@ private fun blendLabel(mode: VisualizerBlendMode): Int = when (mode) {
     VisualizerBlendMode.SCREEN -> R.string.blend_screen
     VisualizerBlendMode.ADDITIVE -> R.string.blend_additive
     VisualizerBlendMode.SOFT_LIGHT -> R.string.blend_soft_light
+}
+
+/**
+ * Two buttons that move a setting by [step] at a time, under the slider that
+ * sets it roughly: for a value a finger on a slider cannot place exactly.
+ */
+@Composable
+internal fun FxNudge(label: String, step: Float, unit: String, onNudge: (Float) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val amount = "%.1f".format(step) + unit
+        androidx.compose.material3.OutlinedButton(
+            onClick = { onNudge(-step) },
+            modifier = Modifier.semantics { contentDescription = "$label, less by $amount" },
+        ) { Text("− $amount") }
+        Spacer(Modifier.width(8.dp))
+        androidx.compose.material3.OutlinedButton(
+            onClick = { onNudge(step) },
+            modifier = Modifier.semantics { contentDescription = "$label, more by $amount" },
+        ) { Text("+ $amount") }
+    }
 }

@@ -1,5 +1,7 @@
 package tf.monochrome.android.domain.model
 
+import tf.monochrome.android.ui.player.crtSource
+import tf.monochrome.android.ui.player.crtWarp
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -54,6 +56,103 @@ class LyricsFxSettingsTest {
         ).clamped()
         assertEquals(LyricsFxSettings.DEFAULT.waveSpeed, c.waveSpeed, 0f)
         assertEquals(LyricsFxSettings.DEFAULT.pumpAmount, c.pumpAmount, 0f)
+    }
+
+    @Test
+    fun `the lyrics are flat unless curved, and the curve stays in range`() {
+        // Off by default, so an upgrade bends no one's lyrics, and no theme sets it.
+        assertEquals(0f, LyricsFxSettings.DEFAULT.curvatureDeg, 0f)
+        assertTrue(LyricsFxSettings.PRESETS.all { (_, preset) -> preset.curvatureDeg == 0f })
+        assertEquals(75f, LyricsFxSettings(curvatureDeg = 300f).clamped().curvatureDeg, 0f)
+        assertEquals(0f, LyricsFxSettings(curvatureDeg = -1f).clamped().curvatureDeg, 0f)
+        assertEquals(0f, LyricsFxSettings(curvatureDeg = Float.NaN).clamped().curvatureDeg, 0f)
+        // Kept to a tenth of a degree, as the Studio's buttons set it.
+        assertEquals(12.3f, LyricsFxSettings(curvatureDeg = 12.3f).clamped().curvatureDeg, 0f)
+        // A look, not a device setting: a theme applied over a curved Studio flattens it.
+        val curved = LyricsFxSettings(curvatureDeg = 30f)
+        assertEquals(0f, LyricsFxSettings.DEFAULT.withPersonalFrom(curved).curvatureDeg, 0f)
+    }
+
+    @Test
+    fun `the tube bows like a CRT, not a fish-eye`() {
+        // Flat: every point shows itself.
+        assertEquals(0.5f to 0.5f, crtSource(0.5f, 0.5f, 0f))
+        // The classic tube's bow, 1/32, at about 14.1 degrees.
+        assertEquals(1f / 32f, crtWarp(14.14f), 2e-4f)
+        assertEquals((1.0 / Math.cos(Math.PI / 3) - 1.0).toFloat(), crtWarp(60f), 1e-5f)
+        // The middle is not swollen: it shows itself at any angle, and so
+        // does every point of the two middle lines (a fish-eye moved them).
+        assertEquals(0f to 0f, crtSource(0f, 0f, 60f))
+        assertEquals(0.5f to 0f, crtSource(0.5f, 0f, 60f))
+        assertEquals(0f to -0.7f, crtSource(0f, -0.7f, 60f))
+        // The sides' middles stay at the sides.
+        assertEquals(1f to 0f, crtSource(1f, 0f, 75f))
+        // Off the middle lines a point shows lyrics further out: a line bows
+        // outward and its ends draw in, more as the angle grows.
+        val at30 = crtSource(0.6f, 0.6f, 30f)!!
+        val at45 = crtSource(0.6f, 0.6f, 45f)!!
+        assertTrue(at30.first > 0.6f && at45.first > at30.first)
+        assertEquals(0.6f * (1f + 0.36f * crtWarp(30f)), at30.first, 1e-5f)
+        // A corner past the tube's edge shows nothing: the corners round off.
+        assertNull(crtSource(1f, 1f, 30f))
+        assertNull(crtSource(0.95f, 0.95f, 45f))
+    }
+
+    @Test
+    fun `the top and bottom and the sides bow apart, and an old curve keeps its sides`() {
+        // A curve saved with one angle draws its sides at that angle.
+        val old = LyricsFxSettings(curvatureDeg = 20f)
+        assertEquals(-1f, old.curvatureSideDeg, 0f)
+        assertEquals(20f, old.effectiveCurvatureSideDeg, 0f)
+        assertTrue(old.curved)
+        // Set apart: flat sides under a curved top and bottom, and the other way.
+        val topOnly = LyricsFxSettings(curvatureDeg = 20f, curvatureSideDeg = 0f)
+        assertEquals(0f, topOnly.effectiveCurvatureSideDeg, 0f)
+        assertTrue(topOnly.curved)
+        assertTrue(LyricsFxSettings(curvatureDeg = 0f, curvatureSideDeg = 15f).curved)
+        assertFalse(LyricsFxSettings.DEFAULT.curved)
+        // The sides' angle bows x by y's square, the top's y by x's.
+        val p = crtSource(0.6f, 0.6f, topDeg = 0f, sideDeg = 30f)!!
+        assertEquals(0.6f * (1f + 0.36f * crtWarp(30f)), p.first, 1e-5f)
+        assertEquals(0.6f, p.second, 1e-6f)
+        // Held to its range; -1 stays "unset".
+        assertEquals(75f, LyricsFxSettings(curvatureSideDeg = 300f).clamped().curvatureSideDeg, 0f)
+        assertEquals(-1f, LyricsFxSettings(curvatureSideDeg = Float.NaN).clamped().curvatureSideDeg, 0f)
+    }
+
+    @Test
+    fun `the curve covers all the lyrics unless asked for the sung line or word`() {
+        assertEquals(LyricsFxSettings.CURVE_ALL, LyricsFxSettings.DEFAULT.curvatureTarget)
+        assertEquals(LyricsFxSettings.CURVE_WORD, LyricsFxSettings(curvatureTarget = 9).clamped().curvatureTarget)
+        assertEquals(LyricsFxSettings.CURVE_ALL, LyricsFxSettings(curvatureTarget = -3).clamped().curvatureTarget)
+        // A look: a theme carries its own.
+        val line = LyricsFxSettings(curvatureTarget = LyricsFxSettings.CURVE_LINE)
+        assertEquals(LyricsFxSettings.CURVE_ALL, LyricsFxSettings.DEFAULT.withPersonalFrom(line).curvatureTarget)
+    }
+
+    @Test
+    fun `a tube over the sung line or word fits it, and none without one`() {
+        val dome = tf.monochrome.android.ui.player.focusDome(
+            androidx.compose.ui.geometry.Rect(-1e6f, 300f, 1e6f, 360f), 1000f, 2000f, wide = false,
+        )!!
+        // A line's open sides are kept to the surface; it stands taller than the line.
+        assertEquals(0f, dome.left, 0f)
+        assertEquals(1000f, dome.right, 0f)
+        assertEquals(330f, dome.center.y, 1e-3f)
+        assertEquals(60f * tf.monochrome.android.ui.player.DOME_HEADROOM, dome.height, 1e-3f)
+        // A word gets room at its sides.
+        val word = tf.monochrome.android.ui.player.focusDome(
+            androidx.compose.ui.geometry.Rect(400f, 300f, 500f, 360f), 1000f, 2000f, wide = true,
+        )!!
+        assertEquals(100f * tf.monochrome.android.ui.player.WORD_SIDE_ROOM, word.width, 1e-3f)
+        assertEquals(450f, word.center.x, 1e-3f)
+        // Nothing sung on screen: nothing bent.
+        assertNull(tf.monochrome.android.ui.player.focusDome(null, 1000f, 2000f, wide = false))
+        assertNull(
+            tf.monochrome.android.ui.player.focusDome(
+                androidx.compose.ui.geometry.Rect(1200f, 300f, 1300f, 360f), 1000f, 2000f, wide = true,
+            ),
+        )
     }
 
     @Test

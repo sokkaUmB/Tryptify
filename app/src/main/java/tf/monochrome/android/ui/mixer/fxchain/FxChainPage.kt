@@ -1,4 +1,5 @@
 package tf.monochrome.android.ui.mixer.fxchain
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.components.rememberGlassPress
 import tf.monochrome.android.ui.components.glassSqueeze
 
@@ -51,7 +52,6 @@ import tf.monochrome.android.audio.dsp.DspEngineManager
 import tf.monochrome.android.audio.dsp.model.BusConfig
 import tf.monochrome.android.audio.dsp.model.FxTapFrame
 import tf.monochrome.android.audio.dsp.model.PluginInstance
-import tf.monochrome.android.ui.components.liquidGlass
 import tf.monochrome.android.ui.theme.MonoDimens
 import androidx.compose.ui.res.stringResource
 import tf.monochrome.android.R
@@ -181,6 +181,9 @@ fun FxChainPage(
                     onParam = { pi, v -> onParam(selectedBusIndex, index, pi, v) },
                     onOversample = { f -> onOversample(selectedBusIndex, index, f) },
                     onPreset = { p -> onPreset(selectedBusIndex, index, p) },
+                    linkKeyFor = { pi ->
+                        tf.monochrome.android.audio.dsp.model.KnobLink.keyOf(selectedBusIndex, index, pi)
+                    },
                     modifier = Modifier
                         .zIndex(if (isDragged) 1f else 0f)
                         .graphicsLayer {
@@ -249,9 +252,9 @@ private fun BusSelectorRow(
                 modifier = Modifier
                     .widthIn(min = 64.dp)
                     .clip(MonoDimens.shapePill)
-                    .liquidGlass(
+                    .materialSurface(
                         shape = MonoDimens.shapePill,
-                        tintAlpha = if (selected) 0.22f else 0.08f
+                        tintAlpha = if (selected) 0.22f else 0.08f,
                     )
                     .clickable { onSelectBus(index) }
                     .padding(horizontal = 10.dp, vertical = 8.dp),
@@ -293,7 +296,7 @@ private fun ChainEndCap(
         modifier = modifier
             .fillMaxWidth()
             .clip(MonoDimens.shapeSm)
-            .liquidGlass(shape = MonoDimens.shapeSm, tintAlpha = 0.06f)
+            .materialSurface(shape = MonoDimens.shapeSm, tintAlpha = 0.06f)
             .padding(horizontal = MonoDimens.spacingMd, vertical = MonoDimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MonoDimens.spacingSm)
@@ -328,9 +331,9 @@ private fun AddEffectBar(
             .fillMaxWidth()
             .height(44.dp)
             .clip(MonoDimens.shapeMd)
-            .liquidGlass(
+            .materialSurface(
                 shape = MonoDimens.shapeMd,
-                tintAlpha = if (atMax) 0.04f else 0.10f
+                tintAlpha = if (atMax) 0.04f else 0.10f,
             )
             .glassSqueeze(press = rememberGlassPress(), enabled = !atMax, onClick = onClick)
             .alpha(if (atMax) 0.5f else 1f)

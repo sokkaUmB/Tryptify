@@ -152,7 +152,8 @@ fun PlaylistScreen(
             else ({ playerViewModel.downloadTrack(track) }),
             onShareFile = { playerViewModel.shareTrack(track) },
             onGoToAlbum = navController.trackAlbumAction(track, playerViewModel.unifiedFor(track)),
-            onGoToArtist = navController.trackArtistAction(track, playerViewModel.unifiedFor(track))
+            onGoToArtist = navController.trackArtistAction(track, playerViewModel.unifiedFor(track)),
+            onSelect = { selection.toggle(track.id) }
         )
     }
 
@@ -328,6 +329,12 @@ fun PlaylistScreen(
                     playerViewModel.addToQueue(tracks.filter { it.id in selection.selectedIds })
                     selection.clear()
                 },
+                onAddToParty = tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                    {
+                        party.tracks(tracks.filter { it.id in selection.selectedIds })
+                        selection.clear()
+                    }
+                },
                 onAddToPlaylist = { showAddToPlaylistForSelection = true },
                 onDelete = if (isOwn) ({
                     viewModel.removeTracks(selection.selectedIds)
@@ -360,8 +367,7 @@ fun PlaylistScreen(
                 ) {
                     Text(
                         text = title ?: stringResource(R.string.loading),
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     if (!description.isNullOrEmpty()) {
@@ -420,6 +426,20 @@ fun PlaylistScreen(
                             )
                         ) {
                             Icon(Icons.Default.Download, contentDescription = stringResource(R.string.download_all))
+                        }
+                        // While a party is on: the whole list into its queue, in order.
+                        tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                            FilledIconButton(
+                                onClick = { party.tracks(tracks) },
+                                enabled = tracks.isNotEmpty(),
+                                modifier = Modifier.size(48.dp),
+                                colors = IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                )
+                            ) {
+                                Icon(tf.monochrome.android.ui.party.ListeningPartyIcon, contentDescription = stringResource(R.string.party_add_all))
+                            }
                         }
                     }
                     }

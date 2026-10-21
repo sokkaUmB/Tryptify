@@ -1,5 +1,7 @@
 package tf.monochrome.android.ui.player
 
+import tf.monochrome.android.ui.glyph.lyricsTv
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -12,6 +14,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.TextButton
+import tf.monochrome.android.data.repository.LyricsStage
+import tf.monochrome.android.data.repository.ServerLyricsStatus
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -53,7 +60,6 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -170,7 +176,7 @@ internal fun LyricsHeroPanel(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
                             text = stringResource(R.string.lyrics_none),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
                             color = Color.White.copy(alpha = 0.7f),
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(horizontal = 24.dp),
@@ -323,6 +329,9 @@ internal fun LyricsHeroBox(
     positionMs: StateFlow<Long>,
     onSeekTo: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    serverStatus: ServerLyricsStatus? = null,
+    onSyncOnServer: (() -> Unit)? = null,
+    onCancelServer: (() -> Unit)? = null,
 ) {
     Box(modifier = modifier.lyricsEdgeFade()) {
         when {
@@ -333,17 +342,18 @@ internal fun LyricsHeroBox(
                     color = Color.White.copy(alpha = 0.85f),
                 )
             }
-            lyrics == null || lyrics.lines.isEmpty() -> Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
+            lyrics == null || lyrics.lines.isEmpty() -> Column(
+                Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = stringResource(R.string.lyrics_none),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 24.dp),
                 )
+                ServerLyricsNote(serverStatus, onSyncOnServer, onCancelServer)
             }
             lyrics.isSynced -> SyncedLyricsView(
                 lines = lyrics.lines,
@@ -352,6 +362,48 @@ internal fun LyricsHeroBox(
                 onSeekTo = onSeekTo,
             )
             else -> UnsyncedLyricsView(lines = lyrics.lines)
+        }
+    }
+}
+
+/**
+ * The server's word under the empty state, and the one action: text under
+ * text, no pane (docs/ui-invariants.md, "Lyrics"). The button is offered
+ * only while no job runs and a lyrics server is configured ([onSync] null).
+ */
+@Composable
+private fun ServerLyricsNote(status: ServerLyricsStatus?, onSync: (() -> Unit)?, onCancel: (() -> Unit)?) {
+    val note = when (status) {
+        ServerLyricsStatus.Waiting -> stringResource(R.string.lyrics_server_waiting)
+        is ServerLyricsStatus.Working -> when (status.stage) {
+            LyricsStage.DOWNLOADING -> stringResource(R.string.lyrics_server_downloading)
+            LyricsStage.SENDING -> stringResource(R.string.lyrics_server_sending, status.host)
+            LyricsStage.HEARING -> stringResource(R.string.lyrics_server_hearing, status.host)
+        }
+        is ServerLyricsStatus.Failed -> stringResource(R.string.lyrics_server_failed, status.reason)
+        ServerLyricsStatus.NoFile -> stringResource(R.string.lyrics_server_no_file)
+        ServerLyricsStatus.NoServer -> stringResource(R.string.lyrics_server_no_server)
+        null -> null
+    }
+    if (note != null) {
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = note,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center,
+        )
+    }
+    val busy = status is ServerLyricsStatus.Working || status == ServerLyricsStatus.Waiting
+    if (busy && onCancel != null) {
+        Spacer(Modifier.height(4.dp))
+        TextButton(onClick = onCancel) {
+            Text(stringResource(R.string.lyrics_server_cancel), color = Color.White.copy(alpha = 0.85f))
+        }
+    } else if (onSync != null && !busy) {
+        Spacer(Modifier.height(4.dp))
+        TextButton(onClick = onSync) {
+            Text(stringResource(R.string.lyrics_server_sync), color = Color.White.copy(alpha = 0.85f))
         }
     }
 }
@@ -370,7 +422,7 @@ internal fun SyncedLyricsView(
     // what's actually being heard. (Tunable in the Player Visuals Studio.)
     // The delay is wall time and the position song time, so it is scaled by
     // the playback speed: 200 ms of latency is 300 ms of song at 1.5×.
-    val syncDelayMs = LyricClock.delayInSongMs(LocalLyricsFx.current.bluetoothDelayMs, LocalPlaybackSpeed.current)
+    val syncDelayMs = LyricClock.delayInSongMs(LocalOutputSyncMs.current, LocalPlaybackSpeed.current)
     // Start composed at the current line so a freshly created instance (the
     // expand morph spawns one) never flashes the top of the song before the
     // centring effect runs.
@@ -415,6 +467,17 @@ internal fun SyncedLyricsView(
     // whichever layer draws the light, so the shafts follow the scroll glide
     // and hop from word to word without recomposing anything.
     val followWord = fx.godRays && fx.godRaysFollowWord
+    // No curve of their own while the CRT effect bows the whole app: the
+    // tube bends the lyrics already (appTubeCurved).
+    val appCurved = tf.monochrome.android.ui.glyph.appTubeCurved()
+    // Read in the curve's layer, so a music link on either angle bends it live.
+    val curveLinks = LocalVisualLinks.current
+    val curveTop = { if (appCurved) 0f else curveLinks.lyrics(fx).curvatureDeg }
+    val curveSide = { if (appCurved) 0f else curveLinks.lyrics(fx).effectiveCurvatureSideDeg }
+    // The curve over the sung line or the sung word alone (Lyrics FX › Curve).
+    val curveTarget = if (fx.curved && !appCurved) fx.curvatureTarget else LyricsFxSettings.CURVE_ALL
+    // The sung word is tracked for whichever of the two follows it.
+    val trackWord = followWord || curveTarget == LyricsFxSettings.CURVE_WORD
     val sungWord = remember { SungWordAnchor() }
     val listBox = remember { androidx.compose.runtime.mutableStateOf(Rect.Zero) }
     val bandInRoot: () -> Rect? = remember(listState, currentLineState, followWord) {
@@ -447,6 +510,23 @@ internal fun SyncedLyricsView(
     }
     if (backdrop != null) {
         androidx.compose.runtime.SideEffect { backdrop.capture.bandInRoot = bandInRoot }
+    }
+    // The box the curve's dome covers, in root px, read in the draw phase:
+    // the sung line, or its sung word (the line on line-timed lyrics); null
+    // for the whole surface.
+    val curveFocus: (() -> Rect?)? = remember(listState, currentLineState, curveTarget) {
+        when (curveTarget) {
+            LyricsFxSettings.CURVE_LINE -> {
+                { activeLineBand(listState, currentLineState.value)?.translate(listBox.value.topLeft) }
+            }
+            LyricsFxSettings.CURVE_WORD -> {
+                {
+                    val line = currentLineState.value
+                    sungWord.rectFor(line) ?: activeLineBand(listState, line)?.translate(listBox.value.topLeft)
+                }
+            }
+            else -> null
+        }
     }
     // Shared line registry — the active line reports its screen bounds here and
     // the full-screen LyricsFxLayer (in the player, no clipping ancestor) blooms
@@ -536,6 +616,8 @@ internal fun SyncedLyricsView(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
+                // Settings › Appearance › CRT effect, set to the lyrics.
+                .then(Modifier.lyricsTv())
                 // God rays wrap everything below, so they gather the finished
                 // glass letters, and sit OUTSIDE the side inset, so the shafts
                 // run to the screen edge instead of stopping in a hard line at
@@ -564,7 +646,16 @@ internal fun SyncedLyricsView(
                 .liquidGlass(tint = accent, rayLight = rayLight)
                 // Innermost, so the copy the backdrop lights from is the plain
                 // letters and the glass is not run twice.
-                .captureLetters(backdrop?.capture, edgeFade = true),
+                .captureLetters(backdrop?.capture, edgeFade = true)
+                // Bent inside the copy, so the shadow and the shafts the
+                // backdrop draws from it bend with the letters, and the glass
+                // bevels the bent ones.
+                .lyricCurvature(
+                    curveTop,
+                    curveSide,
+                    curveFocus,
+                    wide = curveTarget == LyricsFxSettings.CURVE_WORD,
+                ),
             contentPadding = PaddingValues(top = halfViewport, bottom = tailPadding),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -591,7 +682,7 @@ internal fun SyncedLyricsView(
                 label = "lineEmphasis",
             )
             val beatModifier = (if (isActive && beatIntensity > 0.01f) {
-                Modifier.bassBeat(bassPulse, fx, lineAnchors)
+                Modifier.bassBeat(bassPulse, fx, lineAnchors, LocalVisualLinks.current)
             } else {
                 Modifier
             }).graphicsLayer {
@@ -625,7 +716,7 @@ internal fun SyncedLyricsView(
                     beatModifier = beatModifier,
                     availableWidth = fitWidth,
                     measureStyle = measureStyle,
-                    onSungWordPositioned = if (isActive && followWord) {
+                    onSungWordPositioned = if (isActive && trackWord) {
                         { rect -> sungWord.report(index, rect) }
                     } else {
                         null
@@ -673,7 +764,8 @@ internal fun SyncedLyricsView(
                 // Text vs per-letter glyphs at natural advances), never the
                 // rows themselves — so toggling active state moves nothing.
                 val perLetter = isActive && fx.rotationDegrees > 0.05f
-                val time = if (perLetter) rememberFrameSeconds() else null
+                val live = LocalVisualLinks.current
+                val time = if (perLetter) rememberLetterWaveSeconds { live.lyrics(fx).waveSpeed } else null
                 Column(
                     modifier = lineModifier,
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -726,7 +818,8 @@ internal fun KaraokeLyricLine(
     // One frame clock per line.
     val fx = LocalLyricsFx.current
     val perLetter = isActive && fx.rotationDegrees > 0.05f
-    val time = if (perLetter) rememberFrameSeconds() else null
+    val live = LocalVisualLinks.current
+    val time = if (perLetter) rememberLetterWaveSeconds { live.lyrics(fx).waveSpeed } else null
     val lyricFont = rememberLyricFontFamily(fx)
     // Frozen format: rows wrap from the state-independent measurement style,
     // so a given word always sits on the same row whether the line is active
@@ -844,17 +937,10 @@ internal fun rememberLyricFontFamily(fx: LyricsFxSettings): FontFamily? {
     if (!fx.customFont || fx.customFontPath.isBlank()) return null
     val path = fx.customFontPath
     return remember(path) {
-        runCatching {
-            val file = java.io.File(path)
-            if (file.exists()) {
-                LyricsDebug.log("custom font loaded: ${file.name}")
-                FontFamily(Font(file))
-            } else {
-                LyricsDebug.log("custom font MISSING, falling back to theme: $path")
-                null
-            }
-        }.onFailure { LyricsDebug.log("custom font FAILED to load ($path): ${it.message}") }
-            .getOrNull()
+        // With its variations, when the library holds other cuts of the family.
+        tf.monochrome.android.ui.theme.loadImportedFontFamily(path).also {
+            LyricsDebug.log(if (it != null) "custom font loaded: $path" else "custom font MISSING or unreadable, falling back to theme: $path")
+        }
     }
 }
 
@@ -1198,11 +1284,16 @@ private fun Letter3DText(
     color: Color,
     time: State<Float>,
 ) {
-    val fx = LocalLyricsFx.current
+    val baseFx = LocalLyricsFx.current
+    val live = LocalVisualLinks.current
     Box(
         modifier = Modifier
             .graphicsLayer {
-            val t = time.value * fx.waveSpeed
+            // Music links move the tilt and the travel here, in the layer
+            // block, so the wave answers the beat without recomposing a letter.
+            val fx = live.lyrics(baseFx)
+            // Seconds of wave: the speed is already in it (rememberLetterWaveSeconds).
+            val t = time.value
             // Slow temporal frequency (1.5 rad/s): the wave glides instead of
             // flickering — the eye tracks a slow ripple as one smooth motion.
             val p = t * 1.5f + phase
@@ -1234,16 +1325,31 @@ private fun Letter3DText(
 internal fun UnsyncedLyricsView(lines: List<LyricLine>) {
     LaunchedEffect(lines) { LyricsDebug.log("unsynced lyrics loaded: ${lines.size} lines (no timing)") }
     val fx = LocalLyricsFx.current
-    val style = MaterialTheme.typography.bodyLarge.withLyricFont(rememberLyricFontFamily(fx))
+    val curveLinks = LocalVisualLinks.current
+    val style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal).withLyricFont(rememberLyricFontFamily(fx))
     val sidePadding = 28.dp
+    // Flat while the CRT effect bows the whole app (appTubeCurved).
+    val appCurved = tf.monochrome.android.ui.glyph.appTubeCurved()
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val lineWidth = (maxWidth - sidePadding * 2).coerceAtLeast(0.dp)
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .then(Modifier.lyricsTv())
                 .padding(horizontal = sidePadding)
                 .fxaa()
-                .liquidGlass(),
+                .liquidGlass()
+                // No line is sung here: the curve is on only over all the lyrics.
+                .then(
+                    if (fx.curvatureTarget == LyricsFxSettings.CURVE_ALL) {
+                        Modifier.lyricCurvature(
+                            { if (appCurved) 0f else curveLinks.lyrics(fx).curvatureDeg },
+                            { if (appCurved) 0f else curveLinks.lyrics(fx).effectiveCurvatureSideDeg },
+                        )
+                    } else {
+                        Modifier
+                    },
+                ),
             contentPadding = PaddingValues(vertical = 60.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {

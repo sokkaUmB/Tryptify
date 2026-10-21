@@ -1,5 +1,6 @@
 package tf.monochrome.android.ui.components
 
+import tf.monochrome.android.ui.player.glassFrost
 import android.os.Build
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
@@ -192,14 +193,11 @@ fun MiniPlayer(
     }
 
     if (!useGlass) {
-        // ── Legacy fallback (API < 33 or glass off): haze glass + Material icons ──
+        // ── Material 3 (API < 33 or glass off): a flat surface + Material icons ──
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .liquidGlass(
-                    hazeState = hazeState,
-                    shape = RoundedCornerShape(MiniCorner)
-                )
+                .materialSurface(shape = RoundedCornerShape(MiniCorner))
                 .clickable(interactionSource = null, indication = null, onClick = onClick)
                 .then(swipeGestures)
         ) {
@@ -512,19 +510,10 @@ private fun BoxScope.MiniBarBackdrop(
     } else if (hazeState != null && profile.allowHazeBlur && glass.hazeBlurDp > 0f) {
         val frostBg = MaterialTheme.colorScheme.background
         val isDark = frostBg.luminance() <= 0.5f
-        val frostTint = playerFrostTint(glass, isDark)
         Box(
             Modifier
                 .matchParentSize()
-                .hazeEffect(
-                    state = hazeState,
-                    style = HazeStyle(
-                        backgroundColor = frostBg,
-                        blurRadius = glass.hazeBlurDp.dp,
-                        tints = listOf(HazeTint(frostTint)),
-                        noiseFactor = 0f,
-                    ),
-                )
+                .glassFrost(state = hazeState, glass = glass, ground = frostBg, isDark = isDark)
         )
     }
 }
@@ -576,7 +565,7 @@ private fun MiniTakeoverBar(
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .liquidGlass(hazeState = hazeState, shape = RoundedCornerShape(MiniCorner))
+                .materialSurface(shape = RoundedCornerShape(MiniCorner))
                 .then(swipes),
         ) {
             TakeoverRow(actions, progressHeight) { _, action ->

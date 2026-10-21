@@ -624,6 +624,11 @@ fun MonochromeTheme(
     themeName: String = "monochrome_dark",
     fontScale: Float = 1.0f,
     customFontFamily: FontFamily? = null,
+    /** Settings › Fonts › Typography: per style, a font, weight, size and spacing. */
+    typographySettings: tf.monochrome.android.domain.model.TypographySettings =
+        tf.monochrome.android.domain.model.TypographySettings.DEFAULT,
+    /** The fonts the table draws with, loaded at their widths: by (font id, null for the main font; width). */
+    typographyFonts: Map<Pair<String?, Int>, WidthFont> = emptyMap(),
     /**
      * The album palette as its *state*, not its value.
      *
@@ -684,8 +689,8 @@ fun MonochromeTheme(
         keepBackground = dynamicMenusKeepBackground,
     )
     val family = customFontFamily ?: InterFontFamily
-    val typography = remember(fontScale, family) {
-        buildTypography(family, fontScale)
+    val typography = remember(fontScale, family, typographySettings, typographyFonts) {
+        buildTypography(family, fontScale, typographySettings) { id, width -> typographyFonts[id to width] }
     }
 
     // By default the album palette is NOT overlaid on the global scheme — doing
@@ -760,6 +765,33 @@ private fun tintedByAlbum(
 }
 
 /**
+ * [content] in the accent of [palette] (the app's, [LocalDynamicColorPalette]),
+ * for the menus of a mode that follows the music: Trypt Mania, whose picked
+ * song is the palette's source while it is open ([DynamicColorSource]).
+ *
+ * Through [tintedByAlbum], never [DynamicColorScope]'s slot swap: this covers
+ * menus, where a swapped accent can land under 4.5:1. The ground is kept, as the
+ * player keeps it; the accent alone follows the cover. Tinting the ground too
+ * would tint it twice under "Tint the menus too", once for the playing track
+ * and again here, past the quarter that keeps light and dark from flipping.
+ *
+ * Takes the state, not the value, so the fade recomposes this scope and its
+ * content and nothing above it. A passthrough while there is no palette.
+ */
+@Composable
+fun AlbumTintScope(palette: State<DynamicPalette?>?, content: @Composable () -> Unit) {
+    // One call site for the content whether or not there is a palette: two
+    // would tear down and rebuild everything inside each time a cover with
+    // colours followed one without, a game mid-run included.
+    MaterialTheme(
+        colorScheme = tintedByAlbum(MaterialTheme.colorScheme, palette?.value, keepBackground = true),
+        typography = MaterialTheme.typography,
+        shapes = MaterialTheme.shapes,
+        content = content,
+    )
+}
+
+/**
  * The album-art-derived palette for the currently playing track, as state:
  * whose value is null when Dynamic Colours is off, nothing is playing, or
  * extraction failed, and the outer state is null when no source is providing
@@ -786,7 +818,8 @@ val LocalDynamicColorPalette = compositionLocalOf<State<DynamicPalette?>?> { nul
  * reaches the glass the same way it reaches everything else — by the screen
  * opting into [DynamicColorScope], where the scheme's own primary becomes the
  * album's. That keeps it to the places where following the music is the point:
- * the player, and the world radio globe.
+ * the player, the world radio globe, and Trypt Mania ([AlbumTintScope], the
+ * song picked on its wheel).
  */
 @Composable
 fun glassTint(explicitArgb: Int): Color {

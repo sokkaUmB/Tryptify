@@ -17,6 +17,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import tf.monochrome.android.data.repository.LyricsRace
+import tf.monochrome.android.data.repository.ServerLyricsStatus
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
@@ -66,6 +68,8 @@ class PlayerViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val downloadManager: DownloadManager,
     private val preferences: PreferencesManager,
+    /** How late the output plays: the lyrics poll wakes for the word as heard. */
+    private val outputSync: tf.monochrome.android.audio.sync.OutputSyncRepository,
     private val projectMEngineRepository: ProjectMEngineRepository,
     private val unifiedTrackRegistry: tf.monochrome.android.player.UnifiedTrackRegistry,
     private val qobuzIdRegistry: tf.monochrome.android.data.api.QobuzIdRegistry,
@@ -78,10 +82,13 @@ class PlayerViewModel @Inject constructor(
     private val compressorEffect: tf.monochrome.android.audio.dsp.oxford.CompressorEffect,
     private val crossfeedEffect: tf.monochrome.android.audio.dsp.crossfeed.CrossfeedEffect,
     private val nowPlayingLyrics: tf.monochrome.android.player.NowPlayingLyricsHolder,
+    private val serverLyrics: tf.monochrome.android.data.repository.ServerLyricsEngine,
     private val playbackState: tf.monochrome.android.player.PlaybackStateRepository,
     private val bpmTap: tf.monochrome.android.audio.tempo.BpmTapProcessor,
     private val sourceConsent: tf.monochrome.android.player.SourceConsent,
     private val audioPipelineMonitor: tf.monochrome.android.audio.pipeline.AudioPipelineMonitor,
+    private val playbackPositions: tf.monochrome.android.player.PlaybackPositionSource,
+    private val openedAudio: tf.monochrome.android.data.opened.OpenedAudioRepository,
 ) : ViewModel() {
 
     /**
@@ -188,6 +195,15 @@ class PlayerViewModel @Inject constructor(
     private val _isLyricsLoading = MutableStateFlow(false)
     val isLyricsLoading: StateFlow<Boolean> = _isLyricsLoading.asStateFlow()
 
+    /** Where the current song's server timing stands (ServerLyricsEngine); null while there is nothing to say. */
+    val serverLyricsStatus: StateFlow<ServerLyricsStatus?> =
+        kotlinx.coroutines.flow.combine(currentTrack, serverLyrics.status) { track, all -> track?.let { all[it.id] } }
+            .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Whether a server under Settings › Connections times lyrics: the action is offered only then. */
+    val hasLyricsServer: StateFlow<Boolean> = serverLyrics.hasServer
+        .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5_000), false)
+
     /**
      * The audio being decoded is E-AC-3, the codec that carries a Dolby Atmos
      * mix. The player marks a track as playing in Atmos only then: a track
@@ -248,6 +264,12 @@ class PlayerViewModel @Inject constructor(
     }
     val lyricsFx: StateFlow<LyricsFxSettings> = preferences.lyricsFx
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LyricsFxSettings())
+
+    /** The visual settings following the music; empty while Music links are paused. */
+    val visualLinks: StateFlow<List<tf.monochrome.android.domain.model.VisualLink>> =
+        kotlinx.coroutines.flow.combine(preferences.visualLinks, preferences.musicLinksPaused) { links, paused ->
+            if (paused) emptyList() else links
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val nowPlayingViewMode: StateFlow<NowPlayingViewMode> = preferences.nowPlayingViewMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), NowPlayingViewMode.COVER_ART)
     val romajiLyrics: StateFlow<Boolean> = preferences.romajiLyrics
@@ -540,7 +562,17 @@ class PlayerViewModel @Inject constructor(
         // Mirror the now-playing lyrics + position into the app-scoped holder so
         // other screens (the Player Visuals Studio preview) can show the real lyrics.
         viewModelScope.launch { _currentLyrics.collect { nowPlayingLyrics.setLyrics(it) } }
+        // A server's timing lands when it lands, minutes after the race:
+        // shown if the song is still on, kept for it either way.
+        viewModelScope.launch {
+            serverLyrics.results.collect { (trackId, lyrics) ->
+                if (currentTrack.value?.id == trackId) _currentLyrics.value = lyrics
+            }
+        }
         viewModelScope.launch { _positionMs.collect { nowPlayingLyrics.setPosition(it) } }
+        // The sampler records where in a track a capture came from, and cannot
+        // reach a MediaController from its own view model.
+        viewModelScope.launch { _positionMs.collect { playbackPositions.update(it) } }
         viewModelScope.launch {
             downloadManager.observeAllActiveDownloads().collectLatest { active ->
                 _activeDownloads.value = active
@@ -593,19 +625,38 @@ class PlayerViewModel @Inject constructor(
                                 // resolved source is the authoritative signal;
                                 // qobuzIdRegistry is a backstop.
                                 // Deezer ids have the same problem.
-                                val resolvedSource = unifiedTrackRegistry[track.id]?.sourceType
-                                val skipTidal = resolvedSource ==
-                                    tf.monochrome.android.domain.model.SourceType.QOBUZ ||
-                                    resolvedSource == tf.monochrome.android.domain.model.SourceType.DEEZER ||
+                                // Local files and collections too: their ids
+                                // are hashes, not TIDAL ids (LyricsLookup).
+                                val unified = unifiedTrackRegistry[track.id]
+                                val skipTidal = LyricsLookup.skipsTidalById(unified?.sourceType) ||
                                     track.deezerId != null ||
                                     qobuzIdRegistry.isQobuzTrack(track.id) ||
                                     qobuzIdRegistry.isDeezerTrack(track.id)
                                 // Pass the full Track so the repository can fall
                                 // back to LRCLib (track + artist + album +
-                                // duration) when TIDAL returns no lyrics.
-                                _currentLyrics.value =
-                                    repository.getLyrics(track.id, track, skipTidal = skipTidal).getOrNull()
+                                // duration) when TIDAL returns no lyrics — with
+                                // a local file's own artist, not its album's.
+                                val found = repository.getLyrics(
+                                    track.id,
+                                    LyricsLookup.trackFor(track, unified),
+                                    skipTidal = skipTidal,
+                                ).getOrNull()
+                                _currentLyrics.value = found
                                 _isLyricsLoading.value = false
+                                // No word timing from any catalogue: the
+                                // server hears the song itself, by itself,
+                                // when the setting allows and the song has
+                                // a file. Its answer arrives through
+                                // serverLyrics.results, above.
+                                if (LyricsRace.tier(found) < 3 && preferences.serverLyrics.first()) {
+                                    // Only once the song has been listened to for
+                                    // a while: a song skipped past would otherwise
+                                    // be downloaded and timed for nobody. This
+                                    // coroutine dies with the track, so skipping
+                                    // cancels the wait.
+                                    delay(SERVER_LYRICS_AFTER_MS)
+                                    requestServerLyrics(track, unified, found)
+                                }
                             }
                             // Observe liked status
                             launch {
@@ -622,6 +673,29 @@ class PlayerViewModel @Inject constructor(
                 }
         }
     }
+
+    /** Sends the current song to a lyrics server by hand, whatever lyrics it has. */
+    fun syncLyricsOnServer() {
+        val track = currentTrack.value ?: return
+        if (isLiveStreamTrack(track)) return
+        viewModelScope.launch { requestServerLyrics(track, unifiedTrackRegistry[track.id], _currentLyrics.value) }
+    }
+
+    private suspend fun requestServerLyrics(track: Track, unified: UnifiedTrack?, found: Lyrics?) {
+        serverLyrics.request(
+            tf.monochrome.android.data.repository.LyricsJob(
+                track = track,
+                unified = unified,
+                query = repository.lyricsQueryFor(LyricsLookup.trackFor(track, unified)),
+                // The words the race found, timed or not, for the server to keep.
+                plain = found?.lines?.joinToString("\n") { it.text }?.takeIf { it.isNotBlank() },
+                convertToRomaji = preferences.romajiLyrics.first(),
+            ),
+        )
+    }
+
+    /** Empties the lyrics line and stops its worker. */
+    fun cancelServerLyrics() = serverLyrics.cancelAll()
 
     fun toggleLikeCurrentTrack() {
         val track = currentTrack.value ?: return
@@ -745,7 +819,7 @@ class PlayerViewModel @Inject constructor(
                     LyricClock.nextPollDelayMs(
                         positionMs = position,
                         speed = _liveSpeed.value,
-                        delayMs = lyricsFx.value.bluetoothDelayMs,
+                        delayMs = outputSync.delayMs.value.toFloat(),
                         lyrics = _currentLyrics.value,
                     ),
                 )
@@ -799,6 +873,39 @@ class PlayerViewModel @Inject constructor(
         val legacyTrack = track.toLegacyTrack()
         queueManager.playTrackInQueue(legacyTrack, legacyTracks)
         resolveAndPlay()
+    }
+
+    /**
+     * Play a song another app opened with Tryptify, as a queue of one. Song
+     * radio is stopped first, or it would add its picks behind it.
+     */
+    fun playOpenedFile(track: UnifiedTrack) {
+        radioQueueManager.stopRadio()
+        playUnifiedTrack(track, listOf(track))
+    }
+
+    /** The latest file opened with Tryptify, until [takeOpenedFile] plays it. */
+    val openedFile: StateFlow<tf.monochrome.android.data.opened.OpenedAudioRepository.Opened?> = openedAudio.opened
+
+    /** Ids of opened songs already added to the library. */
+    val openedSaved: StateFlow<Set<String>> = openedAudio.saved
+
+    /** Plays [item] when it is ready, and marks it taken either way. */
+    fun takeOpenedFile(item: tf.monochrome.android.data.opened.OpenedAudioRepository.Opened) {
+        openedAudio.taken(item)
+        if (item is tf.monochrome.android.data.opened.OpenedAudioRepository.Opened.Ready) playOpenedFile(item.track)
+    }
+
+    /** True when [track] plays from a file another app opened, not from the library. */
+    fun isOpenedFile(track: Track?): Boolean =
+        unifiedFor(track)?.id?.startsWith(tf.monochrome.android.data.opened.OpenedAudio.ID_PREFIX) == true
+
+    /** Copies the opened song [track] into Music/Tryptify and hands the outcome to [onDone]. */
+    fun addOpenedToLibrary(
+        track: UnifiedTrack,
+        onDone: (tf.monochrome.android.data.opened.OpenedAudioRepository.Added) -> Unit,
+    ) {
+        viewModelScope.launch { onDone(openedAudio.addToLibrary(track)) }
     }
 
     /**
@@ -1394,15 +1501,23 @@ class PlayerViewModel @Inject constructor(
         .map { track -> track != null && isLocalTrack(track) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    /**
+     * A song from the listener's own Subsonic server. Its Long id is a hash, so
+     * the catalogue paths (download, share-by-fetching) must never see it.
+     */
+    private fun isOwnServerTrack(track: Track): Boolean =
+        unifiedTrackRegistry[track.id]?.source is tf.monochrome.android.domain.model.PlaybackSource.Subsonic
+
     fun downloadTrack(track: Track) {
-        // There is no file behind a live stream to download.
-        if (isLocalTrack(track) || isLiveStreamTrack(track)) return
+        // There is no file behind a live stream to download, and no catalogue
+        // download behind a song on the listener's own server.
+        if (isLocalTrack(track) || isLiveStreamTrack(track) || isOwnServerTrack(track)) return
         downloadManager.downloadTrack(track)
         observeTrackDownload(track.id)
     }
 
     fun downloadAllTracks(tracks: List<Track>) {
-        val remote = tracks.filterNot(::isLocalTrack)
+        val remote = tracks.filterNot { isLocalTrack(it) || isOwnServerTrack(it) }
         downloadManager.downloadTracks(remote)
         remote.forEach { observeTrackDownload(it.id) }
     }
@@ -1432,6 +1547,8 @@ class PlayerViewModel @Inject constructor(
             shareUnifiedTrack(unified)
             return
         }
+        // The share helper would fetch the file from Qobuz by this hashed id.
+        if (unified?.source is tf.monochrome.android.domain.model.PlaybackSource.Subsonic) return
         viewModelScope.launch {
             trackShareHelper.shareTrack(track)
         }
@@ -1512,5 +1629,8 @@ class PlayerViewModel @Inject constructor(
         // service that never comes up surfaces as a playback error rather than
         // a coroutine parked forever.
         const val CONTROLLER_CONNECT_TIMEOUT_MS = 5_000L
+
+        /** How long a song plays before it is sent to be timed by itself: long enough to mean it is being listened to. */
+        const val SERVER_LYRICS_AFTER_MS = 15_000L
     }
 }

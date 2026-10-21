@@ -12,6 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import tf.monochrome.android.data.db.MusicDatabase
 import tf.monochrome.android.data.db.dao.DownloadDao
+import tf.monochrome.android.data.db.dao.LyricsCacheDao
 import tf.monochrome.android.data.db.dao.EqPresetDao
 import tf.monochrome.android.data.db.dao.FavoriteDao
 import tf.monochrome.android.data.db.dao.HistoryDao
@@ -40,6 +41,11 @@ object DatabaseModule {
                 MusicDatabase.MIGRATION_12_13,
                 MusicDatabase.MIGRATION_13_14,
                 MusicDatabase.MIGRATION_14_15,
+                MusicDatabase.MIGRATION_15_16,
+                MusicDatabase.MIGRATION_16_17,
+                MusicDatabase.MIGRATION_17_18,
+                MusicDatabase.MIGRATION_18_19,
+                MusicDatabase.MIGRATION_19_20,
             )
             // Retained as a safety net for any version gap without an explicit
             // migration; the THX (8→9) and Atmos (9→10) upgrades migrate in
@@ -84,6 +90,9 @@ object DatabaseModule {
 
     @Provides
     fun provideDownloadDao(db: MusicDatabase): DownloadDao = db.downloadDao()
+
+    @Provides
+    fun provideLyricsCacheDao(db: MusicDatabase): LyricsCacheDao = db.lyricsCacheDao()
 
     @Provides
     fun provideEqPresetDao(db: MusicDatabase): EqPresetDao = db.eqPresetDao()

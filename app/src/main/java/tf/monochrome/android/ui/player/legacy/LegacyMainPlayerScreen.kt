@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.dp
 import tf.monochrome.android.devedit.DevEditable
 import tf.monochrome.android.domain.model.NowPlayingViewMode
 import tf.monochrome.android.domain.model.Track
-import tf.monochrome.android.ui.components.liquidGlass
+import tf.monochrome.android.ui.components.materialSurface
 import tf.monochrome.android.ui.player.DynamicAlbumGlow
 import tf.monochrome.android.ui.player.MainPlayerUiState
 import tf.monochrome.android.ui.player.PlayerDesignTokens
@@ -87,10 +87,9 @@ private const val SwipeThresholdPx = 48f
  * hero content — artwork, lyrics, queue, visualizer — is shared rather than
  * frozen at the old version.
  *
- * The glass on its own panels is the *old* `Modifier.liquidGlass` (Haze
- * glassmorphism, which predates the shader and is part of this design). It is
- * left in deliberately: "Remove liquid glass" flattens it through the shared
- * modifier, so the two switches compose instead of overlapping.
+ * Its own panels are Material 3 surfaces (`materialSurface`). They wore the
+ * old frosted glass, which predated the shader; that look is gone from the
+ * app, which is liquid glass or Material 3.
  */
 @Composable
 fun LegacyMainPlayerScreen(
@@ -127,8 +126,6 @@ fun LegacyMainPlayerScreen(
     onLyrics: () -> Unit,
     topBar: @Composable () -> Unit,
     hero: @Composable (Modifier) -> Unit,
-    /** The USB DAC's volume bar in exclusive mode, else null; see MainPlayerScreen. */
-    dacVolume: (@Composable () -> Unit)? = null,
     /** The hero is the lyric surface (or dissolving to or from it): give it the whole region. */
     lyricsMode: Boolean = false,
 ) {
@@ -217,11 +214,6 @@ fun LegacyMainPlayerScreen(
                     onForward10 = onForward10,
                     onNext = onNext,
                 )
-            }
-
-            if (dacVolume != null) {
-                Spacer(Modifier.height(12.dp))
-                DevEditable("legacy_dacVolume", Modifier.fillMaxWidth()) { dacVolume() }
             }
 
             Spacer(Modifier.height(20.dp))
@@ -414,7 +406,6 @@ private fun StatusOverlayPanel(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(elevation = 32.dp, shape = shape, clip = false)
-            .liquidGlass(shape = shape, tintAlpha = 0.22f, borderAlpha = 0.10f)
             .pointerInput(Unit) {
                 var total = 0f
                 detectVerticalDragGestures(
@@ -492,10 +483,9 @@ private fun RowScope.OverlayAction(
             .weight(1f)
             .clip(RoundedCornerShape(PlayerDesignTokens.GlassCornerSmall))
             .clickable(onClick = onClick)
-            .liquidGlass(
+            .materialSurface(
                 shape = RoundedCornerShape(PlayerDesignTokens.GlassCornerSmall),
                 tintAlpha = if (active) PlayerDesignTokens.GlassTintStrong else PlayerDesignTokens.GlassTintSoft,
-                borderAlpha = PlayerDesignTokens.GlassTintSoft,
             )
             .padding(vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

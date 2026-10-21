@@ -153,8 +153,7 @@ fun QueueSheet(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.queue),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge
                     )
                     Text(
                         text = pluralStringResource(R.plurals.track_count, queue.size, queue.size),
@@ -496,14 +495,15 @@ private fun QueueTrackItem(
             Text(
                 text = track.title,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isCurrentTrack) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (isCurrentTrack) FontWeight.Medium else FontWeight.Normal,
                 color = if (isCurrentTrack) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Where each queued song plays from, so a mixed queue reads at a glance.
-                tf.monochrome.android.ui.components.LocalTrackSource.current(track)?.let {
+                tf.monochrome.android.ui.components.LocalTrackSource.current(track)
+                    ?.takeIf { tf.monochrome.android.ui.theme.rowBadges().source }?.let {
                     tf.monochrome.android.ui.components.SourcePill(it)
                     Spacer(modifier = Modifier.width(6.dp))
                 }
@@ -517,11 +517,13 @@ private fun QueueTrackItem(
             }
         }
 
-        Text(
-            text = track.formattedDuration,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (tf.monochrome.android.ui.theme.rowBadges().duration) {
+            Text(
+                text = track.formattedDuration,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
         Icon(
             imageVector = Icons.Default.DragHandle,

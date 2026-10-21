@@ -147,6 +147,13 @@ class PreferencesManager @Inject constructor(
         private val DYNAMIC_COLORS_MENUS = booleanPreferencesKey("dynamic_colors_menus")
         private val DYNAMIC_COLORS_KEEP_BACKGROUND =
             booleanPreferencesKey("dynamic_colors_keep_background")
+        // The whole app through an old TV: a TV shader's id, "off" for none.
+        private val APP_TV_SHADER = stringPreferencesKey("app_tv_shader")
+        // Its sliders, as GlyphTvTuning.encode writes them: Trypt Mania's
+        // own, plus Chromatic shift and Curvature, kept apart from the game's.
+        private val APP_TV_TUNING = stringPreferencesKey("app_tv_tuning")
+        // What it draws over: "app" (every screen) or "lyrics" (the lyrics only).
+        private val APP_TV_TARGET = stringPreferencesKey("app_tv_target")
         // How long the album colours take to cross over, in ms. Older builds
         // also stored -1 here for "match Blend Between Tracks"; ColorBlend
         // .millisFor turns that back into a real length.
@@ -177,6 +184,11 @@ class PreferencesManager @Inject constructor(
         private val DISCORD_PRESENCE_ANIMATED = booleanPreferencesKey("discord_presence_animated")
         private val DISCORD_UPLOAD_CHANNEL = stringPreferencesKey("discord_upload_channel")
 
+        // The listener's Subsonic server (Navidrome and kin), as JSON. Not in
+        // SETTINGS_SYNC_KEYS, for the Discord token's reason: it is a sign-in
+        // to a server, and stays on the device it was typed into.
+        private val SUBSONIC_SERVER = stringPreferencesKey("subsonic_server")
+
         // Custom API endpoint
         private val CUSTOM_API_ENDPOINT = stringPreferencesKey("custom_api_endpoint")
         private val QOBUZ_INSTANCE_URL = stringPreferencesKey("qobuz_instance_url")
@@ -197,6 +209,14 @@ class PreferencesManager @Inject constructor(
         private val LYRICS_BASS_REACT = floatPreferencesKey("lyrics_bass_react")
         // Full Player Visuals Studio settings as one JSON blob (takes precedence).
         private val LYRICS_FX_JSON = stringPreferencesKey("lyrics_fx_json")
+        // Visual settings that follow the music (a JSON array of VisualLink),
+        // and the one switch that pauses every music link at once.
+        private val VISUAL_LINKS_JSON = stringPreferencesKey("visual_links_json")
+        private val MUSIC_LINKS_PAUSED = booleanPreferencesKey("music_links_paused")
+        // The look as it was before the last theme pack was applied, for its
+        // undo. Device-local on purpose, and so not in SETTINGS_SYNC_KEYS: it
+        // is state, not a choice, and another device has its own look to undo.
+        private val THEME_PACK_UNDO_JSON = stringPreferencesKey("theme_pack_undo_json")
         private val GLOBE_FX_JSON = stringPreferencesKey("globe_fx_json")
         // User-saved Lyrics FX presets (a JSON array of {name, settings}).
         private val LYRICS_FX_CUSTOM_PRESETS_JSON = stringPreferencesKey("lyrics_fx_custom_presets_json")
@@ -275,6 +295,11 @@ class PreferencesManager @Inject constructor(
         private val UPDATE_LATEST_URL = stringPreferencesKey("update_latest_url")
         private val UPDATE_DISMISSED_VERSION = stringPreferencesKey("update_dismissed_version")
         private val SHOW_EXPLICIT_BADGES = booleanPreferencesKey("show_explicit_badges")
+        private val ROW_BADGE_SOURCE = booleanPreferencesKey("row_badge_source")
+        private val ROW_BADGE_QUALITY = booleanPreferencesKey("row_badge_quality")
+        private val ROW_BADGE_FORMAT = booleanPreferencesKey("row_badge_format")
+        private val ROW_BADGE_DOWNLOAD = booleanPreferencesKey("row_badge_download")
+        private val ROW_BADGE_DURATION = booleanPreferencesKey("row_badge_duration")
 
         // Audio extras
         private val NORMALIZATION_ENABLED = booleanPreferencesKey("normalization_enabled")
@@ -305,12 +330,16 @@ class PreferencesManager @Inject constructor(
         // used instead (Configuration.fontScale).
         private val FONT_SCALE_FOLLOW_SYSTEM = booleanPreferencesKey("font_scale_follow_system")
         private val CUSTOM_FONT_URI = stringPreferencesKey("custom_font_uri")
+        // The Fonts page's typography table. Device-local, like the font it
+        // names: an imported font is a path on this phone.
+        private val TYPOGRAPHY_JSON = stringPreferencesKey("typography_json")
 
         // Parity features
         private val VISUALIZER_SENSITIVITY = intPreferencesKey("visualizer_sensitivity")
         private val VISUALIZER_BRIGHTNESS = intPreferencesKey("visualizer_brightness")
         private val ROMAJI_LYRICS = booleanPreferencesKey("romaji_lyrics")
         private val LYRICS_WORD_PROVIDER = stringPreferencesKey("lyrics_word_provider")
+        private val SERVER_LYRICS = booleanPreferencesKey("server_lyrics")
         private val DOWNLOAD_LYRICS = booleanPreferencesKey("download_lyrics")
         private val AUTO_DOWNLOAD_LIKED = booleanPreferencesKey("auto_download_liked")
         private val NOW_PLAYING_VIEW_MODE = stringPreferencesKey("now_playing_view_mode")
@@ -379,6 +408,10 @@ class PreferencesManager @Inject constructor(
         // Per-device AutoEQ: output key -> preset id, and the named devices seen.
         private val EQ_OUTPUT_ASSIGNMENTS_JSON = stringPreferencesKey("eq_output_assignments_json")
         private val EQ_KNOWN_OUTPUTS_JSON = stringPreferencesKey("eq_known_outputs_json")
+        // How late each output plays (OutputSync), by OutputId.key. Kept on this
+        // phone, never synced: another phone's Bluetooth is another delay.
+        private val OUTPUT_SYNC_JSON = stringPreferencesKey("output_sync_ms_json")
+        private val OUTPUT_SYNC_MIGRATED = booleanPreferencesKey("output_sync_migrated")
         private val EQ_STEREO_MODE = booleanPreferencesKey("eq_stereo_mode")
         private val EQ_MEASUREMENT_R_JSON = stringPreferencesKey("eq_measurement_r_json")
         private val EQ_CUSTOM_TARGETS_JSON = stringPreferencesKey("eq_custom_targets_json")
@@ -405,12 +438,14 @@ class PreferencesManager @Inject constructor(
         // Library / Local Media
         private val EXCLUDED_PATHS_JSON = stringPreferencesKey("excluded_paths_json")
         private val FOLDER_TREE_REBUILD = intPreferencesKey("folder_tree_rebuild_version")
+        private val MUSICAL_TAGS_BACKFILL = intPreferencesKey("musical_tags_backfill_version")
         private val USER_FOLDER_ROOTS_JSON = stringPreferencesKey("user_folder_roots_json")
         // Device-local, not in SETTINGS_SYNC_KEYS: the titles are written into
         // this device's library by its scanner, so the switch has to stay next
         // to the scan that applied it.
         private val LOCAL_TITLE_FROM_FILENAME = booleanPreferencesKey("local_title_from_filename")
         private val LOCAL_TITLE_MODE_SCANNED = booleanPreferencesKey("local_title_mode_scanned")
+        private val LOCAL_NUMBERING_HEAL_SCANNED = intPreferencesKey("local_numbering_heal_scanned")
 
         // DSP Mixer
         private val DSP_ENABLED = booleanPreferencesKey("dsp_enabled")
@@ -425,7 +460,6 @@ class PreferencesManager @Inject constructor(
         // filesystem, and syncing it would tell a fresh device the move had
         // already happened there.
         private val ARTWORK_STORE_MIGRATED = booleanPreferencesKey("artwork_store_migrated")
-        private val USB_BIT_PERFECT_ENABLED = booleanPreferencesKey("usb_bit_perfect_enabled")
         private val USB_EXCLUSIVE_BIT_PERFECT_ENABLED =
             booleanPreferencesKey("usb_exclusive_bit_perfect_enabled")
         private val MULTICHANNEL_DOWNMIX_ENABLED =
@@ -500,10 +534,11 @@ class PreferencesManager @Inject constructor(
         val SETTINGS_SYNC_KEYS: Set<Preferences.Key<*>> = setOf(
             WIFI_QUALITY, CELLULAR_QUALITY,
             THEME, THEME_PAPER, DYNAMIC_COLORS,
-            DYNAMIC_COLORS_MENUS, DYNAMIC_COLORS_KEEP_BACKGROUND, COLOR_TRANSITION_MS,
+            DYNAMIC_COLORS_MENUS, DYNAMIC_COLORS_KEEP_BACKGROUND, APP_TV_SHADER, APP_TV_TUNING, APP_TV_TARGET, COLOR_TRANSITION_MS,
             CUSTOM_THEME_ENABLED, CUSTOM_ACCENT, CUSTOM_BACKGROUND,
             FONT_SCALE, FONT_SCALE_FOLLOW_SYSTEM,
             GAPLESS_PLAYBACK, GAPLESS_NO_RESAMPLE, SHOW_EXPLICIT_BADGES,
+            ROW_BADGE_SOURCE, ROW_BADGE_QUALITY, ROW_BADGE_FORMAT, ROW_BADGE_DOWNLOAD, ROW_BADGE_DURATION,
             NORMALIZATION_ENABLED, CROSSFADE_DURATION, MULTICHANNEL_DOWNMIX_ENABLED,
             PLAYBACK_SPEED, PRESERVE_PITCH, PITCH_SEMITONES, SPEED_UNIT_SEMITONES, SPEED_UNIT_BPM,
             PITCH_ENGINE, PITCH_QUALITY,
@@ -512,8 +547,9 @@ class PreferencesManager @Inject constructor(
             CUSTOM_API_ENDPOINT, QOBUZ_INSTANCE_URL, APPLE_INSTANCE_URL, APPLE_WRAPPER_URL, API_SERVERS, DEV_MODE_ENABLED,
             NOW_PLAYING_VIEW_MODE, PLAYER_DYNAMIC_COLOR, PLAYER_BLURRED_BACKGROUND,
             MINI_PLAYER_HIDE_WITH_TABS,
-            ROMAJI_LYRICS, LYRICS_WORD_PROVIDER,
+            ROMAJI_LYRICS, LYRICS_WORD_PROVIDER, SERVER_LYRICS,
             LYRICS_FX_JSON, LYRICS_FX_CUSTOM_PRESETS_JSON, GLOBE_FX_JSON, PLAYER_GLASS_JSON,
+            VISUAL_LINKS_JSON, MUSIC_LINKS_PAUSED,
             PLAYER_GLASS_CUSTOM_PRESETS_JSON, MINI_PLAYER_GLASS_JSON, WAVE_CANDY_JSON,
             SPECTRUM_WATERFALL_JSON,
             VISUALIZER_SENSITIVITY, VISUALIZER_BRIGHTNESS, VISUALIZER_AUDIO_DELAY_MS,
@@ -668,6 +704,36 @@ class PreferencesManager @Inject constructor(
 
     suspend fun setDynamicColorKeepBackground(enabled: Boolean) {
         dataStore.edit { it[DYNAMIC_COLORS_KEEP_BACKGROUND] = enabled }
+    }
+
+    /** Settings › Appearance › CRT effect: the look every screen is drawn through, off by default. */
+    val appTvShader: Flow<tf.monochrome.android.glyph.engine.GlyphTvShader> = dataStore.data.map { prefs ->
+        tf.monochrome.android.glyph.engine.GlyphTvShader.fromId(prefs[APP_TV_SHADER])
+    }
+
+    suspend fun setAppTvShader(shader: tf.monochrome.android.glyph.engine.GlyphTvShader) {
+        dataStore.edit { it[APP_TV_SHADER] = shader.id }
+    }
+
+    /**
+     * The CRT effect's sliders, each held to its range; until one is moved,
+     * the effect's own default look (CrtPresets.DEFAULT).
+     */
+    val appTvTuning: Flow<tf.monochrome.android.glyph.engine.GlyphTvTuning> = dataStore.data.map { prefs ->
+        prefs[APP_TV_TUNING]?.takeIf { it.isNotBlank() }
+            ?.let { tf.monochrome.android.glyph.engine.GlyphTvTuning.decode(it) }
+            ?: tf.monochrome.android.glyph.engine.CrtPresets.DEFAULT.tuning
+    }
+
+    suspend fun setAppTvTuning(tuning: tf.monochrome.android.glyph.engine.GlyphTvTuning) {
+        dataStore.edit { it[APP_TV_TUNING] = tuning.clamped().encode() }
+    }
+
+    /** Whether the CRT effect draws over the lyrics only rather than the whole app; the app by default. */
+    val appTvOnLyrics: Flow<Boolean> = dataStore.data.map { it[APP_TV_TARGET] == "lyrics" }
+
+    suspend fun setAppTvOnLyrics(lyrics: Boolean) {
+        dataStore.edit { it[APP_TV_TARGET] = if (lyrics) "lyrics" else "app" }
     }
 
     /**
@@ -884,6 +950,19 @@ class PreferencesManager @Inject constructor(
         }
     }
 
+    /** The connected Subsonic server, or null when there is none (or it no longer reads). */
+    val subsonicServer: Flow<tf.monochrome.android.data.subsonic.SubsonicServer?> = dataStore.data.map { prefs ->
+        prefs[SUBSONIC_SERVER]?.let {
+            runCatching { json.decodeFromString<tf.monochrome.android.data.subsonic.SubsonicServer>(it) }.getOrNull()
+        }
+    }
+
+    suspend fun setSubsonicServer(server: tf.monochrome.android.data.subsonic.SubsonicServer?) {
+        dataStore.edit {
+            if (server == null) it.remove(SUBSONIC_SERVER) else it[SUBSONIC_SERVER] = json.encodeToString(server)
+        }
+    }
+
     // Qobuz instance — used for downloads. Independent of Dev Mode: any
     // value set here is honored whenever the download path is invoked.
     val qobuzInstanceUrl: Flow<String?> = dataStore.data.map { prefs ->
@@ -951,7 +1030,16 @@ class PreferencesManager @Inject constructor(
      * setup without anyone re-entering it. The seed is not written back until
      * the list is first edited.
      */
-    val apiServers: Flow<List<tf.monochrome.android.data.api.ApiServer>> = dataStore.data.map { prefs ->
+    val apiServers: Flow<List<tf.monochrome.android.data.api.ApiServer>> = dataStore.data.map { prefs -> apiServersOf(prefs) }
+
+    /** The saved list, always with the build's chart server in it (BuiltInServer). */
+    private fun apiServersOf(prefs: Preferences): List<tf.monochrome.android.data.api.ApiServer> =
+        withBuiltIn(savedApiServers(prefs))
+
+    private fun withBuiltIn(servers: List<tf.monochrome.android.data.api.ApiServer>) =
+        tf.monochrome.android.data.api.BuiltInServer.ensureAll(servers, BuildConfig.BUILT_IN_CPU_SERVER, BuildConfig.BUILT_IN_ROOMS_SERVER) ?: servers
+
+    private fun savedApiServers(prefs: Preferences): List<tf.monochrome.android.data.api.ApiServer> =
         prefs[API_SERVERS]
             ?.let { raw ->
                 runCatching { json.decodeFromString<List<tf.monochrome.android.data.api.ApiServer>>(raw) }.getOrNull()
@@ -961,6 +1049,13 @@ class PreferencesManager @Inject constructor(
                 qobuzUrl = prefs[QOBUZ_INSTANCE_URL],
                 appleUrl = prefs[APPLE_INSTANCE_URL],
             )
+
+    /** Writes the build's servers into the saved list, once a launch (BuiltInServer). */
+    suspend fun seedBuiltInServer(builtIn: String, roomsServer: String = "") {
+        dataStore.edit { prefs ->
+            val saved = savedApiServers(prefs)
+            tf.monochrome.android.data.api.BuiltInServer.ensureAll(saved, builtIn, roomsServer)?.let { prefs[API_SERVERS] = json.encodeToString(it) }
+        }
     }
 
     /**
@@ -969,7 +1064,9 @@ class PreferencesManager @Inject constructor(
      * but a few call sites ask whether Qobuz is set up, and a downgrade should
      * find the servers where that build looks for them.
      */
-    suspend fun setApiServers(servers: List<tf.monochrome.android.data.api.ApiServer>) {
+    suspend fun setApiServers(edited: List<tf.monochrome.android.data.api.ApiServer>) {
+        // The build's chart server cannot be removed: put back if it was.
+        val servers = withBuiltIn(edited)
         val encoded = json.encodeToString(servers)
         fun urlFor(service: tf.monochrome.android.data.api.ApiService) =
             tf.monochrome.android.data.api.ApiServers.serverFor(servers, service)?.url
@@ -1104,6 +1201,27 @@ class PreferencesManager @Inject constructor(
         dataStore.edit { it[SHOW_EXPLICIT_BADGES] = enabled }
     }
 
+    /** Which badges song rows carry ([RowBadges]); all of them by default. */
+    val rowBadges: Flow<RowBadges> = dataStore.data.map { prefs ->
+        RowBadges(
+            source = prefs[ROW_BADGE_SOURCE] ?: true,
+            quality = prefs[ROW_BADGE_QUALITY] ?: true,
+            format = prefs[ROW_BADGE_FORMAT] ?: true,
+            download = prefs[ROW_BADGE_DOWNLOAD] ?: true,
+            duration = prefs[ROW_BADGE_DURATION] ?: true,
+        )
+    }.distinctUntilChanged()
+
+    suspend fun setRowBadges(badges: RowBadges) {
+        dataStore.edit {
+            it[ROW_BADGE_SOURCE] = badges.source
+            it[ROW_BADGE_QUALITY] = badges.quality
+            it[ROW_BADGE_FORMAT] = badges.format
+            it[ROW_BADGE_DOWNLOAD] = badges.download
+            it[ROW_BADGE_DURATION] = badges.duration
+        }
+    }
+
 
     // --- Audio extras ---
     val normalizationEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
@@ -1134,8 +1252,9 @@ class PreferencesManager @Inject constructor(
 
     /**
      * Drops the stored values of settings whose features are gone: Google and
-     * PocketBase sign-in, AI radio and its Gemini key, and the API instance
-     * cache. Without this they would sit in every existing install for ever,
+     * PocketBase sign-in, AI radio and its Gemini key, the API instance cache,
+     * and the switch that pinned Android's output to a USB DAC (exclusive
+     * mode is the bit-perfect path). Without this they would sit in every existing install for ever,
      * the Gemini key and the PocketBase token among them, read by nothing.
      *
      * Writes only when one is still there, so after the first launch it costs
@@ -1154,6 +1273,7 @@ class PreferencesManager @Inject constructor(
             booleanPreferencesKey("ai_radio_enabled"),
             stringPreferencesKey("instances_cache"),
             longPreferencesKey("instances_cache_timestamp"),
+            booleanPreferencesKey("usb_bit_perfect_enabled"),
         )
         val stored = dataStore.data.first()
         if (retired.none { it in stored }) return
@@ -1255,6 +1375,18 @@ class PreferencesManager @Inject constructor(
         dataStore.edit { it[FONT_SCALE] = scale.coerceIn(0.5f, 2.0f) }
     }
 
+    /** The typography table: each text style's font, weight, size and spacing. */
+    val typography: Flow<tf.monochrome.android.domain.model.TypographySettings> = dataStore.data.map { prefs ->
+        tf.monochrome.android.domain.model.TypographySettings.decode(prefs[TYPOGRAPHY_JSON])
+    }
+
+    suspend fun setTypography(settings: tf.monochrome.android.domain.model.TypographySettings) {
+        dataStore.edit { prefs ->
+            if (settings.isDefault) prefs.remove(TYPOGRAPHY_JSON)
+            else prefs[TYPOGRAPHY_JSON] = tf.monochrome.android.domain.model.TypographySettings.encode(settings)
+        }
+    }
+
     /** When true the app follows the OS font size and ignores [fontScale]. */
     val fontScaleFollowSystem: Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[FONT_SCALE_FOLLOW_SYSTEM] ?: false
@@ -1353,6 +1485,14 @@ class PreferencesManager @Inject constructor(
     val downloadLyrics: Flow<Boolean> = dataStore.data.map { it[DOWNLOAD_LYRICS] ?: false }
 
     /**
+     * Send a song with no word-timed lyrics to a lyrics server (Settings ›
+     * Connections) to be heard and timed, by itself. On by default: the
+     * build's own server times lyrics, and only songs with a file on the
+     * phone are sent.
+     */
+    val serverLyrics: Flow<Boolean> = dataStore.data.map { it[SERVER_LYRICS] ?: true }
+
+    /**
      * Download a song as it's liked. Off by default, and deliberately
      * forward-only: turning it on downloads nothing that is already liked.
      * Sweeping an existing Liked Songs list would enqueue thousands of workers
@@ -1448,6 +1588,9 @@ class PreferencesManager @Inject constructor(
     }
     suspend fun setDownloadLyrics(enabled: Boolean) {
         dataStore.edit { it[DOWNLOAD_LYRICS] = enabled }
+    }
+    suspend fun setServerLyrics(enabled: Boolean) {
+        dataStore.edit { it[SERVER_LYRICS] = enabled }
     }
     suspend fun setAutoDownloadLikedSongs(enabled: Boolean) {
         dataStore.edit { it[AUTO_DOWNLOAD_LIKED] = enabled }
@@ -1770,6 +1913,32 @@ class PreferencesManager @Inject constructor(
         }
     }
 
+    // --- Per-output sync (see OutputSync) ---
+
+    /** How late each output plays, in milliseconds, by OutputId.key. */
+    val outputSyncDelays: Flow<Map<String, Int>> = dataStore.data
+        .map { it[OUTPUT_SYNC_JSON] }
+        .distinctUntilChanged()
+        .map { raw -> raw?.let { runCatching { json.decodeFromString<Map<String, Int>>(it) }.getOrNull() } ?: emptyMap() }
+
+    /** Changes the delays in one edit, so two quick changes cannot drop one. */
+    suspend fun updateOutputSyncDelays(transform: (Map<String, Int>) -> Map<String, Int>) {
+        dataStore.edit {
+            val now = it[OUTPUT_SYNC_JSON]?.let { raw ->
+                runCatching { json.decodeFromString<Map<String, Int>>(raw) }.getOrNull()
+            } ?: emptyMap()
+            val next = transform(now)
+            if (next != now) it[OUTPUT_SYNC_JSON] = json.encodeToString(next)
+        }
+    }
+
+    /** Whether the old lyrics, visualizer and Trypt Mania delays were folded into it. */
+    val outputSyncMigrated: Flow<Boolean> = dataStore.data.map { it[OUTPUT_SYNC_MIGRATED] ?: false }
+
+    suspend fun setOutputSyncMigrated() {
+        dataStore.edit { it[OUTPUT_SYNC_MIGRATED] = true }
+    }
+
     private fun decodeAssignments(raw: String?): Map<String, String> =
         raw?.let { runCatching { json.decodeFromString<Map<String, String>>(it) }.getOrNull() } ?: emptyMap()
 
@@ -1944,22 +2113,9 @@ class PreferencesManager @Inject constructor(
     }
 
     /**
-     * When on, PlaybackService pins the player's output to the
-     * currently-attached USB Audio Class DAC (if any) via
-     * setPreferredAudioDevice, bypassing the system's mix-rate downsampler
-     * for sample rates the DAC supports natively. No-op when no USB output
-     * is attached.
-     */
-    val usbBitPerfectEnabled: Flow<Boolean> = dataStore.data.map { it[USB_BIT_PERFECT_ENABLED] ?: false }
-    suspend fun setUsbBitPerfectEnabled(enabled: Boolean) {
-        dataStore.edit { it[USB_BIT_PERFECT_ENABLED] = enabled }
-    }
-
-    /**
      * Exclusive UAC2 path — libusb-backed, bypasses Android's audio
-     * framework entirely (UAPP-style). Distinct from
-     * [usbBitPerfectEnabled] which only pins routing inside the
-     * framework. Default false; requires the user to also have
+     * framework entirely (UAPP-style): the bit-perfect path to a USB DAC.
+     * Default false; requires the user to also have
      * "Disable USB audio routing" on in Developer Options for the
      * libusb claim to succeed on most non-rooted devices.
      */
@@ -2037,6 +2193,21 @@ class PreferencesManager @Inject constructor(
     suspend fun setLocalTitleModeScanned(fromFileName: Boolean) {
         dataStore.edit { it[LOCAL_TITLE_MODE_SCANNED] = fromFileName }
     }
+
+    /**
+     * The numbering heal (MediaScanner.NUMBERING_HEAL_VERSION) the last
+     * finished full scan applied. Below the current one, the next full scan
+     * re-reads rows whose artist looks like a track or disc number; then never
+     * again, so an artist really named "311" is not re-read on every scan.
+     * Recorded only when a scan completes, so a scan cut short is redone.
+     * Device-local, like the title mode: it describes this device's library.
+     */
+    val localNumberingHealScanned: Flow<Int> =
+        dataStore.data.map { it[LOCAL_NUMBERING_HEAL_SCANNED] ?: 0 }
+
+    suspend fun setLocalNumberingHealScanned(version: Int) {
+        dataStore.edit { it[LOCAL_NUMBERING_HEAL_SCANNED] = version }
+    }
     val excludedPathsJson: Flow<String> = dataStore.data.map { it[EXCLUDED_PATHS_JSON] ?: "[]" }
 
     /** The excluded paths, decoded. The stored JSON is the source of truth. */
@@ -2066,6 +2237,54 @@ class PreferencesManager @Inject constructor(
     suspend fun setFolderTreeRebuildVersion(version: Int) {
         dataStore.edit { it[FOLDER_TREE_REBUILD] = version }
     }
+
+    /**
+     * Which build last filled in the library's tempo, key and ReplayGain tags.
+     *
+     * A scan reads them now, but it only reads a file that changed, so every
+     * track scanned before would have stayed without them. Bumping
+     * MUSICAL_TAGS_VERSION (ScanCoordinator) makes the next launch read them
+     * once, tags only.
+     */
+    val musicalTagsBackfillVersion: Flow<Int> = dataStore.data.map { it[MUSICAL_TAGS_BACKFILL] ?: 0 }
+
+    /**
+     * Where backfill [version] got to, a track id, so a run cut short resumes
+     * there. Kept per version: a later backfill starts from the beginning,
+     * not from where an earlier one stopped.
+     */
+    fun musicalTagsBackfillCursor(version: Int): Flow<Long> =
+        dataStore.data.map { it[musicalTagsCursorKey(version)] ?: 0L }
+    suspend fun setMusicalTagsBackfillCursor(version: Int, resumeAfter: Long) {
+        dataStore.edit { it[musicalTagsCursorKey(version)] = resumeAfter }
+    }
+
+    /**
+     * Tracks backfill [version] found no file for (an SD card out). The walk
+     * went on past them; they are tried again at each launch until read, or
+     * gone from the library.
+     */
+    fun musicalTagsBackfillMissing(version: Int): Flow<Set<Long>> =
+        dataStore.data.map { prefs ->
+            prefs[musicalTagsMissingKey(version)].orEmpty().mapNotNullTo(HashSet()) { it.toLongOrNull() }
+        }
+    suspend fun setMusicalTagsBackfillMissing(version: Int, ids: Set<Long>) {
+        dataStore.edit {
+            if (ids.isEmpty()) it.remove(musicalTagsMissingKey(version))
+            else it[musicalTagsMissingKey(version)] = ids.mapTo(HashSet()) { id -> id.toString() }
+        }
+    }
+
+    /** Marks backfill [version] done and drops its resume point, in one write. */
+    suspend fun finishMusicalTagsBackfill(version: Int) {
+        dataStore.edit {
+            it[MUSICAL_TAGS_BACKFILL] = version
+            it.remove(musicalTagsCursorKey(version))
+        }
+    }
+
+    private fun musicalTagsCursorKey(version: Int) = longPreferencesKey("musical_tags_backfill_cursor_v$version")
+    private fun musicalTagsMissingKey(version: Int) = stringSetPreferencesKey("musical_tags_backfill_missing_v$version")
 
     val userFolderRoots: Flow<Set<String>> = dataStore.data
         .map { it[USER_FOLDER_ROOTS_JSON] }
@@ -2262,6 +2481,42 @@ class PreferencesManager @Inject constructor(
     suspend fun setLyricsFx(settings: LyricsFxSettings) {
         val clamped = settings.clamped()
         dataStore.edit { it[LYRICS_FX_JSON] = json.encodeToString(clamped) }
+    }
+
+    /**
+     * The visual settings that follow the music. Cleaned on the way in and out
+     * ([tf.monochrome.android.domain.model.VisualLinkCodec]): a link to a
+     * setting this version does not know is dropped, and every range is clamped
+     * into its setting's own.
+     */
+    val visualLinks: Flow<List<tf.monochrome.android.domain.model.VisualLink>> = dataStore.data
+        .map { it[VISUAL_LINKS_JSON] }
+        .distinctUntilChanged()
+        .map { tf.monochrome.android.domain.model.VisualLinkCodec.decode(it) }
+
+    suspend fun setVisualLinks(links: List<tf.monochrome.android.domain.model.VisualLink>) {
+        val clean = tf.monochrome.android.domain.model.VisualLinkCodec.sanitize(links)
+        dataStore.edit { it[VISUAL_LINKS_JSON] = tf.monochrome.android.domain.model.VisualLinkCodec.encode(clean) }
+    }
+
+    /** Every music link paused at once (Music links › the top switch). */
+    val musicLinksPaused: Flow<Boolean> = dataStore.data
+        .map { it[MUSIC_LINKS_PAUSED] ?: false }
+        .distinctUntilChanged()
+
+    suspend fun setMusicLinksPaused(paused: Boolean) {
+        dataStore.edit { it[MUSIC_LINKS_PAUSED] = paused }
+    }
+
+    /** The look before the last theme pack, as a pack, or null when there is nothing to undo. */
+    val themePackUndo: Flow<String?> = dataStore.data
+        .map { it[THEME_PACK_UNDO_JSON] }
+        .distinctUntilChanged()
+
+    suspend fun setThemePackUndo(json: String?) {
+        dataStore.edit {
+            if (json != null) it[THEME_PACK_UNDO_JSON] = json else it.remove(THEME_PACK_UNDO_JSON)
+        }
     }
 
     /**
@@ -2463,7 +2718,9 @@ class PreferencesManager @Inject constructor(
     }
 
     // --- Player appearance ---
-    val playerDynamicColor: Flow<Boolean> = dataStore.data.map { it[PLAYER_DYNAMIC_COLOR] ?: true }
+    // No longer a setting of its own: Appearance › Dynamic Colors decides. A
+    // stored "off" from the old switch is ignored, or it could not be undone.
+    val playerDynamicColor: Flow<Boolean> = dataStore.data.map { true }
     suspend fun setPlayerDynamicColor(enabled: Boolean) {
         dataStore.edit { it[PLAYER_DYNAMIC_COLOR] = enabled }
     }
@@ -2472,7 +2729,9 @@ class PreferencesManager @Inject constructor(
     // (Apple-Music / Spotify style). ON by default — this also feeds the glass
     // shader's uBackdropMix, so the default liquid glass lenses real album
     // tones instead of the flat wash.
-    val playerBlurredBackground: Flow<Boolean> = dataStore.data.map { it[PLAYER_BLURRED_BACKGROUND] ?: true }
+    // No longer a setting: the switch was removed from Settings, so a stored
+    // "off" is ignored rather than left with no way back.
+    val playerBlurredBackground: Flow<Boolean> = dataStore.data.map { true }
     /**
      * Whether the tab bar and the mini player take turns instead of stacking:
      * scrolled up shows the tabs alone, scrolled down the folded bar with the

@@ -1,5 +1,7 @@
 package tf.monochrome.android.ui.player
 
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -153,8 +155,10 @@ fun PlayerActionDock(
         // slab with holes casts a shadow with holes — which is both physically
         // right and keeps light coming through the glyphs.
         if (g.shadowDepth > 0.01f) {
-            val shadowColor = androidx.compose.ui.graphics.lerp(Color.Black, glassTint, g.shadowTint)
-                .copy(alpha = 0.28f + 0.55f * g.shadowDepth)
+            // Read in the layer and draw blocks, from the glass as the music
+            // links have it this frame.
+            val links = LocalVisualLinks.current
+            val area = LocalGlassArea.current
             // Modifier order matters: the blur must be OUTSIDE the Offscreen
             // layer. Offscreen always clips to bounds, so blurring inside it
             // (graphicsLayer→blur) cut the soft spill back to a hard-edged
@@ -164,18 +168,20 @@ fun PlayerActionDock(
             Canvas(
                 modifier = Modifier
                     .matchParentSize()
-                    .blur(
-                        radius = (5f + g.shadowSoftness * 22f).dp,
-                        edgeTreatment = BlurredEdgeTreatment.Unbounded,
-                    )
                     .graphicsLayer {
-                        translationY = (2f + g.shadowDepth * 6f).dp.toPx()
+                        // As Modifier.blur with an unbounded edge: a decal blur, unclipped.
+                        val r = (5f + links.glass(g, area).shadowSoftness * 22f).dp.toPx()
+                        renderEffect = BlurEffect(r, r, TileMode.Decal)
+                        clip = false
+                    }
+                    .graphicsLayer {
+                        translationY = (2f + links.glass(g, area).shadowDepth * 6f).dp.toPx()
                         compositingStrategy = CompositingStrategy.Offscreen
                     },
             ) {
                 val cornerPx = PlayerDesignTokens.GlassCornerLarge.toPx()
                 drawRoundRect(
-                    color = shadowColor,
+                    color = shadowColour(links.glass(g, area), glassTint),
                     cornerRadius = CornerRadius(cornerPx, cornerPx),
                 )
                 punchDockIcons(icons)

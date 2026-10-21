@@ -53,6 +53,8 @@ fun UnifiedTrackContextMenuHost(
     playerViewModel: PlayerViewModel,
     onRemove: (() -> Unit)? = null,
     removeLabel: String = stringResource(R.string.action_remove_from_playlist),
+    /** Starts multi-select on the song, where the list has it. */
+    onSelect: (() -> Unit)? = null,
 ) {
     val favoriteTrackIds by playerViewModel.favoriteTrackIds.collectAsStateWithLifecycle()
     val playlists by playerViewModel.playlists.collectAsStateWithLifecycle()
@@ -66,6 +68,7 @@ fun UnifiedTrackContextMenuHost(
     if (track != null && addToPlaylistFor == null && createPlaylistFor == null) {
         val legacy = remember(track) { track.toLegacyTrack() }
         val isLocal = playerViewModel.isLocalUnified(track)
+        val onOwnServer = track.sourceType == tf.monochrome.android.domain.model.SourceType.SUBSONIC
         TrackContextMenu(
             track = legacy,
             isLiked = favoriteTrackIds.contains(legacy.id),
@@ -76,15 +79,22 @@ fun UnifiedTrackContextMenuHost(
             onAddToPlaylist = { addToPlaylistFor = track },
             onRemoveFromPlaylist = onRemove,
             removeLabel = removeLabel,
-            // Already on disk — nothing to fetch.
-            onDownloadTrack = if (isLocal) null else ({ playerViewModel.downloadTrack(legacy) }),
-            onShareFile = { playerViewModel.shareUnifiedTrack(track) },
+            // Already on disk — nothing to fetch. A song on the listener's own
+            // server has no catalogue download: the downloader would look its
+            // hashed id up on TIDAL.
+            onDownloadTrack = if (isLocal || onOwnServer) null else ({ playerViewModel.downloadTrack(legacy) }),
+            // Sharing a file fetches it from Qobuz by id, which for a server
+            // song is a hash: it would share somebody else's song.
+            onShareFile = if (onOwnServer) null else ({ playerViewModel.shareUnifiedTrack(track) }),
             onGoToAlbum = if (isNavigableAlbumId(track.albumId)) {
                 { navController.openAlbum(track.albumId) }
             } else null,
             onGoToArtist = track.artistId?.let { artistId ->
                 { navController.openArtist(track.sourceType, artistId) }
             },
+            // A library file's own path: Track info reads its tags from it.
+            filePath = (track.source as? tf.monochrome.android.domain.model.PlaybackSource.LocalFile)?.filePath,
+            onSelect = onSelect,
         )
     }
 

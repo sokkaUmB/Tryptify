@@ -139,7 +139,7 @@ class PlaylistFixer @Inject constructor(
             ApiService.TIDAL -> instanceManager.tidalInstanceOrNull() != null
             ApiService.QOBUZ -> instanceManager.qobuzInstanceOrNull() != null
             ApiService.DEEZER -> instanceManager.deezerInstanceOrNull() != null
-            ApiService.APPLE -> false
+            ApiService.APPLE, ApiService.STEMS, ApiService.LYRICS, ApiService.MULTIPLAYER -> false
         }
     }
 
@@ -359,7 +359,7 @@ class PlaylistFixer @Inject constructor(
         ApiService.TIDAL -> musicRepository.searchTracks(query).getOrNull()
         ApiService.QOBUZ -> musicRepository.searchQobuz(query).getOrNull()?.tracks
         ApiService.DEEZER -> musicRepository.searchDeezer(query).getOrNull()?.tracks
-        ApiService.APPLE -> null
+        ApiService.APPLE, ApiService.STEMS, ApiService.LYRICS, ApiService.MULTIPLAYER -> null
     }
 
     /**
@@ -388,7 +388,7 @@ class PlaylistFixer @Inject constructor(
             ApiService.TIDAL -> !qobuz && !deezer && !apple
             ApiService.QOBUZ -> qobuz && !deezer && !apple
             ApiService.DEEZER -> deezer && !qobuz && !apple
-            ApiService.APPLE -> false
+            ApiService.APPLE, ApiService.STEMS, ApiService.LYRICS, ApiService.MULTIPLAYER -> false
         }
     }
 

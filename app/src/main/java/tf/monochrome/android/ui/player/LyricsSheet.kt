@@ -89,7 +89,7 @@ fun LyricsSheet(
                     ) {
                         Text(
                             text = stringResource(R.string.lyrics_none_short),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
@@ -121,7 +121,7 @@ private fun SyncedLyrics(
     // than the reported position over Bluetooth, so rewind the clock we match
     // lyrics against to keep them in step with what's heard. Wall-time latency,
     // so scaled into song time by the playback speed.
-    val syncDelayMs = LyricClock.delayInSongMs(LocalLyricsFx.current.bluetoothDelayMs, LocalPlaybackSpeed.current)
+    val syncDelayMs = LyricClock.delayInSongMs(LocalOutputSyncMs.current, LocalPlaybackSpeed.current)
     val lyricFont = rememberLyricFontFamily(LocalLyricsFx.current)
     val fontSizeSp = LocalLyricsFx.current.fontSizeSp
     val listState = rememberLazyListState()
@@ -272,7 +272,7 @@ private fun KaraokeLine(
 private fun UnsyncedLyrics(lines: List<LyricLine>) {
     val lyricFont = rememberLyricFontFamily(LocalLyricsFx.current)
     val fontSizeSp = LocalLyricsFx.current.fontSizeSp
-    val style = MaterialTheme.typography.bodyLarge.withLyricFont(lyricFont)
+    val style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal).withLyricFont(lyricFont)
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val rowWidth = maxWidth
         LazyColumn(

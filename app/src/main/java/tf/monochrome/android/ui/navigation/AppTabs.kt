@@ -19,10 +19,17 @@ internal enum class AppTab(@StringRes val label: Int, @DrawableRes val glyph: In
     RADIO(R.string.tab_radio, R.drawable.ic_glass_tab_radio, RADIO_PAGE_ID),
     PLAYLISTS(R.string.page_playlists, R.drawable.ic_glass_tab_playlists, "playlists"),
     LOCAL(R.string.page_local, R.drawable.ic_glass_tab_local, "local"),
+    SUBSONIC(R.string.page_subsonic, R.drawable.ic_glass_tab_server, SUBSONIC_PAGE_ID),
     FAVORITES(R.string.page_favorites, R.drawable.ic_glass_tab_favorites, "favorites"),
     DOWNLOADS(R.string.page_downloads, R.drawable.ic_glass_tab_downloads, "downloads"),
     LIBRARY(R.string.tab_library, R.drawable.ic_glass_tab_library, null),
     SEARCH(R.string.tab_search, R.drawable.ic_glass_tab_search, null),
+
+    /**
+     * Not a page: the round button back to the listening party, over Search,
+     * while one is on. Its tap opens the party screen, never the pager.
+     */
+    PARTY(R.string.listening_party, R.drawable.ic_glass_tab_party, null),
 }
 
 /** The pages that can take one of the nav bar's two middle buttons. */

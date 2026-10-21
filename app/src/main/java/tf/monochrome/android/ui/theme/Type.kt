@@ -5,9 +5,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.text.style.TextGeometricTransform
 import androidx.compose.ui.unit.sp
 import tf.monochrome.android.R
+import tf.monochrome.android.domain.model.TypeRole
+import tf.monochrome.android.domain.model.TypographySettings
 
 val InterFontFamily = FontFamily(
     Font(R.font.inter_light, FontWeight.Light),
@@ -18,110 +20,53 @@ val InterFontFamily = FontFamily(
 )
 
 /**
- * Build a full Material 3 Typography with the given [fontFamily] and [scale] factor.
- * Scale of 1.0 produces the default sizes. E.g. scale 1.2 makes everything 20% larger.
+ * The full Material 3 Typography: the app's scale ([TypeDefaults]) under the
+ * listener's typography table ([settings], Settings › Fonts), in [fontFamily]
+ * unless a style names another font. [scale] is the text-size setting and
+ * scales every size, the table's included.
+ *
+ * [fontFor] hands back a style's font at its letter width (its font id, null
+ * for the main font): a font with a width axis drawn that wide, and what is
+ * left to squeeze. Without one, the main font is squeezed to the width.
  */
-fun buildTypography(fontFamily: FontFamily, scale: Float): Typography {
-    fun Float.scaled(): TextUnit = (this * scale).sp
-
-    return Typography(
-        displayLarge = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 32f.scaled(),
-            lineHeight = 40f.scaled(),
-            letterSpacing = (-0.5).sp
-        ),
-        displayMedium = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 28f.scaled(),
-            lineHeight = 36f.scaled(),
-            letterSpacing = 0.sp
-        ),
-        headlineLarge = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 24f.scaled(),
-            lineHeight = 32f.scaled(),
-            letterSpacing = 0.sp
-        ),
-        headlineMedium = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 22f.scaled(),
-            lineHeight = 28f.scaled(),
-            letterSpacing = 0.sp
-        ),
-        headlineSmall = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 18f.scaled(),
-            lineHeight = 24f.scaled(),
-            letterSpacing = 0.sp
-        ),
-        titleLarge = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 18f.scaled(),
-            lineHeight = 24f.scaled(),
-            letterSpacing = 0.sp
-        ),
-        titleMedium = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 16f.scaled(),
-            lineHeight = 22f.scaled(),
-            letterSpacing = 0.15.sp
-        ),
-        titleSmall = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14f.scaled(),
-            lineHeight = 20f.scaled(),
-            letterSpacing = 0.1.sp
-        ),
-        bodyLarge = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
-            fontSize = 16f.scaled(),
-            lineHeight = 24f.scaled(),
-            letterSpacing = 0.5.sp
-        ),
-        bodyMedium = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
-            fontSize = 14f.scaled(),
-            lineHeight = 20f.scaled(),
-            letterSpacing = 0.25.sp
-        ),
-        bodySmall = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Normal,
-            fontSize = 12f.scaled(),
-            lineHeight = 16f.scaled(),
-            letterSpacing = 0.4.sp
-        ),
-        labelLarge = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14f.scaled(),
-            lineHeight = 20f.scaled(),
-            letterSpacing = 0.1.sp
-        ),
-        labelMedium = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 12f.scaled(),
-            lineHeight = 16f.scaled(),
-            letterSpacing = 0.5.sp
-        ),
-        labelSmall = TextStyle(
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 10f.scaled(),
-            lineHeight = 14f.scaled(),
-            letterSpacing = 0.5.sp
+fun buildTypography(
+    fontFamily: FontFamily,
+    scale: Float,
+    settings: TypographySettings = TypographySettings.DEFAULT,
+    fontFor: (fontId: String?, widthPercent: Int) -> WidthFont? = { _, _ -> null },
+): Typography {
+    fun style(role: TypeRole): TextStyle {
+        val spec = settings.resolved(role)
+        val font = fontFor(settings[role].fontId, spec.widthPercent)
+            ?: WidthFont(fontFamily, spec.widthPercent / 100f)
+        return TextStyle(
+            fontFamily = font.family,
+            fontWeight = FontWeight(spec.weight),
+            fontSize = (spec.sizeSp * scale).sp,
+            lineHeight = (spec.lineHeightSp * scale).sp,
+            letterSpacing = spec.letterSpacingSp.sp,
+            textGeometricTransform = if (kotlin.math.abs(font.scaleX - 1f) > 0.001f) {
+                TextGeometricTransform(scaleX = font.scaleX)
+            } else {
+                null
+            },
         )
+    }
+    return Typography(
+        displayLarge = style(TypeRole.DISPLAY_LARGE),
+        displayMedium = style(TypeRole.DISPLAY_MEDIUM),
+        displaySmall = style(TypeRole.DISPLAY_SMALL),
+        headlineLarge = style(TypeRole.HEADLINE_LARGE),
+        headlineMedium = style(TypeRole.HEADLINE_MEDIUM),
+        headlineSmall = style(TypeRole.HEADLINE_SMALL),
+        titleLarge = style(TypeRole.TITLE_LARGE),
+        titleMedium = style(TypeRole.TITLE_MEDIUM),
+        titleSmall = style(TypeRole.TITLE_SMALL),
+        bodyLarge = style(TypeRole.BODY_LARGE),
+        bodyMedium = style(TypeRole.BODY_MEDIUM),
+        bodySmall = style(TypeRole.BODY_SMALL),
+        labelLarge = style(TypeRole.LABEL_LARGE),
+        labelMedium = style(TypeRole.LABEL_MEDIUM),
+        labelSmall = style(TypeRole.LABEL_SMALL),
     )
 }

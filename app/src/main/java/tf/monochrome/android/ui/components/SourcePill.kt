@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Radio
@@ -60,6 +61,8 @@ fun SourceType.brand(): SourceBrand = when (this) {
     SourceType.LOCAL -> SourceBrand("Local", labelRes = R.string.source_local, light = null, dark = null, icon = Icons.Default.PhoneAndroid)
     SourceType.COLLECTION -> SourceBrand("Collection", labelRes = R.string.source_collection, light = null, dark = null, icon = Icons.Default.LibraryMusic)
     SourceType.LIVE_RADIO -> SourceBrand("Live", labelRes = R.string.source_live, light = null, dark = null, icon = Icons.Default.Radio)
+    // Navidrome, Gonic, Airsonic… all the same to the listener: their own server.
+    SourceType.SUBSONIC -> SourceBrand("My server", labelRes = R.string.source_subsonic, light = null, dark = null, icon = Icons.Default.Dns)
 }
 
 /** The brand colour for the current theme, or the theme's own when the brand has none. */
