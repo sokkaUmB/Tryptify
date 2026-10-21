@@ -3,17 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Designs · Tryptify</title>
+  <title>Designs and fonts · Tryptify</title>
   <meta name="description" content="Every design for the Tryptify website, side by side.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
   <script>
     (function () {
       var root = document.documentElement, top = window.top === window;
-      // The design: ?design=… (a preview), else the one last picked.
-      var d = new URLSearchParams(location.search).get("design");
-      try { if (d && top) localStorage.setItem("tryptify-design", d); if (!d) d = localStorage.getItem("tryptify-design"); } catch (e) {}
-      if (/^(mono|neon|ember|mint|acid|paper)$/.test(d || "")) root.dataset.design = d;
+      // The design and font: ?design=… / ?font=… (a preview), else the ones last picked.
+      var q = new URLSearchParams(location.search), d = q.get("design"), f = q.get("font");
+      try {
+        if (d && top) localStorage.setItem("tryptify-design", d);
+        if (f && top) localStorage.setItem("tryptify-font", f);
+        if (!d) d = localStorage.getItem("tryptify-design");
+        if (!f) f = localStorage.getItem("tryptify-font");
+      } catch (e) {}
+      if (/^(dark|warm|white)$/.test(d || "")) root.dataset.design = d;
+      if (/^(space-grotesk|sora|outfit|manrope|bricolage|instrument|chivo|plex|fraunces|jetbrains)$/.test(f || "")) root.dataset.font = f;
       // Motion only when it is welcome; if site.js has not started in 3 s, show everything as is.
       if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
         root.classList.add("motion");
@@ -24,12 +30,12 @@
 </head>
 <body>
   <header class="top">
-    <div class="wrap">
+    <div class="wrap glass">
       <a class="brand" href="/">Trypt<span>ify</span></a>
-      <nav class="nav">
+      <nav class="nav" aria-label="Main">
         <a href="/">App</a>
-        <a href="/autoeq">AutoEQ ranking</a>
-        <a href="/cloud">Tryptify Cloud</a>
+        <a href="/autoeq">AutoEQ</a>
+        <a href="/cloud">Cloud</a>
         <a href="/cloud#pricing">Pricing</a>
         <a href="/contact">Contact</a>
       </nav>
@@ -39,76 +45,127 @@
   <main class="wrap">
     <section class="hero" style="padding-bottom:16px">
       <p class="eyebrow">Pick one</p>
-      <h1>Six designs, live.</h1>
-      <p class="lead">Each preview is the real site in that design. Tap "Use this design" to browse the whole site in it, or switch any time with the dots at the bottom.</p>
+      <h1>Three designs, eleven fonts.</h1>
+      <p class="lead">Each design preview is the real site, live. Fonts switch the whole site at once. You can also change both any time from the bar at the bottom.</p>
     </section>
     <section style="padding-top:0">
+      <h2>Designs</h2>
       <div class="gallery">
         <article>
-          <div class="preview"><iframe src="/?design=mono" title="Mono design preview" loading="lazy" tabindex="-1"></iframe></div>
+          <div class="preview"><iframe src="/?design=dark" title="Dark design preview" loading="lazy" tabindex="-1"></iframe></div>
           <div class="info">
-            <h3>Mono</h3>
+            <h3>Dark</h3>
             <p>Black and white, after the app's first name, Monochrome. Calm and premium.</p>
             <div class="buttons">
-              <button type="button" class="btn primary" data-use-design="mono">Use this design</button>
-              <a class="btn" href="/?design=mono">Open</a>
+              <button type="button" class="btn primary" data-use-design="dark">Use this design</button>
+              <a class="btn" href="/?design=dark">Open</a>
             </div>
           </div>
         </article>
         <article>
-          <div class="preview"><iframe src="/?design=neon" title="Neon design preview" loading="lazy" tabindex="-1"></iframe></div>
+          <div class="preview"><iframe src="/?design=warm" title="Warm design preview" loading="lazy" tabindex="-1"></iframe></div>
           <div class="info">
-            <h3>Neon</h3>
-            <p>Hot pink and cyan, like SeapEngine. Loud, club-night energy.</p>
+            <h3>Warm</h3>
+            <p>Orange and amber on deep brown, like the app's mixer. A warm studio at night.</p>
             <div class="buttons">
-              <button type="button" class="btn primary" data-use-design="neon">Use this design</button>
-              <a class="btn" href="/?design=neon">Open</a>
+              <button type="button" class="btn primary" data-use-design="warm">Use this design</button>
+              <a class="btn" href="/?design=warm">Open</a>
             </div>
           </div>
         </article>
         <article>
-          <div class="preview"><iframe src="/?design=ember" title="Ember design preview" loading="lazy" tabindex="-1"></iframe></div>
+          <div class="preview"><iframe src="/?design=white" title="White design preview" loading="lazy" tabindex="-1"></iframe></div>
           <div class="info">
-            <h3>Ember</h3>
-            <p>Orange and amber, like the app's mixer. Warm, analog studio.</p>
+            <h3>White</h3>
+            <p>Clean white, black ink. Bright and simple.</p>
             <div class="buttons">
-              <button type="button" class="btn primary" data-use-design="ember">Use this design</button>
-              <a class="btn" href="/?design=ember">Open</a>
+              <button type="button" class="btn primary" data-use-design="white">Use this design</button>
+              <a class="btn" href="/?design=white">Open</a>
             </div>
           </div>
         </article>
-        <article>
-          <div class="preview"><iframe src="/?design=mint" title="Mint design preview" loading="lazy" tabindex="-1"></iframe></div>
-          <div class="info">
-            <h3>Mint</h3>
-            <p>Teal on deep blue-green. Fresh and clean.</p>
-            <div class="buttons">
-              <button type="button" class="btn primary" data-use-design="mint">Use this design</button>
-              <a class="btn" href="/?design=mint">Open</a>
-            </div>
-          </div>
+      </div>
+    </section>
+    <section>
+      <h2>Fonts</h2>
+      <p class="muted">Each sample is written in its own font. "Use" switches the whole site, so you can scroll around and see it everywhere.</p>
+      <div class="fonts">
+        <article style="font-family: 'Orbitron', system-ui, sans-serif">
+          <p class="name">Orbitron</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">Wide and futuristic: the font the site uses now.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="orbitron">Use Orbitron</button>
         </article>
-        <article>
-          <div class="preview"><iframe src="/?design=acid" title="Acid design preview" loading="lazy" tabindex="-1"></iframe></div>
-          <div class="info">
-            <h3>Acid</h3>
-            <p>Lime on black. The most sci-fi, made for Orbitron.</p>
-            <div class="buttons">
-              <button type="button" class="btn primary" data-use-design="acid">Use this design</button>
-              <a class="btn" href="/?design=acid">Open</a>
-            </div>
-          </div>
+        <article style="font-family: 'Space Grotesk', system-ui, sans-serif">
+          <p class="name">Space Grotesk</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">Techy, with quirky letters. Common in audio gear and dev tools.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="space-grotesk">Use Space Grotesk</button>
         </article>
-        <article>
-          <div class="preview"><iframe src="/?design=paper" title="Paper design preview" loading="lazy" tabindex="-1"></iframe></div>
-          <div class="info">
-            <h3>Paper</h3>
-            <p>The light design: cream paper, black ink, a red-orange accent.</p>
-            <div class="buttons">
-              <button type="button" class="btn primary" data-use-design="paper">Use this design</button>
-              <a class="btn" href="/?design=paper">Open</a>
-            </div>
-          </div>
+        <article style="font-family: 'Sora', system-ui, sans-serif">
+          <p class="name">Sora</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">Geometric and friendly, wide and open.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="sora">Use Sora</button>
+        </article>
+        <article style="font-family: 'Outfit', system-ui, sans-serif">
+          <p class="name">Outfit</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">Round and modern, very clean, Thin to Black.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="outfit">Use Outfit</button>
+        </article>
+        <article style="font-family: 'Manrope', system-ui, sans-serif">
+          <p class="name">Manrope</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">Neutral and sharp, easy to read at any size.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="manrope">Use Manrope</button>
+        </article>
+        <article style="font-family: 'Bricolage Grotesque', system-ui, sans-serif">
+          <p class="name">Bricolage Grotesque</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">Characterful and editorial, with big personality in headlines.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="bricolage">Use Bricolage Grotesque</button>
+        </article>
+        <article style="font-family: 'Instrument Sans', system-ui, sans-serif">
+          <p class="name">Instrument Sans</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">Crisp and precise, like a well-made spec sheet.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="instrument">Use Instrument Sans</button>
+        </article>
+        <article style="font-family: 'Chivo', system-ui, sans-serif">
+          <p class="name">Chivo</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">Strong grotesque, punchy in bold.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="chivo">Use Chivo</button>
+        </article>
+        <article style="font-family: 'IBM Plex Sans', system-ui, sans-serif">
+          <p class="name">IBM Plex Sans</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">Engineered and serious, from IBM.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="plex">Use IBM Plex Sans</button>
+        </article>
+        <article style="font-family: 'Fraunces', system-ui, sans-serif">
+          <p class="name">Fraunces</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">A soft, warm serif: magazine and vinyl-sleeve feel.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="fraunces">Use Fraunces</button>
+        </article>
+        <article style="font-family: 'JetBrains Mono', system-ui, sans-serif">
+          <p class="name">JetBrains Mono</p>
+          <p class="sample-title">Hi-fi you can hear and watch.</p>
+          <p class="sample-body">Monospaced, like a terminal or a mixing console readout.</p>
+          <p class="sample-weights"><span style="font-weight:200">Thin</span><span style="font-weight:400">Regular</span><span style="font-weight:600">Semibold</span><span style="font-weight:900">Black</span> $3.99</p>
+          <button type="button" class="btn" data-use-font="jetbrains">Use JetBrains Mono</button>
         </article>
       </div>
     </section>

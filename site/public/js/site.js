@@ -48,23 +48,109 @@
     addEventListener("resize", settle);
   }
 
-  // ── Design picker (while the owner chooses a design) ────────────────
-  const DESIGNS = {
-    mono: ["#0a0a0a", "#f2f2f2"], neon: ["#07070d", "#ff2e88"], ember: ["#0d0a08", "#ff6a1a"],
-    mint: ["#061113", "#19e3b1"], acid: ["#080808", "#c6ff3d"], paper: ["#f5f3ee", "#e4572e"],
+  // ── Liquid glass navigation ─────────────────────────────────────────
+  // The lens: an SVG filter that bends the page along the glass's rim, used
+  // through backdrop-filter where Chromium allows url() there (styles.css,
+  // .lens). Two ramps, one per axis, push the edges inward; the middle stays
+  // still, like clear glass.
+  const svgNS = "http://www.w3.org/2000/svg";
+  const ramp = (axis) => {
+    const [x2, y2] = axis === "x" ? ["100%", "0%"] : ["0%", "100%"];
+    const edge = axis === "x" ? 4 : 30;
+    const ch = (v) => (axis === "x" ? `rgb(${v},128,128)` : `rgb(128,${v},128)`);
+    return "data:image/svg+xml;utf8," + encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" preserveAspectRatio="none">` +
+      `<linearGradient id="g" x1="0" y1="0" x2="${x2}" y2="${y2}">` +
+      `<stop offset="0%" stop-color="${ch(255)}"/><stop offset="${edge}%" stop-color="${ch(128)}"/>` +
+      `<stop offset="${100 - edge}%" stop-color="${ch(128)}"/><stop offset="100%" stop-color="${ch(0)}"/>` +
+      `</linearGradient><rect width="100" height="100" fill="url(#g)"/></svg>`);
+  };
+  const lens = document.createElementNS(svgNS, "svg");
+  lens.setAttribute("aria-hidden", "true");
+  lens.setAttribute("width", "0");
+  lens.setAttribute("height", "0");
+  lens.style.position = "absolute";
+  lens.innerHTML =
+    `<filter id="tryptify-lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">` +
+    `<feImage href="${ramp("x")}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="mx"/>` +
+    `<feImage href="${ramp("y")}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="my"/>` +
+    `<feComposite in="mx" in2="my" operator="arithmetic" k2="1" k3="1" k4="-0.5" result="map"/>` +
+    `<feDisplacementMap in="SourceGraphic" in2="map" scale="26" xChannelSelector="R" yChannelSelector="G"/>` +
+    `</filter>`;
+  document.body.append(lens);
+  const brands = (navigator.userAgentData && navigator.userAgentData.brands) || [];
+  if (brands.some((b) => /Chromium/.test(b.brand))) root.classList.add("lens");
+
+  // The glint follows the pointer along each piece of glass.
+  const glint = (el) => el.addEventListener("pointermove", (e) => {
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--gx", `${((e.clientX - r.left) / r.width) * 100}%`);
+  });
+
+  const nav = $(".nav");
+  const headerGlass = $(".top .glass");
+  if (headerGlass) glint(headerGlass);
+  if (nav) {
+    glint(nav);
+    const bubble = document.createElement("span");
+    bubble.className = "nav-bubble";
+    bubble.setAttribute("aria-hidden", "true");
+    nav.prepend(bubble);
+    const links = $$("a", nav);
+    const here = links.find((a) => a.getAttribute("aria-current") === "page");
+    const springy = { type: "spring", stiffness: 380, damping: 30 };
+    const moveTo = (a, instant) => {
+      if (!a) { if (M) M.animate(bubble, { opacity: 0 }, { duration: 0.2 }); else bubble.style.opacity = "0"; return; }
+      const box = { x: a.offsetLeft, y: a.offsetTop, width: a.offsetWidth, height: a.offsetHeight, opacity: 1 };
+      if (M) M.animate(bubble, box, moving && !instant ? springy : { duration: 0 });
+      else Object.assign(bubble.style, { transform: `translate(${box.x}px, ${box.y}px)`, width: box.width + "px", height: box.height + "px", opacity: "1" });
+    };
+    links.forEach((a) => {
+      a.addEventListener("pointerenter", () => moveTo(a));
+      a.addEventListener("focus", () => moveTo(a));
+    });
+    nav.addEventListener("pointerleave", () => moveTo(here));
+    // On phones the menu is its own floating tab bar at the bottom, so it
+    // leaves the header: a fixed bar inside glass would be pinned to the glass.
+    const phone = matchMedia("(max-width: 560px)");
+    const place = () => {
+      if (phone.matches && nav.parentElement !== document.body) { document.body.append(nav); nav.classList.add("glass"); }
+      if (!phone.matches && headerGlass && nav.parentElement !== headerGlass) { headerGlass.append(nav); nav.classList.remove("glass"); }
+      moveTo(here, true);
+    };
+    place();
+    phone.addEventListener("change", place);
+    addEventListener("resize", () => moveTo(here, true));
+    document.fonts && document.fonts.ready.then(() => moveTo(here, true));
+    if (moving && phone.matches) M.animate(nav, { y: [80, 0], opacity: [0, 1] }, { type: "spring", stiffness: 220, damping: 22, delay: 0.3 });
+  }
+
+  // ── Design and font pickers (while the owner chooses) ───────────────
+  const DESIGNS = { dark: ["#0a0a0a", "#f2f2f2"], warm: ["#0d0a08", "#ff6a1a"], white: ["#ffffff", "#111111"] };
+  const FONTS = {
+    orbitron: "Orbitron", "space-grotesk": "Space Grotesk", sora: "Sora", outfit: "Outfit", manrope: "Manrope",
+    bricolage: "Bricolage Grotesque", instrument: "Instrument Sans", chivo: "Chivo", plex: "IBM Plex Sans",
+    fraunces: "Fraunces", jetbrains: "JetBrains Mono",
   };
   const embedded = window.top !== window;
-  const current = () => root.dataset.design || "mono";
+  const remember = (key, value) => { try { localStorage.setItem(key, value); } catch (e) {} };
   const setDesign = (name) => {
     root.dataset.design = name;
-    try { localStorage.setItem("tryptify-design", name); } catch (e) {}
+    remember("tryptify-design", name);
     $$(".designs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.design === name)));
+  };
+  const setFont = (key) => {
+    if (key === "orbitron") delete root.dataset.font; else root.dataset.font = key;
+    remember("tryptify-font", key);
+    $$(".designs select").forEach((sel) => { sel.value = key; });
+    // Text reflows in a new font: the pricing pill and the previews refit.
+    dispatchEvent(new Event("resize"));
   };
   if (!embedded) {
     const picker = document.createElement("div");
     picker.className = "designs";
     picker.setAttribute("role", "group");
-    picker.setAttribute("aria-label", "Site design");
+    picker.setAttribute("aria-label", "Site design and font");
     picker.innerHTML = '<a href="/designs">Design</a>';
     Object.entries(DESIGNS).forEach(([name, [bg, accent]]) => {
       const b = document.createElement("button");
@@ -72,7 +158,7 @@
       b.dataset.design = name;
       b.title = name[0].toUpperCase() + name.slice(1);
       b.setAttribute("aria-label", b.title);
-      b.setAttribute("aria-pressed", String(name === current()));
+      b.setAttribute("aria-pressed", String(name === (root.dataset.design || "dark")));
       b.style.setProperty("--sw-bg", bg);
       b.style.setProperty("--sw-accent", accent);
       b.addEventListener("click", () => {
@@ -81,6 +167,17 @@
       });
       picker.append(b);
     });
+    const select = document.createElement("select");
+    select.setAttribute("aria-label", "Font");
+    Object.entries(FONTS).forEach(([key, name]) => {
+      const o = document.createElement("option");
+      o.value = key;
+      o.textContent = name;
+      select.append(o);
+    });
+    select.value = root.dataset.font || "orbitron";
+    select.addEventListener("change", () => setFont(select.value));
+    picker.append(select);
     document.body.append(picker);
     if (moving) M.animate(picker, { opacity: [0, 1], y: [30, 0] }, { delay: 1, type: "spring", stiffness: 200, damping: 20 });
   }
@@ -94,6 +191,10 @@
   $$("[data-use-design]").forEach((btn) => btn.addEventListener("click", () => {
     setDesign(btn.dataset.useDesign);
     location.href = "/";
+  }));
+  $$("[data-use-font]").forEach((btn) => btn.addEventListener("click", () => {
+    setFont(btn.dataset.useFont);
+    if (moving) M.animate(btn, { scale: [1, 0.92, 1] }, { type: "spring", stiffness: 500, damping: 14 });
   }));
 
   if (!moving) {

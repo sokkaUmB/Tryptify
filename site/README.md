@@ -20,7 +20,7 @@ not. All text is Orbitron, the app's font, in its six weights (Regular 400 to
 Black 900, Latin) as WOFF2 under `public/fonts/`, with its licence
 `public/fonts/orbitron-license.txt`.
 
-## Motion and designs
+## Motion, glass, designs and fonts
 
 `js/site.js` animates the pages with Motion (motion.dev, MIT), served from
 `js/motion-12.23.12.js` with its licence beside it: the hero's live spectrum,
@@ -29,7 +29,14 @@ the pricing switch counting, springy buttons. All of it is decoration: with
 "reduce motion" on, without JavaScript, or if Motion fails to load, the pages
 are the same, standing still.
 
-While the owner chooses, there are six colour designs (Mono, Neon, Ember,
-Mint, Acid, Paper), set by `<html data-design>`, picked with the dots at the
-bottom of every page or compared live at `/designs`. Once one is chosen, make
-it the `:root` colours and delete the others, the picker and `designs.html`.
+The menu is liquid glass after the app's tab bar: clear glass with a light
+frost, bent at the rim by an SVG lens where Chromium allows `backdrop-filter:
+url()` (`.lens`), a bright rim, a reflection, a glint that follows the pointer,
+and a lens bubble that springs to the current page or the hovered link. On
+phones the menu leaves the header for a floating tab bar at the bottom.
+
+While the owner chooses, there are three colour designs (Dark, Warm, White,
+`<html data-design>`) and eleven fonts, the app's own (`<html data-font>`,
+licences in `public/fonts/LICENSES.txt`), picked from the bar at the bottom
+of every page or compared at `/designs`. Once chosen, make them the `:root`
+values, then delete the others, the picker and `designs.html`.
