@@ -1,45 +1,16 @@
-/* Fonts: the app's own (SIL Open Font License 1.1, see /fonts/LICENSES.txt),
-   as Latin WOFF2 served from this site. Orbitron comes in its six static
-   weights; the rest are variable, one file for every weight. While a font is
-   being chosen, <html data-font="…"> picks one; a browser only downloads the
-   font in use. */
-@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; } /* Regular */
-@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; } /* Medium */
-@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-600.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; } /* SemiBold */
-@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; } /* Bold */
-@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-800.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: swap; } /* ExtraBold */
-@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-900.woff2") format("woff2"); font-weight: 900; font-style: normal; font-display: swap; } /* Black */
-@font-face { font-family: "Space Grotesk"; src: url("/fonts/space_grotesk.woff2") format("woff2"); font-weight: 300 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "Sora"; src: url("/fonts/sora.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
+/* The font: Outfit, the app's own (SIL Open Font License 1.1, see
+   /fonts/LICENSES.txt), one variable Latin WOFF2 for every weight. */
 @font-face { font-family: "Outfit"; src: url("/fonts/outfit.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
-@font-face { font-family: "Manrope"; src: url("/fonts/manrope.woff2") format("woff2"); font-weight: 200 800; font-style: normal; font-display: swap; }
-@font-face { font-family: "Bricolage Grotesque"; src: url("/fonts/bricolage_grotesque.woff2") format("woff2"); font-weight: 200 800; font-style: normal; font-display: swap; }
-@font-face { font-family: "Instrument Sans"; src: url("/fonts/instrument_sans.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "Chivo"; src: url("/fonts/chivo.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
-@font-face { font-family: "IBM Plex Sans"; src: url("/fonts/ibm_plex_sans.woff2") format("woff2"); font-weight: 100 700; font-style: normal; font-display: swap; }
-@font-face { font-family: "Fraunces"; src: url("/fonts/fraunces.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
-@font-face { font-family: "JetBrains Mono"; src: url("/fonts/jetbrains_mono.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
 
-/* Designs: Dark (the default), Warm and White, picked by <html data-design="…">. */
+/* Black (the default, or when the device is dark) and White (when it is
+   light), set as <html data-design="dark|white"> by each page's head script
+   and switched with the button in the nav bar. */
 :root {
   --radius: 14px;
   --max: 1080px;
-  /* The default pair, after Framer's: Outfit for headings (geometric, like GT
-     Walsheim), Instrument Sans for everything else (neutral, like Inter). */
-  --display: "Instrument Sans", system-ui, sans-serif;
-  --heading: "Outfit", "Instrument Sans", system-ui, sans-serif;
+  --display: "Outfit", system-ui, sans-serif;
+  --heading: "Outfit", system-ui, sans-serif;
 }
-[data-font="orbitron"] { --display: "Orbitron", system-ui, sans-serif; --heading: "Orbitron", system-ui, sans-serif; }
-[data-font="space-grotesk"] { --display: "Space Grotesk", system-ui, sans-serif; --heading: "Space Grotesk", system-ui, sans-serif; }
-[data-font="sora"] { --display: "Sora", system-ui, sans-serif; --heading: "Sora", system-ui, sans-serif; }
-[data-font="outfit"] { --display: "Outfit", system-ui, sans-serif; --heading: "Outfit", system-ui, sans-serif; }
-[data-font="manrope"] { --display: "Manrope", system-ui, sans-serif; --heading: "Manrope", system-ui, sans-serif; }
-[data-font="bricolage"] { --display: "Bricolage Grotesque", system-ui, sans-serif; --heading: "Bricolage Grotesque", system-ui, sans-serif; }
-[data-font="instrument"] { --display: "Instrument Sans", system-ui, sans-serif; --heading: "Instrument Sans", system-ui, sans-serif; }
-[data-font="chivo"] { --display: "Chivo", system-ui, sans-serif; --heading: "Chivo", system-ui, sans-serif; }
-[data-font="plex"] { --display: "IBM Plex Sans", system-ui, sans-serif; --heading: "IBM Plex Sans", system-ui, sans-serif; }
-[data-font="fraunces"] { --display: "Fraunces", Georgia, serif; --heading: "Fraunces", Georgia, serif; }
-[data-font="jetbrains"] { --display: "JetBrains Mono", ui-monospace, monospace; --heading: "JetBrains Mono", ui-monospace, monospace; }
 :root, [data-design="dark"] {
   --bg: #0a0a0a;
   --panel: #141414;
@@ -54,21 +25,6 @@
   --glow: 255, 255, 255;
   --ok: #9fe3b4;
   --header: rgba(10, 10, 10, 0.85);
-}
-[data-design="warm"] {
-  --bg: #0d0a08;
-  --panel: #17120e;
-  --panel-2: #1f1813;
-  --line: #33281f;
-  --text: #f6eee8;
-  --muted: #b3a497;
-  --accent: #ff6a1a;
-  --accent-2: #ffb347;
-  --hot: #ffe08a;
-  --on-accent: #160b03;
-  --glow: 255, 106, 26;
-  --ok: #9be37a;
-  --header: rgba(13, 10, 8, 0.85);
 }
 [data-design="white"] {
   --bg: #ffffff;
@@ -308,71 +264,40 @@ section[id] { scroll-margin-top: 80px; }
 .plan.featured.breathing { animation: breathe 2.4s ease-in-out 1s infinite alternate; }
 @keyframes breathe { from { box-shadow: 0 0 0 rgba(var(--glow), 0); } to { box-shadow: 0 0 36px rgba(var(--glow), 0.35); } }
 
-/* The design picker: a row of swatches, bottom right, on every page. */
-.designs {
-  position: fixed; z-index: 30; right: 16px; bottom: 16px;
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px;
-  background: var(--header); border: 1px solid var(--line); border-radius: 999px;
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  font-size: 12px; font-weight: 700; color: var(--muted);
-}
-.designs a { color: var(--muted); text-decoration: none; margin-right: 2px; }
-.designs a:hover { color: var(--text); }
-.designs button {
-  width: 24px; height: 24px; border-radius: 50%; padding: 0; cursor: pointer;
-  border: 2px solid var(--line); background: var(--sw-bg);
-  position: relative; overflow: hidden;
-}
-.designs button::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--sw-accent); }
-.designs button[aria-pressed="true"] { border-color: var(--text); transform: scale(1.15); }
-@media (max-width: 560px) { .designs { left: 16px; right: 16px; justify-content: center; } }
-footer { padding-bottom: 90px; }
-
-/* The designs page: every design side by side, live. */
-.gallery { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
-.gallery article { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-.gallery .preview { position: relative; aspect-ratio: 1280 / 820; overflow: hidden; border-bottom: 1px solid var(--line); background: var(--bg); }
-.gallery iframe { position: absolute; top: 0; left: 0; width: 1280px; height: 820px; border: 0; transform-origin: 0 0; pointer-events: none; }
-.gallery .info { padding: 16px 18px 18px; }
-.gallery .info p { margin: 4px 0 12px; color: var(--muted); font-size: 14px; }
 button.btn { cursor: pointer; }
-.designs select {
-  font: inherit; font-size: 12px; font-weight: 700; color: var(--text);
-  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
-  padding: 5px 10px; margin-left: 4px; max-width: 150px; cursor: pointer;
-}
-
-/* The designs page's font samples. */
-.fonts { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.fonts article { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
-.fonts .sample-title { font-size: 26px; line-height: 1.15; font-weight: 800; margin: 0 0 8px; }
-.fonts .sample-body { color: var(--muted); font-size: 15px; margin: 0 0 6px; }
-.fonts .sample-weights { color: var(--text); font-size: 15px; margin: 0 0 14px; }
-.fonts .sample-weights span { margin-right: 8px; }
-.fonts .name { font-size: 12px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--accent-2); margin: 0 0 10px; }
 
 /* ── Liquid glass navigation, after the app's tab bar ─────────────────────
-   Clear glass, not a frosted pane: a light blur, the page bent at the rim
-   (an SVG lens, in Chromium, where backdrop-filter takes url(); elsewhere
-   the same glass without the bend), a bright rim, a top reflection and a
-   glint. A lens bubble slides to the current page and follows the pointer.
-   On phones the menu becomes a floating tab bar at the bottom, as in the app. */
-:root, [data-design="dark"], [data-design="warm"] {
-  /* Lays a little of the page colour under the glass, as the app's lens does,
+   Glass, not a frosted pane. The page behind shows through lightly blurred
+   and is bent along the rim by a lens drawn for each bar's own rounded shape
+   (js/site.js; Chromium only, where backdrop-filter takes url(), elsewhere
+   the same glass without the bend), splitting a little colour at the edge as
+   real glass does. Over it: a specular rim lit at two corners, a soft shade
+   inside the bottom edge, a sheen and a glint under the pointer. A glass
+   bubble marks the page you are on and follows the pointer. On phones the
+   menu is a floating tab bar at the bottom, as in the app. */
+:root, [data-design="dark"] {
+  /* A little of the page colour under the glass, as the app's lens lays,
      so text behind it cannot read through and fight the labels. */
-  --glass-tint: color-mix(in srgb, var(--bg) 45%, transparent);
-  --glass-rim: rgba(255, 255, 255, 0.55);
-  --glass-rim-low: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-  --glass-bubble: rgba(255, 255, 255, 0.12);
+  --glass-tint: color-mix(in srgb, var(--bg) 38%, transparent);
+  --glass-edge: rgba(255, 255, 255, 0.9);
+  --glass-edge-soft: rgba(255, 255, 255, 0.28);
+  --glass-edge-low: rgba(255, 255, 255, 0.09);
+  --glass-shade: rgba(0, 0, 0, 0.45);
+  --glass-shadow: 0 20px 50px -14px rgba(0, 0, 0, 0.7), 0 2px 10px rgba(0, 0, 0, 0.3);
+  --glass-bubble: rgba(255, 255, 255, 0.10);
+  --glass-sheen: rgba(255, 255, 255, 0.14);
+  --glass-glint: rgba(255, 255, 255, 0.45);
 }
 [data-design="white"] {
-  --glass-tint: color-mix(in srgb, var(--bg) 72%, transparent);
-  --glass-rim: rgba(255, 255, 255, 0.95);
-  --glass-rim-low: rgba(0, 0, 0, 0.10);
-  --glass-shadow: 0 12px 34px rgba(0, 0, 0, 0.14);
+  --glass-tint: color-mix(in srgb, var(--bg) 55%, transparent);
+  --glass-edge: rgba(255, 255, 255, 1);
+  --glass-edge-soft: rgba(255, 255, 255, 0.7);
+  --glass-edge-low: rgba(0, 0, 0, 0.09);
+  --glass-shade: rgba(0, 0, 0, 0.10);
+  --glass-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.30), 0 2px 8px rgba(0, 0, 0, 0.07);
   --glass-bubble: rgba(0, 0, 0, 0.06);
+  --glass-sheen: rgba(255, 255, 255, 0.55);
+  --glass-glint: rgba(255, 255, 255, 0.9);
 }
 
 .top { background: none; border-bottom: 0; backdrop-filter: none; -webkit-backdrop-filter: none; top: 12px; pointer-events: none; }
@@ -381,59 +306,84 @@ button.btn { cursor: pointer; }
 .glass {
   position: relative; isolation: isolate; pointer-events: auto;
   background: var(--glass-tint);
-  -webkit-backdrop-filter: blur(9px) saturate(170%);
-          backdrop-filter: blur(9px) saturate(170%);
+  -webkit-backdrop-filter: blur(7px) saturate(190%) brightness(1.04);
+          backdrop-filter: blur(7px) saturate(190%) brightness(1.04);
   border-radius: 999px;
   box-shadow:
     var(--glass-shadow),
-    inset 0 1px 0 var(--glass-rim),
-    inset 0 -1px 0 var(--glass-rim-low),
-    inset 0 0 0 1px var(--glass-rim-low);
+    inset 0 1px 1px var(--glass-edge-soft),
+    inset 0 -10px 18px -12px var(--glass-shade),
+    inset 0 0 0 1px var(--glass-edge-low);
 }
-.lens .glass {
-  -webkit-backdrop-filter: url(#tryptify-lens) blur(9px) saturate(170%);
-          backdrop-filter: url(#tryptify-lens) blur(9px) saturate(170%);
+/* The lens, once js/site.js has drawn one for this piece of glass. */
+.lens .glass[data-lens] {
+  -webkit-backdrop-filter: var(--lens) blur(4px) saturate(190%) brightness(1.04);
+          backdrop-filter: var(--lens) blur(4px) saturate(190%) brightness(1.04);
 }
-/* The rim: bright along the top-left, fading round, like light on a lens. */
+/* The rim: lit hard at the top left and softly at the bottom right, fading
+   between, like light caught on the two far edges of a lens. */
 .glass::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; padding: 1px;
-  background: linear-gradient(135deg, var(--glass-rim), transparent 35%, transparent 65%, var(--glass-rim-low));
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; padding: 1.2px;
+  background:
+    linear-gradient(140deg, var(--glass-edge) 0%, var(--glass-edge-soft) 12%, transparent 32%,
+      transparent 68%, var(--glass-edge-soft) 90%, var(--glass-edge) 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0.85;
 }
-/* The reflection across the top half, and a glint that follows the pointer. */
+/* The sheen across the top half, and a glint that follows the pointer. */
 .glass::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
   background:
-    radial-gradient(120px 40px at var(--gx, 18%) 0%, rgba(255, 255, 255, 0.35), transparent 70%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.10), transparent 55%);
-  mix-blend-mode: screen;
+    radial-gradient(160px 60px at var(--gx, 20%) var(--gy, 0%), var(--glass-glint), transparent 70%),
+    linear-gradient(180deg, var(--glass-sheen), transparent 48%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
 }
-[data-design="white"] .glass::after { mix-blend-mode: normal; opacity: 0.8; }
 
-.top .wrap.glass { height: 58px; padding: 0 10px 0 22px; margin-top: 0; }
+.top .wrap.glass { height: 60px; padding: 0 8px 0 22px; margin-top: 0; }
 .nav { position: relative; gap: 2px; }
-.nav a { position: relative; z-index: 1; padding: 8px 14px; border-radius: 999px; transition: color 0.2s; }
+.nav a { position: relative; z-index: 1; padding: 8px 15px; border-radius: 999px; transition: color 0.2s; }
 .nav-bubble {
   position: absolute; z-index: 0; top: 0; left: 0; height: 100%; width: 0; border-radius: 999px; pointer-events: none;
-  background: var(--glass-bubble);
-  box-shadow: inset 0 1px 0 var(--glass-rim), inset 0 0 0 1px var(--glass-rim-low);
+  background:
+    linear-gradient(180deg, var(--glass-sheen), transparent 60%),
+    var(--glass-bubble);
+  box-shadow:
+    inset 0 1px 1px var(--glass-edge-soft),
+    inset 0 -4px 8px -6px var(--glass-shade),
+    inset 0 0 0 1px var(--glass-edge-low),
+    0 4px 14px -6px rgba(0, 0, 0, 0.35);
   opacity: 0;
 }
+
+/* Black or white: a round glass button at the end of the bar. */
+.theme-toggle {
+  position: relative; z-index: 1; flex: none; width: 42px; height: 42px; margin-left: 6px; padding: 0;
+  display: grid; place-items: center; border: 0; border-radius: 50%; cursor: pointer;
+  color: var(--text); background: var(--glass-bubble);
+  box-shadow: inset 0 1px 1px var(--glass-edge-soft), inset 0 0 0 1px var(--glass-edge-low);
+}
+.theme-toggle:hover { background: color-mix(in srgb, var(--text) 14%, transparent); }
+.theme-toggle svg { width: 19px; height: 19px; }
+.theme-toggle:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+/* Switching colours fades instead of snapping. */
+.theme-fade, .theme-fade * { transition: background-color 0.35s, color 0.35s, border-color 0.35s, fill 0.35s !important; }
+
 main { padding-top: 12px; }
 
 @media (max-width: 560px) {
-  .top .wrap.glass { height: 52px; padding: 0 18px; flex-wrap: nowrap; margin: 0 12px; width: auto; }
+  .top .wrap.glass { height: 54px; padding: 0 6px 0 18px; flex-wrap: nowrap; margin: 0 12px; width: auto; justify-content: space-between; }
+  .theme-toggle { width: 40px; height: 40px; }
   /* The menu leaves the header for a floating tab bar at the bottom. */
   .nav {
     position: fixed; z-index: 25; left: 12px; right: 12px; bottom: 14px; margin: 0;
     display: flex; justify-content: space-between; flex-wrap: nowrap; gap: 0; padding: 6px;
   }
-  .nav a { flex: 1 1 0; min-width: 0; text-align: center; padding: 10px 2px; font-size: 11px; letter-spacing: 0; white-space: nowrap; }
-  .designs { bottom: 92px; }
+  .nav a { flex: 1 1 0; min-width: 0; text-align: center; padding: 11px 2px; font-size: 12px; letter-spacing: 0; white-space: nowrap; }
   .nav a { color: color-mix(in srgb, var(--text) 78%, transparent); }
   .nav a[aria-current="page"] { color: var(--text); }
-  footer { padding-bottom: 170px; }
+  footer { padding-bottom: 110px; }
 }
 
 /* ── The AutoEQ ranking (js/autoeq.js) ─────────────────────────────────── */
@@ -535,10 +485,9 @@ main { padding-top: 12px; }
 
 /* ── Pro: the restrained, Framer-like layer ─────────────────────────────
    Medium weights, tight headline tracking, neutral body text, quiet cards,
-   white pill buttons, one big glowing showcase. Orbitron stays in the
-   wordmark only. Later rules here deliberately override the ones above. */
+   white pill buttons, one big glowing showcase. Later rules here deliberately override the ones above. */
 body { font-size: 16px; line-height: 1.6; letter-spacing: -0.006em; font-weight: 400; -webkit-font-smoothing: antialiased; }
-h1, h2, h3, .doc h1, .plan .name, .plan .price, .rank-value, .rank-n, .fonts .sample-title { font-family: var(--heading); }
+h1, h2, h3, .doc h1, .plan .name, .plan .price, .rank-value, .rank-n { font-family: var(--heading); }
 .brand, .hero h1, .plan .price, .steps li::before { font-weight: 600; }
 .hero h1 { font-weight: 500; font-size: clamp(40px, 6.4vw, 76px); line-height: 1.02; letter-spacing: -0.045em; max-width: 14ch; margin: 0 0 22px; }
 h2, .doc h1 { font-weight: 500; font-size: clamp(28px, 3.6vw, 44px); line-height: 1.08; letter-spacing: -0.035em; }
@@ -550,12 +499,12 @@ h3 { font-weight: 600; font-size: 17px; letter-spacing: -0.015em; }
 .hero { padding: 96px 0 40px; }
 section { padding: 56px 0; }
 
-/* The brand: the app's tile and an Orbitron wordmark. */
+/* The brand: the app's tile and the wordmark. */
 .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 16px; color: var(--text); text-decoration: none; }
 .brand .mark { width: 28px; height: 28px; flex: none; }
 .brand .mark-tile { stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.2; }
 [data-design="white"] .brand .mark-tile { stroke: none; }
-.brand .wordmark { font-family: "Orbitron", var(--heading); font-weight: 600; letter-spacing: 0.04em; font-size: 15px; }
+.brand .wordmark { font-family: var(--heading); font-weight: 600; letter-spacing: -0.02em; font-size: 18px; }
 
 /* Menu: small, quiet text. */
 .nav a { font-size: 14px; font-weight: 500; letter-spacing: -0.005em; }
@@ -567,7 +516,7 @@ section { padding: 56px 0; }
 .btn.primary:hover { color: var(--bg); opacity: 0.92; }
 
 /* Cards: near-black panels with a hairline edge. */
-.card, .plan, .rank-row, .song, .device, .q-item, .gallery article, .fonts article {
+.card, .plan, .rank-row, .song, .device, .q-item {
   background: color-mix(in srgb, var(--panel) 80%, transparent);
   border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
   border-radius: 18px;
@@ -844,3 +793,12 @@ footer { font-size: 13.5px; }
 .motion .stat, .motion .flow > li, .motion .tour-text > *, .motion .tour-media figure { opacity: 0; }
 /* Overlapping screens would hide each other's captions; the alt text stays. */
 .stack figcaption { display: none; }
+/* The phone tab bar sits over the busiest part of the page with small
+   labels on it: a little more of the page colour and blur under it, so the
+   labels win, while its rim still bends what passes. */
+.nav.glass { --glass-tint: color-mix(in srgb, var(--bg) 52%, transparent); }
+[data-design="white"] .nav.glass { --glass-tint: color-mix(in srgb, var(--bg) 66%, transparent); }
+.lens .nav.glass[data-lens] {
+  -webkit-backdrop-filter: var(--lens) blur(9px) saturate(190%) brightness(1.04);
+          backdrop-filter: var(--lens) blur(9px) saturate(190%) brightness(1.04);
+}

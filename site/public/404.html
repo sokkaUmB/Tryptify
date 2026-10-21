@@ -9,17 +9,12 @@
   <link rel="stylesheet" href="/styles.css">
   <script>
     (function () {
-      var root = document.documentElement, top = window.top === window;
-      // The design and font: ?design=… / ?font=… (a preview), else the ones last picked.
-      var q = new URLSearchParams(location.search), d = q.get("design"), f = q.get("font");
-      try {
-        if (d && top) localStorage.setItem("tryptify-design", d);
-        if (f && top) localStorage.setItem("tryptify-font-v2", f);
-        if (!d) d = localStorage.getItem("tryptify-design");
-        if (!f) f = localStorage.getItem("tryptify-font-v2");
-      } catch (e) {}
-      if (/^(dark|warm|white)$/.test(d || "")) root.dataset.design = d;
-      if (/^(orbitron|space-grotesk|sora|outfit|manrope|bricolage|instrument|chivo|plex|fraunces|jetbrains)$/.test(f || "")) root.dataset.font = f;
+      var root = document.documentElement;
+      // Black or white: the one last picked with the nav bar's button, else the device's own.
+      var t = null;
+      try { t = localStorage.getItem("tryptify-theme"); } catch (e) {}
+      if (t !== "dark" && t !== "white") t = matchMedia("(prefers-color-scheme: light)").matches ? "white" : "dark";
+      root.dataset.design = t;
       // Motion only when it is welcome; if site.js has not started in 3 s, show everything as is.
       if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
         root.classList.add("motion");

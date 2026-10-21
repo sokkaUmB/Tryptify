@@ -16,9 +16,9 @@ CLOUDFLARE_API_TOKEN=... npx wrangler deploy
 
 Keep the prices, the trial and the grace periods in step with
 `server/cloud/src/rules.ts`; the app reads them from the server, this page does
-not. All text is Orbitron, the app's font, in its six weights (Regular 400 to
-Black 900, Latin) as WOFF2 under `public/fonts/`, with its licence
-`public/fonts/orbitron-license.txt`.
+not. All text is Outfit, one of the app's fonts, a variable Latin WOFF2 for
+every weight under `public/fonts/`, with its licence in
+`public/fonts/LICENSES.txt`.
 
 ## The home page's screens and numbers
 
@@ -35,7 +35,7 @@ repeat the app, so check them when it changes:
 - The signal path's order (decode, mixer, AutoEQ and parametric EQ, speed
   and pitch, out): the processor list in `PlaybackService.kt`.
 
-## Motion, glass, designs and fonts
+## Motion, glass and colours
 
 `js/site.js` animates the pages with Motion (motion.dev, MIT), served from
 `js/motion-12.23.12.js` with its licence beside it: the hero's live spectrum,
@@ -44,17 +44,21 @@ the pricing switch counting, springy buttons. All of it is decoration: with
 "reduce motion" on, without JavaScript, or if Motion fails to load, the pages
 are the same, standing still.
 
-The menu is liquid glass after the app's tab bar: clear glass with a light
-frost, bent at the rim by an SVG lens where Chromium allows `backdrop-filter:
-url()` (`.lens`), a bright rim, a reflection, a glint that follows the pointer,
-and a lens bubble that springs to the current page or the hovered link. On
-phones the menu leaves the header for a floating tab bar at the bottom.
+The menu is liquid glass after the app's tab bar. Where Chromium allows
+`backdrop-filter: url()` (`.lens`), each piece of glass gets its own SVG lens:
+a displacement map drawn for its size and rounded outline, still in the
+middle and bending harder toward the rim, with red, green and blue bent by
+slightly different amounts. Elsewhere it is the same glass without the bend.
+Over it: a rim lit at two corners, a soft shade inside the bottom edge, a
+sheen, a glint under the pointer, and a glass bubble that springs to the
+current page or the hovered link, flattening a little as it slides. On phones
+the menu leaves the header for a floating tab bar at the bottom.
 
-While the owner chooses, there are three colour designs (Dark, Warm, White,
-`<html data-design>`) and eleven fonts, the app's own (`<html data-font>`,
-licences in `public/fonts/LICENSES.txt`), picked from the bar at the bottom
-of every page or compared at `/designs`. Once chosen, make them the `:root`
-values, then delete the others, the picker and `designs.html`.
+There are two colour designs, Black (`dark`) and White (`white`), set as
+`<html data-design>` by each page's head script: the one last picked with the
+sun/moon button at the end of the nav bar (`localStorage` key
+`tryptify-theme`), else the device's own light or dark setting, which the page
+follows live until the button is used.
 
 ## Pages with code
 

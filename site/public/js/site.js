@@ -49,47 +49,142 @@
   }
 
   // ── Liquid glass navigation ─────────────────────────────────────────
-  // The lens: an SVG filter that bends the page along the glass's rim, used
-  // through backdrop-filter where Chromium allows url() there (styles.css,
-  // .lens). Two ramps, one per axis, push the edges inward; the middle stays
-  // still, like clear glass.
+  // The lens: an SVG filter per piece of glass, used through backdrop-filter
+  // where Chromium allows url() there (styles.css, .lens). Its displacement
+  // map is drawn for the glass's own size and rounded outline: still in the
+  // middle, bending harder toward the rim along the edge's normal, so a pill's
+  // round ends bend round. Red, green and blue bend by slightly different
+  // amounts, the little colour split real glass shows at its edge.
   const svgNS = "http://www.w3.org/2000/svg";
-  const ramp = (axis) => {
-    const [x2, y2] = axis === "x" ? ["100%", "0%"] : ["0%", "100%"];
-    const edge = axis === "x" ? 4 : 30;
-    const ch = (v) => (axis === "x" ? `rgb(${v},128,128)` : `rgb(128,${v},128)`);
-    return "data:image/svg+xml;utf8," + encodeURIComponent(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" preserveAspectRatio="none">` +
-      `<linearGradient id="g" x1="0" y1="0" x2="${x2}" y2="${y2}">` +
-      `<stop offset="0%" stop-color="${ch(255)}"/><stop offset="${edge}%" stop-color="${ch(128)}"/>` +
-      `<stop offset="${100 - edge}%" stop-color="${ch(128)}"/><stop offset="100%" stop-color="${ch(0)}"/>` +
-      `</linearGradient><rect width="100" height="100" fill="url(#g)"/></svg>`);
-  };
-  const lens = document.createElementNS(svgNS, "svg");
-  lens.setAttribute("aria-hidden", "true");
-  lens.setAttribute("width", "0");
-  lens.setAttribute("height", "0");
-  lens.style.position = "absolute";
-  lens.innerHTML =
-    `<filter id="tryptify-lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">` +
-    `<feImage href="${ramp("x")}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="mx"/>` +
-    `<feImage href="${ramp("y")}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="my"/>` +
-    `<feComposite in="mx" in2="my" operator="arithmetic" k2="1" k3="1" k4="-0.5" result="map"/>` +
-    `<feDisplacementMap in="SourceGraphic" in2="map" scale="26" xChannelSelector="R" yChannelSelector="G"/>` +
-    `</filter>`;
-  document.body.append(lens);
   const brands = (navigator.userAgentData && navigator.userAgentData.brands) || [];
-  if (brands.some((b) => /Chromium/.test(b.brand))) root.classList.add("lens");
+  const lensOn = brands.some((b) => /Chromium/.test(b.brand));
+  const defs = document.createElementNS(svgNS, "svg");
+  defs.setAttribute("aria-hidden", "true");
+  defs.setAttribute("width", "0");
+  defs.setAttribute("height", "0");
+  defs.style.position = "absolute";
+  document.body.append(defs);
+  if (lensOn) root.classList.add("lens");
 
-  // The glint follows the pointer along each piece of glass.
+  const lensMap = (w, h, r) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    const img = ctx.createImageData(w, h);
+    const px = img.data;
+    const bezel = Math.max(6, Math.min(r, h / 2, 24));
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const cx = x + 0.5 - w / 2, cy = y + 0.5 - h / 2;
+        const qx = Math.abs(cx) - (w / 2 - r), qy = Math.abs(cy) - (h / 2 - r);
+        let nx, ny, dist;
+        if (qx > 0 && qy > 0) {
+          // In a rounded corner: the normal points out from the corner's centre.
+          const l = Math.hypot(qx, qy) || 1;
+          nx = qx / l; ny = qy / l; dist = r - l;
+        } else if (w / 2 - Math.abs(cx) < h / 2 - Math.abs(cy)) {
+          nx = 1; ny = 0; dist = w / 2 - Math.abs(cx);
+        } else {
+          nx = 0; ny = 1; dist = h / 2 - Math.abs(cy);
+        }
+        nx *= Math.sign(cx) || 1;
+        ny *= Math.sign(cy) || 1;
+        const t = Math.min(1, Math.max(0, dist / bezel));
+        const bend = Math.pow(1 - t, 2.4);
+        const i = (y * w + x) * 4;
+        // Sample from further in: the rim magnifies what is just inside it.
+        px[i] = 128 - nx * bend * 127;
+        px[i + 1] = 128 - ny * bend * 127;
+        px[i + 2] = 128;
+        px[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    return canvas.toDataURL();
+  };
+
+  let lenses = 0;
+  const giveLens = (el) => {
+    if (!lensOn || el.dataset.lens) return;
+    const id = `glass-lens-${lenses++}`;
+    const filter = document.createElementNS(svgNS, "filter");
+    filter.id = id;
+    for (const [k, v] of Object.entries({ x: "0", y: "0", width: "100%", height: "100%", "color-interpolation-filters": "sRGB" })) filter.setAttribute(k, v);
+    defs.append(filter);
+    const channel = (c, scale) => {
+      const m = { R: "1 0 0 0 0 0 0 0 0 0 0 0 0 0 0", G: "0 0 0 0 0 0 1 0 0 0 0 0 0 0 0", B: "0 0 0 0 0 0 0 0 0 0 0 0 1 0 0" }[c];
+      return `<feDisplacementMap in="SourceGraphic" in2="map" scale="${scale}" xChannelSelector="R" yChannelSelector="G" result="d${c}"/>` +
+        `<feColorMatrix in="d${c}" type="matrix" values="${m} 0 0 0 1 0" result="${c}"/>`;
+    };
+    let size = "";
+    const draw = () => {
+      const w = Math.round(el.offsetWidth), h = Math.round(el.offsetHeight);
+      if (!w || !h || `${w}x${h}` === size) return;
+      size = `${w}x${h}`;
+      const r = Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0, h / 2, w / 2);
+      const s = Math.round(Math.min(40, h * 0.62));
+      filter.innerHTML =
+        `<feImage href="${lensMap(w, h, r)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>` +
+        channel("R", s) + channel("G", Math.round(s * 0.9)) + channel("B", Math.round(s * 0.8)) +
+        `<feBlend in="R" in2="G" mode="screen" result="RG"/><feBlend in="RG" in2="B" mode="screen"/>`;
+    };
+    draw();
+    el.style.setProperty("--lens", `url(#${id})`);
+    el.dataset.lens = id;
+    let queued = false;
+    new ResizeObserver(() => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; draw(); });
+    }).observe(el);
+  };
+
+  // The glint follows the pointer over each piece of glass.
   const glint = (el) => el.addEventListener("pointermove", (e) => {
     const r = el.getBoundingClientRect();
     el.style.setProperty("--gx", `${((e.clientX - r.left) / r.width) * 100}%`);
+    el.style.setProperty("--gy", `${((e.clientY - r.top) / r.height) * 100}%`);
   });
 
-  const nav = $(".nav");
+  // ── Black or white ──────────────────────────────────────────────────
+  // The head script picked one: the button's last choice, else the device's.
+  // Until the button is used, the page follows the device as it changes.
+  const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>';
+  const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6Z"/></svg>';
   const headerGlass = $(".top .glass");
-  if (headerGlass) glint(headerGlass);
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "theme-toggle";
+  const showTheme = () => {
+    const dark = root.dataset.design !== "white";
+    toggle.innerHTML = dark ? SUN : MOON;
+    toggle.title = dark ? "Switch to white" : "Switch to black";
+    toggle.setAttribute("aria-label", toggle.title);
+  };
+  const setTheme = (name) => {
+    root.classList.add("theme-fade");
+    root.dataset.design = name;
+    showTheme();
+    setTimeout(() => root.classList.remove("theme-fade"), 400);
+  };
+  toggle.addEventListener("click", () => {
+    const next = root.dataset.design === "white" ? "dark" : "white";
+    try { localStorage.setItem("tryptify-theme", next); } catch (e) {}
+    setTheme(next);
+    if (M && moving) M.animate($("svg", toggle), { rotate: [-90, 0], scale: [0.4, 1] }, { type: "spring", stiffness: 420, damping: 18 });
+  });
+  const light = matchMedia("(prefers-color-scheme: light)");
+  light.addEventListener("change", () => {
+    let chosen = null;
+    try { chosen = localStorage.getItem("tryptify-theme"); } catch (e) {}
+    if (!chosen) setTheme(light.matches ? "white" : "dark");
+  });
+  showTheme();
+  if (headerGlass) headerGlass.append(toggle);
+
+  const nav = $(".nav");
+  if (headerGlass) { glint(headerGlass); giveLens(headerGlass); }
   if (nav) {
     glint(nav);
     const bubble = document.createElement("span");
@@ -99,23 +194,32 @@
     const links = $$("a", nav);
     const here = links.find((a) => a.getAttribute("aria-current") === "page");
     const springy = { type: "spring", stiffness: 380, damping: 30 };
+    let at = null;
     const moveTo = (a, instant) => {
-      if (!a) { if (M) M.animate(bubble, { opacity: 0 }, { duration: 0.2 }); else bubble.style.opacity = "0"; return; }
+      if (!a) { if (M) M.animate(bubble, { opacity: 0 }, { duration: 0.2 }); else bubble.style.opacity = "0"; at = null; return; }
       const box = { x: a.offsetLeft, y: a.offsetTop, width: a.offsetWidth, height: a.offsetHeight, opacity: 1 };
-      if (M) M.animate(bubble, box, moving && !instant ? springy : { duration: 0 });
-      else Object.assign(bubble.style, { transform: `translate(${box.x}px, ${box.y}px)`, width: box.width + "px", height: box.height + "px", opacity: "1" });
+      if (M) {
+        M.animate(bubble, box, moving && !instant ? springy : { duration: 0 });
+        // Liquid: the bubble flattens a little as it slides, and swells back.
+        if (moving && !instant && at && at !== a) M.animate(bubble, { scaleY: [1, 0.82, 1], scaleX: [1, 1.08, 1] }, { duration: 0.45, ease: "easeOut" });
+      } else Object.assign(bubble.style, { transform: `translate(${box.x}px, ${box.y}px)`, width: box.width + "px", height: box.height + "px", opacity: "1" });
+      at = a;
     };
     links.forEach((a) => {
       a.addEventListener("pointerenter", () => moveTo(a));
       a.addEventListener("focus", () => moveTo(a));
     });
     nav.addEventListener("pointerleave", () => moveTo(here));
+    if (M && moving) M.press(nav, () => {
+      M.animate(bubble, { scale: 0.92 }, { type: "spring", stiffness: 600, damping: 22 });
+      return () => M.animate(bubble, { scale: 1 }, { type: "spring", stiffness: 500, damping: 14 });
+    });
     // On phones the menu is its own floating tab bar at the bottom, so it
     // leaves the header: a fixed bar inside glass would be pinned to the glass.
     const phone = matchMedia("(max-width: 560px)");
     const place = () => {
-      if (phone.matches && nav.parentElement !== document.body) { document.body.append(nav); nav.classList.add("glass"); }
-      if (!phone.matches && headerGlass && nav.parentElement !== headerGlass) { headerGlass.append(nav); nav.classList.remove("glass"); }
+      if (phone.matches && nav.parentElement !== document.body) { document.body.append(nav); nav.classList.add("glass"); giveLens(nav); }
+      if (!phone.matches && headerGlass && nav.parentElement !== headerGlass) { headerGlass.insertBefore(nav, toggle); nav.classList.remove("glass"); }
       moveTo(here, true);
     };
     place();
@@ -124,78 +228,6 @@
     document.fonts && document.fonts.ready.then(() => moveTo(here, true));
     if (moving && phone.matches) M.animate(nav, { y: [80, 0], opacity: [0, 1] }, { type: "spring", stiffness: 220, damping: 22, delay: 0.3 });
   }
-
-  // ── Design and font pickers (while the owner chooses) ───────────────
-  const DESIGNS = { dark: ["#0a0a0a", "#f2f2f2"], warm: ["#0d0a08", "#ff6a1a"], white: ["#ffffff", "#111111"] };
-  const FONTS = {
-    pro: "Outfit + Instrument Sans", orbitron: "Orbitron", "space-grotesk": "Space Grotesk", sora: "Sora", outfit: "Outfit", manrope: "Manrope",
-    bricolage: "Bricolage Grotesque", instrument: "Instrument Sans", chivo: "Chivo", plex: "IBM Plex Sans",
-    fraunces: "Fraunces", jetbrains: "JetBrains Mono",
-  };
-  const embedded = window.top !== window;
-  const remember = (key, value) => { try { localStorage.setItem(key, value); } catch (e) {} };
-  const setDesign = (name) => {
-    root.dataset.design = name;
-    remember("tryptify-design", name);
-    $$(".designs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.design === name)));
-  };
-  const setFont = (key) => {
-    if (key === "pro") delete root.dataset.font; else root.dataset.font = key;
-    remember("tryptify-font-v2", key);
-    $$(".designs select").forEach((sel) => { sel.value = key; });
-    // Text reflows in a new font: the pricing pill and the previews refit.
-    dispatchEvent(new Event("resize"));
-  };
-  if (!embedded) {
-    const picker = document.createElement("div");
-    picker.className = "designs";
-    picker.setAttribute("role", "group");
-    picker.setAttribute("aria-label", "Site design and font");
-    picker.innerHTML = '<a href="/designs">Design</a>';
-    Object.entries(DESIGNS).forEach(([name, [bg, accent]]) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.dataset.design = name;
-      b.title = name[0].toUpperCase() + name.slice(1);
-      b.setAttribute("aria-label", b.title);
-      b.setAttribute("aria-pressed", String(name === (root.dataset.design || "dark")));
-      b.style.setProperty("--sw-bg", bg);
-      b.style.setProperty("--sw-accent", accent);
-      b.addEventListener("click", () => {
-        setDesign(name);
-        if (moving) M.animate(b, { scale: [1, 1.5, 1.15] }, { type: "spring", stiffness: 500, damping: 14 });
-      });
-      picker.append(b);
-    });
-    const select = document.createElement("select");
-    select.setAttribute("aria-label", "Font");
-    Object.entries(FONTS).forEach(([key, name]) => {
-      const o = document.createElement("option");
-      o.value = key;
-      o.textContent = name;
-      select.append(o);
-    });
-    select.value = root.dataset.font || "pro";
-    select.addEventListener("change", () => setFont(select.value));
-    picker.append(select);
-    document.body.append(picker);
-    if (moving) M.animate(picker, { opacity: [0, 1], y: [30, 0] }, { delay: 1, type: "spring", stiffness: 200, damping: 20 });
-  }
-  // The designs page: scale each live preview to its card, and "Use this".
-  $$(".gallery .preview").forEach((box) => {
-    const frame = $("iframe", box);
-    const fit = () => { frame.style.transform = `scale(${box.clientWidth / 1280})`; };
-    fit();
-    addEventListener("resize", fit);
-  });
-  $$("[data-use-design]").forEach((btn) => btn.addEventListener("click", () => {
-    setDesign(btn.dataset.useDesign);
-    location.href = "/";
-  }));
-  $$("[data-use-font]").forEach((btn) => btn.addEventListener("click", () => {
-    setFont(btn.dataset.useFont);
-    if (moving) M.animate(btn, { scale: [1, 0.92, 1] }, { type: "spring", stiffness: 500, damping: 14 });
-  }));
 
   if (!moving) {
     root.classList.remove("motion");
