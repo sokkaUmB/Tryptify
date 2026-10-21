@@ -316,9 +316,10 @@ button.btn { cursor: pointer; }
     inset 0 0 0 1px var(--glass-edge-low);
 }
 /* The lens, once js/site.js has drawn one for this piece of glass. */
+.glass { --glass-blur: 8px; }
 .lens .glass[data-lens] {
-  -webkit-backdrop-filter: var(--lens) blur(4px) saturate(190%) brightness(1.04);
-          backdrop-filter: var(--lens) blur(4px) saturate(190%) brightness(1.04);
+  -webkit-backdrop-filter: var(--lens) saturate(190%) brightness(1.04);
+          backdrop-filter: var(--lens) saturate(190%) brightness(1.04);
 }
 /* The rim: lit hard at the top left and softly at the bottom right, fading
    between, like light caught on the two far edges of a lens. */
@@ -798,7 +799,119 @@ footer { font-size: 13.5px; }
    labels win, while its rim still bends what passes. */
 .nav.glass { --glass-tint: color-mix(in srgb, var(--bg) 52%, transparent); }
 [data-design="white"] .nav.glass { --glass-tint: color-mix(in srgb, var(--bg) 66%, transparent); }
-.lens .nav.glass[data-lens] {
-  -webkit-backdrop-filter: var(--lens) blur(9px) saturate(190%) brightness(1.04);
-          backdrop-filter: var(--lens) blur(9px) saturate(190%) brightness(1.04);
+.nav.glass { --glass-blur: 16px; }
+
+/* ── Black glass ───────────────────────────────────────────────────────
+   On black, page-coloured tint is black on black and a soft-light sheen
+   does nothing, so the glass read as a dark pill with a grey outline. Here
+   the glass is lifted instead: a faint white body, brighter at the top, the
+   rim lit only where light would catch (the top-left and bottom-right), a
+   screen-blended sheen, a small glint, and a hairline of light round the
+   outside in place of a shadow nobody can see on black. */
+:root:not([data-design="white"]) {
+  --glass-tint: color-mix(in srgb, var(--bg) 30%, transparent);
+  --glass-edge: rgba(255, 255, 255, 0.75);
+  --glass-edge-soft: rgba(255, 255, 255, 0.16);
+  --glass-edge-low: rgba(255, 255, 255, 0.045);
+  --glass-shade: rgba(0, 0, 0, 0.55);
+  --glass-shadow: 0 18px 44px -16px rgba(0, 0, 0, 0.9), 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+  --glass-bubble: rgba(255, 255, 255, 0.11);
+  --glass-sheen: rgba(255, 255, 255, 0.075);
+  --glass-glint: rgba(255, 255, 255, 0.10);
+}
+:root:not([data-design="white"]) .glass {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.025) 55%, rgba(255, 255, 255, 0.045)),
+    var(--glass-tint);
+}
+:root:not([data-design="white"]) .glass::before {
+  padding: 1px; opacity: 1;
+  background:
+    linear-gradient(150deg, var(--glass-edge) 0%, rgba(255, 255, 255, 0.22) 7%, transparent 22%,
+      transparent 78%, rgba(255, 255, 255, 0.14) 93%, rgba(255, 255, 255, 0.45) 100%);
+}
+:root:not([data-design="white"]) .glass::after {
+  mix-blend-mode: screen; opacity: 1;
+  background:
+    radial-gradient(90px 34px at var(--gx, 22%) var(--gy, 0%), var(--glass-glint), transparent 70%),
+    linear-gradient(180deg, var(--glass-sheen), transparent 45%);
+}
+:root:not([data-design="white"]) .nav.glass { --glass-tint: color-mix(in srgb, var(--bg) 46%, transparent); }
+:root:not([data-design="white"]) .nav-bubble,
+:root:not([data-design="white"]) .theme-toggle {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06) 60%, rgba(255, 255, 255, 0.09)),
+    transparent;
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0.5px rgba(255, 255, 255, 0.06),
+    0 6px 16px -8px rgba(0, 0, 0, 0.8);
+}
+:root:not([data-design="white"]) .theme-toggle:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.09));
+}
+
+/* ── A drawn diagram in the tours: Trypt Mania multiplayer ─────────────── */
+.diagram {
+  position: relative; margin: 0; padding: 22px; border-radius: 24px;
+  background:
+    radial-gradient(70% 60% at 50% 0%, rgba(var(--glow), 0.07), transparent 70%),
+    color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.6);
+}
+.multi { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 18px; align-items: stretch; }
+.mp-play {
+  position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; min-height: 270px;
+  padding: 8px; border-radius: 16px; overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--text) 7%, transparent), transparent 70%), var(--bg);
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+.mp-lane { position: relative; border-radius: 10px; background: color-mix(in srgb, var(--text) 3%, transparent); }
+.mp-target {
+  position: absolute; z-index: 1; top: 8px; left: 50%; transform: translateX(-50%);
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px;
+  font-size: 18px; color: var(--muted);
+  border: 1.5px solid color-mix(in srgb, var(--text) 30%, transparent);
+}
+.mp-lane i {
+  position: absolute; left: 50%; top: 100%; width: 30px; height: 30px; margin-left: -15px; border-radius: 9px;
+  background: linear-gradient(180deg, var(--text), color-mix(in srgb, var(--text) 55%, transparent));
+  box-shadow: 0 0 16px rgba(var(--glow), 0.35);
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mp-lane i { animation: mp-note 2.2s linear infinite; animation-delay: var(--d, 0s); }
+}
+@media (prefers-reduced-motion: reduce) { .mp-lane i:first-of-type { top: 46%; opacity: 1; } }
+@keyframes mp-note {
+  0% { transform: translateY(0); opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateY(calc(-270px + 10px)); opacity: 0; }
+}
+.mp-side { display: flex; flex-direction: column; gap: 12px; }
+.mp-room { margin: 0; display: flex; flex-direction: column; }
+.mp-room b { font-size: 15px; font-weight: 600; }
+.mp-room small { color: var(--muted); font-size: 13px; }
+.mp-board { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.mp-board li {
+  display: grid; grid-template-columns: 22px 1fr auto; grid-template-areas: "n name score" "n combo score";
+  align-items: center; column-gap: 10px; padding: 9px 12px; border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+.mp-board span { grid-area: n; color: var(--muted); font-weight: 600; }
+.mp-board b { grid-area: name; font-size: 14px; font-weight: 600; line-height: 1.3; }
+.mp-board em { grid-area: combo; font-style: normal; font-size: 12px; color: var(--muted); line-height: 1.3; }
+.mp-board strong { grid-area: score; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mp-board li.you {
+  background: color-mix(in srgb, var(--text) 11%, transparent);
+  border-color: color-mix(in srgb, var(--text) 22%, transparent);
+  box-shadow: inset 0 1px 1px color-mix(in srgb, var(--text) 20%, transparent);
+}
+@media (max-width: 560px) {
+  .diagram { padding: 16px; }
+  .multi { grid-template-columns: 1fr; }
+  .mp-play { min-height: 200px; }
+  @keyframes mp-note { 0% { transform: translateY(0); opacity: 1; } 88% { opacity: 1; } 100% { transform: translateY(-190px); opacity: 0; } }
 }

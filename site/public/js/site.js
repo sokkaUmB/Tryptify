@@ -110,11 +110,14 @@
     const id = `glass-lens-${lenses++}`;
     const filter = document.createElementNS(svgNS, "filter");
     filter.id = id;
-    for (const [k, v] of Object.entries({ x: "0", y: "0", width: "100%", height: "100%", "color-interpolation-filters": "sRGB" })) filter.setAttribute(k, v);
+    // A filter area larger than the glass: Chrome placed one the glass's own
+    // size a little low on the fixed tab bar, and the strip above it showed
+    // the page through sharp.
+    for (const [k, v] of Object.entries({ x: "-10%", y: "-50%", width: "120%", height: "200%", "color-interpolation-filters": "sRGB" })) filter.setAttribute(k, v);
     defs.append(filter);
     const channel = (c, scale) => {
       const m = { R: "1 0 0 0 0 0 0 0 0 0 0 0 0 0 0", G: "0 0 0 0 0 0 1 0 0 0 0 0 0 0 0", B: "0 0 0 0 0 0 0 0 0 0 0 0 1 0 0" }[c];
-      return `<feDisplacementMap in="SourceGraphic" in2="map" scale="${scale}" xChannelSelector="R" yChannelSelector="G" result="d${c}"/>` +
+      return `<feDisplacementMap in="soft" in2="map" scale="${scale}" xChannelSelector="R" yChannelSelector="G" result="d${c}"/>` +
         `<feColorMatrix in="d${c}" type="matrix" values="${m} 0 0 0 1 0" result="${c}"/>`;
     };
     let size = "";
@@ -124,8 +127,11 @@
       size = `${w}x${h}`;
       const r = Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0, h / 2, w / 2);
       const s = Math.round(Math.min(40, h * 0.62));
+      // The blur is part of the lens, so the bend and the blur always go together.
+      const blur = parseFloat(getComputedStyle(el).getPropertyValue("--glass-blur")) || 6;
       filter.innerHTML =
-        `<feImage href="${lensMap(w, h, r)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/>` +
+        `<feGaussianBlur in="SourceGraphic" stdDeviation="${blur / 2}" edgeMode="duplicate" result="soft"/>` +
+        `<feImage href="${lensMap(w, h, r)}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map"/>` +
         channel("R", s) + channel("G", Math.round(s * 0.9)) + channel("B", Math.round(s * 0.8)) +
         `<feBlend in="R" in2="G" mode="screen" result="RG"/><feBlend in="RG" in2="B" mode="screen"/>`;
     };
@@ -411,6 +417,7 @@
     }, 0.2);
     figs.forEach((fig, i) => {
       const img = $("img", fig);
+      if (!img) return; // a drawn diagram stays put
       const depth = 14 + i * 10;
       scroll(animate(img, { y: [depth, -depth] }, { ease: "linear" }), { target: tour, offset: ["start end", "end start"] });
     });

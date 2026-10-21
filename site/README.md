@@ -24,7 +24,11 @@ every weight under `public/fonts/`, with its licence in
 
 The screenshots in `public/img/` are WebP copies (540 px wide for a phone
 screen, 1000 px for a wide one) of the app's own pictures in
-`docs/screenshots/` and `docs/releases/`. The numbers and the signal path
+`docs/screenshots/` and `docs/releases/`, except the listening party's two
+(`party-app.webp`, `party-web.webp`), which the owner took, with the status
+bar and a screen recorder's button removed. Trypt Mania multiplayer has no
+screenshot yet, so it is a drawing (`.diagram.multi`) with made-up players;
+swap in a real room when there is one. The numbers and the signal path
 repeat the app, so check them when it changes:
 
 - 36 mixer plugins in six groups: the named entries of `SnapinType.kt`.
