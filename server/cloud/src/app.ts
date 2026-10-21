@@ -3,6 +3,7 @@
 // exactly the same routes.
 
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { AuthUnreachable } from "./auth";
 import type { Billing } from "./creem";
 import { accessOf, isPlan, mayStartTrial, PLANS, READ_ONLY_DAYS, TRIAL_DAYS, TRIAL_GB } from "./rules";
@@ -12,6 +13,12 @@ import {
   type Bucket,
 } from "./library";
 import { newDevicePassword, subsonic } from "./subsonic";
+
+/** Pages allowed to call /v1 from a browser: the site, and a local copy while it is built. */
+const WEB_ORIGINS = /^(https:\/\/(www\.)?tryptify\.com|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
+
+/** Songs one library page lists at most. */
+const SONG_PAGE = 200;
 
 /** Devices a person may have signed in to the Subsonic API at once; the oldest goes first. */
 const MAX_DEVICE_KEYS = 10;
@@ -44,6 +51,15 @@ export function createApp({ db, storage = null, billing, personOf, now = () => n
       plans: Object.entries(PLANS).map(([id, p]) => ({ id, ...p })),
     }),
   );
+
+  // The web app at tryptify.com calls /v1 from the browser. Only its own
+  // pages may: the session token is the gate, this keeps other sites out.
+  app.use("/v1/*", cors({
+    origin: (origin) => (WEB_ORIGINS.test(origin) ? origin : null),
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["authorization", "content-type"],
+    maxAge: 86400,
+  }));
 
   app.use("/v1/*", async (c, next) => {
     if (!db) return fail(503, "not_set_up");
@@ -203,6 +219,45 @@ export function createApp({ db, storage = null, billing, personOf, now = () => n
     }
   });
 
+  /** The library as a list, newest first: ?q= searches title, artist and album; ?offset= pages. */
+  app.get("/v1/songs", async (c) => {
+    const uid = c.get("uid");
+    const q = (c.req.query("q") ?? "").trim().slice(0, 100);
+    const offset = Math.max(0, Math.min(1_000_000, Number(c.req.query("offset") ?? 0) | 0));
+    const like = `%${q.replace(/[\\%_]/g, (m) => "\\" + m)}%`;
+    const where = q
+      ? "user_id = ?1 and (title like ?2 escape '\\' or artist like ?2 escape '\\' or album like ?2 escape '\\')"
+      : "user_id = ?1 and ?2 = ?2";
+    const rows = await db!.prepare(
+      `select id, title, artist, album, album_artist, track, disc, year, genre, duration, suffix, size,
+              bit_rate, sample_rate, bit_depth, cover_key, created_at
+         from cloud_songs where ${where} order by created_at desc, id limit ?3 offset ?4`,
+    ).bind(uid, like, SONG_PAGE, offset).all<Record<string, any>>();
+    const total = await db!.prepare(`select count(*) as n from cloud_songs where ${where}`).bind(uid, like).first<{ n: number }>();
+    return c.json({
+      total: Number(total?.n ?? 0),
+      offset,
+      songs: rows.results.map((r) => ({
+        id: r.id, title: r.title, artist: r.artist, album: r.album, albumArtist: r.album_artist,
+        track: r.track, disc: r.disc, year: r.year, genre: r.genre, duration: r.duration, suffix: r.suffix,
+        size: Number(r.size), bitRate: r.bit_rate, sampleRate: r.sample_rate, bitDepth: r.bit_depth,
+        hasCover: r.cover_key !== null, createdAt: r.created_at,
+      })),
+    });
+  });
+
+  /** A song's cover, for the web app's list (the Subsonic API serves the same to players). */
+  app.get("/v1/songs/:id/cover", async (c) => {
+    if (!storage) return fail(404, "not_found");
+    const row = await db!.prepare("select cover_key from cloud_songs where user_id = ?1 and id = ?2 and cover_key is not null")
+      .bind(c.get("uid"), c.req.param("id")).first<{ cover_key: string }>();
+    const object = row ? await storage.get(row.cover_key) : null;
+    if (!object) return fail(404, "not_found");
+    return new Response(object.body, {
+      headers: { "content-type": object.httpMetadata?.contentType ?? "image/jpeg", "cache-control": "private, max-age=86400" },
+    });
+  });
+
   app.delete("/v1/songs/:id", async (c) => {
     const missing = needsStorage();
     if (missing) return missing;
@@ -235,6 +290,24 @@ export function createApp({ db, storage = null, billing, personOf, now = () => n
       ).bind(uid, MAX_DEVICE_KEYS),
     ]);
     return c.json({ server: new URL(c.req.url).origin, username: uid, password }, 201);
+  });
+
+  /** Where to point a Subsonic app, and the devices signed in now (never their passwords). */
+  app.get("/v1/subsonic-keys", async (c) => {
+    const uid = c.get("uid");
+    const rows = await db!.prepare("select id, label, created_at from cloud_subsonic_keys where user_id = ?1 order by created_at desc, id")
+      .bind(uid).all<{ id: string; label: string | null; created_at: string }>();
+    return c.json({
+      server: new URL(c.req.url).origin,
+      username: uid,
+      devices: rows.results.map((r) => ({ id: r.id, label: r.label, createdAt: r.created_at })),
+    });
+  });
+
+  /** Signs one device out of the Subsonic API. */
+  app.delete("/v1/subsonic-keys/:id", async (c) => {
+    await db!.prepare("delete from cloud_subsonic_keys where user_id = ?1 and id = ?2").bind(c.get("uid"), c.req.param("id")).run();
+    return c.body(null, 204);
   });
 
   /** Signs every device out of the Subsonic API. */

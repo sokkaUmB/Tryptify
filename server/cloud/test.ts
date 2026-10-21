@@ -730,6 +730,61 @@ test("a cover counts against the quota, shows as coverArt, and is served", async
   assert.equal(notImage.status, 415);
 });
 
+test("the web app lists, searches and shows covers, only for the signed-in person", async () => {
+  const who = await token(L);
+  const all = await call("GET", "/v1/songs", who);
+  assert.equal(all.status, 200);
+  assert.ok(all.body.total >= 1 && all.body.songs.length === Math.min(all.body.total, 200));
+  const withCover = all.body.songs.find((s: any) => s.hasCover);
+  assert.ok(withCover, "the song given a cover above");
+  const art = await fetchCloud(new Request(`http://cloud.test/v1/songs/${withCover.id}/cover`, { headers: { authorization: `Bearer ${who}` } }));
+  assert.equal(art.status, 200);
+  assert.equal(art.headers.get("content-type"), "image/jpeg");
+  const found = await call("GET", "/v1/songs?q=First%20Album", who);
+  assert.ok(found.body.total >= 1 && found.body.songs.every((s: any) => s.album === "First Album"));
+  // A % or _ in the search is a character, not a wildcard.
+  assert.equal((await call("GET", "/v1/songs?q=%25", who)).body.total, 0);
+  // Somebody else sees none of it.
+  const other = await token(B);
+  assert.equal((await call("GET", "/v1/songs", other)).body.total, 0);
+  const theirs = await fetchCloud(new Request(`http://cloud.test/v1/songs/${withCover.id}/cover`, { headers: { authorization: `Bearer ${other}` } }));
+  assert.equal(theirs.status, 404);
+  assert.equal((await call("GET", "/v1/songs")).status, 401);
+});
+
+test("devices are listed without passwords and can be signed out one by one", async () => {
+  const who = await token(L);
+  const extra = await call("POST", "/v1/subsonic-keys", who, { label: "Feishin" });
+  const list = await call("GET", "/v1/subsonic-keys", who);
+  assert.equal(list.status, 200);
+  assert.equal(list.body.username, L);
+  assert.ok(list.body.devices.some((d: any) => d.label === "Feishin"));
+  assert.ok(!JSON.stringify(list.body).includes(extra.body.password), "never a password");
+  const id = list.body.devices.find((d: any) => d.label === "Feishin").id;
+  // Another person cannot sign it out.
+  await call("DELETE", `/v1/subsonic-keys/${id}`, await token(B));
+  assert.equal((await restJson("ping", {}, extra.body)).status, "ok");
+  assert.equal((await call("DELETE", `/v1/subsonic-keys/${id}`, who)).status, 204);
+  assert.equal((await restJson("ping", {}, extra.body)).status, "failed");
+  // The phone's sign-in is untouched.
+  assert.equal((await restJson("ping")).status, "ok");
+});
+
+test("the web app's pages may call /v1 from a browser; other sites may not", async () => {
+  const pre = (origin: string) => fetchCloud(new Request("http://cloud.test/v1/account", {
+    method: "OPTIONS",
+    headers: { origin, "access-control-request-method": "GET", "access-control-request-headers": "authorization" },
+  }));
+  for (const ok of ["https://tryptify.com", "https://www.tryptify.com", "http://localhost:8765"]) {
+    const r = await pre(ok);
+    assert.ok(r.status === 204 || r.status === 200, `${ok}: ${r.status}`);
+    assert.equal(r.headers.get("access-control-allow-origin"), ok);
+  }
+  for (const bad of ["https://evil.example", "https://tryptify.com.evil.example", "http://tryptify.com"]) {
+    assert.equal((await pre(bad)).headers.get("access-control-allow-origin"), null, bad);
+  }
+});
+
 test("deleting a song removes its file and cover and gives the space back", async () => {
   const who = await token(L);
   const song = (await restJson("search3", { query: "Song", songCount: "1" })).searchResult3.song[0];
