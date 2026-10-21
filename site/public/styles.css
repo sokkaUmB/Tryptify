@@ -915,3 +915,14 @@ footer { font-size: 13.5px; }
   .mp-play { min-height: 200px; }
   @keyframes mp-note { 0% { transform: translateY(0); opacity: 1; } 88% { opacity: 1; } 100% { transform: translateY(-190px); opacity: 0; } }
 }
+
+/* A wide screen with a phone in front of its corner (the listening party:
+   the web guest page, and the app). */
+.overlap { position: relative; padding: 0 0 18% 14%; }
+.overlap figcaption { display: none; } /* the section's words say which is which; the alt text stays */
+.overlap .phone { position: absolute; left: 0; bottom: 0; width: 30%; z-index: 1; }
+.overlap .phone img { box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.75), 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent); }
+@media (max-width: 560px) {
+  .overlap { padding: 0 0 30% 10%; }
+  .overlap .phone { width: 38%; }
+}
