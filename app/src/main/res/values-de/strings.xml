@@ -3042,4 +3042,6 @@
     <string name="party_error_guest_host">Ein Gast auf der Website kann nicht Gastgeber sein.</string>
     <string name="party_invite_switch">Du bist zur Party %1$s eingeladen. Beitreten? Du verlässt dann diese Party.</string>
     <string name="party_invite_not_now">Nicht jetzt</string>
+    <string name="party_speed">%1$s×</string>
+    <string name="party_speed_vinyl">%1$s× · Vinyl</string>
 </resources>

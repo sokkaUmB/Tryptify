@@ -2087,6 +2087,12 @@ the bottom, and the field to say something.
   invited to party …", Join and Not now), never a dialog and never by
   leaving on its own. Signed out, the code waits in the Join field. Only the
   code is taken from a link, and an `/api/party/…` address is never one.
+* The host's speed is the party's. The host changes it with the app's own
+  speed control (and its keep-pitch switch: off is vinyl style), and every
+  phone and the website play at it. A listener's own speed setting is never
+  written: `SpeedOverride` stands in for it while the phone is at a party
+  and not the host, and it is back the moment the party is over. Off 1×, the
+  progress row says the speed between the times ("1.25× · vinyl").
 * Website guests can add songs from the catalogue (the rooms server's
   `TRYPT_HIFI_URL`); a song a guest added says so like any other, with
   "added by" the guest's name.

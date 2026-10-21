@@ -621,6 +621,17 @@ private fun Progress(ui: PartyUi, now: PartyItem, viewModel: PartyViewModel) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             val shown = dragging?.let { (it * length).toLong() } ?: position
             Text(time(shown), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // The host's speed, when it is not normal: everyone plays at it.
+            val playback = ui.party?.playback
+            if (playback != null && kotlin.math.abs(playback.rate - 1.0) > 0.004) {
+                val rate = java.text.DecimalFormat("0.##").format(playback.rate)
+                Text(
+                    stringResource(if (playback.keepPitch) R.string.party_speed else R.string.party_speed_vinyl, rate),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             Text(time(now.durationMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

@@ -104,6 +104,27 @@ class PartyProtocolTest {
     }
 
     @Test
+    fun theHostsSpeedRunsThePartysClock() {
+        // Ten seconds on at 1.5x is fifteen seconds of the song.
+        val fast = PartyPlayback(itemId = "s1", positionMs = 20_000, atServerMs = 1_000, rate = 1.5, keepPitch = false)
+        assertEquals(35_000, fast.positionAt(11_000))
+        assertEquals(20_000, fast.copy(paused = true).positionAt(11_000))
+        // A server from before speeds sends none: normal speed, pitch kept.
+        val old = PartyProtocol.parse(
+            json,
+            """{"t":"party","party":{"code":"K7QD","name":"F","hostId":"p1","members":[],"now":null,"queue":[],""" +
+                """"playback":{"itemId":null,"positionMs":0,"atServerMs":0,"paused":false},"skip":{"votes":[],"needed":1}}}""",
+        ) as PartyMsg.Party
+        assertEquals(1.0, old.party.playback.rate, 0.0)
+        assertTrue(old.party.playback.keepPitch)
+        val set = json.parseToJsonElement(PartyProtocol.setRate(9f, keepPitch = false)).jsonObject
+        assertEquals("setRate", set.getValue("t").jsonPrimitive.content)
+        // Never past what the server takes.
+        assertEquals("4.0", set.getValue("rate").jsonPrimitive.content)
+        assertEquals("false", set.getValue("keepPitch").jsonPrimitive.content)
+    }
+
+    @Test
     fun anInviteLinkGivesItsCodeAndNothingElseDoes() {
         assertEquals("K7QD", PartyProtocol.inviteCode("https", "/s3cret/party/K7QD"))
         assertEquals("K7QD", PartyProtocol.inviteCode("https", "/party/k7qd/"))

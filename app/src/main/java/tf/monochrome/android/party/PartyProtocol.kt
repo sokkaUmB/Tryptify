@@ -2,6 +2,7 @@
 
 package tf.monochrome.android.party
 
+import kotlin.math.roundToLong
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -64,10 +65,14 @@ data class PartyPlayback(
     val positionMs: Long = 0,
     val atServerMs: Long = 0,
     val paused: Boolean = false,
+    /** The host's speed: 1.25 plays 1.25 s of the song a second. */
+    val rate: Double = 1.0,
+    /** Whether the speed keeps the pitch; false is vinyl style, the pitch riding it. */
+    val keepPitch: Boolean = true,
 ) {
     /** The song's position at server time [serverNowMs]. */
     fun positionAt(serverNowMs: Long): Long =
-        if (paused) positionMs else positionMs + (serverNowMs - atServerMs).coerceAtLeast(0)
+        if (paused) positionMs else positionMs + ((serverNowMs - atServerMs).coerceAtLeast(0) * rate).roundToLong()
 }
 
 @Serializable
@@ -238,6 +243,15 @@ object PartyProtocol {
         msg("skipVote", "itemId" to JsonPrimitive(itemId), "vote" to JsonPrimitive(vote))
     fun kick(id: String): String = msg("kick", "id" to JsonPrimitive(id))
     fun passHost(id: String): String = msg("passHost", "id" to JsonPrimitive(id))
+    fun setRate(rate: Float, keepPitch: Boolean): String = msg(
+        "setRate",
+        "rate" to JsonPrimitive(rate.coerceIn(MIN_RATE, MAX_RATE).toDouble()),
+        "keepPitch" to JsonPrimitive(keepPitch),
+    )
+
+    /** The speeds a party plays at, as the server allows them. */
+    const val MIN_RATE = 0.25f
+    const val MAX_RATE = 4f
     fun endParty(): String = msg("endParty")
 
     /** The reason the server gives everyone when the host ends the party. */

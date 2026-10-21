@@ -2970,4 +2970,6 @@
     <string name="party_error_guest_host">网页访客不能当主持人。</string>
     <string name="party_invite_switch">你被邀请加入派对 %1$s。要加入吗？你会离开当前派对。</string>
     <string name="party_invite_not_now">暂不</string>
+    <string name="party_speed">%1$s×</string>
+    <string name="party_speed_vinyl">%1$s× · 黑胶</string>
 </resources>

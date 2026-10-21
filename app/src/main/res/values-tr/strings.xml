@@ -3042,4 +3042,6 @@
     <string name="party_error_guest_host">Web sitesindeki bir misafir ev sahibi olamaz.</string>
     <string name="party_invite_switch">%1$s partisine davet edildiniz. Katılmak ister misiniz? Bu partiden ayrılırsınız.</string>
     <string name="party_invite_not_now">Şimdi değil</string>
+    <string name="party_speed">%1$s×</string>
+    <string name="party_speed_vinyl">%1$s× · plak</string>
 </resources>

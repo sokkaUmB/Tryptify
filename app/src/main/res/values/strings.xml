@@ -3044,4 +3044,6 @@
     <string name="party_error_guest_host">A website guest can’t be the host.</string>
     <string name="party_invite_switch">You\'re invited to party %1$s. Join it? You\'ll leave this party.</string>
     <string name="party_invite_not_now">Not now</string>
+    <string name="party_speed">%1$s×</string>
+    <string name="party_speed_vinyl">%1$s× · vinyl</string>
 </resources>

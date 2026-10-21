@@ -66,6 +66,7 @@ class PlaybackService : MediaSessionService() {
     @Inject lateinit var queueManager: QueueManager
     @Inject lateinit var streamResolver: StreamResolver
     @Inject lateinit var preferences: PreferencesManager
+    @Inject lateinit var speedOverride: SpeedOverride
     @Inject lateinit var libraryRepository: LibraryRepository
     @Inject lateinit var scrobblingService: ScrobblingService
     @Inject lateinit var discordPresence: tf.monochrome.android.data.presence.DiscordPresenceManager
@@ -503,13 +504,15 @@ class PlaybackService : MediaSessionService() {
             bypassVolumeController.levelDb.collect { forwardingPlayer.onDeviceVolumeChanged() }
         }
 
-        // Seamlessly apply playback speed when settings change
+        // Seamlessly apply playback speed when settings change, or the
+        // listening party's speed while it overrides them.
         serviceScope.launch {
             kotlinx.coroutines.flow.combine(
                 preferences.playbackSpeed,
-                preferences.preservePitch
-            ) { speed, preservePitch ->
-                Pair(speed, preservePitch)
+                preferences.preservePitch,
+                speedOverride.value,
+            ) { speed, preservePitch, party ->
+                party?.let { it.speed to it.keepPitch } ?: (speed to preservePitch)
             }.collect { (speed, preservePitch) ->
                 pushPlaybackParameters(speed, preservePitch)
             }
@@ -1434,9 +1437,10 @@ class PlaybackService : MediaSessionService() {
 
     private fun applyPlaybackSpeed() {
         serviceScope.launch {
+            val party = speedOverride.value.value
             pushPlaybackParameters(
-                preferences.playbackSpeed.first(),
-                preferences.preservePitch.first(),
+                party?.speed ?: preferences.playbackSpeed.first(),
+                party?.keepPitch ?: preferences.preservePitch.first(),
             )
         }
     }

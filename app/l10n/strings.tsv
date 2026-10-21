@@ -2991,3 +2991,5 @@ party_end_all_yes	End it	结束	終了する	Terminer	Terminar	Bitir	Beenden
 party_error_guest_host	A website guest can’t be the host.	网页访客不能当主持人。	ウェブのゲストはホストになれません。	Un invité sur le site ne peut pas être l’hôte.	Un invitado de la web no puede ser el anfitrión.	Web sitesindeki bir misafir ev sahibi olamaz.	Ein Gast auf der Website kann nicht Gastgeber sein.
 party_invite_switch	You're invited to party %1$s. Join it? You'll leave this party.	你被邀请加入派对 %1$s。要加入吗？你会离开当前派对。	パーティー %1$s に招待されています。参加しますか？今のパーティーからは抜けます。	Vous êtes invité à la soirée %1$s. La rejoindre ? Vous quitterez celle-ci.	Te invitaron a la fiesta %1$s. ¿Unirte? Saldrás de esta fiesta.	%1$s partisine davet edildiniz. Katılmak ister misiniz? Bu partiden ayrılırsınız.	Du bist zur Party %1$s eingeladen. Beitreten? Du verlässt dann diese Party.
 party_invite_not_now	Not now	暂不	今はしない	Pas maintenant	Ahora no	Şimdi değil	Nicht jetzt
+party_speed	%1$s×	%1$s×	%1$s×	%1$s×	%1$s×	%1$s×	%1$s×
+party_speed_vinyl	%1$s× · vinyl	%1$s× · 黑胶	%1$s× · レコード	%1$s× · vinyle	%1$s× · vinilo	%1$s× · plak	%1$s× · Vinyl

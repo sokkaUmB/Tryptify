@@ -3114,4 +3114,6 @@
     <string name="party_error_guest_host">Un invité sur le site ne peut pas être l’hôte.</string>
     <string name="party_invite_switch">Vous êtes invité à la soirée %1$s. La rejoindre ? Vous quitterez celle-ci.</string>
     <string name="party_invite_not_now">Pas maintenant</string>
+    <string name="party_speed">%1$s×</string>
+    <string name="party_speed_vinyl">%1$s× · vinyle</string>
 </resources>

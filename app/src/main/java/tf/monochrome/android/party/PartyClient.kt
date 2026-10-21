@@ -329,6 +329,7 @@ class PartyClient @Inject constructor(
     fun chat(text: String) = tell(PartyProtocol.chat(text))
     fun kick(id: String) = tell(PartyProtocol.kick(id))
     fun passHost(id: String) = tell(PartyProtocol.passHost(id))
+    fun setRate(rate: Float, keepPitch: Boolean) = tell(PartyProtocol.setRate(rate, keepPitch))
     fun endParty() = tell(PartyProtocol.endParty())
     fun clearError() = _state.update { it.copy(error = null) }
 

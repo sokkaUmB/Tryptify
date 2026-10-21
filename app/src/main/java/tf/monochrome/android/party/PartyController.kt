@@ -16,6 +16,8 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -36,6 +39,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import tf.monochrome.android.data.auth.SupabaseAuthManager
+import tf.monochrome.android.data.preferences.PreferencesManager
+import tf.monochrome.android.player.SpeedOverride
+import tf.monochrome.android.player.SpeedSetting
 import tf.monochrome.android.data.repository.MusicRepository
 import tf.monochrome.android.domain.model.AudioCodec
 import tf.monochrome.android.domain.model.PlaybackSource
@@ -132,6 +138,8 @@ class PartyController @Inject constructor(
     private val repository: MusicRepository,
     private val prefs: PartyPrefs,
     private val notifier: PartyNotifier,
+    private val preferences: PreferencesManager,
+    private val speedOverride: SpeedOverride,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val hearing = MutableStateFlow(PartyHearing.IDLE)
@@ -208,6 +216,7 @@ class PartyController @Inject constructor(
             controller = connect()
             launch { followSong() }
             launch { followClock() }
+            launch { followSpeed() }
             launch { followEvents() }
             // Over, by the server's word or a seat lost for good: the party's
             // song stops with it, and everyone sees why on the party screen.
@@ -240,6 +249,8 @@ class PartyController @Inject constructor(
     private fun stop() {
         work?.cancel()
         work = null
+        // This phone's own speed again.
+        speedOverride.set(null)
         resolving?.cancel()
         controller?.release()
         controller = null
@@ -426,6 +437,30 @@ class PartyController @Inject constructor(
     )
 
     // The clock.
+
+    /**
+     * The host's speed for everyone. The host's own speed setting, and whether
+     * it keeps the pitch, goes to the party (a quarter second after a slider
+     * stops moving, not at every step of it). Every other phone plays at the
+     * party's through [SpeedOverride], its own setting left as it was.
+     */
+    @OptIn(FlowPreview::class)
+    private suspend fun followSpeed() = coroutineScope {
+        launch {
+            combine(
+                client.state.map { it.isHost && it.status == PartyStatus.IN_PARTY }.distinctUntilChanged(),
+                preferences.playbackSpeed,
+                preferences.preservePitch,
+            ) { host, speed, keepPitch -> if (host) SpeedSetting(speed, keepPitch) else null }
+                .debounce(250)
+                .distinctUntilChanged()
+                .collect { mine -> if (mine != null) client.setRate(mine.speed, mine.keepPitch) }
+        }
+        client.state
+            .map { s -> s.party?.playback?.takeIf { !s.isHost }?.let { SpeedSetting(it.rate.toFloat(), it.keepPitch) } }
+            .distinctUntilChanged()
+            .collect { speedOverride.set(it) }
+    }
 
     private suspend fun followClock() {
         while (scope.isActive) {

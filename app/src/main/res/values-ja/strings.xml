@@ -2970,4 +2970,6 @@
     <string name="party_error_guest_host">ウェブのゲストはホストになれません。</string>
     <string name="party_invite_switch">パーティー %1$s に招待されています。参加しますか？今のパーティーからは抜けます。</string>
     <string name="party_invite_not_now">今はしない</string>
+    <string name="party_speed">%1$s×</string>
+    <string name="party_speed_vinyl">%1$s× · レコード</string>
 </resources>
