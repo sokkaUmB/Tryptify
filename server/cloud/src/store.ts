@@ -19,8 +19,15 @@ export interface Db {
 export interface Stmt {
   bind(...values: unknown[]): Stmt;
   first<T = Record<string, unknown>>(): Promise<T | null>;
+  all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
   run(): Promise<unknown>;
 }
+
+/** Rows a run() changed: D1 reports it as meta.changes, SQLite drivers as changes. */
+export const changesOf = (result: unknown): number => {
+  const r = result as { meta?: { changes?: number }; changes?: number } | null;
+  return Number(r?.meta?.changes ?? r?.changes ?? 0);
+};
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

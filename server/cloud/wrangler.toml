@@ -33,3 +33,7 @@ CREEM_PRODUCT_MAX_YEARLY = "prod_7TtInxGK5fNOs0VKHHpdY3"
 CREEM_PRODUCT_LITE_MONTHLY_TRIAL = "prod_7B4iLXRJKPaeSjOy4BmBir"
 CREEM_PRODUCT_PLUS_MONTHLY_TRIAL = "prod_7CntKejjZyg6Lt3BbmtIkQ"
 CREEM_PRODUCT_MAX_MONTHLY_TRIAL = "prod_3S0jO8p2OwGiaVQHg3xO59"
+
+# The daily cleanup: lapsed libraries and abandoned uploads (src/cleanup.ts).
+[triggers]
+crons = ["17 4 * * *"]

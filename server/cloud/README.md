@@ -1,6 +1,8 @@
 # Tryptify Cloud server
 
-Paid, private storage for a listener's own music. The plan, prices and rules
+**Your personal Subsonic-API music storage, made for fast streaming.** A
+listener uploads their own music and plays it anywhere, in Tryptify or any
+Subsonic-compatible player, from storage that is theirs alone. The plan, prices and rules
 are in [`docs/plans/tryptify-cloud.md`](../../docs/plans/tryptify-cloud.md).
 It runs on **Cloudflare Workers** (`src/worker.ts`), keeps accounts and
 billing events in **Cloudflare D1** (SQLite, `schema.sql`), and signs people
@@ -20,8 +22,11 @@ permission.
 `https://tryptify-cloud.tryptify-cloud.workers.dev` (2026-10-21). Accounts,
 billing and the trial work end to end there: a test-card payment for Plus
 reached the Worker as Creem's signed webhook and gave the account Plus for one
-month in D1, recorded once. Storage and the Subsonic API come next (phase 1 of
-the plan). Without `CREEM_API_KEY` and `CREEM_WEBHOOK_SECRET`, checkout and the
+month in D1, recorded once. Phase 1's server is live too: uploads into R2 within the
+quota, the Subsonic API over the stored library, and the daily cleanup; checked
+in Cloudflare's own runtime (`wrangler dev`) with a 60 MB two-part upload that
+streamed back identical, a seek across the part boundary included. The app's
+screens are next. Without `CREEM_API_KEY` and `CREEM_WEBHOOK_SECRET`, checkout and the
 webhook answer `billing_not_set_up`, and nobody can pay or be granted anything.
 
 ## Where it runs
@@ -202,6 +207,33 @@ that does not fit is refused (`mayUpload`).
 | `GET /v1/account` | Plan, `access` (`full`, `read_only`, `none`), paid-until, delete-after, used and quota bytes, `trial`, `trialAvailable` |
 | `POST /v1/checkout` | `{"plan", "period", "trial"?}` → `{"url"}`, a checkout link that carries the person's id |
 | `POST /webhooks/billing` | Creem's webhook, signature checked; each event applied once (`cloud_billing_events`) |
+| `GET /v1/library` | Used, reserved and allowed bytes, song count, part size |
+| `POST /v1/uploads` | `{size, suffix, meta}` → `{id, partSize, parts}`; reserves `size` against the quota (413 `over_quota`, 402 `no_plan`, 409 `read_only`, 415 `not_audio`) |
+| `PUT /v1/uploads/:id/parts/:n` | One part as the raw body: exactly `partSize` (50 MB) except the last → `{partNumber, etag}` |
+| `POST /v1/uploads/:id/complete` | `{parts}` → the song; the file must be exactly the reserved size |
+| `DELETE /v1/uploads/:id` | Gives the upload and its reservation up |
+| `PUT /v1/songs/:id/cover` | JPEG, PNG or WebP up to 1 MB, counted in the quota |
+| `DELETE /v1/songs/:id` | The song, its file and cover; the space comes back |
+| `POST /v1/subsonic-keys` | `{label?}` → `{server, username, password}`: one device's Subsonic sign-in (at most 10 kept) |
+| `DELETE /v1/subsonic-keys` | Signs every device out of the Subsonic API |
+| `/rest/<method>.view` | The Subsonic API (`src/subsonic.ts`): ping, getLicense, getMusicFolders, getAlbumList2, getAlbum, getArtists, getArtist, getSong, search3, getRandomSongs, stream and download (with Range), getCoverArt |
+
+### Storage rules
+
+- **An upload's size is reserved from its first request**: used + reserved +
+  this ≤ quota, checked and reserved in one statement, so two uploads cannot
+  both take the last space. At most 6 open at once. The finished file must be
+  exactly that size, or it is deleted and not counted.
+- **Covers count** against the quota as well.
+- **Files** live under `u/<account id>/` in R2; nothing outside a person's own
+  folder is reachable through their sign-in.
+- **The daily cleanup** (Cron Trigger, 04:17 UTC) deletes libraries past their
+  delete-after date and aborts uploads open longer than six hours. The bucket
+  also aborts incomplete multipart uploads after one day (lifecycle rule
+  `abort-stale-uploads`).
+- **Streaming** goes through the Worker. Workers bill neither bandwidth nor the
+  time spent waiting on R2, and R2 bills no egress, so a play costs requests
+  only.
 
 ## Testing
 

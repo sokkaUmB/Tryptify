@@ -25,3 +25,60 @@ create table if not exists cloud_billing_events (
   received_at  text not null,
   primary key (provider, event_id)
 );
+
+-- ── The library (phase 1) ───────────────────────────────────────────────────
+
+-- One uploaded song. Its file is the R2 object `key`; its cover, if any, is
+-- `cover_key`. Tags come from the app, which already reads them on the phone.
+create table if not exists cloud_songs (
+  id            text    primary key,           -- "so-…"
+  user_id       text    not null,
+  key           text    not null,
+  size          integer not null,
+  cover_key     text,
+  cover_size    integer not null default 0,
+  title         text    not null,
+  artist        text    not null,
+  album         text    not null,
+  album_artist  text    not null,
+  album_id      text    not null,              -- "al-…", from album_artist + album
+  artist_id     text    not null,              -- "ar-…", from album_artist
+  track         integer,
+  disc          integer,
+  year          integer,
+  genre         text,
+  duration      integer not null default 0,    -- seconds
+  suffix        text    not null,
+  content_type  text    not null,
+  bit_rate      integer,
+  sample_rate   integer,
+  bit_depth     integer,
+  created_at    text    not null
+);
+create index if not exists cloud_songs_user_album on cloud_songs (user_id, album_id);
+create index if not exists cloud_songs_user_artist on cloud_songs (user_id, artist_id);
+
+-- An upload in progress. Its declared size is reserved against the quota from
+-- the start, so abandoned uploads can never hold more storage than the plan
+-- pays for; the daily cleanup aborts ones left over.
+create table if not exists cloud_uploads (
+  id          text    primary key,             -- becomes the song's id
+  user_id     text    not null,
+  key         text    not null,
+  r2_upload   text    not null,                -- R2's multipart uploadId
+  size        integer not null,
+  meta        text    not null,                -- the song's tags, JSON
+  created_at  text    not null
+);
+create index if not exists cloud_uploads_user on cloud_uploads (user_id);
+
+-- Passwords the app uses for the Subsonic API, one per device. Random and
+-- revocable; never the person's Tryptify password.
+create table if not exists cloud_subsonic_keys (
+  id          text    primary key,
+  user_id     text    not null,
+  password    text    not null,
+  label       text,
+  created_at  text    not null
+);
+create index if not exists cloud_subsonic_keys_user on cloud_subsonic_keys (user_id);

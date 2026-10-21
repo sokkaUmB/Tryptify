@@ -1,6 +1,9 @@
 # Tryptify Cloud: plan
 
-Agreed with the owner on 2026-10-21; not started. A paid subscription that
+Agreed with the owner on 2026-10-21. Billing, the trial and phase 1's server
+(uploads, the Subsonic API, cleanup) are live on Cloudflare in Creem test mode;
+the app's screens are next. Positioning, the owner's words: **a personal
+Subsonic-API storage made for fast music streaming**. A paid subscription that
 stores a listener's own music and streams it anywhere, for people who do not
 want to host a server. Build it one phase at a time, each
 finished against its gate before the next starts.

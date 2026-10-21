@@ -6,12 +6,14 @@
 import { createApp } from "./app";
 import { supabaseAuth } from "./auth";
 import { creemBilling } from "./creem";
+import { cleanup } from "./cleanup";
+import type { Bucket } from "./library";
 import type { Db } from "./store";
 
 export interface Env {
   DB?: Db;
-  /** The R2 bucket for listeners' music (phase 1 fills it). */
-  MUSIC?: unknown;
+  /** The R2 bucket for listeners' music. */
+  MUSIC?: Bucket;
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
   [key: string]: unknown;
@@ -39,5 +41,12 @@ export default {
       });
     }
     return app.fetch(request, env, ctx as never);
+  },
+
+  /** The daily cleanup (wrangler.toml [triggers]). */
+  async scheduled(_event: unknown, env: Env): Promise<void> {
+    if (!env.DB || !env.MUSIC) return;
+    const result = await cleanup(env.DB, env.MUSIC, new Date());
+    console.log(`cleanup: ${result.wiped} libraries deleted, ${result.aborted} stale uploads aborted`);
   },
 };
