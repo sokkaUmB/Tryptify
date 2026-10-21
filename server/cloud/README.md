@@ -18,11 +18,12 @@ permission.
 
 ## Status
 
-**Live, in Creem test mode**, at `https://cloud.tryptify.com` (the app's
-default since 2026-10-21) and still at
-`https://tryptify-cloud.tryptify-cloud.workers.dev`, where the test webhook
-points (2026-10-21). Accounts,
-billing and the trial work end to end there: a test-card payment for Plus
+**Live, taking real payments in Creem live mode since 2026-10-21**, at
+`https://cloud.tryptify.com` (the app's default), where the live webhook
+points (`/webhooks/billing`); it is still reachable at
+`https://tryptify-cloud.tryptify-cloud.workers.dev` for older builds. Before
+that it ran in test mode, where accounts, billing and the trial worked end to
+end: a test-card payment for Plus
 reached the Worker as Creem's signed webhook and gave the account Plus for one
 month in D1, recorded once. Phase 1's server is live too: uploads into R2 within the
 quota, the Subsonic API over the stored library, and the daily cleanup; checked
@@ -133,12 +134,10 @@ ids are not secrets:
 ### Live mode, created on 2026-10-21
 
 The same nine exist in Creem's **live** mode (checked back: nine, USD, tax
-included, trials only on the three trial products). The Worker does **not**
-use them yet: it stays in test mode until phase 1 stores music, so nobody can
-pay for storage that does not exist. Going live then means, in
-`wrangler.toml`, removing `CREEM_API_BASE` and swapping in these ids, and
-setting the live `CREEM_API_KEY` and a live webhook's `CREEM_WEBHOOK_SECRET`
-as Worker secrets:
+included, trials only on the three trial products). The Worker uses them
+since 2026-10-21: `wrangler.toml` has these ids and no `CREEM_API_BASE`, and
+the live `CREEM_API_KEY` and the live webhook's `CREEM_WEBHOOK_SECRET` are
+Worker secrets. A live checkout link was made with them before the switch:
 
 | Variable | Live product |
 | --- | --- |
