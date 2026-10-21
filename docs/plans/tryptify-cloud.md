@@ -145,8 +145,12 @@ $7/TB, roughly half, which would allow a 1 TB plan. Their free egress is
 pooled and limited (B2: three times what is stored), so only after measuring
 how much listeners stream compared with what they store.
 
-## Open questions for the owner
+## Web payments: Creem (chosen 2026-10-21)
 
-- Which merchant of record for the web path: Lemon Squeezy (now Stripe's;
-  Stripe Managed Payments is its successor) or Paddle (asks for custom terms
-  below $10).
+The owner cannot use Stripe, which also rules out Lemon Squeezy (Stripe's,
+moving to Stripe Managed Payments) and Polar (Stripe Connect). Creem is a
+merchant of record with its own ID check, 3.9% + $0.40, signed webhooks and a
+test mode; payouts by bank transfer, USDC or Alipay, not PayPal. Paddle
+(5% + $0.50, PayPal payouts, custom terms under $10) is the fallback, and
+Dodo Payments a third. All three fit inside the worst case the prices were
+checked against. Built into `server/cloud/` (see its README for the setup).

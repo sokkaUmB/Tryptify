@@ -108,8 +108,8 @@ export function mayUpload(a: Account, bytes: number, now: Date): boolean {
  * renewal arrives, and access lapses on its own at the date already stored.
  */
 export type BillingEvent =
-  | { kind: "paid"; eventId: string; userId: string; plan: PlanId; paidUntil: Date; customerId?: string; subscriptionId?: string }
-  | { kind: "refunded"; eventId: string; userId: string };
+  | { kind: "paid"; eventId: string; userId: string | null; plan: PlanId; paidUntil: Date; customerId?: string; subscriptionId?: string }
+  | { kind: "refunded"; eventId: string; userId: string | null; subscriptionId?: string };
 
 /** The account after [e]. Pure. The paid-until date only ever moves forward on a payment. */
 export function applyEvent(a: Account, e: BillingEvent, now: Date): Account {
@@ -167,16 +167,31 @@ async function loadAccount(uid: string): Promise<Account> {
     : { plan: null, paidUntil: null, usedBytes: 0 };
 }
 
-/** Applies [e] once: a redelivered event finds its row and changes nothing. */
+/**
+ * Applies [e] once: a redelivered event finds its row and changes nothing.
+ * An event with no person (a refund names only its subscription) is matched
+ * through the subscription the person paid with; one matching nobody grants
+ * nothing and is dropped.
+ */
 async function record(provider: string, e: BillingEvent): Promise<boolean> {
+  let userId = e.userId && UUID.test(e.userId) ? e.userId : null;
+  if (!userId && e.subscriptionId) {
+    const [owner] = await db!`
+      select user_id from cloud_accounts where provider = ${provider} and subscription_id = ${e.subscriptionId}`;
+    userId = owner?.user_id ?? null;
+  }
+  if (!userId) {
+    console.error(`billing event ${e.eventId} (${e.kind}) names nobody this service knows; ignored`);
+    return false;
+  }
   return db!.begin(async (tx) => {
     const inserted = await tx`
       insert into cloud_billing_events (provider, event_id, user_id, kind)
-      values (${provider}, ${e.eventId}, ${e.userId}, ${e.kind})
+      values (${provider}, ${e.eventId}, ${userId}, ${e.kind})
       on conflict do nothing
       returning event_id`;
     if (inserted.length === 0) return false;
-    const [row] = await tx`select plan, paid_until, used_bytes from cloud_accounts where user_id = ${e.userId} for update`;
+    const [row] = await tx`select plan, paid_until, used_bytes from cloud_accounts where user_id = ${userId} for update`;
     const before: Account = row
       ? { plan: row.plan, paidUntil: row.paid_until ? new Date(row.paid_until) : null, usedBytes: Number(row.used_bytes) }
       : { plan: null, paidUntil: null, usedBytes: 0 };
@@ -185,7 +200,7 @@ async function record(provider: string, e: BillingEvent): Promise<boolean> {
     const subscription = e.kind === "paid" ? e.subscriptionId ?? null : null;
     await tx`
       insert into cloud_accounts (user_id, plan, paid_until, provider, customer_id, subscription_id, updated_at)
-      values (${e.userId}, ${after.plan}, ${after.paidUntil}, ${provider}, ${customer}, ${subscription}, now())
+      values (${userId}, ${after.plan}, ${after.paidUntil}, ${provider}, ${customer}, ${subscription}, now())
       on conflict (user_id) do update set
         plan = excluded.plan,
         paid_until = excluded.paid_until,
@@ -329,7 +344,129 @@ export interface Billing {
   parseWebhook(headers: Headers, raw: string): Promise<BillingEvent[] | null>;
 }
 
-const billing: Billing | null = null;
+// Creem (creem.io), the owner's choice: a merchant of record that needs no
+// Stripe account. Set in Railway, never committed:
+//   CREEM_API_KEY, CREEM_WEBHOOK_SECRET  from Creem's dashboard (Developers)
+//   CREEM_PRODUCT_<PLAN>_<PERIOD>        the six products' ids, e.g.
+//                                        CREEM_PRODUCT_LITE_MONTHLY = prod_…
+//   CREEM_API_BASE                       https://test-api.creem.io in test mode
+//   CREEM_SUCCESS_URL                    optional page after paying
+// Webhook URL to register at Creem: <this service>/webhooks/billing, with at
+// least subscription.paid, refund.created and dispute.created.
+
+const productKey = (plan: PlanId, period: Period) => `CREEM_PRODUCT_${plan.toUpperCase()}_${period.toUpperCase()}`;
+
+/** Constant-time comparison of two hex strings. */
+function sameHex(a: string, b: string): boolean {
+  if (a.length !== b.length || a.length === 0) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+export function creemBilling(env: Record<string, string | undefined>, http: typeof fetch = fetch): Billing | null {
+  const apiKey = env.CREEM_API_KEY;
+  const secret = env.CREEM_WEBHOOK_SECRET;
+  if (!apiKey || !secret) return null;
+  const base = (env.CREEM_API_BASE ?? "https://api.creem.io").replace(/\/+$/, "");
+  const planOf = new Map<string, PlanId>();
+  for (const plan of Object.keys(PLANS) as PlanId[]) {
+    for (const period of ["monthly", "yearly"] as const) {
+      const id = env[productKey(plan, period)];
+      if (id) planOf.set(id, plan);
+    }
+  }
+  const metaUser = (...sources: any[]): string | null => {
+    for (const s of sources) {
+      const id = s?.metadata?.userId;
+      if (typeof id === "string" && UUID.test(id)) return id;
+    }
+    return null;
+  };
+  const idOf = (x: any): string | undefined => (typeof x === "string" ? x : typeof x?.id === "string" ? x.id : undefined);
+
+  return {
+    name: "creem",
+
+    async checkoutUrl(plan, period, userId) {
+      const product = env[productKey(plan, period)];
+      if (!product) return null;
+      const res = await http(`${base}/v1/checkouts`, {
+        method: "POST",
+        headers: { "x-api-key": apiKey, "content-type": "application/json" },
+        body: JSON.stringify({
+          product_id: product,
+          request_id: userId,
+          metadata: { userId },
+          ...(env.CREEM_SUCCESS_URL ? { success_url: env.CREEM_SUCCESS_URL } : {}),
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) {
+        console.error(`creem checkout failed: ${res.status} ${(await res.text()).slice(0, 300)}`);
+        return null;
+      }
+      const body = (await res.json().catch(() => null)) as { checkout_url?: unknown } | null;
+      return typeof body?.checkout_url === "string" ? body.checkout_url : null;
+    },
+
+    async parseWebhook(headers, raw) {
+      const given = (headers.get("creem-signature") ?? "").trim().toLowerCase();
+      const expected = new Bun.CryptoHasher("sha256", secret).update(raw).digest("hex");
+      if (!sameHex(given, expected)) return null;
+      let event: any;
+      try {
+        event = JSON.parse(raw);
+      } catch {
+        return [];
+      }
+      const eventId = typeof event?.id === "string" ? event.id : null;
+      const o = event?.object;
+      if (!eventId || !o) return [];
+      switch (event.eventType) {
+        // The one event that grants anything: a payment for a period.
+        case "subscription.paid": {
+          const plan = planOf.get(idOf(o.product) ?? "");
+          const until = new Date(o.current_period_end_date);
+          if (!plan || Number.isNaN(until.getTime())) {
+            console.error(`creem ${eventId}: unknown product ${idOf(o.product)} or no period end; ignored`);
+            return [];
+          }
+          return [{
+            kind: "paid",
+            eventId,
+            userId: metaUser(o),
+            plan,
+            paidUntil: until,
+            customerId: idOf(o.customer),
+            subscriptionId: idOf(o),
+          }];
+        }
+        // A full refund ends access. A partial one (a goodwill credit) does not.
+        case "refund.created": {
+          const paid = Number(o.transaction?.amount_paid ?? NaN);
+          const refunded = Number(o.refund_amount ?? NaN);
+          if (!(refunded > 0) || (Number.isFinite(paid) && refunded < paid)) return [];
+          return [{ kind: "refunded", eventId, userId: metaUser(o.subscription, o.checkout), subscriptionId: idOf(o.subscription) }];
+        }
+        // A chargeback: the money is in question, so access ends as for a refund.
+        case "dispute.created":
+          return [{
+            kind: "refunded",
+            eventId,
+            userId: metaUser(o.subscription, o.checkout),
+            subscriptionId: idOf(o.subscription) ?? idOf(o.transaction?.subscription),
+          }];
+        // Cancelled, past due, paused, expired: nothing to do. No payment
+        // arrives, and access ends on its own at the paid-until date.
+        default:
+          return [];
+      }
+    },
+  };
+}
+
+const billing: Billing | null = creemBilling(Bun.env);
 
 export default {
   port: Number(Bun.env.PORT ?? 3000),
