@@ -4,6 +4,29 @@
 
 ### Added
 
+#### Listening parties
+- **Listen together, in sync.** Start a party from your profile or join one with its code; Invite shares a link that opens in the app. Everyone hears the same moment of the same song, and the party page shows who's listening and whether you're in sync.
+- **Guests on the web.** Anyone without the app joins from the link in a web browser, sees the song, the queue and the chat, and can vote to skip and add songs. The app's guest list marks them On the web. A website guest can't be the host.
+- **A shared Up next.** Add to party is in every song menu, and Add all puts a whole album or playlist in at once. Vote skip moves on once enough of the party agrees.
+- **Chat**, in a panel under Up next, with joins and additions in the same thread.
+- **Your phone's songs, shared.** Songs you add from files on the phone or your downloads are streamed to those without them while they're in the queue, one at a time; nobody keeps them, and ending the party deletes them from the server.
+- **Everyone plays at the host's speed**, vinyl style or not, within a second of the host. A listener plays the host's exact Qobuz or Deezer song, and only the host's own press pauses the party.
+- **Host controls**: Make host hands the seat on, Take out removes someone, and End the party for everyone sends everyone out.
+- **It stays connected in the background**, with a notification while it does, and while it is on, a round button over Search in the nav bar takes you back to it.
+- **It plays as your Tryptify account**, on the rooms server Trypt Mania's multiplayer uses. A rooms server from before parties says so instead.
+
+#### Tryptify Cloud
+- **Your music, stored for you.** Settings › Connections › Tryptify Cloud: plans from 100 GB, a 7-day free trial with 20 GB, and a storage meter. Upload to Tryptify Cloud from a song's menu; uploads carry on in the background with a progress notification.
+- **It plays like your own server**: one tap connects it as the Subsonic server, with its own device password, and your library is in Library › My server.
+- **Files are kept as uploaded**: FLAC, ALAC and WAV stay lossless, with their covers.
+- **Manage or cancel the subscription** from the same page. Your library, devices and uploads are also at tryptify.com/account.
+
+#### Sign in with Discord
+- **Continue with Discord** sits under Continue with Google on the signed-out profile, and on tryptify.com/account.
+
+#### Italian
+- **Tryptify speaks Italian**, the eighth language, in Settings › Appearance › Language, or Android's own app languages list. It started from a contributor's translation of 1.9.4.
+
 #### Your own music server
 - **Play your library from Navidrome, Gonic, Airsonic-Advanced, Ampache or any other Subsonic-compatible server.** Connect it under Settings › Connections › Music server (Subsonic) with its address, your username and your password.
 - **A new Library page, My server**, next to Local: your albums (sorted by name, artist, newest, recently played, most played or random) and artists, an album's songs, and Shuffle all. Its songs are in Search too, marked My server.
