@@ -40,3 +40,26 @@ While the owner chooses, there are three colour designs (Dark, Warm, White,
 licences in `public/fonts/LICENSES.txt`), picked from the bar at the bottom
 of every page or compared at `/designs`. Once chosen, make them the `:root`
 values, then delete the others, the picker and `designs.html`.
+
+## Pages with code
+
+- `/account` (`js/account.js`): Your Cloud, the web app. Signs in with the
+  same Supabase account as the app (`js/vendor/supabase-2.117.3.js`) and uses
+  the cloud server's `/v1` API like the app does: plan, checkout, billing
+  portal, uploads in the server's parts (tags and covers read in the browser
+  by `js/vendor/jsmediatags-3.9.7.min.js`), the library, and the devices
+  signed in to the Subsonic API. Google sign-in needs
+  `https://tryptify.com/account` in Supabase's Auth › URL Configuration ›
+  Redirect URLs.
+- `/autoeq` (`js/autoeq.js`): the AutoEQ ranking, from a snapshot of
+  SeapEngine's bench results in `data/autoeq-bench.json` (SeapEngine sends no
+  CORS header, so it cannot be read live). Refresh it from
+  `https://seapengine.lol/rankings/bench.json` keeping only the metrics.
+- `/download`: the APK lives in the R2 bucket `tryptify-downloads` (too big
+  for a static file) and `src/worker.js` serves it at
+  `/download/tryptify.apk`, with ranges. Publish a new one with
+  `wrangler r2 object put tryptify-downloads/tryptify.apk --remote --file … --content-type application/vnd.android.package-archive --content-disposition 'attachment; filename="Tryptify-<version>.apk"'`
+  and update `data/apk.json` (version, size, SHA-256). The public APK is built
+  without the Trypt Mania server secrets: `env -u TRYPTMANIA_CPU_SERVER -u
+  TRYPTMANIA_ROOMS_SERVER ./gradlew :app:assembleRelease`, and checked with
+  the BuildConfig greps in AGENTS.md before upload.

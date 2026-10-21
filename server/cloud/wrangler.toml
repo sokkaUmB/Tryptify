@@ -27,6 +27,8 @@ bucket_name = "tryptify-cloud-music"
 # product ids with the live ones (they are not secrets).
 [vars]
 CREEM_API_BASE = "https://test-api.creem.io"
+# Where Creem sends a buyer after paying: their account page, which shows the new plan.
+CREEM_SUCCESS_URL = "https://tryptify.com/account?paid=1"
 CREEM_PRODUCT_LITE_MONTHLY = "prod_6eEoCud9ol0vn8H4OyJpt5"
 CREEM_PRODUCT_LITE_YEARLY = "prod_2JlQubP2pnowVTuzXkfiGu"
 CREEM_PRODUCT_PLUS_MONTHLY = "prod_5pm12qQ3N2KCCG6qtZ3dtV"

@@ -36,7 +36,7 @@
         <a href="/">App</a>
         <a href="/autoeq" aria-current="page">AutoEQ</a>
         <a href="/cloud">Cloud</a>
-        <a href="/cloud#pricing">Pricing</a>
+        <a href="/account">Account</a>
         <a href="/contact">Contact</a>
       </nav>
     </div>
@@ -44,18 +44,52 @@
 
   <main class="wrap">
     <section class="hero" style="padding-bottom:20px">
-      <p class="eyebrow">SeapEngine · Rankings</p>
+      <p class="eyebrow">Truthear Nova → SEAP target · 48 kHz</p>
       <h1>AutoEQ ranking</h1>
-      <p class="lead">Tryptify's AutoEQ against AutoEq (the engine behind autoeq.app) and squig.link's optimizer, all scored by the same code. Rank the bench case, or your own headphone: files stay in your browser.</p>
-      <div class="buttons">
-        <a class="btn primary" href="https://seapengine.lol/" target="_blank" rel="noopener">Open full screen in SeapEngine</a>
-        <a class="btn" href="https://github.com/tryptz/Tryptify/releases/latest">Get the app</a>
-      </div>
+      <p class="lead">Tryptify's AutoEQ against AutoEq (the engine behind autoeq.app) and squig.link's optimizer, fitting the same headphone to the same target, all scored by the same code.</p>
     </section>
 
-    <section style="padding-top:0">
-      <iframe class="embed" src="https://seapengine.lol/" title="SeapEngine AutoEQ rankings" referrerpolicy="no-referrer"></iframe>
-      <p class="muted small">Runs on <a href="https://seapengine.lol/">SeapEngine</a>. Tryptify's engine and squig.link's take a couple of seconds; AutoEq runs its own Python code in the browser, which downloads about 36 MB the first time.</p>
+    <section class="ranking" id="ranking" style="padding-top:0">
+      <div class="rank-controls">
+        <div class="rank-group">
+          <span class="rank-label">Highest EQ frequency</span>
+          <div class="chips" data-control="limit" role="group" aria-label="Highest EQ frequency">
+            <button type="button" data-value="default" aria-pressed="true">Defaults</button>
+            <button type="button" data-value="10000" aria-pressed="false">10 kHz</button>
+            <button type="button" data-value="14000" aria-pressed="false">14 kHz</button>
+            <button type="button" data-value="16000" aria-pressed="false">16 kHz</button>
+            <button type="button" data-value="20000" aria-pressed="false">20 kHz</button>
+          </div>
+        </div>
+        <div class="rank-group">
+          <span class="rank-label">Band count</span>
+          <div class="chips" data-control="bands" role="group" aria-label="Band count">
+            <button type="button" data-value="avg" aria-pressed="true">Avg</button>
+            <button type="button" data-value="5" aria-pressed="false">5</button>
+            <button type="button" data-value="8" aria-pressed="false">8</button>
+            <button type="button" data-value="10" aria-pressed="false">10</button>
+            <button type="button" data-value="16" aria-pressed="false">16</button>
+            <button type="button" data-value="20" aria-pressed="false">20</button>
+            <button type="button" data-value="31" aria-pressed="false">31</button>
+          </div>
+        </div>
+        <div class="rank-group">
+          <label class="rank-label" for="rank-by">Rank by</label>
+          <select id="rank-by" class="rank-select">
+            <option value="rmse">Fit error (RMSE)</option>
+            <option value="harman">Preference score</option>
+            <option value="maxerr">Worst error, 20 Hz–10 kHz</option>
+            <option value="headroom">Headroom lost</option>
+            <option value="drift">Sample-rate drift</option>
+            <option value="ring">Ringing above 300 Hz</option>
+            <option value="stack">Largest stacked boost</option>
+          </select>
+        </div>
+      </div>
+      <p class="rank-desc muted" id="rank-desc">How far measurement + EQ lands from the target, 20 Hz to 16 kHz. Lower is better.</p>
+      <ol class="rank-list" id="rank-list" aria-live="polite"><li class="muted">Loading the ranking…</li></ol>
+      <p class="muted small" id="rank-baseline"></p>
+      <p class="muted small">Bench results from <a href="https://seapengine.lol/">SeapEngine</a>, which runs each engine's real code: Tryptify's compiled from the app's Kotlin, AutoEq's own Python and squig.link's optimizer. Want your own headphone ranked? <a href="https://seapengine.lol/" target="_blank" rel="noopener">Rank it in SeapEngine</a>; files stay in your browser.</p>
     </section>
   </main>
 
@@ -63,6 +97,7 @@
     <div class="wrap">
       <div>© 2026 tryptz · Tryptify · <a href="mailto:support@tryptify.com">support@tryptify.com</a></div>
       <nav>
+        <a href="/download">Download</a>
         <a href="/">App</a>
         <a href="/autoeq">AutoEQ ranking</a>
         <a href="/cloud">Tryptify Cloud</a>
@@ -75,5 +110,6 @@
   </footer>
   <script src="/js/motion-12.23.12.js"></script>
   <script src="/js/site.js"></script>
+  <script src="/js/autoeq.js"></script>
 </body>
 </html>
