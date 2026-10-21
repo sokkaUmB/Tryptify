@@ -3122,4 +3122,6 @@
         <item quantity="other">%1$d canciones añadidas a la fiesta</item>
     </plurals>
     <string name="party_add_all">Añadir todo a la fiesta</string>
+    <string name="party_service_channel">Conexión a la fiesta</string>
+    <string name="party_service_text">Te mantiene en la fiesta mientras la app está en segundo plano.</string>
 </resources>

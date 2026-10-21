@@ -3049,4 +3049,6 @@
         <item quantity="other">Partiye %1$d şarkı eklendi</item>
     </plurals>
     <string name="party_add_all">Tümünü partiye ekle</string>
+    <string name="party_service_channel">Parti bağlantısı</string>
+    <string name="party_service_text">Uygulama arka plandayken seni partide tutar.</string>
 </resources>

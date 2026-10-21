@@ -2997,3 +2997,5 @@ party_added_many#one	Added %1$d song to the party	已将 %1$d 首歌加入派对
 party_added_many#many	Added %1$d songs to the party	已将 %1$d 首歌加入派对	%1$d 曲をパーティーに追加しました	%1$d morceaux ajoutés à la soirée	%1$d canciones añadidas a la fiesta	Partiye %1$d şarkı eklendi	%1$d Songs zur Party hinzugefügt
 party_added_many#other	Added %1$d songs to the party	已将 %1$d 首歌加入派对	%1$d 曲をパーティーに追加しました	%1$d morceaux ajoutés à la soirée	%1$d canciones añadidas a la fiesta	Partiye %1$d şarkı eklendi	%1$d Songs zur Party hinzugefügt
 party_add_all	Add all to party	全部加入派对	すべてパーティーに追加	Tout ajouter à la soirée	Añadir todo a la fiesta	Tümünü partiye ekle	Alle zur Party hinzufügen
+party_service_channel	Listening party connection	派对连接	パーティーの接続	Connexion à la soirée	Conexión a la fiesta	Parti bağlantısı	Party-Verbindung
+party_service_text	Keeps you at the party while the app is in the background.	应用在后台时也让你留在派对中。	アプリがバックグラウンドでもパーティーに参加し続けます。	Vous restez à la soirée quand l’app est en arrière-plan.	Te mantiene en la fiesta mientras la app está en segundo plano.	Uygulama arka plandayken seni partide tutar.	Hält dich auf der Party, während die App im Hintergrund ist.

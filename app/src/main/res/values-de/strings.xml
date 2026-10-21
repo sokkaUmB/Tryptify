@@ -3049,4 +3049,6 @@
         <item quantity="other">%1$d Songs zur Party hinzugefügt</item>
     </plurals>
     <string name="party_add_all">Alle zur Party hinzufügen</string>
+    <string name="party_service_channel">Party-Verbindung</string>
+    <string name="party_service_text">Hält dich auf der Party, während die App im Hintergrund ist.</string>
 </resources>

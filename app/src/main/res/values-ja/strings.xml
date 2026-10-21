@@ -2976,4 +2976,6 @@
         <item quantity="other">%1$d 曲をパーティーに追加しました</item>
     </plurals>
     <string name="party_add_all">すべてパーティーに追加</string>
+    <string name="party_service_channel">パーティーの接続</string>
+    <string name="party_service_text">アプリがバックグラウンドでもパーティーに参加し続けます。</string>
 </resources>

@@ -179,6 +179,13 @@
 
         <!-- Spotify playlist import — persistent progress notification until
              the whole playlist is matched. -->
+        <!-- Keeps the phone at a listening party while the app is in the
+             background, playing or not (PartyService). -->
+        <service
+            android:name=".party.PartyService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <service
             android:name=".data.import_.SpotifyImportForegroundService"
             android:exported="false"

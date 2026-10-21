@@ -213,6 +213,8 @@ class PartyController @Inject constructor(
     private fun begin() {
         stop()
         cacheDir.deleteRecursively()
+        // At the party in the background too, playing or not.
+        PartyService.start(context)
         work = scope.launch {
             radioQueueManager.stopRadio()
             controller = connect()
@@ -225,6 +227,7 @@ class PartyController @Inject constructor(
             client.state.first { it.status == PartyStatus.ENDED || it.status == PartyStatus.FAILED }
             runCatching { controller?.pause() }
             cacheDir.deleteRecursively()
+            PartyService.stop(context)
             coroutineContext.cancelChildren()
         }
     }
@@ -244,6 +247,7 @@ class PartyController @Inject constructor(
 
     private fun finish() {
         stop()
+        PartyService.stop(context)
         cacheDir.deleteRecursively()
         notifier.clear()
     }

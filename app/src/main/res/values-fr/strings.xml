@@ -3122,4 +3122,6 @@
         <item quantity="other">%1$d morceaux ajoutés à la soirée</item>
     </plurals>
     <string name="party_add_all">Tout ajouter à la soirée</string>
+    <string name="party_service_channel">Connexion à la soirée</string>
+    <string name="party_service_text">Vous restez à la soirée quand l’app est en arrière-plan.</string>
 </resources>

@@ -2118,6 +2118,12 @@ the bottom, and the field to say something.
   cover, so other phones and the website find that very recording. Away
   longer than the seat is kept, a phone joins its party again by its code;
   it never lands at another party.
+* While a party is on, the phone stays at it in the background, playing or
+  not: `PartyService` is a foreground service with its own quiet ongoing
+  notification ("Listening party connection" channel), started when the
+  party begins and stopped when it ends. Only the listener's own press is the
+  party's pause; the player stopping for a call, headphones or the app being
+  closed never pauses the party.
 * Website guests can add songs from the catalogue (the rooms server's
   `TRYPT_HIFI_URL`); a song a guest added says so like any other, with
   "added by" the guest's name.

@@ -2976,4 +2976,6 @@
         <item quantity="other">已将 %1$d 首歌加入派对</item>
     </plurals>
     <string name="party_add_all">全部加入派对</string>
+    <string name="party_service_channel">派对连接</string>
+    <string name="party_service_text">应用在后台时也让你留在派对中。</string>
 </resources>
