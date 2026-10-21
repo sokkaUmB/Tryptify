@@ -735,3 +735,112 @@ footer { font-size: 13.5px; }
 .explain-tryptify p { font-size: 14.5px !important; }
 .explain-place { font-weight: 600; color: var(--text); }
 .explain-place.wins { color: var(--c-ts); }
+
+/* ── Home: the numbers, the signal path and the feature tours ─────────── */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding-top: 24px; }
+.stat {
+  padding: 24px 22px; border-radius: 18px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+}
+.stat b {
+  display: block; font-family: var(--heading); font-weight: 500; letter-spacing: -0.045em;
+  font-size: clamp(34px, 4.6vw, 54px); line-height: 1; margin-bottom: 10px; font-variant-numeric: tabular-nums;
+}
+.stat span { color: var(--muted); font-size: 14.5px; line-height: 1.45; display: block; }
+@media (max-width: 800px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+.section-lead { color: var(--muted); font-size: 17px; max-width: 620px; margin: 0 0 28px; }
+
+/* The signal path: six stages joined by a line a pulse runs along. */
+.flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 28px; counter-reset: stage; }
+.flow > li {
+  position: relative; padding: 20px 16px 18px; border-radius: 18px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+}
+.flow strong { display: block; font-family: var(--heading); font-weight: 600; font-size: 15.5px; letter-spacing: -0.015em; margin: 12px 0 6px; }
+.flow small { display: block; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.flow-icon {
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; font-size: 18px;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  background: radial-gradient(circle at 50% 30%, rgba(var(--glow), 0.16), transparent 70%);
+  box-shadow: 0 0 24px rgba(var(--glow), 0.10);
+}
+.flow > li:not(:last-child)::after {
+  content: ""; position: absolute; top: 38px; right: -28px; width: 28px; height: 2px;
+  background:
+    linear-gradient(90deg, transparent, rgba(var(--glow), 0.95), transparent) no-repeat,
+    color-mix(in srgb, var(--text) 16%, transparent);
+  background-size: 12px 2px, 100% 2px;
+  background-position: -12px 0, 0 0;
+}
+.flow > li:last-child { box-shadow: 0 0 0 1px rgba(var(--glow), 0.10), 0 0 40px rgba(var(--glow), 0.08); }
+@media (prefers-reduced-motion: no-preference) {
+  .flow.live > li:not(:last-child)::after { animation: flow-pulse 1.4s linear infinite; }
+  .flow.live > li:nth-child(2)::after { animation-delay: 0.23s; }
+  .flow.live > li:nth-child(3)::after { animation-delay: 0.46s; }
+  .flow.live > li:nth-child(4)::after { animation-delay: 0.69s; }
+  .flow.live > li:nth-child(5)::after { animation-delay: 0.92s; }
+}
+@keyframes flow-pulse { from { background-position: -12px 0, 0 0; } to { background-position: 40px 0, 0 0; } }
+@keyframes flow-pulse-down { from { background-position: 0 -12px, 0 0; } to { background-position: 0 40px, 0 0; } }
+@media (max-width: 900px) {
+  .flow { grid-template-columns: 1fr; gap: 22px; }
+  .flow > li { display: grid; grid-template-columns: 38px 1fr; column-gap: 14px; align-items: start; }
+  .flow > li .flow-icon { grid-row: span 2; }
+  .flow strong { margin: 0 0 4px; }
+  .flow > li:not(:last-child)::after {
+    top: auto; right: auto; bottom: -22px; left: 34px; width: 2px; height: 22px;
+    background:
+      linear-gradient(180deg, transparent, rgba(var(--glow), 0.95), transparent) no-repeat,
+      color-mix(in srgb, var(--text) 16%, transparent);
+    background-size: 2px 12px, 2px 100%;
+    background-position: 0 -12px, 0 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .flow.live > li:not(:last-child)::after { animation-name: flow-pulse-down; }
+  }
+}
+
+/* The tours: words on one side, real screens on the other. */
+.tour { display: grid; grid-template-columns: 5fr 7fr; gap: 56px; align-items: center; padding: 72px 0; }
+.tour.flip .tour-text { order: 2; }
+.tour-text h2 { margin: 0 0 14px; }
+.tour-text p:not(.eyebrow) { color: var(--muted); font-size: 17px; line-height: 1.65; max-width: 46ch; margin: 0; }
+.tour-media { position: relative; isolation: isolate; }
+.tour-media::before {
+  content: ""; position: absolute; z-index: -1; inset: 8% 4%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(var(--glow), 0.13), transparent);
+  filter: blur(20px);
+}
+.tour-media figure { margin: 0; }
+.tour-media img {
+  display: block; width: 100%; height: auto; border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.6);
+}
+.tour-media .phone img { border-radius: 24px; }
+.tour-media figcaption { color: var(--muted); font-size: 13px; margin-top: 8px; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 600px; margin: 0 auto; }
+.duo figure:nth-child(2) { margin-top: 56px; }
+.solo { max-width: 300px; margin: 0 auto; }
+.collage { display: grid; grid-template-columns: 0.82fr 1.18fr; gap: 16px; align-items: start; }
+.collage .phone { grid-row: 1 / span 2; }
+.stack { display: grid; gap: 0; }
+.stack figure { width: 86%; position: relative; }
+.stack figure:nth-child(2) { margin: -18px 0 0 14%; z-index: 1; }
+.stack figure:nth-child(3) { margin-top: -18px; z-index: 2; }
+@media (max-width: 860px) {
+  .tour { grid-template-columns: 1fr; gap: 28px; padding: 48px 0; }
+  .tour.flip .tour-text { order: 0; }
+  .duo figure:nth-child(2) { margin-top: 32px; }
+}
+@media (max-width: 480px) {
+  .collage { grid-template-columns: 1fr 1fr; }
+  .collage .phone { grid-row: 1 / span 2; }
+}
+
+.motion .stat, .motion .flow > li, .motion .tour-text > *, .motion .tour-media figure { opacity: 0; }
+/* Overlapping screens would hide each other's captions; the alt text stays. */
+.stack figcaption { display: none; }

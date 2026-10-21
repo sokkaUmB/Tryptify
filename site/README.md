@@ -20,6 +20,21 @@ not. All text is Orbitron, the app's font, in its six weights (Regular 400 to
 Black 900, Latin) as WOFF2 under `public/fonts/`, with its licence
 `public/fonts/orbitron-license.txt`.
 
+## The home page's screens and numbers
+
+The screenshots in `public/img/` are WebP copies (540 px wide for a phone
+screen, 1000 px for a wide one) of the app's own pictures in
+`docs/screenshots/` and `docs/releases/`. The numbers and the signal path
+repeat the app, so check them when it changes:
+
+- 36 mixer plugins in six groups: the named entries of `SnapinType.kt`.
+- 9,795 visualizer presets: `app/src/main/projectm-assets/presets`, all of
+  them passing the crash scan (`KnownCrashPresets.kt` is empty).
+- 9,951 headphones: `public/data/headphones.json`, the AutoEQ browser's list.
+- 8 languages: the columns of `app/l10n/strings.tsv`.
+- The signal path's order (decode, mixer, AutoEQ and parametric EQ, speed
+  and pitch, out): the processor list in `PlaybackService.kt`.
+
 ## Motion, glass, designs and fonts
 
 `js/site.js` animates the pages with Motion (motion.dev, MIT), served from

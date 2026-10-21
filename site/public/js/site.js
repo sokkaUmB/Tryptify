@@ -348,6 +348,42 @@
   // The embedded ranking eases in.
   $$(".embed").forEach((el) => once(el, () => animate(el, { opacity: [0, 1], y: [30, 0] }, { duration: 0.8, ease: easeOut }), 0.05));
 
+  // The numbers count up from zero as they come in.
+  $$(".stats").forEach((stats) => once(stats, () => {
+    const items = Array.from(stats.children);
+    rise(items, { gap: 0.08, y: 18 });
+    items.forEach((item, i) => {
+      const b = $("b[data-count]", item);
+      if (!b) return;
+      const to = Number(b.dataset.count);
+      animate(0, to, { duration: 1.4, delay: 0.1 + i * 0.08, ease: easeOut, onUpdate: (v) => { b.textContent = Math.round(v).toLocaleString("en-US"); } });
+    });
+  }, 0.3));
+
+  // The signal path: each stage lights up in turn, then a pulse runs along the line.
+  $$(".flow").forEach((flow) => once(flow, () => {
+    const stages = Array.from(flow.children);
+    animate(stages, { opacity: [0, 1], y: [16, 0], scale: [0.96, 1] },
+      { type: "spring", stiffness: 220, damping: 22, delay: stagger(0.11) });
+    setTimeout(() => flow.classList.add("live"), 110 * stages.length + 200);
+  }, 0.25));
+
+  // The tours: words rise, screens slide in from their side, then drift a little with the scroll.
+  $$(".tour").forEach((tour) => {
+    const figs = $$(".tour-media figure", tour);
+    const from = tour.classList.contains("flip") ? -1 : 1;
+    once(tour, () => {
+      rise($$(".tour-text > *", tour), { gap: 0.07, y: 18 });
+      figs.forEach((fig, i) => animate(fig, { opacity: [0, 1], x: [from * 40, 0], y: [30, 0] },
+        { type: "spring", stiffness: 120, damping: 20, delay: 0.12 + i * 0.1 }));
+    }, 0.2);
+    figs.forEach((fig, i) => {
+      const img = $("img", fig);
+      const depth = 14 + i * 10;
+      scroll(animate(img, { y: [depth, -depth] }, { ease: "linear" }), { target: tour, offset: ["start end", "end start"] });
+    });
+  });
+
   // ── Touch and pointer feel ──────────────────────────────────────────
   // Buttons and switches give a springy push.
   press(".btn, .period button", (el) => {
