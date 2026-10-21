@@ -161,6 +161,11 @@ class PlaybackService : MediaSessionService() {
     private lateinit var player: ExoPlayer
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    /** When the play under way has been heard long enough to scrobble. */
+    private val scrobbles = tf.monochrome.android.data.scrobbling.ScrobbleTracker()
+    private var scrobbleClock = android.os.SystemClock.elapsedRealtime()
+    private var scrobblePlaying = false
+
     // Last track the ProjectM preset was advanced for — so a real track change
     // (skip, previous, pick a new song) rolls the visualizer to a fresh preset
     // immediately instead of waiting on the rotation timer.
@@ -247,6 +252,9 @@ class PlaybackService : MediaSessionService() {
             // updatePeriodMillis=0 (no polling), so it only refreshes when the
             // service pushes an update on a real playback change.
             override fun onIsPlayingChanged(isPlaying: Boolean) {
+                // The time up to now was heard (or not) as it was playing before.
+                tickScrobble()
+                scrobblePlaying = isPlaying
                 // Also what wakes the blend watcher — see startCrossfadeWatcher.
                 playingSignal.value = isPlaying
                 // A track change waits here to become a play: see notePlay.
@@ -307,11 +315,8 @@ class PlaybackService : MediaSessionService() {
                             }
                             return
                         }
-                        if (currentTrack != null) {
-                            serviceScope.launch {
-                                scrobblingService.scrobbleTrack(currentTrack)
-                            }
-                        }
+                        // The last seconds heard count before it moves on.
+                        tickScrobble()
                         onTrackEnded()
                     }
                     Player.STATE_READY -> {
@@ -502,6 +507,15 @@ class PlaybackService : MediaSessionService() {
         }
         serviceScope.launch {
             bypassVolumeController.levelDb.collect { forwardingPlayer.onDeviceVolumeChanged() }
+        }
+
+        // Scrobbles by time heard, checked every couple of seconds: see
+        // ScrobbleTracker for why not on the track's end.
+        serviceScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(2_000)
+                tickScrobble()
+            }
         }
 
         // Seamlessly apply playback speed when settings change, or the
@@ -1706,7 +1720,6 @@ class PlaybackService : MediaSessionService() {
     @OptIn(UnstableApi::class)
     private fun beginCrossfade(fadeFromMs: Long) {
         val item = player.currentMediaItem ?: return
-        val outgoing = queueManager.currentTrack.value
         val params = player.playbackParameters
         crossfadeArmed = false
         crossfade.start(
@@ -1724,10 +1737,9 @@ class PlaybackService : MediaSessionService() {
             ),
             mainPositionMs = { player.currentPosition },
             onHandOff = {
-                // The outgoing track never reaches STATE_ENDED on the main
-                // player now — we pre-empt it — so scrobble here instead,
-                // exactly as that handler would have.
-                outgoing?.let { serviceScope.launch { scrobblingService.scrobbleTrack(it) } }
+                // The outgoing track's last seconds heard count before the
+                // incoming one starts its own play (see ScrobbleTracker).
+                tickScrobble()
                 incomingStartsAfter = audioStarts
                 // Start the incoming track silent; the ramp brings it up.
                 crossfadeGain = 0f
@@ -1904,10 +1916,26 @@ class PlaybackService : MediaSessionService() {
         if (player.isPlaying) commitPendingPlay()
     }
 
+    /**
+     * Counts what was heard since the last look into the play under way, and
+     * scrobbles it the moment it has been heard long enough, once.
+     */
+    private fun tickScrobble() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (scrobblePlaying) scrobbles.heard(now - scrobbleClock, player.playbackParameters.speed)
+        scrobbleClock = now
+        scrobbles.due()?.let { (track, startedAt) ->
+            serviceScope.launch { scrobblingService.scrobbleTrack(track, startedAt) }
+        }
+    }
+
     /** Writes the pending play to history, once, unless it repeats the last one. */
     private fun commitPendingPlay() {
         val play = pendingPlay ?: return
         pendingPlay = null
+        // The play before it is finished with; this one starts its own count.
+        tickScrobble()
+        scrobbles.start(play.track, System.currentTimeMillis() / 1000)
         if (!playDeduper.shouldRecord(play.track.id, System.currentTimeMillis(), play.repeat)) return
         serviceScope.launch {
             libraryRepository.addToHistory(play.track, play.unified)

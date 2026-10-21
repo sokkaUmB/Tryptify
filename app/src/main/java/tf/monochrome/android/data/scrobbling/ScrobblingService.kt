@@ -6,6 +6,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Parameters
 import io.ktor.http.contentType
@@ -127,7 +128,16 @@ class ScrobblingService @Inject constructor(
                     params.forEach { (k, v) -> append(k, v) }
                 }))
             }
-        } catch (_: Exception) {
+            // Last.fm can refuse a scrobble (an error) or take it and ignore
+            // it (a reason code in the body). Neither used to be seen at all.
+            val body = response.bodyAsText()
+            if (!response.status.isSuccess() || body.contains("\"error\"") || body.contains("\"ignored\":1") ||
+                body.contains("\"ignored\":\"1\"")
+            ) {
+                android.util.Log.w("Scrobbling", "Last.fm did not record \"${track.title}\": $body")
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("Scrobbling", "Last.fm scrobble failed: ${e.message}")
         }
     }
 
@@ -157,4 +167,5 @@ class ScrobblingService @Inject constructor(
         } catch (_: Exception) {
         }
     }
+
 }
