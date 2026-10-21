@@ -77,9 +77,76 @@ with no computer or NAS.
   "not affiliated" line for the services the app names, and Android backup
   rules that leave sign-ins out.
 
+## Pricing (agreed 2026-10-21)
+
+The owner's rule: **a listener can never cost more than they pay.** Every
+plan's worst case is a profit, and the only cost not tied to a subscriber is
+Railway's plan fee.
+
+**$3.99 per 100 GB a month**, yearly at two months free:
+
+| Plan | Storage | Monthly | Yearly | Full-quota cost | Worst profit / month |
+|---|---|---|---|---|---|
+| Lite | 100 GB | $3.99 | $39.99 | $1.72 | +$0.51 (yearly) |
+| Plus | 250 GB | $9.99 | $99.99 | $4.31 | +$1.26 (yearly) |
+| Max | 500 GB | $19.99 | $199.99 | $8.62 | +$2.53 (yearly) |
+
+How the numbers were made (research on 2026-10-21, sources in the session):
+
+- Cost: Railway bucket storage $0.015 per GB-month; bucket egress and S3
+  calls free. Plus 15% for the database, compute and rounding. A listener's
+  cost is therefore set by their quota alone, whatever they stream.
+- Worst fee path: web checkout through Lemon Squeezy with a non-US PayPal
+  payment (5% + 1.5% + 1.5% + 0.5% subscription + 50¢, charged on the
+  tax-inclusive total) in the EU country with the highest VAT (27%). Play is
+  15% (10% service + 5% billing in the US, UK and EEA since 30 Jun 2026).
+- A quota is the largest that leaves at least 20% of the worst-case net as
+  profit, rounded down. Raising a quota or adding a discount means rerunning
+  that check, never guessing: a first draft at $2.99/100 GB lost money.
+
+Rules that keep the guarantee (all phase 1 or 3 requirements):
+
+1. **Hard quota.** The server checks the quota before it issues an upload URL;
+   an upload over it is refused, never billed extra. Downgrading below what is
+   stored makes the library read-only until the listener is under the new
+   limit.
+2. **Audio never passes through the service.** Uploads are presigned PUTs and
+   playback is presigned GETs, straight to the bucket. Service egress is
+   $0.05/GB and unbounded: one hi-res listener streamed through the service
+   could cost $12/month.
+3. **No free tier and no free trial that stores files.** Both cost storage for
+   people who pay nothing. A paid month cancelled any time is the trial.
+4. **When payment stops: 7 days read-only, then deleted**, with reminders and
+   Export everything. At full Lite quota those 7 days cost $0.40, inside the
+   last payment's worst profit ($0.58). Play's grace period is set to match.
+5. **No country priced below the floor.** Play converts one price into local
+   prices; every country's price must still pass the worst-case check, so
+   cheaper regional templates are not used without rerunning it.
+6. **A dormant streaming limit**, a per-plan setting off by default, so that
+   if the host ever bills bucket egress (Railway publishes no fair-use policy)
+   it can be switched on without an app update. Keep the storage code plain S3
+   so the bucket can move to Cloudflare R2: same storage price, free egress in
+   its published terms.
+7. **Fixed cost only grows with paying listeners.** The beta runs on Railway
+   Hobby ($5, 1 TB in total). Move to Pro ($20 a month, which includes $20 of
+   usage) when subscribers pay for it: 9 Lite subscribers at full quota cover
+   it even in the worst case.
+
+What sells it to listeners, at no cost: originals kept as uploaded (lossless
+stays lossless, nothing transcoded), uploads from the phone, a clear usage
+meter, one price rule, cancel any time, and **Export everything** at any time,
+which answers the fear left by Google Play Music and Amazon closing their
+lockers. Competitors on 2026-10-21: YouTube Music uploads free (100k songs,
+no phone uploads), iBroadcast free at 128 kbps or $3.99/month for lossless,
+PikaPods hosted Navidrome from about $1.80/month, iTunes Match $24.99/year.
+
+Later, for libraries over 500 GB: Backblaze B2 or Hetzner store at about
+$7/TB, roughly half, which would allow a 1 TB plan. Their free egress is
+pooled and limited (B2: three times what is stored), so only after measuring
+how much listeners stream compared with what they store.
+
 ## Open questions for the owner
 
-- Plans and prices (e.g. storage tiers). Set after phase 1 measures the real
-  storage and bandwidth cost per GB on Railway.
-- Which merchant of record for the web path.
-- How long files are kept after a subscription ends.
+- Which merchant of record for the web path: Lemon Squeezy (now Stripe's;
+  Stripe Managed Payments is its successor) or Paddle (asks for custom terms
+  below $10).
