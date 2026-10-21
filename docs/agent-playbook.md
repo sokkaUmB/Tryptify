@@ -280,7 +280,7 @@ Use for the rhythm game: its screens (`ui/glyph/`); its engine, charts, packs, t
 1. Read the "Trypt Mania" invariants and the code that draws the screen you are changing.
 2. A change to the rules of play changes the C++ and the Kotlin together, in the same order of operations, and runs both test sets. Change one and a run is judged differently on and off the phone.
 3. A change to the CRT effect is checked in all three places it draws: over the whole app, over the lyrics only, and over the playfield. While it reshapes the whole app (a curve, a tilt, a frame or a zoom), taps are mapped through the tube (`tubeSource`), and while it curves the app the lyrics' own curve is set aside.
-4. New user-facing text goes in all seven languages; `trypt_mania` stays untranslated. No look is named after where its shader came from, except CRT-Royale.
+4. New user-facing text goes in all eight languages; `trypt_mania` stays untranslated. No look is named after where its shader came from, except CRT-Royale.
 
 ### Completion gates
 

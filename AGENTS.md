@@ -96,7 +96,7 @@ Nothing runs any of these automatically: the one CI workflow
 ## Strings
 
 Every user-facing string is a row of `app/l10n/strings.tsv`, one column per
-language. The seven `strings.xml` files are generated from it by
+language. The eight `strings.xml` files are generated from it by
 `python3 app/l10n/generate_strings.py` and are never edited by hand: the next
 run rewrites them from the table, so a string added only to the XML vanishes
 and a rewording made only there reverts. `StringResourcesTest` fails when the

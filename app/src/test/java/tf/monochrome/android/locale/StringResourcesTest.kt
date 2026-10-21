@@ -20,7 +20,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 class StringResourcesTest {
 
     private val res = File("src/main/res")
-    private val folders = listOf("values-zh-rCN", "values-ja", "values-fr", "values-es", "values-tr", "values-de")
+    private val folders = listOf("values-zh-rCN", "values-ja", "values-fr", "values-es", "values-tr", "values-de", "values-it")
 
     /** Plural categories each language actually uses (CLDR). */
     private val pluralForms = mapOf(
@@ -31,6 +31,7 @@ class StringResourcesTest {
         "values-es" to setOf("one", "many", "other"),
         "values-tr" to setOf("one", "other"),
         "values-de" to setOf("one", "other"),
+        "values-it" to setOf("one", "many", "other"),
     )
 
     private class Strings(val strings: Map<String, String>, val plurals: Map<String, Map<String, String>>)
@@ -156,7 +157,7 @@ class StringResourcesTest {
             .split(",").map { it.trim().trim('\'') }.toSet()
         val columns = mapOf(
             "values" to "en", "values-zh-rCN" to "zh", "values-ja" to "ja", "values-fr" to "fr",
-            "values-es" to "es", "values-tr" to "tr", "values-de" to "de",
+            "values-es" to "es", "values-tr" to "tr", "values-de" to "de", "values-it" to "it",
         )
         val fix = "Edit app/l10n/strings.tsv and run python3 app/l10n/generate_strings.py; " +
             "strings.xml is generated and a hand edit is lost on the next run."

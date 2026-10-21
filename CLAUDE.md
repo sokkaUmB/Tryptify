@@ -36,8 +36,9 @@ compaction, so anything that must not be forgotten belongs here, not in chat.
 ## Every change
 
 - UI changes: read and update `docs/ui-invariants.md` (see AGENTS.md).
-- New user-facing strings go in all 7 locales: `values`, `values-de`,
-  `values-es`, `values-fr`, `values-ja`, `values-tr`, `values-zh-rCN`.
+- New user-facing strings go in all 8 locales: `values`, `values-de`,
+  `values-es`, `values-fr`, `values-it`, `values-ja`, `values-tr`,
+  `values-zh-rCN`.
 - Run `./gradlew :app:compileDebugKotlin` and `./gradlew :app:testDebugUnitTest`
   before pushing.
 - Don't name PCSX2 in the UI. CRT-Royale is the one look named after its shader.

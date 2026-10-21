@@ -55,6 +55,7 @@ object AppLanguage {
         Option("es", "Español"),
         Option("tr", "Türkçe"),
         Option("de", "Deutsch"),
+        Option("it", "Italiano"),
     )
 
     /** The tag in effect: one of [OPTIONS]' tags, or "" for the phone's language. */
