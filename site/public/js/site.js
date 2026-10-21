@@ -128,7 +128,7 @@
   // ── Design and font pickers (while the owner chooses) ───────────────
   const DESIGNS = { dark: ["#0a0a0a", "#f2f2f2"], warm: ["#0d0a08", "#ff6a1a"], white: ["#ffffff", "#111111"] };
   const FONTS = {
-    orbitron: "Orbitron", "space-grotesk": "Space Grotesk", sora: "Sora", outfit: "Outfit", manrope: "Manrope",
+    pro: "Outfit + Instrument Sans", orbitron: "Orbitron", "space-grotesk": "Space Grotesk", sora: "Sora", outfit: "Outfit", manrope: "Manrope",
     bricolage: "Bricolage Grotesque", instrument: "Instrument Sans", chivo: "Chivo", plex: "IBM Plex Sans",
     fraunces: "Fraunces", jetbrains: "JetBrains Mono",
   };
@@ -140,8 +140,8 @@
     $$(".designs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.design === name)));
   };
   const setFont = (key) => {
-    if (key === "orbitron") delete root.dataset.font; else root.dataset.font = key;
-    remember("tryptify-font", key);
+    if (key === "pro") delete root.dataset.font; else root.dataset.font = key;
+    remember("tryptify-font-v2", key);
     $$(".designs select").forEach((sel) => { sel.value = key; });
     // Text reflows in a new font: the pricing pill and the previews refit.
     dispatchEvent(new Event("resize"));
@@ -175,7 +175,7 @@
       o.textContent = name;
       select.append(o);
     });
-    select.value = root.dataset.font || "orbitron";
+    select.value = root.dataset.font || "pro";
     select.addEventListener("change", () => setFont(select.value));
     picker.append(select);
     document.body.append(picker);
@@ -213,7 +213,9 @@
   document.body.prepend(bar);
   scroll(animate(bar, { scaleX: [0, 1] }, { ease: "linear" }));
 
-  // ── The hero: words arrive one by one over a live spectrum ──────────
+  const once = (el, fn, amount = 0.25) => inView(el, () => { fn(); }, { amount });
+
+  // ── The hero: words rise into place ─────────────────────────────────
   const hero = $(".hero");
   if (hero) {
     const h1 = $("h1", hero);
@@ -227,18 +229,26 @@
         h1.append(span);
       });
       h1.style.opacity = "1";
-      animate($$(".word", h1), { opacity: [0, 1], y: [26, 0], filter: ["blur(10px)", "blur(0px)"] },
-        { duration: 0.65, ease: easeOut, delay: stagger(0.055, { startDelay: 0.15 }) });
+      animate($$(".word", h1), { opacity: [0, 1], y: [18, 0], filter: ["blur(4px)", "blur(0px)"] },
+        { duration: 0.7, ease: easeOut, delay: stagger(0.045, { startDelay: 0.1 }) });
     }
-    const rest = $$(":scope > :not(h1):not(.spectrum)", hero);
-    rise(rest, { start: 0.35, gap: 0.1, y: 18 });
+    rise($$(":scope > :not(h1)", hero), { start: 0.3, gap: 0.08, y: 14 });
+    hero.addEventListener("pointermove", (e) => {
+      const r = hero.getBoundingClientRect();
+      hero.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      hero.style.setProperty("--my", `${e.clientY - r.top}px`);
+    });
+  }
 
-    // Spectrum bars: each loops at its own pace, and the ones near the
-    // pointer jump up, like a visualizer reacting to the music.
+  // ── The showcase: a live spectrum glowing under the app ─────────────
+  // Each bar loops at its own pace; the ones near the pointer jump up, like a
+  // visualizer reacting to the music.
+  const showcase = $(".showcase");
+  const slot = $(".spectrum-slot");
+  if (showcase && slot) {
     const spectrum = document.createElement("div");
     spectrum.className = "spectrum";
-    spectrum.setAttribute("aria-hidden", "true");
-    const count = innerWidth < 560 ? 26 : 44;
+    const count = innerWidth < 560 ? 30 : 64;
     const bars = [];
     for (let i = 0; i < count; i++) {
       const wrap = document.createElement("span");
@@ -249,38 +259,37 @@
       bars.push(wrap);
       // A rough "music" shape: more energy low and mid, less at the top.
       const t = i / count;
-      const energy = 0.35 + 0.55 * Math.exp(-((t - 0.3) ** 2) / 0.08);
-      const keys = Array.from({ length: 5 }, () => Math.max(0.08, Math.min(1, energy * (0.35 + Math.random() * 0.75))));
+      const energy = 0.3 + 0.6 * Math.exp(-((t - 0.32) ** 2) / 0.07);
+      const keys = Array.from({ length: 5 }, () => Math.max(0.06, Math.min(1, energy * (0.35 + Math.random() * 0.75))));
       animate(fill, { scaleY: keys }, {
         duration: 1.6 + Math.random() * 1.4, repeat: Infinity, repeatType: "mirror", ease: "easeInOut", delay: Math.random() * -2,
       });
     }
-    hero.prepend(spectrum);
-    animate(spectrum, { opacity: [0, innerWidth < 560 ? 0.32 : 0.55] }, { duration: 1.2, delay: 0.2 });
+    slot.append(spectrum);
+    once(showcase, () => animate(showcase, { opacity: [0, 1], y: [40, 0], scale: [0.98, 1] }, { duration: 1, ease: easeOut }), 0.1);
 
     let queued = null;
-    hero.addEventListener("pointermove", (e) => {
+    const follow = (e) => {
+      const r = showcase.getBoundingClientRect();
+      showcase.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      showcase.style.setProperty("--my", `${e.clientY - r.top}px`);
+      const s = spectrum.getBoundingClientRect();
+      bars.forEach((b, i) => {
+        const x = s.left + (i + 0.5) * (s.width / bars.length);
+        const near = Math.max(0, 1 - Math.abs(e.clientX - x) / 140);
+        animate(b, { scaleY: 1 + near * 0.7 }, { type: "spring", stiffness: 300, damping: 18 });
+      });
+    };
+    showcase.addEventListener("pointermove", (e) => {
       // One update per frame, however fast the pointer moves.
       if (queued) { queued = e; return; }
       queued = e;
       requestAnimationFrame(() => { const last = queued; queued = null; follow(last); });
     });
-    const follow = (e) => {
-      const r = hero.getBoundingClientRect();
-      hero.style.setProperty("--mx", `${e.clientX - r.left}px`);
-      hero.style.setProperty("--my", `${e.clientY - r.top}px`);
-      const s = spectrum.getBoundingClientRect();
-      bars.forEach((b, i) => {
-        const x = s.left + (i + 0.5) * (s.width / bars.length);
-        const near = Math.max(0, 1 - Math.abs(e.clientX - x) / 120);
-        animate(b, { scaleY: 1 + near * 0.6 }, { type: "spring", stiffness: 300, damping: 18 });
-      });
-    };
-    hero.addEventListener("pointerleave", () => animate(bars, { scaleY: 1 }, { type: "spring", stiffness: 200, damping: 20 }));
+    showcase.addEventListener("pointerleave", () => animate(bars, { scaleY: 1 }, { type: "spring", stiffness: 200, damping: 20 }));
   }
 
   // ── Sections arrive as they scroll in ───────────────────────────────
-  const once = (el, fn, amount = 0.25) => inView(el, () => { fn(); }, { amount });
 
   $$("section > h2, section > p, .trial, .ticks, .period, section > .card").forEach((el) =>
     once(el, () => rise(el, { y: 22 })));

@@ -24,18 +24,22 @@
 :root {
   --radius: 14px;
   --max: 1080px;
-  --display: "Orbitron", system-ui, sans-serif;
+  /* The default pair, after Framer's: Outfit for headings (geometric, like GT
+     Walsheim), Instrument Sans for everything else (neutral, like Inter). */
+  --display: "Instrument Sans", system-ui, sans-serif;
+  --heading: "Outfit", "Instrument Sans", system-ui, sans-serif;
 }
-[data-font="space-grotesk"] { --display: "Space Grotesk", system-ui, sans-serif; }
-[data-font="sora"] { --display: "Sora", system-ui, sans-serif; }
-[data-font="outfit"] { --display: "Outfit", system-ui, sans-serif; }
-[data-font="manrope"] { --display: "Manrope", system-ui, sans-serif; }
-[data-font="bricolage"] { --display: "Bricolage Grotesque", system-ui, sans-serif; }
-[data-font="instrument"] { --display: "Instrument Sans", system-ui, sans-serif; }
-[data-font="chivo"] { --display: "Chivo", system-ui, sans-serif; }
-[data-font="plex"] { --display: "IBM Plex Sans", system-ui, sans-serif; }
-[data-font="fraunces"] { --display: "Fraunces", Georgia, serif; }
-[data-font="jetbrains"] { --display: "JetBrains Mono", ui-monospace, monospace; }
+[data-font="orbitron"] { --display: "Orbitron", system-ui, sans-serif; --heading: "Orbitron", system-ui, sans-serif; }
+[data-font="space-grotesk"] { --display: "Space Grotesk", system-ui, sans-serif; --heading: "Space Grotesk", system-ui, sans-serif; }
+[data-font="sora"] { --display: "Sora", system-ui, sans-serif; --heading: "Sora", system-ui, sans-serif; }
+[data-font="outfit"] { --display: "Outfit", system-ui, sans-serif; --heading: "Outfit", system-ui, sans-serif; }
+[data-font="manrope"] { --display: "Manrope", system-ui, sans-serif; --heading: "Manrope", system-ui, sans-serif; }
+[data-font="bricolage"] { --display: "Bricolage Grotesque", system-ui, sans-serif; --heading: "Bricolage Grotesque", system-ui, sans-serif; }
+[data-font="instrument"] { --display: "Instrument Sans", system-ui, sans-serif; --heading: "Instrument Sans", system-ui, sans-serif; }
+[data-font="chivo"] { --display: "Chivo", system-ui, sans-serif; --heading: "Chivo", system-ui, sans-serif; }
+[data-font="plex"] { --display: "IBM Plex Sans", system-ui, sans-serif; --heading: "IBM Plex Sans", system-ui, sans-serif; }
+[data-font="fraunces"] { --display: "Fraunces", Georgia, serif; --heading: "Fraunces", Georgia, serif; }
+[data-font="jetbrains"] { --display: "JetBrains Mono", ui-monospace, monospace; --heading: "JetBrains Mono", ui-monospace, monospace; }
 :root, [data-design="dark"] {
   --bg: #0a0a0a;
   --panel: #141414;
@@ -527,3 +531,91 @@ main { padding-top: 12px; }
   .device .muted { display: none; }
 }
 .plan-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); margin: 12px 0; }
+
+
+/* ── Pro: the restrained, Framer-like layer ─────────────────────────────
+   Medium weights, tight headline tracking, neutral body text, quiet cards,
+   white pill buttons, one big glowing showcase. Orbitron stays in the
+   wordmark only. Later rules here deliberately override the ones above. */
+body { font-size: 16px; line-height: 1.6; letter-spacing: -0.006em; font-weight: 400; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, .doc h1, .plan .name, .plan .price, .rank-value, .rank-n, .fonts .sample-title { font-family: var(--heading); }
+.brand, .hero h1, .plan .price, .steps li::before { font-weight: 600; }
+.hero h1 { font-weight: 500; font-size: clamp(40px, 6.4vw, 76px); line-height: 1.02; letter-spacing: -0.045em; max-width: 14ch; margin: 0 0 22px; }
+h2, .doc h1 { font-weight: 500; font-size: clamp(28px, 3.6vw, 44px); line-height: 1.08; letter-spacing: -0.035em; }
+.doc h2 { font-weight: 600; font-size: 21px; letter-spacing: -0.02em; }
+h3 { font-weight: 600; font-size: 17px; letter-spacing: -0.015em; }
+.hero p.lead { font-size: clamp(17px, 1.6vw, 20px); line-height: 1.55; max-width: 600px; color: var(--muted); }
+.eyebrow { font-family: var(--display); font-weight: 500; font-size: 13px; letter-spacing: 0.02em; text-transform: none; color: var(--muted); }
+.hero .eyebrow { display: inline-block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--panel) 70%, transparent); }
+.hero { padding: 96px 0 40px; }
+section { padding: 56px 0; }
+
+/* The brand: the app's tile and an Orbitron wordmark. */
+.brand { display: inline-flex; align-items: center; gap: 10px; font-size: 16px; color: var(--text); text-decoration: none; }
+.brand .mark { width: 28px; height: 28px; flex: none; }
+.brand .mark-tile { stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.2; }
+[data-design="white"] .brand .mark-tile { stroke: none; }
+.brand .wordmark { font-family: "Orbitron", var(--heading); font-weight: 600; letter-spacing: 0.04em; font-size: 15px; }
+
+/* Menu: small, quiet text. */
+.nav a { font-size: 14px; font-weight: 500; letter-spacing: -0.005em; }
+
+/* Buttons: a solid pill and a soft one. */
+.btn { font-family: var(--display); font-weight: 600; font-size: 14.5px; letter-spacing: -0.01em; padding: 11px 20px; border: 1px solid transparent; background: color-mix(in srgb, var(--text) 9%, transparent); }
+.btn:not(.primary):hover { background: color-mix(in srgb, var(--text) 14%, transparent); border-color: transparent; }
+.btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+.btn.primary:hover { color: var(--bg); opacity: 0.92; }
+
+/* Cards: near-black panels with a hairline edge. */
+.card, .plan, .rank-row, .song, .device, .q-item, .gallery article, .fonts article {
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 9%, transparent);
+  border-radius: 18px;
+}
+.card { padding: 26px; }
+.card h3 { margin-bottom: 8px; }
+.card p { font-size: 15px; line-height: 1.6; }
+.grid { gap: 14px; }
+
+/* The showcase: one big panel, lit from below by the spectrum, the app inside. */
+.showcase-wrap { padding-top: 8px; }
+.showcase {
+  position: relative; overflow: hidden; isolation: isolate;
+  border-radius: 28px; border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  background:
+    radial-gradient(60% 55% at 50% 100%, rgba(var(--glow), 0.30), transparent 70%),
+    radial-gradient(500px circle at var(--mx, 50%) var(--my, 40%), rgba(var(--glow), 0.08), transparent 60%),
+    color-mix(in srgb, var(--panel) 85%, var(--bg));
+  padding: 64px 24px 0;
+  min-height: 520px;
+}
+.showcase::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+.spectrum-slot { position: absolute; z-index: 0; left: 0; right: 0; bottom: 0; height: 46%; pointer-events: none; }
+.spectrum-slot .spectrum {
+  position: absolute; inset: 0; width: 100%; height: 100%; right: auto; bottom: auto; opacity: 0.5;
+  display: flex; align-items: flex-end; gap: 3px; padding: 0 12px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
+}
+.shots.fan { position: relative; z-index: 1; display: flex; justify-content: center; align-items: flex-start; gap: 0; grid-template-columns: none; }
+.shots.fan figure { width: min(23%, 230px); flex: none; margin: 0 -1.2%; }
+.shots.fan figure:nth-child(1), .shots.fan figure:nth-child(4) { margin-top: 56px; z-index: 1; }
+.shots.fan figure:nth-child(2), .shots.fan figure:nth-child(3) { z-index: 2; }
+.shots.fan img { border-radius: 26px; border: 1px solid color-mix(in srgb, var(--text) 14%, transparent); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55); }
+.shots.fan figcaption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (max-width: 560px) {
+  .hero { padding: 56px 0 24px; }
+  .showcase { padding: 36px 8px 0; min-height: 0; border-radius: 22px; }
+  .shots.fan figure { width: 30%; margin: 0 -3%; }
+  .shots.fan figure:nth-child(1) { display: none; }
+  .shots.fan figure:nth-child(4) { margin-top: 36px; }
+  .shots.fan figure:nth-child(2) { margin-top: 36px; }
+  .shots.fan img { border-radius: 16px; }
+}
+
+/* The footer: small and grey. */
+footer { font-size: 13.5px; }
+.grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }

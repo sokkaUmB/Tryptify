@@ -6,6 +6,7 @@
   <title>Tryptify: hi-fi music player for Android</title>
   <meta name="description" content="Tryptify is a free hi-fi music player for Android, with a DSP console, headphone AutoEQ, bit-perfect USB DAC output and visualizers. Tryptify Cloud adds paid personal music storage made for fast streaming.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/styles.css">
   <script>
     (function () {
@@ -14,12 +15,12 @@
       var q = new URLSearchParams(location.search), d = q.get("design"), f = q.get("font");
       try {
         if (d && top) localStorage.setItem("tryptify-design", d);
-        if (f && top) localStorage.setItem("tryptify-font", f);
+        if (f && top) localStorage.setItem("tryptify-font-v2", f);
         if (!d) d = localStorage.getItem("tryptify-design");
-        if (!f) f = localStorage.getItem("tryptify-font");
+        if (!f) f = localStorage.getItem("tryptify-font-v2");
       } catch (e) {}
       if (/^(dark|warm|white)$/.test(d || "")) root.dataset.design = d;
-      if (/^(space-grotesk|sora|outfit|manrope|bricolage|instrument|chivo|plex|fraunces|jetbrains)$/.test(f || "")) root.dataset.font = f;
+      if (/^(orbitron|space-grotesk|sora|outfit|manrope|bricolage|instrument|chivo|plex|fraunces|jetbrains)$/.test(f || "")) root.dataset.font = f;
       // Motion only when it is welcome; if site.js has not started in 3 s, show everything as is.
       if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
         root.classList.add("motion");
@@ -31,7 +32,7 @@
 <body>
   <header class="top">
     <div class="wrap glass">
-      <a class="brand" href="/">Trypt<span>ify</span></a>
+      <a class="brand" href="/" aria-label="Tryptify home"><svg class="mark" viewBox="17 17 74 74" aria-hidden="true"><rect x="18" y="18" width="72" height="72" rx="16" fill="#000" class="mark-tile"/><path d="M34,36 L34,72 M44,30 L44,78 M54,26 L54,82 M64,30 L64,78 M74,36 L74,72" stroke="#fff" stroke-width="4" fill="none"/></svg><span class="wordmark">Tryptify</span></a>
       <nav class="nav" aria-label="Main">
         <a href="/" aria-current="page">App</a>
         <a href="/autoeq">AutoEQ</a>
@@ -44,26 +45,30 @@
 
   <main class="wrap">
     <section class="hero">
-      <p class="eyebrow">Free · Android 8.0 and newer</p>
-      <h1>A hi-fi music player you can hear and watch.</h1>
-      <p class="lead">Tryptify plays your own music and streams with a full DSP console, headphone correction from real measurements, bit-perfect output to USB DACs, synced lyrics and live visualizers.</p>
+      <p class="eyebrow">Free for Android · Version 1.9.4</p>
+      <h1>The hi-fi player you can hear and watch.</h1>
+      <p class="lead">A full DSP console, headphone correction from real measurements, bit-perfect USB DAC output, synced lyrics and live visualizers, for your own music and your streams.</p>
       <div class="buttons">
-        <a class="btn primary" href="/download">Download the app</a>
-        <a class="btn" href="/cloud">Tryptify Cloud: your music, stored for you</a>
+        <a class="btn primary" href="/download">Download for Android</a>
+        <a class="btn" href="/cloud">Tryptify Cloud</a>
       </div>
     </section>
 
-    <section aria-label="Screenshots">
-      <div class="shots">
-        <figure><img src="/img/player-glass-spectrum.webp" width="540" height="1112" loading="lazy" alt="Now playing with a glass spectrum over the cover."><figcaption>Glass spectrum</figcaption></figure>
-        <figure><img src="/img/home-nav-bar.webp" width="540" height="1112" loading="lazy" alt="Home screen with the mini player and the glass navigation bar."><figcaption>Home</figcaption></figure>
-        <figure><img src="/img/mixer-buses.webp" width="540" height="1112" loading="lazy" alt="Mixer buses with faders, meters and loudness."><figcaption>Mixer</figcaption></figure>
-        <figure><img src="/img/autoeq.webp" width="540" height="1131" loading="lazy" alt="Headphone AutoEQ correction curve."><figcaption>AutoEQ</figcaption></figure>
+    <section class="showcase-wrap" aria-label="Screenshots">
+      <div class="showcase">
+        <div class="spectrum-slot" aria-hidden="true"></div>
+        <div class="shots fan">
+          <figure><img src="/img/home-nav-bar.webp" width="540" height="1112" alt="Home screen with the mini player and the glass navigation bar."><figcaption>Home</figcaption></figure>
+          <figure><img src="/img/player-glass-spectrum.webp" width="540" height="1112" alt="Now playing with a glass spectrum over the cover."><figcaption>Glass spectrum</figcaption></figure>
+          <figure><img src="/img/mixer-buses.webp" width="540" height="1112" alt="Mixer buses with faders, meters and loudness."><figcaption>Mixer</figcaption></figure>
+          <figure><img src="/img/autoeq.webp" width="540" height="1131" alt="Headphone AutoEQ correction curve."><figcaption>AutoEQ</figcaption></figure>
+        </div>
       </div>
     </section>
 
     <section>
-      <h2>What's inside</h2>
+      <p class="eyebrow">What's inside</p>
+      <h2>Studio tools, in your pocket.</h2>
       <div class="grid">
         <div class="card"><h3>DSP console</h3><p>A native C++ mixer with buses, an FX chain and plugins: EQ, dynamics, reverb and more, metered in LUFS.</p></div>
         <div class="card"><h3>Headphone AutoEQ</h3><p>Correction curves built from real headphone measurements, applied before anything else. <a href="/autoeq">See how it ranks</a>.</p></div>

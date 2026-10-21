@@ -6,6 +6,7 @@
   <title>AutoEQ ranking · Tryptify</title>
   <meta name="description" content="Tryptify's AutoEQ ranked against AutoEq (the engine behind autoeq.app) and squig.link's optimizer, all scored by the same code. Rank the bench case or your own headphone.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/styles.css">
   <script>
     (function () {
@@ -14,12 +15,12 @@
       var q = new URLSearchParams(location.search), d = q.get("design"), f = q.get("font");
       try {
         if (d && top) localStorage.setItem("tryptify-design", d);
-        if (f && top) localStorage.setItem("tryptify-font", f);
+        if (f && top) localStorage.setItem("tryptify-font-v2", f);
         if (!d) d = localStorage.getItem("tryptify-design");
-        if (!f) f = localStorage.getItem("tryptify-font");
+        if (!f) f = localStorage.getItem("tryptify-font-v2");
       } catch (e) {}
       if (/^(dark|warm|white)$/.test(d || "")) root.dataset.design = d;
-      if (/^(space-grotesk|sora|outfit|manrope|bricolage|instrument|chivo|plex|fraunces|jetbrains)$/.test(f || "")) root.dataset.font = f;
+      if (/^(orbitron|space-grotesk|sora|outfit|manrope|bricolage|instrument|chivo|plex|fraunces|jetbrains)$/.test(f || "")) root.dataset.font = f;
       // Motion only when it is welcome; if site.js has not started in 3 s, show everything as is.
       if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
         root.classList.add("motion");
@@ -31,7 +32,7 @@
 <body>
   <header class="top">
     <div class="wrap glass">
-      <a class="brand" href="/">Trypt<span>ify</span></a>
+      <a class="brand" href="/" aria-label="Tryptify home"><svg class="mark" viewBox="17 17 74 74" aria-hidden="true"><rect x="18" y="18" width="72" height="72" rx="16" fill="#000" class="mark-tile"/><path d="M34,36 L34,72 M44,30 L44,78 M54,26 L54,82 M64,30 L64,78 M74,36 L74,72" stroke="#fff" stroke-width="4" fill="none"/></svg><span class="wordmark">Tryptify</span></a>
       <nav class="nav" aria-label="Main">
         <a href="/">App</a>
         <a href="/autoeq" aria-current="page">AutoEQ</a>
