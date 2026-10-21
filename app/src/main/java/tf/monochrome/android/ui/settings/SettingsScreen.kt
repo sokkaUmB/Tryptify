@@ -2713,6 +2713,10 @@ private fun ConnectionsTab(viewModel: SettingsViewModel) {
     SettingsTabContent {
         ApiServersSection(viewModel)
         Spacer(modifier = Modifier.height(20.dp))
+        // The listener's own library server, under the catalogue APIs it sits
+        // beside in Search.
+        SubsonicSection()
+        Spacer(modifier = Modifier.height(20.dp))
         ScrobblingControls(viewModel)
         Spacer(modifier = Modifier.height(20.dp))
         DiscordPresenceControls(viewModel)

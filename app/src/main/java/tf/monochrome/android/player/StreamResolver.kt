@@ -50,6 +50,7 @@ class StreamResolver @Inject constructor(
     private val qobuzIdRegistry: QobuzIdRegistry,
     private val localTrackLocator: LocalTrackLocator,
     private val sourceConsent: SourceConsent,
+    private val subsonicRepository: tf.monochrome.android.data.subsonic.SubsonicRepository,
 ) {
     private fun normalizeArtworkUri(raw: String?): Uri? {
         if (raw.isNullOrBlank()) return null
@@ -250,7 +251,55 @@ class StreamResolver @Inject constructor(
             is PlaybackSource.AppleCached -> resolveAppleCached(track, source, quality)
             is PlaybackSource.DeezerPreview -> resolveDeezer(track, source, quality)
             is PlaybackSource.RadioStream -> resolveRadioStream(track, source)
+            is PlaybackSource.Subsonic -> resolveSubsonic(track, source)
         }
+    }
+
+    /**
+     * A song on the listener's Subsonic server, streamed from `stream.view`.
+     *
+     * The URL is built here, from the server saved now, rather than carried in
+     * the source: it holds the sign-in, and the source is written into the
+     * saved queue and the history. Not playable with no server connected (it
+     * was removed under Settings › Connections since the song was queued).
+     */
+    private val SUBSONIC_COVER_BUDGET_MS = 2_500L
+
+    @OptIn(UnstableApi::class)
+    private suspend fun resolveSubsonic(
+        track: UnifiedTrack,
+        source: PlaybackSource.Subsonic,
+    ): ResolvedMedia {
+        val server = subsonicRepository.currentServer()
+        // The notification and lock screen get the picture itself: Media3's
+        // bitmap loader cannot open a subsonic-cover:// reference, and handing
+        // it the real URL would put the sign-in in the media session, where
+        // other apps can read it. Short, and optional — no cover beats a late
+        // start.
+        val artwork = server?.let {
+            kotlinx.coroutines.withTimeoutOrNull(SUBSONIC_COVER_BUDGET_MS) { subsonicRepository.coverArtBytes(track.artworkUri) }
+        }
+        val metadata = MediaMetadata.Builder()
+            .setTitle(track.title)
+            .setArtist(track.artistName)
+            .setAlbumTitle(track.albumTitle)
+            // The reference, which carries no sign-in; the widget's loader
+            // (this app's Coil) resolves it.
+            .setArtworkUri(track.artworkUri?.toUri())
+            .apply { if (artwork != null) setArtworkData(artwork, MediaMetadata.PICTURE_TYPE_FRONT_COVER) }
+            .setTrackNumber(track.trackNumber)
+            .setDiscNumber(track.discNumber)
+            .build()
+        val mediaItem = MediaItem.Builder()
+            .setMediaId(track.id)
+            .setMediaMetadata(metadata)
+            .apply {
+                if (server != null) {
+                    setUri(tf.monochrome.android.data.subsonic.Subsonic.streamUrl(server, source.songId).toUri())
+                }
+            }
+            .build()
+        return ResolvedMedia(mediaItem = mediaItem, isPlayable = server != null)
     }
 
     /**

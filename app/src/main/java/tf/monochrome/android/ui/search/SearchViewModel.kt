@@ -41,6 +41,7 @@ class SearchViewModel @Inject constructor(
     private val preferences: PreferencesManager,
     private val genreGraph: GenreGraphRepository,
     libraryRepository: LibraryRepository,
+    private val subsonicRepository: tf.monochrome.android.data.subsonic.SubsonicRepository,
 ) : ViewModel() {
 
     /**
@@ -91,7 +92,8 @@ class SearchViewModel @Inject constructor(
         QOBUZ("Qobuz", SourceType.QOBUZ),
         DEEZER("Deezer", SourceType.DEEZER),
         LOCAL("Local", SourceType.LOCAL, R.string.source_local),
-        COLLECTION("Collection", SourceType.COLLECTION, R.string.source_collection)
+        COLLECTION("Collection", SourceType.COLLECTION, R.string.source_collection),
+        SUBSONIC("My server", SourceType.SUBSONIC, R.string.source_subsonic),
     }
 
     /** What the UI prefetch trigger is asking for more of. */
@@ -351,6 +353,7 @@ class SearchViewModel @Inject constructor(
         // Qobuz failures (instance unset, network error, schema mismatch) are
         // swallowed so the existing TIDAL flow keeps working unchanged.
         var deezerSearch: tf.monochrome.android.domain.model.SearchResult? = null
+        var subsonicTracks: List<UnifiedTrack> = emptyList()
         val (searchResult, qobuzResult, unifiedResultsResult) = coroutineScope {
             // Every catalog is asked; which ones answer is decided by the APIs
             // under Settings › Connections. One no API serves comes back empty
@@ -369,7 +372,17 @@ class SearchViewModel @Inject constructor(
                 }
             }
             val libraryDeferred = async { runCatching { unifiedLibrarySearch.search(trimmedQuery).first() } }
+            // The listener's own server, songs only: its albums and artists have
+            // string ids the catalogue cards cannot open. Same budget as Qobuz,
+            // so a server at home that is switched off costs at most that, and
+            // nothing at all when none is connected.
+            val subsonicDeferred = async {
+                withTimeoutOrNull(QOBUZ_BUDGET_MS) {
+                    runCatching { subsonicRepository.searchSongs(trimmedQuery) }.getOrNull()
+                }.orEmpty()
+            }
             deezerSearch = deezerDeferred.await()
+            subsonicTracks = subsonicDeferred.await()
             Triple(apiDeferred.await(), qobuzDeferred.await(), libraryDeferred.await())
         }
         val unifiedResults = unifiedResultsResult.getOrNull()
@@ -379,7 +392,7 @@ class SearchViewModel @Inject constructor(
         val deezerAlbums = deezerSearch?.albums ?: emptyList()
         val deezerArtists = deezerSearch?.artists ?: emptyList()
         val deezerHasResults = deezerTracks.isNotEmpty() || deezerAlbums.isNotEmpty() || deezerArtists.isNotEmpty()
-        if (searchResult.isFailure && unifiedResults == null && !qobuzAvailable && !deezerHasResults) {
+        if (searchResult.isFailure && unifiedResults == null && !qobuzAvailable && !deezerHasResults && subsonicTracks.isEmpty()) {
             // Every backend failed (offline / all instances down). Distinguish
             // this from a successful-but-empty search so the UI can offer a
             // retry instead of a flat "No results found".
@@ -391,7 +404,8 @@ class SearchViewModel @Inject constructor(
 
         val localAndCollectionTracks = listOfNotNull(
             unifiedResults?.localTracks,
-            unifiedResults?.collectionTracks
+            unifiedResults?.collectionTracks,
+            subsonicTracks,
         ).flatten()
 
         val qobuzSearch = qobuzResult?.getOrNull()?.getOrNull()
@@ -683,6 +697,9 @@ class SearchViewModel @Inject constructor(
         // Live radio never reaches search — stations are found on the globe, by
         // place rather than by name — so it has no ranking to earn.
         SourceType.LIVE_RADIO -> 0
+        // The listener's own library, on their own server: between the files
+        // on the phone and the catalogues, like a collection.
+        SourceType.SUBSONIC -> SOURCE_BOOST_COLLECTION
     }
 
     private fun scoreField(query: String, rawValue: String?, baseScore: Int): Int {

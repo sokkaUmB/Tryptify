@@ -325,7 +325,9 @@ enum class GenreConfidence {
 // LIVE_RADIO rather than RADIO: `tf.monochrome.android.radio` is already the
 // algorithmic queue-maker that seeds a station from a track, and the two would
 // be read as the same thing by anyone grepping for it.
-enum class SourceType { API, COLLECTION, LOCAL, QOBUZ, APPLE, DEEZER, LIVE_RADIO }
+// SUBSONIC is the listener's own server (Navidrome, Gonic, Airsonic…), added
+// under Settings › Connections. Appended last: the enum is serialized by name.
+enum class SourceType { API, COLLECTION, LOCAL, QOBUZ, APPLE, DEEZER, LIVE_RADIO, SUBSONIC }
 
 @Serializable
 enum class AudioCodec(val displayName: String) {
@@ -444,6 +446,23 @@ sealed class PlaybackSource {
         val isHls: Boolean = false,
         val codecName: String? = null,
         val bitrateKbps: Int? = null,
+    ) : PlaybackSource()
+
+    /**
+     * A song on the listener's own Subsonic-compatible server (Navidrome,
+     * Gonic, Airsonic-Advanced, Ampache…), streamed as the server holds it.
+     *
+     * Only the song's id. The address and sign-in are read when it is played
+     * (see StreamResolver), never stored here: a source is serialized into the
+     * saved queue and the play history, and a stream URL carries the token.
+     * That also keeps a queue playable after the token changes.
+     */
+    @Serializable
+    @SerialName("Subsonic")
+    data class Subsonic(
+        val songId: String,
+        val suffix: String? = null,
+        val bitRateKbps: Int? = null,
     ) : PlaybackSource()
 }
 

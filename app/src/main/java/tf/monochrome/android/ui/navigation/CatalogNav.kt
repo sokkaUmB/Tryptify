@@ -241,7 +241,7 @@ fun NavController.trackArtistAction(
     return when (unified?.sourceType) {
         SourceType.LOCAL -> unified.artistId?.takeIf { it > 0L }
             ?.let { id -> { navigateSafe(Screen.LocalArtistDetail.createRoute(id)) } }
-        SourceType.COLLECTION, SourceType.LIVE_RADIO -> null
+        SourceType.COLLECTION, SourceType.LIVE_RADIO, SourceType.SUBSONIC -> null
         else -> {
             val id = track.artist?.id ?: 0L
             val name = track.artist?.name?.takeIf { it.isNotBlank() } ?: track.displayArtist
@@ -259,7 +259,7 @@ fun NavController.trackAlbumAction(
     return when (unified?.sourceType) {
         SourceType.LOCAL, SourceType.COLLECTION ->
             unified.albumId?.takeIf { isNavigableAlbumId(it) }?.let { id -> { openAlbum(id) } }
-        SourceType.LIVE_RADIO -> null
+        SourceType.LIVE_RADIO, SourceType.SUBSONIC -> null
         else -> track.album?.id?.takeIf { it > 0L }?.let { id -> { openCatalogAlbum(id) } }
     }
 }
@@ -276,7 +276,7 @@ fun NavController.openTrackArtist(
     tappedArtistId: Long,
 ) {
     when (unified?.sourceType) {
-        SourceType.LOCAL, SourceType.COLLECTION, SourceType.LIVE_RADIO ->
+        SourceType.LOCAL, SourceType.COLLECTION, SourceType.LIVE_RADIO, SourceType.SUBSONIC ->
             trackArtistAction(track, unified)?.invoke()
         else -> {
             val name = track.artists.firstOrNull { it.id == tappedArtistId }?.name

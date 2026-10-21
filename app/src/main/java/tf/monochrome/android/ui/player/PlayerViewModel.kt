@@ -1501,15 +1501,23 @@ class PlayerViewModel @Inject constructor(
         .map { track -> track != null && isLocalTrack(track) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    /**
+     * A song from the listener's own Subsonic server. Its Long id is a hash, so
+     * the catalogue paths (download, share-by-fetching) must never see it.
+     */
+    private fun isOwnServerTrack(track: Track): Boolean =
+        unifiedTrackRegistry[track.id]?.source is tf.monochrome.android.domain.model.PlaybackSource.Subsonic
+
     fun downloadTrack(track: Track) {
-        // There is no file behind a live stream to download.
-        if (isLocalTrack(track) || isLiveStreamTrack(track)) return
+        // There is no file behind a live stream to download, and no catalogue
+        // download behind a song on the listener's own server.
+        if (isLocalTrack(track) || isLiveStreamTrack(track) || isOwnServerTrack(track)) return
         downloadManager.downloadTrack(track)
         observeTrackDownload(track.id)
     }
 
     fun downloadAllTracks(tracks: List<Track>) {
-        val remote = tracks.filterNot(::isLocalTrack)
+        val remote = tracks.filterNot { isLocalTrack(it) || isOwnServerTrack(it) }
         downloadManager.downloadTracks(remote)
         remote.forEach { observeTrackDownload(it.id) }
     }
@@ -1539,6 +1547,8 @@ class PlayerViewModel @Inject constructor(
             shareUnifiedTrack(unified)
             return
         }
+        // The share helper would fetch the file from Qobuz by this hashed id.
+        if (unified?.source is tf.monochrome.android.domain.model.PlaybackSource.Subsonic) return
         viewModelScope.launch {
             trackShareHelper.shareTrack(track)
         }

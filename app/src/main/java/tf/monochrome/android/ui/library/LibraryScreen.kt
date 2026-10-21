@@ -561,6 +561,13 @@ fun LibraryScreen(
                     playerViewModel = playerViewModel
                 )
 
+            "subsonic" ->
+                SubsonicLibraryTab(
+                    viewModel = hiltViewModel(),
+                    navController = navController,
+                    playerViewModel = playerViewModel,
+                )
+
             "playlists" ->
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),

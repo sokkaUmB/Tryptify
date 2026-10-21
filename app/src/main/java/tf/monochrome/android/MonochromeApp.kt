@@ -72,6 +72,9 @@ class MonochromeApp : Application(), Configuration.Provider, SingletonImageLoade
     lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
+    lateinit var subsonicRepository: tf.monochrome.android.data.subsonic.SubsonicRepository
+
+    @Inject
     lateinit var authManager: SupabaseAuthManager
 
     @Inject
@@ -158,6 +161,10 @@ class MonochromeApp : Application(), Configuration.Provider, SingletonImageLoade
                 // player even before MediaScanner / our scanner have
                 // populated the artwork cache.
                 add(AudioFileCoverFetcher.Factory(this@MonochromeApp))
+                // A Subsonic server's covers, which songs carry as
+                // subsonic-cover:// references so the sign-in in the real URL
+                // never leaves the app (see Subsonic.coverArtRef).
+                add(tf.monochrome.android.data.subsonic.SubsonicCoverMapper { subsonicRepository.current.value })
             }
             .build()
     }

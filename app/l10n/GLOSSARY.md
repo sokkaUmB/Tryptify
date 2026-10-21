@@ -58,6 +58,7 @@ not Spain-only), Turkish, German.
 | room (Trypt Mania multiplayer) | 房间 | ルーム | salon | sala | oda | Raum |
 | token (Discord, ListenBrainz) | 令牌 | トークン | jeton | token | belirteç | Token |
 | scrobble | 同步收听记录（scrobble） | スクロブル | scrobbler | scrobbling | scrobble | scrobbeln |
+| My server (Library page) / music server (a Subsonic server: Navidrome, Gonic…) | 我的服务器 / 音乐服务器 | マイサーバー / 音楽サーバー | Mon serveur / serveur musical | Mi servidor / servidor de música | Sunucum / müzik sunucusu | Mein Server / Musikserver |
 
 ## Other apps' UI, quoted in instructions
 

@@ -154,6 +154,19 @@ The other settings `local.properties` can override (`spotify.clientId`,
 They are not secrets, but the rule for `local.properties` stays the same: it is
 never committed.
 
+## A listener's Subsonic server is a device secret
+
+Settings › Connections › Music server stores one Subsonic server
+(`data/subsonic/`) in the DataStore key `subsonic_server`, deliberately not in
+`SETTINGS_SYNC_KEYS`, like the Discord token. It holds a token and salt, never
+the password, unless the server refuses tokens (API older than 1.13.0, or error
+41/42), and then the password's hex. Keep that sign-in out of everything that
+leaves the app or is written down: `PlaybackSource.Subsonic` holds only the
+song id (the stream URL is built in `StreamResolver` at play time), and artwork
+is a `subsonic-cover://` reference resolved only by the app's own Coil
+(`SubsonicCoverMapper`). `SubsonicTest` checks that nothing mapped from a server
+contains the token or the password.
+
 ## projectM is patched, and its presets are scanned
 
 `app/src/main/cpp/projectm_patches/` holds fixed copies of projectM source

@@ -248,6 +248,7 @@ val SettingsSearchIndex: List<SettingsEntry> = listOf(
     entry("Save location", R.string.settings_save_location, "Downloads", listOf("folder", "path", "sd card", "storage", "where")),
 
     // ── Connections ─────────────────────────────────────────────────────
+    entry("Music server (Subsonic)", R.string.subsonic_title, "Connections", listOf("subsonic", "navidrome", "gonic", "airsonic", "ampache", "self-hosted", "home server", "localhost", "nas")),
     entry("Last.fm scrobbling", R.string.search_lastfm_scrobbling, "Connections", listOf("scrobble", "account", "history")),
     entry("ListenBrainz", null, "Connections", listOf("scrobble", "account", "history")),
     entry(

@@ -184,6 +184,11 @@ class PreferencesManager @Inject constructor(
         private val DISCORD_PRESENCE_ANIMATED = booleanPreferencesKey("discord_presence_animated")
         private val DISCORD_UPLOAD_CHANNEL = stringPreferencesKey("discord_upload_channel")
 
+        // The listener's Subsonic server (Navidrome and kin), as JSON. Not in
+        // SETTINGS_SYNC_KEYS, for the Discord token's reason: it is a sign-in
+        // to a server, and stays on the device it was typed into.
+        private val SUBSONIC_SERVER = stringPreferencesKey("subsonic_server")
+
         // Custom API endpoint
         private val CUSTOM_API_ENDPOINT = stringPreferencesKey("custom_api_endpoint")
         private val QOBUZ_INSTANCE_URL = stringPreferencesKey("qobuz_instance_url")
@@ -942,6 +947,19 @@ class PreferencesManager @Inject constructor(
             it.remove(DISCORD_TOKEN)
             it.remove(DISCORD_APPLICATION_ID)
             it[DISCORD_PRESENCE_ENABLED] = false
+        }
+    }
+
+    /** The connected Subsonic server, or null when there is none (or it no longer reads). */
+    val subsonicServer: Flow<tf.monochrome.android.data.subsonic.SubsonicServer?> = dataStore.data.map { prefs ->
+        prefs[SUBSONIC_SERVER]?.let {
+            runCatching { json.decodeFromString<tf.monochrome.android.data.subsonic.SubsonicServer>(it) }.getOrNull()
+        }
+    }
+
+    suspend fun setSubsonicServer(server: tf.monochrome.android.data.subsonic.SubsonicServer?) {
+        dataStore.edit {
+            if (server == null) it.remove(SUBSONIC_SERVER) else it[SUBSONIC_SERVER] = json.encodeToString(server)
         }
     }
 

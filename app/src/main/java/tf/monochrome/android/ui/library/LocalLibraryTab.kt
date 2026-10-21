@@ -751,8 +751,13 @@ fun ArtistList(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                        val albums = pluralStringResource(R.plurals.albums_count, artist.albumCount, artist.albumCount)
                         Text(
-                            stringResource(R.string.count_pair, pluralStringResource(R.plurals.albums_count, artist.albumCount, artist.albumCount), pluralStringResource(R.plurals.track_count, artist.trackCount, artist.trackCount)),
+                            // A server's artist list counts albums only (Subsonic's
+                            // getArtists has no song count), and "0 songs" would be wrong.
+                            if (artist.trackCount > 0) {
+                                stringResource(R.string.count_pair, albums, pluralStringResource(R.plurals.track_count, artist.trackCount, artist.trackCount))
+                            } else albums,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

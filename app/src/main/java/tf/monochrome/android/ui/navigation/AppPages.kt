@@ -48,6 +48,9 @@ internal const val RADIO_PAGE_ID = "radio"
  */
 internal const val SEARCH_PAGE_ID = "search"
 
+/** The "My server" Library page: the listener's Subsonic server. */
+internal const val SUBSONIC_PAGE_ID = "subsonic"
+
 internal val APP_PAGES: List<AppPage> = listOf(
     AppPage(Screen.Home.route, tf.monochrome.android.R.string.tab_home),
     AppPage(Screen.Discover.route, tf.monochrome.android.R.string.tab_discover),
@@ -60,6 +63,9 @@ internal val APP_PAGES: List<AppPage> = listOf(
     // Liked Songs are what Home shows under the tab bar — and a stored order
     // that still names it simply drops it (see reconcilePageOrder).
     AppPage("local", tf.monochrome.android.R.string.page_local),
+    // The listener's own Subsonic server (Navidrome, Gonic…), next to the files
+    // on the phone. Without a server connected it is a "set up" page.
+    AppPage(SUBSONIC_PAGE_ID, tf.monochrome.android.R.string.page_subsonic),
     AppPage("playlists", tf.monochrome.android.R.string.page_playlists),
     AppPage("favorites", tf.monochrome.android.R.string.page_favorites),
     AppPage("downloads", tf.monochrome.android.R.string.page_downloads),

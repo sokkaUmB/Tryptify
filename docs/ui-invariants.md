@@ -1006,6 +1006,36 @@ all. The listener's quality setting is untouched for real plays.
 
 `SongPreviewTest` holds the start point, the fade and the fill's colours.
 
+### My server (Subsonic)
+
+**My server is one Library page, with its own small stack inside it.** Index
+(Albums · Artists) → artist → album, and Back pops that stack before it leaves
+the page (`SubsonicLibraryTab`'s `BackHandler`, like Local's categories). It
+pushes no nav routes: a server's ids are strings, and the catalogue album and
+artist screens take Longs, so a pushed route would open the wrong page or none.
+For the same reason a server song's "Go to album/artist" is hidden
+(`CatalogNav`, `SourceType.SUBSONIC` beside `LIVE_RADIO`), and Search shows its
+songs only, never its albums or artists.
+
+**It is built from the Local page's lists**: `AlbumGrid`, `ArtistList`,
+`SongList`. Material rows at `listRowHeight`, never glass, so the two pages read
+as one library. `ArtistList` leaves out a song count of 0, since a server's
+artist list counts albums only.
+
+**Without a server it is a "set up" page, not an empty list**: one message and
+a button to Settings › Connections. While the saved server is still being read
+it draws nothing, so a connected listener never sees "not connected" flash.
+
+**Artwork is `subsonic-cover://<id>`, never the getCoverArt URL.** That URL
+carries the sign-in (in password mode, the password), and artwork leaves the
+app: the media session, the widget's snapshot, Discord, party guests, the
+synced history. `SubsonicCoverMapper` makes the URL inside this app's Coil, and
+`StreamResolver` hands the notification the picture's bytes. A "simpler" fix
+that puts the real URL in `artworkUri` is the bug this rule exists for.
+
+**The setup guide stays folded** under the section, so Connections stays short
+once a server is connected.
+
 ### Themes
 
 Light variants are **generated**, never hand-written, and every foreground is

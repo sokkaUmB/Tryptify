@@ -253,7 +253,10 @@ class ServerLyricsEngine @Inject constructor(
      */
     private suspend fun download(track: Track, unified: UnifiedTrack?): Uri? {
         val type = unified?.sourceType
-        if (type == SourceType.LOCAL || type == SourceType.LIVE_RADIO || unified?.source is PlaybackSource.RadioStream) return null
+        // A song on the listener's own server is not in any catalogue: asking the
+        // downloads for it would fetch whatever TIDAL song its hashed id names.
+        if (type == SourceType.LOCAL || type == SourceType.LIVE_RADIO || type == SourceType.SUBSONIC ||
+            unified?.source is PlaybackSource.RadioStream || unified?.source is PlaybackSource.Subsonic) return null
         downloads.downloadTrack(track)
         val done = withTimeoutOrNull(DOWNLOAD_TIMEOUT_MS) {
             merge(

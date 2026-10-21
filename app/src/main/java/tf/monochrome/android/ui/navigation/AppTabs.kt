@@ -19,6 +19,7 @@ internal enum class AppTab(@StringRes val label: Int, @DrawableRes val glyph: In
     RADIO(R.string.tab_radio, R.drawable.ic_glass_tab_radio, RADIO_PAGE_ID),
     PLAYLISTS(R.string.page_playlists, R.drawable.ic_glass_tab_playlists, "playlists"),
     LOCAL(R.string.page_local, R.drawable.ic_glass_tab_local, "local"),
+    SUBSONIC(R.string.page_subsonic, R.drawable.ic_glass_tab_server, SUBSONIC_PAGE_ID),
     FAVORITES(R.string.page_favorites, R.drawable.ic_glass_tab_favorites, "favorites"),
     DOWNLOADS(R.string.page_downloads, R.drawable.ic_glass_tab_downloads, "downloads"),
     LIBRARY(R.string.tab_library, R.drawable.ic_glass_tab_library, null),

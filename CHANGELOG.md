@@ -4,6 +4,14 @@
 
 ### Added
 
+#### Your own music server
+- **Play your library from Navidrome, Gonic, Airsonic-Advanced, Ampache or any other Subsonic-compatible server.** Connect it under Settings › Connections › Music server (Subsonic) with its address, your username and your password.
+- **A new Library page, My server**, next to Local: your albums (sorted by name, artist, newest, recently played, most played or random) and artists, an album's songs, and Shuffle all. Its songs are in Search too, marked My server.
+- **A home address just works.** Type `192.168.1.20:4533` or `localhost:4533` and Tryptify uses http; an address copied from the server's web page loses the page part by itself.
+- **Your password isn't stored.** Tryptify keeps a sign-in token. Only a server that refuses tokens (an old one, or an LDAP user on Navidrome) gets the password itself, and Settings says so. Neither is synced to your account, and neither leaves the phone: covers reach Discord, party guests, the widget and the lock screen as pictures, never as links.
+- **How to set up**, in the same place: which server to run, which address to type at home, on the phone itself or away, and what to check when it won't connect.
+- Songs from your server can't be downloaded or shared as files from Tryptify; they're already yours, on your server.
+
 #### Trypt Mania in your stats
 - **A Trypt Mania card on Account › Listening stats**: whole songs played and on how many charts, your best grade, full combos, and the accuracy of your last ten songs with an arrow for better or worse than the ten before. It counts all time, so it shows even when the range you picked has no plays. Its arrow opens Trypt Mania.
 - **Grades, not scores.** Points grow with your combo now, so an older run's score would look worse than it was. The card and the achievements compare grades and accuracy only. Training Ground segments don't count as songs.
