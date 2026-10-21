@@ -16,6 +16,6 @@ CLOUDFLARE_API_TOKEN=... npx wrangler deploy
 
 Keep the prices, the trial and the grace periods in step with
 `server/cloud/src/rules.ts`; the app reads them from the server, this page does
-not. Headings use Orbitron, the same file the app ships
-(`app/src/main/assets/fonts/orbitron.ttf`) converted to WOFF2; its licence is
-`public/orbitron-license.txt`.
+not. All text is Orbitron, the app's font, in its six weights (Regular 400 to
+Black 900, Latin) as WOFF2 under `public/fonts/`, with its licence
+`public/fonts/orbitron-license.txt`.

@@ -1,11 +1,11 @@
-/* Orbitron (SIL Open Font License 1.1, see /orbitron-license.txt): the same
-   file the app ships, as WOFF2, served from this site rather than Google. */
-@font-face {
-  font-family: "Orbitron";
-  src: url("/orbitron.woff2") format("woff2");
-  font-weight: 400 900;
-  font-display: swap;
-}
+/* Orbitron, the app's font (SIL Open Font License 1.1, see
+   /fonts/orbitron-license.txt), in all six weights, served from this site. */
+@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-400.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; } /* Regular */
+@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-500.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; } /* Medium */
+@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-600.woff2") format("woff2"); font-weight: 600; font-style: normal; font-display: swap; } /* SemiBold */
+@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; } /* Bold */
+@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-800.woff2") format("woff2"); font-weight: 800; font-style: normal; font-display: swap; } /* ExtraBold */
+@font-face { font-family: "Orbitron"; src: url("/fonts/orbitron-900.woff2") format("woff2"); font-weight: 900; font-style: normal; font-display: swap; } /* Black */
 
 :root {
   --bg: #0b0b10;
@@ -30,7 +30,11 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.75;
+  letter-spacing: 0.2px;
 }
 
 a { color: var(--accent-2); }
@@ -46,7 +50,7 @@ a:hover { color: #fff; }
   border-bottom: 1px solid var(--line);
 }
 .top .wrap { display: flex; align-items: center; gap: 20px; height: 60px; }
-.brand { font-weight: 700; font-size: 18px; color: var(--text); text-decoration: none; letter-spacing: 0.2px; }
+.brand { font-size: 18px; color: var(--text); text-decoration: none; letter-spacing: 0.2px; }
 .brand span { color: var(--accent-2); }
 .nav { margin-left: auto; display: flex; gap: 18px; flex-wrap: wrap; }
 .nav a { color: var(--muted); text-decoration: none; font-size: 15px; }
@@ -56,25 +60,29 @@ a:hover { color: #fff; }
 .hero { padding: 72px 0 40px; }
 .hero h1 { font-size: clamp(26px, 4.4vw, 46px); line-height: 1.1; margin: 0 0 16px; letter-spacing: -0.5px; }
 .hero p.lead { font-size: 19px; color: var(--muted); max-width: 640px; margin: 0 0 28px; }
-.eyebrow { color: var(--accent-2); font-weight: 600; font-size: 14px; letter-spacing: 0.6px; text-transform: uppercase; margin: 0 0 12px; }
+.eyebrow { color: var(--accent-2); font-size: 13px; letter-spacing: 0.6px; text-transform: uppercase; margin: 0 0 12px; }
 
 .buttons { display: flex; gap: 12px; flex-wrap: wrap; }
 .btn {
   font-family: var(--display); letter-spacing: 0.4px;
   display: inline-block; padding: 12px 20px; border-radius: 999px;
-  text-decoration: none; font-weight: 600; font-size: 15px;
+  text-decoration: none; font-size: 14px;
   border: 1px solid var(--line); color: var(--text); background: var(--panel);
 }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn:hover { border-color: var(--accent-2); color: #fff; }
 
-/* Orbitron for names, headings and numbers; body text stays plain for reading. */
-.brand, .hero h1, h2, h3, .eyebrow, .plan .name, .plan .price, .steps li::before, .doc h1 {
-  font-family: var(--display);
-}
-.hero h1 { font-weight: 800; letter-spacing: 0; }
-h2, .doc h1 { font-weight: 700; letter-spacing: 0.3px; }
-h3 { font-weight: 600; font-size: 16px; letter-spacing: 0.3px; }
+/* The weights: Regular body, Medium nav and notes, SemiBold card titles,
+   Bold buttons and emphasis, ExtraBold section titles, Black headlines. */
+.nav a, .plan .year, .plan .size, .shots figcaption, footer { font-weight: 500; }
+h3, .eyebrow, .plan .name { font-weight: 600; }
+strong, .btn { font-weight: 700; }
+h2, .doc h1, .doc h2 { font-weight: 800; }
+.brand, .hero h1, .plan .price, .steps li::before { font-weight: 900; }
+.hero h1 { letter-spacing: 0; }
+h2, .doc h1 { letter-spacing: 0.3px; }
+h3 { font-size: 15px; letter-spacing: 0.3px; }
+.doc p, .doc li { font-size: 14.5px; }
 
 /* Sections */
 section { padding: 40px 0; }
@@ -99,9 +107,9 @@ h3 { font-size: 18px; margin: 0 0 6px; }
 .plans { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
 .plan { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
 .plan.featured { border-color: var(--accent); }
-.plan .name { font-weight: 700; font-size: 20px; }
-.plan .size { color: var(--accent-2); font-weight: 600; margin: 4px 0 14px; }
-.plan .price { font-size: 32px; font-weight: 700; }
+.plan .name { font-size: 20px; }
+.plan .size { color: var(--accent-2); margin: 4px 0 14px; }
+.plan .price { font-size: 30px; }
 .plan .price small { font-size: 15px; color: var(--muted); font-weight: 400; }
 .plan .year { color: var(--muted); font-size: 14px; margin-top: 2px; }
 .trial {
@@ -114,7 +122,7 @@ h3 { font-size: 18px; margin: 0 0 6px; }
 .steps li::before {
   content: counter(step); position: absolute; left: 0; top: 0;
   width: 30px; height: 30px; border-radius: 50%;
-  background: var(--accent); color: #fff; font-weight: 700;
+  background: var(--accent); color: #fff;
   display: flex; align-items: center; justify-content: center; font-size: 15px;
 }
 
