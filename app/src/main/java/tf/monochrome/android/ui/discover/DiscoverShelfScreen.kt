@@ -123,6 +123,12 @@ fun DiscoverShelfScreen(
                     playerViewModel.addUnifiedToQueue(selectedTracks)
                     selection.clear()
                 },
+                onAddToParty = tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                    {
+                        party.unified(selectedTracks)
+                        selection.clear()
+                    }
+                },
                 onAddToPlaylist = { showAddToPlaylist = true },
             )
         }

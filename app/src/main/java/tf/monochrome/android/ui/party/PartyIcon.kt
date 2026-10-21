@@ -54,3 +54,18 @@ private const val NOTE =
  * when there is no party, and the menu then leaves the item out.
  */
 val LocalAddToParty = compositionLocalOf<((Track, String?) -> Unit)?> { null }
+
+/**
+ * Many songs into the party at once: a multi-selection, or a whole playlist
+ * or album. Given at the root beside [LocalAddToParty], and null the same way
+ * when there is no party, so the lists offer it only while one is on.
+ */
+class PartyAdder(
+    private val addTracks: (List<Track>) -> Unit,
+    private val addUnified: (List<tf.monochrome.android.domain.model.UnifiedTrack>) -> Unit,
+) {
+    fun tracks(tracks: List<Track>) = addTracks(tracks)
+    fun unified(tracks: List<tf.monochrome.android.domain.model.UnifiedTrack>) = addUnified(tracks)
+}
+
+val LocalPartyAdder = compositionLocalOf<PartyAdder?> { null }

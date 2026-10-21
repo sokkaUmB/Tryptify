@@ -439,25 +439,30 @@ class PartyController @Inject constructor(
     // The clock.
 
     /**
-     * The host's speed for everyone. The host's own speed setting, and whether
-     * it keeps the pitch, goes to the party (a quarter second after a slider
-     * stops moving, not at every step of it). Every other phone plays at the
-     * party's through [SpeedOverride], its own setting left as it was.
+     * The host's speed for everyone, vinyl style: at a party the pitch always
+     * rides the speed (the owner's call), whatever the keep-pitch switch says,
+     * so every phone and the website hear one sound. The host's own speed
+     * setting goes to the party (a quarter second after a slider stops moving,
+     * not at every step of it). Every phone, the host's too, plays through
+     * [SpeedOverride]: the host its own speed with the pitch riding it, the
+     * rest the party's. No setting is written, so the keep-pitch switch is as
+     * it was once the party is over.
      */
     @OptIn(FlowPreview::class)
     private suspend fun followSpeed() = coroutineScope {
+        val hosting = client.state.map { it.isHost && it.status == PartyStatus.IN_PARTY }.distinctUntilChanged()
         launch {
-            combine(
-                client.state.map { it.isHost && it.status == PartyStatus.IN_PARTY }.distinctUntilChanged(),
-                preferences.playbackSpeed,
-                preferences.preservePitch,
-            ) { host, speed, keepPitch -> if (host) SpeedSetting(speed, keepPitch) else null }
+            combine(hosting, preferences.playbackSpeed) { host, speed -> if (host) speed else null }
                 .debounce(250)
                 .distinctUntilChanged()
-                .collect { mine -> if (mine != null) client.setRate(mine.speed, mine.keepPitch) }
+                .collect { mine -> if (mine != null) client.setRate(mine, keepPitch = false) }
         }
-        client.state
-            .map { s -> s.party?.playback?.takeIf { !s.isHost }?.let { SpeedSetting(it.rate.toFloat(), it.keepPitch) } }
+        combine(client.state, preferences.playbackSpeed) { s, mySpeed ->
+            when {
+                s.isHost -> SpeedSetting(mySpeed, keepPitch = false)
+                else -> s.party?.playback?.let { SpeedSetting(it.rate.toFloat(), keepPitch = false) }
+            }
+        }
             .distinctUntilChanged()
             .collect { speedOverride.set(it) }
     }
@@ -560,7 +565,22 @@ class PartyController @Inject constructor(
 
     /** A song from a menu: [filePath] is its file where the list knows one. */
     fun add(track: Track, filePath: String? = null) {
-        scope.launch {
+        scope.launch { prepareAndSend(track, filePath) }
+    }
+
+    /**
+     * Many songs at once, a multi-selection or a whole playlist or album, into
+     * the queue in the order given: one after another, each looked for on
+     * this phone first, so a slow lookup never lets a later song in ahead.
+     */
+    fun addAll(tracks: List<Track>) {
+        scope.launch { tracks.forEach { prepareAndSend(it, null) } }
+    }
+
+    fun addAllUnified(tracks: List<UnifiedTrack>) = tracks.forEach { add(it) }
+
+    private suspend fun prepareAndSend(track: Track, filePath: String?) {
+        run {
             val file = filePath?.let(::File)?.takeIf { it.isFile }
                 ?: withContext(Dispatchers.IO) {
                     localTrackLocator.findLocalSource(

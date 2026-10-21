@@ -2972,4 +2972,8 @@
     <string name="party_invite_not_now">暂不</string>
     <string name="party_speed">%1$s×</string>
     <string name="party_speed_vinyl">%1$s× · 黑胶</string>
+    <plurals name="party_added_many">
+        <item quantity="other">已将 %1$d 首歌加入派对</item>
+    </plurals>
+    <string name="party_add_all">全部加入派对</string>
 </resources>

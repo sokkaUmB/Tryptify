@@ -187,9 +187,9 @@ class PartyProtocolTest {
     }
 
     @Test
-    fun withinSixHundredMillisecondsIsInStep() {
-        assertFalse(PartySync.needsSeek(localMs = 10_000, targetMs = 10_600))
-        assertTrue(PartySync.needsSeek(localMs = 10_000, targetMs = 10_601))
+    fun withinOneSecondIsInStep() {
+        assertFalse(PartySync.needsSeek(localMs = 10_000, targetMs = 11_000))
+        assertTrue(PartySync.needsSeek(localMs = 10_000, targetMs = 11_001))
         assertTrue(PartySync.needsSeek(localMs = 12_000, targetMs = 10_000))
     }
 

@@ -3046,4 +3046,9 @@
     <string name="party_invite_not_now">Not now</string>
     <string name="party_speed">%1$s×</string>
     <string name="party_speed_vinyl">%1$s× · vinyl</string>
+    <plurals name="party_added_many">
+        <item quantity="one">Added %1$d song to the party</item>
+        <item quantity="other">Added %1$d songs to the party</item>
+    </plurals>
+    <string name="party_add_all">Add all to party</string>
 </resources>

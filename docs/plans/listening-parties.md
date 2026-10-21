@@ -94,7 +94,7 @@ To add:
   `WidgetSession.withSessionController` pattern) and `QueueManager` (the
   `RadioQueueManager` pattern), so the notification, lock screen and
   background play are the player's own.
-- Sync: follow the anchor with `ClockSync`; seek only when more than 600 ms
+- Sync: follow the anchor with `ClockSync`; seek only when more than 1 s
   out, seen twice in a row, never in the 4 s after a load or a seek, and aim
   ahead by what a seek has been costing (`PartyDrift`). Seeking at a quarter
   second every second made the sound drop every second: a seek's refill put

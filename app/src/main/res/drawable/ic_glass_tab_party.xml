@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Tab bar glyph, punched out of the glass slab like the player dock's.
+         Listening party: two listeners, the note between them and what they
+         share under it, as ListeningPartyIcon draws it. No part overlaps
+         another, so none cancels into a stray hole when punched. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M7.6,9.6 A2.3,2.3 0 1,1 3.0,9.6 A2.3,2.3 0 1,1 7.6,9.6 Z M1.4,18.2 Q1.4,13.4 5.3,13.4 Q9.2,13.4 9.2,18.2 Z M21.0,9.6 A2.3,2.3 0 1,1 16.4,9.6 A2.3,2.3 0 1,1 21.0,9.6 Z M14.8,18.2 Q14.8,13.4 18.7,13.4 Q22.6,13.4 22.6,18.2 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M13.1,2.6 L13.1,12.6 A2.0,1.6 -20 1,1 11.8,11.2 L11.8,2.6 Q15.2,3.0 15.6,6.0 Q14.4,4.6 13.1,4.6 Z" />
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.1"
+        android:strokeLineCap="round"
+        android:pathData="M4,20.6 Q12,23.4 20,20.6" />
+</vector>

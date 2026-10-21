@@ -3044,4 +3044,9 @@
     <string name="party_invite_not_now">Şimdi değil</string>
     <string name="party_speed">%1$s×</string>
     <string name="party_speed_vinyl">%1$s× · plak</string>
+    <plurals name="party_added_many">
+        <item quantity="one">Partiye %1$d şarkı eklendi</item>
+        <item quantity="other">Partiye %1$d şarkı eklendi</item>
+    </plurals>
+    <string name="party_add_all">Tümünü partiye ekle</string>
 </resources>

@@ -864,6 +864,17 @@ cannot do. So a tap on the tab you are already on (otherwise a no-op) folds
 the bar. Do not make that tap switch or reload the page instead, and do not
 start pages folded: tab switching would become two taps.
 
+**At a listening party the chrome grows a way back to it.** While a party
+is on (`PartyController.active`), a round button with the party's glyph
+(`AppTab.PARTY`, a one-tab `GlassTabBar`: Search's glass exactly) stands
+over Search, the same 64 dp, and the stacked mini player gives up that
+width for it, so the two share its row. Folded, it sits between the mini
+player and Search; taking turns, it joins the open bar's row before Search.
+On the flat chrome it is a tonal icon button beside the flat mini player.
+Its tap opens the party screen, where its glyph is lit; it is never a page
+of the pager. When the party is over or left, the chrome is as it was.
+Never a second mini player, and never a button drawn in another glass.
+
 **The bar is on every screen but four**: the player, the mixer, Oxford and car
 mode, whose own controls run to the bottom edge (`chromeHiddenRoutes`). The
 download pill follows the same list. A screen that needs the window for only
@@ -2087,12 +2098,19 @@ the bottom, and the field to say something.
   invited to party …", Join and Not now), never a dialog and never by
   leaving on its own. Signed out, the code waits in the Join field. Only the
   code is taken from a link, and an `/api/party/…` address is never one.
-* The host's speed is the party's. The host changes it with the app's own
-  speed control (and its keep-pitch switch: off is vinyl style), and every
-  phone and the website play at it. A listener's own speed setting is never
-  written: `SpeedOverride` stands in for it while the phone is at a party
-  and not the host, and it is back the moment the party is over. Off 1×, the
-  progress row says the speed between the times ("1.25× · vinyl").
+* The host's speed is the party's, and at a party it is always vinyl style:
+  the pitch rides the speed, whatever the keep-pitch switch says (the
+  owner's call: "like vinyl"). The host changes it with the app's own speed
+  control, and every phone and the website play at it. No setting is
+  written: `SpeedOverride` stands in for the speed and the switch on every
+  phone at a party, the host's too, and they are back the moment the party
+  is over. Off 1×, the progress row says the speed between the times
+  ("1.25× · vinyl").
+* Many songs go in at once, while a party is on: the party's glyph in every
+  multi-select bar, and Add all to party in a playlist's and an album's
+  action row (`LocalPartyAdder`, null without a party, like
+  `LocalAddToParty`). They join the queue in the order given
+  (`PartyController.addAll`), one after another, never racing each other.
 * Website guests can add songs from the catalogue (the rooms server's
   `TRYPT_HIFI_URL`); a song a guest added says so like any other, with
   "added by" the guest's name.

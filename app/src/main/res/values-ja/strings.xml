@@ -2972,4 +2972,8 @@
     <string name="party_invite_not_now">今はしない</string>
     <string name="party_speed">%1$s×</string>
     <string name="party_speed_vinyl">%1$s× · レコード</string>
+    <plurals name="party_added_many">
+        <item quantity="other">%1$d 曲をパーティーに追加しました</item>
+    </plurals>
+    <string name="party_add_all">すべてパーティーに追加</string>
 </resources>

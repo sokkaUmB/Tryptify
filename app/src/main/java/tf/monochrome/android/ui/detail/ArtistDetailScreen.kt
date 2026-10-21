@@ -268,6 +268,12 @@ fun ArtistDetailScreen(
                             playerViewModel.addToQueue(detail.topTracks.filter { it.id in selection.selectedIds })
                             selection.clear()
                         },
+                        onAddToParty = tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                            {
+                                party.tracks(detail.topTracks.filter { it.id in selection.selectedIds })
+                                selection.clear()
+                            }
+                        },
                         onAddToPlaylist = { showAddToPlaylistForSelection = true }
                     )
                 }

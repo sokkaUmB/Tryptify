@@ -659,6 +659,23 @@ fun MonochromeNavHost(initialRoute: String? = null) {
         }
         val addToParty: ((tf.monochrome.android.domain.model.Track, String?) -> Unit)? =
             if (partyOn) remember(party) { { track, file -> party.add(track, file) } } else null
+        val partyAdder: tf.monochrome.android.ui.party.PartyAdder? = if (partyOn) {
+            remember(party, appContext) {
+                val said: (Int) -> Unit = { n ->
+                    if (n > 0) {
+                        android.widget.Toast.makeText(
+                            appContext,
+                            appContext.resources.getQuantityString(R.plurals.party_added_many, n, n),
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                }
+                tf.monochrome.android.ui.party.PartyAdder(
+                    addTracks = { tracks -> party.addAll(tracks); said(tracks.size) },
+                    addUnified = { tracks -> party.addAllUnified(tracks); said(tracks.size) },
+                )
+            }
+        } else null
         val playInTryptMania: (tf.monochrome.android.glyph.data.TryptManiaRequest) -> Unit =
             remember(navController) {
                 { request ->
@@ -689,6 +706,7 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             // and the mode opened to take it.
             tf.monochrome.android.ui.components.LocalPlayInTryptMania provides playInTryptMania,
             tf.monochrome.android.ui.party.LocalAddToParty provides addToParty,
+            tf.monochrome.android.ui.party.LocalPartyAdder provides partyAdder,
             tf.monochrome.android.ui.components.LocalFindAlbumArt provides findAlbumArt,
             tf.monochrome.android.ui.components.LocalSongPreview provides songPreview,
         ) {
@@ -1197,12 +1215,19 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 }
             } else null
 
+            // While a party is on, a round button back to it, over Search; the
+            // mini player gives up its width for it. Gone when the party is.
+            val onParty: (() -> Unit)? = if (partyOn) {
+                { navController.navigateTool(Screen.ListeningParty) }
+            } else null
+            val atParty = currentDestination?.route == Screen.ListeningParty.route
             if (flatChrome) {
                 FlatTabChrome(
                     tabs = pillTabs(pages, navBarSlots),
                     selected = tabFor(currentPageId, navBarSlots),
                     onTab = onTab,
                     miniPlayer = miniPlayer,
+                    onParty = onParty,
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             } else CompositionLocalProvider(
@@ -1234,6 +1259,8 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                     stackMiniPlayer = !miniPlayerHideWithTabs,
                     hazeState = hazeState,
                     miniPlayer = miniPlayer,
+                    onParty = onParty,
+                    atParty = atParty,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = navBarHeight + CHROME_GAP),
@@ -1363,15 +1390,37 @@ private fun FlatTabChrome(
     selected: AppTab,
     onTab: (AppTab) -> Unit,
     miniPlayer: (@Composable (Modifier) -> Unit)?,
+    onParty: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        miniPlayer?.invoke(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .padding(bottom = CHROME_GAP),
-        )
+        if (onParty == null) {
+            miniPlayer?.invoke(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .padding(bottom = CHROME_GAP),
+            )
+        } else {
+            // The party's way back beside the mini player, flat as it is.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = CHROME_GAP),
+                horizontalArrangement = Arrangement.spacedBy(CHROME_GAP),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (miniPlayer != null) miniPlayer(Modifier.weight(1f)) else Spacer(Modifier.weight(1f))
+                androidx.compose.material3.FilledTonalIconButton(
+                    onClick = onParty,
+                    modifier = Modifier.size(56.dp),
+                ) {
+                    androidx.compose.material3.Icon(
+                        painter = androidx.compose.ui.res.painterResource(AppTab.PARTY.glyph),
+                        contentDescription = androidx.compose.ui.res.stringResource(AppTab.PARTY.label),
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
+        }
         NavigationBar {
             (tabs + AppTab.SEARCH).forEach { tab ->
                 val label = androidx.compose.ui.res.stringResource(tab.label)
@@ -1421,16 +1470,32 @@ private fun TabChrome(
     stackMiniPlayer: Boolean,
     hazeState: dev.chrisbanes.haze.HazeState,
     miniPlayer: (@Composable (Modifier) -> Unit)?,
+    onParty: (() -> Unit)?,
+    atParty: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val foldMillis = motionMillis(240)
+    // The party's round button: Search's glass, its glyph lit on the party screen.
+    val partyButton: (@Composable () -> Unit)? = onParty?.let { open ->
+        {
+            GlassTabBar(
+                tabs = listOf(AppTab.PARTY),
+                selected = if (atParty) AppTab.PARTY else null,
+                onSelect = { open() },
+                accent = accent,
+                hazeState = hazeState,
+                showLabels = false,
+                modifier = Modifier.width(TabBarHeight),
+            )
+        }
+    }
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(CHROME_GAP),
     ) {
         AnimatedVisibility(
-            visible = miniPlayer != null && !collapsed && stackMiniPlayer,
+            visible = (miniPlayer != null || partyButton != null) && !collapsed && stackMiniPlayer,
             // clip = false: the bar casts a glass shadow past its own bounds,
             // and expand/shrink clip to them by default, which cut the spill
             // off. The bar's own content is still clipped to its rounded
@@ -1438,7 +1503,19 @@ private fun TabChrome(
             enter = fadeIn(tween(foldMillis)) + expandVertically(tween(foldMillis), clip = false),
             exit = fadeOut(tween(foldMillis)) + shrinkVertically(tween(foldMillis), clip = false),
         ) {
-            miniPlayer?.invoke(Modifier.fillMaxWidth())
+            if (partyButton == null) {
+                miniPlayer?.invoke(Modifier.fillMaxWidth())
+            } else {
+                // At a party the row splits: the mini player shortens, and the
+                // party's button stands over Search, the same width.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(CHROME_GAP),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (miniPlayer != null) miniPlayer(Modifier.weight(1f)) else Spacer(Modifier.weight(1f))
+                    partyButton()
+                }
+            }
         }
         // The two rows never share the screen at half strength: the one going
         // fades out first, then the one coming fades in. Crossfaded, the full
@@ -1473,6 +1550,8 @@ private fun TabChrome(
                         modifier = Modifier.width(TabBarHeight),
                     )
                     miniPlayer(Modifier.weight(1f))
+                    // Folded, the party's button sits between it and Search.
+                    partyButton?.invoke()
                 } else {
                     GlassTabBar(
                         tabs = tabs,
@@ -1482,6 +1561,9 @@ private fun TabChrome(
                         hazeState = hazeState,
                         modifier = Modifier.weight(1f),
                     )
+                    // Taking turns, the open bar has no mini player row to
+                    // share, so the party's button joins the tabs' row.
+                    if (!stackMiniPlayer) partyButton?.invoke()
                 }
                 GlassTabBar(
                     tabs = listOf(AppTab.SEARCH),

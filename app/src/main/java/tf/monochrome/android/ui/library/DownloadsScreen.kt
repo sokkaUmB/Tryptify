@@ -236,6 +236,12 @@ fun DownloadsScreen(
                 )
                 selection.clear()
             },
+            onAddToParty = tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                {
+                    party.unified(downloadedTracks.filter { it.id in selection.selectedIds }.map { it.toUnifiedTrack() })
+                    selection.clear()
+                }
+            },
             onAddToPlaylist = { showAddToPlaylistForSelection = true },
             onDelete = { showDeleteConfirm = true },
             deleteContentDescription = stringResource(R.string.delete_downloads)

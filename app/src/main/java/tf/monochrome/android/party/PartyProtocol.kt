@@ -292,9 +292,10 @@ object PartySync {
      * How far from the party's moment a player may drift before it is moved:
      * more than a room of people in different places can hear, less than a
      * line of a song. A seek drops the sound while the player refills, so it
-     * is the last resort, not a correction made every second.
+     * is the last resort, not a correction made every second. A second, the
+     * owner's call: at 600 ms phones were still being moved more than heard.
      */
-    const val TOLERANCE_MS = 600L
+    const val TOLERANCE_MS = 1_000L
 
     fun needsSeek(localMs: Long, targetMs: Long, toleranceMs: Long = TOLERANCE_MS): Boolean =
         kotlin.math.abs(localMs - targetMs) > toleranceMs

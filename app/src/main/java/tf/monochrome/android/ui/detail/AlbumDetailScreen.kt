@@ -200,6 +200,12 @@ fun AlbumDetailScreen(
                             playerViewModel.addToQueue(visibleTracks.filter { it.id in selection.selectedIds })
                             selection.clear()
                         },
+                        onAddToParty = tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                            {
+                                party.tracks(visibleTracks.filter { it.id in selection.selectedIds })
+                                selection.clear()
+                            }
+                        },
                         onAddToPlaylist = { showAddToPlaylistForSelection = true }
                     )
                 }
@@ -311,6 +317,20 @@ fun AlbumDetailScreen(
                                         contentDescription = stringResource(R.string.download_album),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                }
+                                // While a party is on: the whole list into its queue, in order.
+                                tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                                    FilledIconButton(
+                                        onClick = { party.tracks(visibleTracks) },
+                                        enabled = visibleTracks.isNotEmpty(),
+                                        modifier = Modifier.size(48.dp),
+                                        colors = IconButtonDefaults.filledIconButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    ) {
+                                        Icon(tf.monochrome.android.ui.party.ListeningPartyIcon, contentDescription = stringResource(R.string.party_add_all))
+                                    }
                                 }
                             }
                             }

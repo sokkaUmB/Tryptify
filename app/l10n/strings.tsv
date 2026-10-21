@@ -2993,3 +2993,7 @@ party_invite_switch	You're invited to party %1$s. Join it? You'll leave this par
 party_invite_not_now	Not now	暂不	今はしない	Pas maintenant	Ahora no	Şimdi değil	Nicht jetzt
 party_speed	%1$s×	%1$s×	%1$s×	%1$s×	%1$s×	%1$s×	%1$s×
 party_speed_vinyl	%1$s× · vinyl	%1$s× · 黑胶	%1$s× · レコード	%1$s× · vinyle	%1$s× · vinilo	%1$s× · plak	%1$s× · Vinyl
+party_added_many#one	Added %1$d song to the party	已将 %1$d 首歌加入派对	%1$d 曲をパーティーに追加しました	%1$d morceau ajouté à la soirée	%1$d canción añadida a la fiesta	Partiye %1$d şarkı eklendi	%1$d Song zur Party hinzugefügt
+party_added_many#many	Added %1$d songs to the party	已将 %1$d 首歌加入派对	%1$d 曲をパーティーに追加しました	%1$d morceaux ajoutés à la soirée	%1$d canciones añadidas a la fiesta	Partiye %1$d şarkı eklendi	%1$d Songs zur Party hinzugefügt
+party_added_many#other	Added %1$d songs to the party	已将 %1$d 首歌加入派对	%1$d 曲をパーティーに追加しました	%1$d morceaux ajoutés à la soirée	%1$d canciones añadidas a la fiesta	Partiye %1$d şarkı eklendi	%1$d Songs zur Party hinzugefügt
+party_add_all	Add all to party	全部加入派对	すべてパーティーに追加	Tout ajouter à la soirée	Añadir todo a la fiesta	Tümünü partiye ekle	Alle zur Party hinzufügen

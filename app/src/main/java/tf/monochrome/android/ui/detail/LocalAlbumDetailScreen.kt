@@ -243,6 +243,20 @@ fun LocalAlbumDetailScreen(
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
+                                // While a party is on: the whole list into its queue, in order.
+                                tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                                    FilledIconButton(
+                                        onClick = { party.unified(visibleTracks) },
+                                        enabled = visibleTracks.isNotEmpty(),
+                                        modifier = Modifier.size(48.dp),
+                                        colors = IconButtonDefaults.filledIconButtonColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    ) {
+                                        Icon(tf.monochrome.android.ui.party.ListeningPartyIcon, contentDescription = stringResource(R.string.party_add_all))
+                                    }
+                                }
                             }
                             Spacer(modifier = Modifier.height(16.dp))
                         }

@@ -426,6 +426,12 @@ fun LibraryScreen(
                     playerViewModel.addToQueue(selectableTracks.filter { it.id in selection.selectedIds })
                     selection.clear()
                 },
+                onAddToParty = tf.monochrome.android.ui.party.LocalPartyAdder.current?.let { party ->
+                    {
+                        party.tracks(selectableTracks.filter { it.id in selection.selectedIds })
+                        selection.clear()
+                    }
+                },
                 onAddToPlaylist = { showAddToPlaylistForSelection = true },
                 onDelete = if (sectionId == "favorites") {
                     {

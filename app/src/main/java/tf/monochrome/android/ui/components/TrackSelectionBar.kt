@@ -40,6 +40,8 @@ fun TrackSelectionBar(
     deleteContentDescription: String = stringResource(R.string.action_delete),
     /** "Find album art" for the selected songs, where they are files on the phone. */
     onFindAlbumArt: (() -> Unit)? = null,
+    /** "Add to party" for the selected songs, while a listening party is on. */
+    onAddToParty: (() -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -71,6 +73,15 @@ fun TrackSelectionBar(
                     contentDescription = stringResource(R.string.action_add_to_queue),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
+            }
+            if (onAddToParty != null) {
+                IconButton(onClick = onAddToParty) {
+                    Icon(
+                        imageVector = tf.monochrome.android.ui.party.ListeningPartyIcon,
+                        contentDescription = stringResource(R.string.action_add_to_party),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
             IconButton(onClick = onAddToPlaylist) {
                 Icon(
