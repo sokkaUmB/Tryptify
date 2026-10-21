@@ -10,6 +10,8 @@ import { loadAccount, record, type Db } from "./store";
 
 export interface Deps {
   db: Db | null;
+  /** The music bucket; phase 1 stores uploads in it. Only reported for now. */
+  storage?: unknown | null;
   billing: Billing | null;
   personOf: (token: string) => Promise<string | null>;
   now?: () => Date;
@@ -18,11 +20,11 @@ export interface Deps {
 const fail = (status: number, error: string) =>
   new Response(JSON.stringify({ error }), { status, headers: { "content-type": "application/json" } });
 
-export function createApp({ db, billing, personOf, now = () => new Date() }: Deps) {
+export function createApp({ db, storage = null, billing, personOf, now = () => new Date() }: Deps) {
   const app = new Hono<{ Variables: { uid: string } }>();
 
   const health = (c: { json: (body: unknown) => Response }) =>
-    c.json({ ok: true, service: "tryptify-cloud", database: db !== null, billing: billing !== null });
+    c.json({ ok: true, service: "tryptify-cloud", database: db !== null, storage: storage !== null, billing: billing !== null });
   app.get("/", health);
   app.get("/health", health);
 

@@ -14,6 +14,12 @@ binding = "DB"
 database_name = "tryptify-cloud"
 database_id = "b2b03937-98bd-4fec-a132-ce0d0b932454"
 
+# The listeners' music (phase 1). Downloads from R2 are free; storage is
+# $0.015 per GB-month, the figure the plans were priced with.
+[[r2_buckets]]
+binding = "MUSIC"
+bucket_name = "tryptify-cloud-music"
+
 # Creem, TEST mode for now. Going live: remove CREEM_API_BASE and replace the
 # product ids with the live ones (they are not secrets).
 [vars]

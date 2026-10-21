@@ -30,7 +30,7 @@ webhook answer `billing_not_set_up`, and nobody can pay or be granted anything.
 | --- | --- | --- |
 | The API | Worker `tryptify-cloud` | `src/worker.ts`, config in `wrangler.toml` |
 | Accounts, billing events | D1 database `tryptify-cloud` | `b2b03937-98bd-4fec-a132-ce0d0b932454`, tables from `schema.sql` |
-| Music (phase 1) | R2 | Needs enabling once in the dashboard |
+| Music (phase 1) | R2 bucket `tryptify-cloud-music` | Binding `MUSIC`; enabled and checked 2026-10-21 (a 1 MB file written, read back identical, deleted). Empty until phase 1 |
 | Secrets | Worker secrets | `CREEM_API_KEY`, `CREEM_WEBHOOK_SECRET`; never in the repository |
 
 Code: `src/rules.ts` (the money rules, pure), `src/creem.ts` (checkout and
@@ -197,7 +197,7 @@ that does not fit is refused (`mayUpload`).
 
 | Route | Does |
 | --- | --- |
-| `GET /health` | Up, with whether it has a database and a payment provider |
+| `GET /health` | Up, with whether it has a database, music storage and a payment provider |
 | `GET /plans` | The plans, prices and the trial's terms, no account needed |
 | `GET /v1/account` | Plan, `access` (`full`, `read_only`, `none`), paid-until, delete-after, used and quota bytes, `trial`, `trialAvailable` |
 | `POST /v1/checkout` | `{"plan", "period", "trial"?}` → `{"url"}`, a checkout link that carries the person's id |

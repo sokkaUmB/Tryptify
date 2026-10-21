@@ -10,6 +10,8 @@ import type { Db } from "./store";
 
 export interface Env {
   DB?: Db;
+  /** The R2 bucket for listeners' music (phase 1 fills it). */
+  MUSIC?: unknown;
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
   [key: string]: unknown;
@@ -31,6 +33,7 @@ export default {
       ) as Record<string, string>;
       app = createApp({
         db: env.DB ?? null,
+        storage: env.MUSIC ?? null,
         billing: creemBilling(strings),
         personOf: supabaseAuth(env.SUPABASE_URL ?? DEFAULT_SUPABASE_URL, env.SUPABASE_ANON_KEY ?? DEFAULT_SUPABASE_ANON_KEY),
       });
