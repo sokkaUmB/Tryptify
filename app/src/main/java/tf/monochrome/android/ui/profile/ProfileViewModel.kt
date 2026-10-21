@@ -147,6 +147,12 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun signInWithDiscord(context: Context) {
+        viewModelScope.launch {
+            authManager.signInWithDiscord(context)
+        }
+    }
+
     /**
      * Called when the Profile screen returns to the foreground. If a Google
      * OAuth flow was launched but the user came back without completing it (no

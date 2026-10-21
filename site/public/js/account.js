@@ -107,6 +107,8 @@
   });
   $("google").addEventListener("click", () =>
     sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + "/account" } }));
+  $("discord").addEventListener("click", () =>
+    sb.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: location.origin + "/account" } }));
   $("sign-out").addEventListener("click", () => sb.auth.signOut());
 
   let shownFor; // undefined until the first answer, so "signed out" is shown too

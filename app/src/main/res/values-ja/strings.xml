@@ -730,6 +730,7 @@
     <string name="sign_in_to_tryptify">Tryptify にサインイン</string>
     <string name="sign_in_benefit">お気に入りとプレイリストをデバイス間で同期</string>
     <string name="continue_with_google">Google で続ける</string>
+    <string name="continue_with_discord">Discord で続ける</string>
     <string name="email">メールアドレス</string>
     <string name="password">パスワード</string>
     <string name="toggle_password">パスワードの表示/非表示</string>

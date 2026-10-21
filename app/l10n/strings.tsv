@@ -736,6 +736,7 @@ username_update_failed	Couldn't update your username: %1$s	无法更新用户名
 sign_in_to_tryptify	Sign in to Tryptify	登录 Tryptify	Tryptify にサインイン	Se connecter à Tryptify	Inicia sesión en Tryptify	Tryptify’da oturum açın	Bei Tryptify anmelden
 sign_in_benefit	Sync your favorites and playlists across devices	在多台设备间同步你的收藏和歌单	お気に入りとプレイリストをデバイス間で同期	Synchronisez vos favoris et playlists sur tous vos appareils	Sincroniza tus favoritos y playlists entre dispositivos	Favorilerinizi ve çalma listelerinizi cihazlar arasında eşitleyin	Synchronisiere Favoriten und Playlists auf all deinen Geräten
 continue_with_google	Continue with Google	使用 Google 继续	Google で続ける	Continuer avec Google	Continuar con Google	Google ile devam et	Mit Google fortfahren
+continue_with_discord	Continue with Discord	使用 Discord 继续	Discord で続ける	Continuer avec Discord	Continuar con Discord	Discord ile devam et	Mit Discord fortfahren
 email	Email	电子邮件	メールアドレス	E-mail	Correo electrónico	E-posta	E-Mail
 password	Password	密码	パスワード	Mot de passe	Contraseña	Şifre	Passwort
 toggle_password	Show or hide password	显示或隐藏密码	パスワードの表示/非表示	Afficher ou masquer le mot de passe	Mostrar u ocultar contraseña	Şifreyi göster veya gizle	Passwort ein- oder ausblenden

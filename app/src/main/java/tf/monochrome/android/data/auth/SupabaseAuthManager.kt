@@ -12,7 +12,9 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.CodeVerifierCache
 import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Discord
 import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.OAuthProvider
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.createSupabaseClient
@@ -151,18 +153,28 @@ class SupabaseAuthManager @Inject constructor(
      * then opens it in a Custom Tab. The app receives the callback via:
      *   tf.monotrypt.android://login-callback?code=...
      */
-    suspend fun signInWithGoogle(context: Context) {
+    suspend fun signInWithGoogle(context: Context) = signInWithOAuth(context, Google, "Google")
+
+    /**
+     * Discord, the same Supabase OAuth flow as Google: the provider is
+     * switched on (with a Discord application's client id and secret) in the
+     * Supabase dashboard, under Authentication › Providers, and the callback
+     * comes back through the same deep link.
+     */
+    suspend fun signInWithDiscord(context: Context) = signInWithOAuth(context, Discord, "Discord")
+
+    private suspend fun signInWithOAuth(context: Context, provider: OAuthProvider, name: String) {
         oauthCallbackReceived = false
         _isSigningIn.value = true
         _errorMessage.value = null
         _successMessage.value = null
         try {
-            val url = auth.getOAuthUrl(Google)
+            val url = auth.getOAuthUrl(provider)
             Log.d("SupabaseAuth", "OAuth URL: $url")
             val customTab = CustomTabsIntent.Builder().build()
             customTab.launchUrl(context, Uri.parse(url))
         } catch (e: Exception) {
-            _errorMessage.value = "Google sign-in failed: ${parseAuthError(e)}"
+            _errorMessage.value = "$name sign-in failed: ${parseAuthError(e)}"
             _isSigningIn.value = false
         }
     }

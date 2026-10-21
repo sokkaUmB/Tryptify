@@ -794,6 +794,7 @@
     <string name="sign_in_to_tryptify">Se connecter à Tryptify</string>
     <string name="sign_in_benefit">Synchronisez vos favoris et playlists sur tous vos appareils</string>
     <string name="continue_with_google">Continuer avec Google</string>
+    <string name="continue_with_discord">Continuer avec Discord</string>
     <string name="email">E-mail</string>
     <string name="password">Mot de passe</string>
     <string name="toggle_password">Afficher ou masquer le mot de passe</string>

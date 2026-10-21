@@ -762,6 +762,7 @@
     <string name="sign_in_to_tryptify">Tryptify’da oturum açın</string>
     <string name="sign_in_benefit">Favorilerinizi ve çalma listelerinizi cihazlar arasında eşitleyin</string>
     <string name="continue_with_google">Google ile devam et</string>
+    <string name="continue_with_discord">Discord ile devam et</string>
     <string name="email">E-posta</string>
     <string name="password">Şifre</string>
     <string name="toggle_password">Şifreyi göster veya gizle</string>

@@ -703,3 +703,31 @@ footer { font-size: 13.5px; }
 .g-tip span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .g-tip b { color: var(--text); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 560px) { .graph .g-tick { font-size: 20px; } .g-card { padding: 12px 8px 6px; } }
+
+/* ── The AutoEQ try-out (js/tryout.js) ─────────────────────────────────── */
+.try { display: grid; gap: 16px; }
+.try-search { position: relative; display: grid; gap: 8px; }
+#hp-search { font: inherit; font-size: 16px; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; width: 100%; }
+#hp-search:focus { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+.try-search .small { margin: 0; }
+.link { color: var(--accent-2); text-decoration: underline; cursor: pointer; }
+.hp-results {
+  position: absolute; z-index: 5; left: 0; right: 0; top: 76px; max-height: 340px; overflow: auto; margin: 0; padding: 6px; list-style: none;
+  background: var(--panel); border: 1px solid color-mix(in srgb, var(--text) 14%, transparent); border-radius: 14px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+.hp-results li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+.hp-results li:hover, .hp-results li.on { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.hp-results li span { white-space: nowrap; }
+.try-controls { display: grid; gap: 10px 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.try-controls label { display: grid; gap: 5px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.try-controls select { font: inherit; font-size: 14px; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; width: 100%; }
+.try-stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 8px; }
+.try-stats div { display: grid; gap: 2px; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--text) 8%, transparent); }
+.try-stats strong { font-family: var(--heading); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.try-legend { margin: 10px 0 4px; }
+.try-legend .g-key { cursor: default; }
+.try-bands { display: grid; gap: 12px; margin-top: 8px; }
+#try-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+#try-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+#try-table td { padding: 7px 8px; border-bottom: 1px solid color-mix(in srgb, var(--text) 6%, transparent); }
+.acct-auth #discord { margin-top: 8px; }

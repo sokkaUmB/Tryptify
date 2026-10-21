@@ -63,3 +63,18 @@ values, then delete the others, the picker and `designs.html`.
   without the Trypt Mania server secrets: `env -u TRYPTMANIA_CPU_SERVER -u
   TRYPTMANIA_ROOMS_SERVER ./gradlew :app:assembleRelease`, and checked with
   the BuildConfig greps in AGENTS.md before upload.
+
+## The AutoEQ try-out
+
+`/autoeq`'s "Try it" runs the app's AutoEQ in the browser:
+`js/autoeq-engine.js` is a port of `AutoEqEngine.kt`, `EqDspKernels.kt`, the
+measurement parser and `AutoPreamp.peakBoostDb`. `WebAutoEqFixtureTest` (app
+unit tests) holds the Kotlin engine to `tests/autoeq-engine-fixtures.json`, and
+`node site/tests/engine-parity.mjs` holds the port to the same answers (same
+bands, gains within 0.01 dB; exact digits are impossible across the JVM and a
+browser, see the script). Change the engine, rewrite the fixtures, port it.
+
+The headphone list, `data/headphones.json`, comes from
+`python3 tools/headphone_index/build.py` (AutoEq's `results/INDEX.md` and the
+twelve squig.link phone books the app searches); re-run it now and then. The
+targets in `data/targets/` are copies of the app's `assets/autoeq/targets/`.

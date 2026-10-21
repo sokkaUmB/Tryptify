@@ -251,6 +251,9 @@ fun ProfileScreen(
                         onSignInWithGoogle = {
                             viewModel.signInWithGoogle(context)
                         },
+                        onSignInWithDiscord = {
+                            viewModel.signInWithDiscord(context)
+                        },
                         onSignInWithEmail = { email, password ->
                             viewModel.signInWithEmail(email, password)
                         },
@@ -669,6 +672,7 @@ private fun SignedOutView(
     isSignUp: Boolean,
     onIsSignUpChange: (Boolean) -> Unit,
     onSignInWithGoogle: () -> Unit,
+    onSignInWithDiscord: () -> Unit,
     onSignInWithEmail: (String, String) -> Unit,
     onSignUpWithEmail: (String, String) -> Unit,
     onClearError: () -> Unit
@@ -710,6 +714,15 @@ private fun SignedOutView(
     GlassButton(
         label = stringResource(R.string.continue_with_google),
         onClick = onSignInWithGoogle,
+        enabled = !isLoading,
+        loading = isLoading,
+    )
+
+    Spacer(modifier = Modifier.height(10.dp))
+
+    GlassButton(
+        label = stringResource(R.string.continue_with_discord),
+        onClick = onSignInWithDiscord,
         enabled = !isLoading,
         loading = isLoading,
     )

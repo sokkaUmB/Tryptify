@@ -763,6 +763,7 @@
     <string name="sign_in_to_tryptify">Sign in to Tryptify</string>
     <string name="sign_in_benefit">Sync your favorites and playlists across devices</string>
     <string name="continue_with_google">Continue with Google</string>
+    <string name="continue_with_discord">Continue with Discord</string>
     <string name="email">Email</string>
     <string name="password">Password</string>
     <string name="toggle_password">Show or hide password</string>

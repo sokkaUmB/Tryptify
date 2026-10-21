@@ -103,6 +103,42 @@
       <p class="muted small">Bench results from <a href="https://seapengine.lol/">SeapEngine</a>, which runs each engine's real code: Tryptify's compiled from the app's Kotlin, AutoEq's own Python and squig.link's optimizer. Want your own headphone ranked? <a href="https://seapengine.lol/" target="_blank" rel="noopener">Rank it in SeapEngine</a>; files stay in your browser.</p>
     </section>
 
+    <section id="tryout">
+      <p class="eyebrow">Try it</p>
+      <h2>Your headphone, through Tryptify's AutoEQ.</h2>
+      <p class="muted">Search over 10,000 headphones from AutoEq and twelve squig.link databases, or load your own measurement. The EQ is computed right here in your browser by the same engine as the app.</p>
+      <div class="card try">
+        <div class="try-search">
+          <label class="rank-label" for="hp-search">Headphone</label>
+          <input type="search" id="hp-search" placeholder="Search, e.g. HD 600, Blessing 2, Truthear Nova" autocomplete="off" spellcheck="false">
+          <ul class="hp-results" id="hp-results" role="listbox" hidden></ul>
+          <p class="small muted">or <label class="link" for="hp-file">load a measurement file</label> (squig.link, REW or AutoEq export: frequency and dB per line)<input type="file" id="hp-file" accept=".txt,.csv,text/plain,text/csv" hidden></p>
+        </div>
+        <div class="try-controls" id="try-controls">
+          <label>Measurement <select id="hp-source"></select></label>
+          <label>Target <select id="hp-target"></select></label>
+          <label>Bands <select id="hp-bands"><option>5</option><option>8</option><option selected>10</option><option>16</option><option>20</option><option>31</option></select></label>
+          <label>Up to <select id="hp-max"><option value="10000">10 kHz</option><option value="14000">14 kHz</option><option value="16000" selected>16 kHz</option><option value="20000">20 kHz</option></select></label>
+          <label>Method <select id="hp-alg"><option value="PEAKING">Peaking</option><option value="SHELF_ENDS">Shelf ends</option></select></label>
+          <label>Smoothing <select id="hp-smooth"><option value="0" selected>Off</option><option value="5">5 %</option><option value="10">10 %</option><option value="20">20 %</option><option value="30">30 %</option></select></label>
+        </div>
+        <p class="acct-msg small" id="try-msg" role="status">Pick a headphone to start.</p>
+        <div id="try-result" hidden>
+          <div class="try-stats" id="try-stats"></div>
+          <div class="g-legend try-legend"><span class="g-key s-target"><i></i>Target</span><span class="g-key s-raw"><i></i>Headphone, no EQ</span><span class="g-key s-ts"><i></i>With Tryptify's EQ</span><span class="g-key s-sq"><i></i>The EQ itself</span></div>
+          <div class="g-box" id="try-graph"></div>
+          <div class="try-bands">
+            <table id="try-table"><thead><tr><th>#</th><th>Type</th><th>Frequency</th><th>Gain</th><th>Q</th></tr></thead><tbody></tbody></table>
+            <div class="buttons">
+              <button type="button" class="btn primary" id="try-copy">Copy for Equalizer APO</button>
+              <button type="button" class="btn" id="try-download">Download .txt</button>
+            </div>
+            <p class="muted small">The app finds the same headphones in its AutoEQ, and plays the correction itself. Measurements are fetched from AutoEq on GitHub and from the squig.link site that published them.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="graphs">
       <p class="eyebrow">Truthear Nova → SEAP target</p>
       <h2>The curves.</h2>
@@ -146,5 +182,7 @@
   <script src="/js/measures.js"></script>
   <script src="/js/autoeq.js"></script>
   <script src="/js/graphs.js"></script>
+  <script src="/js/autoeq-engine.js"></script>
+  <script src="/js/tryout.js"></script>
 </body>
 </html>
