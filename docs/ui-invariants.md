@@ -1036,6 +1036,34 @@ that puts the real URL in `artworkUri` is the bug this rule exists for.
 **The setup guide stays folded** under the section, so Connections stays short
 once a server is connected.
 
+### Tryptify Cloud
+
+**It is described as storage, never as hosting a server**: "your personal
+Subsonic-API music storage, made for fast streaming". It sits right under the
+music server section in Settings › Connections, because it plays through that
+same Subsonic client.
+
+**The cloud is played as the Subsonic server, not as a second library page.**
+"Play it in Library › My server" asks the cloud for a device password and saves
+the cloud the way a typed-in server is saved, so My server, Search and the
+cover rule above apply unchanged. The app holds one Subsonic server, so this
+replaces a connected Navidrome; the button says so, naming that server, rather
+than doing it quietly.
+
+**Prices, storage and terms come from the server's `/plans`**, never from the
+app. The money rules live in `server/cloud/src/rules.ts`, and a price typed
+into the app would drift from what the checkout charges. Sizes are decimal
+gigabytes on both sides (`Formatter.formatShortFileSize`, `GB = 1e9`).
+
+**Upload is a song-menu item for files on the phone only** (`LocalUploadToCloud`,
+offered when the menu knows a `filePath`, like Find album art). Uploads run one
+at a time in one WorkManager chain with one notification. A song that cannot be
+sent still ends its worker successfully, reporting through `CloudUploads.last`,
+because a failed worker would fail every song queued behind it.
+
+**The account is re-read on resume.** Payment opens in the browser, and the
+plan should be there when the listener comes back, with no reload button.
+
 ### Themes
 
 Light variants are **generated**, never hand-written, and every foreground is

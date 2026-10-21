@@ -2717,6 +2717,9 @@ private fun ConnectionsTab(viewModel: SettingsViewModel) {
         // beside in Search.
         SubsonicSection()
         Spacer(modifier = Modifier.height(20.dp))
+        // The paid storage that plays through that same Subsonic client.
+        CloudSection()
+        Spacer(modifier = Modifier.height(20.dp))
         ScrobblingControls(viewModel)
         Spacer(modifier = Modifier.height(20.dp))
         DiscordPresenceControls(viewModel)

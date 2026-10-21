@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Info
@@ -99,6 +100,7 @@ fun TrackContextMenu(
     val playInTryptMania = LocalPlayInTryptMania.current
     val addToParty = tf.monochrome.android.ui.party.LocalAddToParty.current
     val findAlbumArt = LocalFindAlbumArt.current
+    val uploadToCloud = LocalUploadToCloud.current
 
     GlassOverlay(onDismiss = onDismiss, alignment = Alignment.BottomCenter) {
         // "Disable animations": the pages swap at once, at their own heights.
@@ -205,6 +207,13 @@ fun TrackContextMenu(
                                 )
                                 onDismiss()
                             }
+                        )
+                    }
+                    if (uploadToCloud != null && filePath != null) {
+                        ContextMenuItem(
+                            icon = Icons.Default.CloudUpload,
+                            label = stringResource(R.string.action_upload_to_cloud),
+                            onClick = { uploadToCloud(filePath); onDismiss() }
                         )
                     }
                     if (addToParty != null) {

@@ -70,6 +70,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.drop
 import tf.monochrome.android.ui.components.MiniPlayer
 import tf.monochrome.android.ui.theme.ColorBlend
 import tf.monochrome.android.ui.theme.goToPage
@@ -638,6 +639,28 @@ fun MonochromeNavHost(initialRoute: String? = null) {
                 android.widget.Toast.makeText(appContext, text, android.widget.Toast.LENGTH_LONG).show()
             }
         }
+        // Every local song menu's "Upload to Tryptify Cloud", and how it went.
+        val cloudUploads = remember(appContext) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(
+                appContext,
+                tf.monochrome.android.data.cloud.CloudEntryPoint::class.java,
+            ).cloudUploads()
+        }
+        val uploadToCloud: (String) -> Unit = remember(cloudUploads) {
+            { path ->
+                cloudUploads.enqueue(path)
+                android.widget.Toast.makeText(appContext, appContext.getString(R.string.cloud_upload_queued), android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+        androidx.compose.runtime.LaunchedEffect(cloudUploads) {
+            // drop(1): the value already there was toasted when it happened.
+            cloudUploads.last.drop(1).collect { r ->
+                if (r == null) return@collect
+                val text = if (r.error == null) appContext.getString(R.string.cloud_uploaded, r.title)
+                else appContext.getString(R.string.cloud_upload_failed_toast, r.title)
+                android.widget.Toast.makeText(appContext, text, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
         // Every song menu's "Add to party", while a party is on.
         val party = remember(appContext) {
             dagger.hilt.android.EntryPointAccessors.fromApplication(
@@ -708,6 +731,7 @@ fun MonochromeNavHost(initialRoute: String? = null) {
             tf.monochrome.android.ui.party.LocalAddToParty provides addToParty,
             tf.monochrome.android.ui.party.LocalPartyAdder provides partyAdder,
             tf.monochrome.android.ui.components.LocalFindAlbumArt provides findAlbumArt,
+            tf.monochrome.android.ui.components.LocalUploadToCloud provides uploadToCloud,
             tf.monochrome.android.ui.components.LocalSongPreview provides songPreview,
         ) {
         Box(modifier = Modifier.fillMaxSize().hazeSource(hazeState).nestedScroll(collapseOnScroll)) {

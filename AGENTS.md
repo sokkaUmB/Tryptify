@@ -167,6 +167,19 @@ is a `subsonic-cover://` reference resolved only by the app's own Coil
 (`SubsonicCoverMapper`). `SubsonicTest` checks that nothing mapped from a server
 contains the token or the password.
 
+## Tryptify Cloud
+
+The paid music storage. The server is `server/cloud` (a Cloudflare Worker with
+D1 and R2, PolyForm Noncommercial; see its README). The app side is
+`data/cloud/` and Settings › Connections › Tryptify Cloud. Its address is
+`BuildConfig.TRYPTIFY_CLOUD_URL`, overridable with `tryptifyCloud.url` in
+`local.properties`. Like the Theme Store, it holds no secret: calls carry the
+Supabase session.
+
+The cloud is played by saving it as the Subsonic server, with a device
+password from `POST /v1/subsonic-keys`, so everything above about that server
+applies. `CloudTest` holds the app to the server's error codes and JSON.
+
 ## projectM is patched, and its presets are scanned
 
 `app/src/main/cpp/projectm_patches/` holds fixed copies of projectM source

@@ -77,6 +77,15 @@ android {
             "\"${localProperties.getProperty("themeStore.url") ?: "https://theme-store-production-a3db.up.railway.app"}\"",
         )
 
+        // Tryptify Cloud (server/cloud, a Cloudflare Worker): the paid personal
+        // Subsonic-API music storage. Like the Theme Store it holds no secret;
+        // calls carry the listener's Supabase session.
+        buildConfigField(
+            "String",
+            "TRYPTIFY_CLOUD_URL",
+            "\"${localProperties.getProperty("tryptifyCloud.url") ?: "https://tryptify-cloud.tryptify-cloud.workers.dev"}\"",
+        )
+
         // Last.fm application key, shared by every install — CHARTS ONLY.
         //
         // Genre charts call tag.getTopTracks: unauthenticated, read-only, public
