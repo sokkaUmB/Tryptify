@@ -67,7 +67,7 @@
   const render = (first) => {
     const values = valuesFor();
     const [, , , higher, desc] = MEASURES[state.by];
-    document.getElementById("rank-desc").textContent = desc;
+    document.getElementById("rank-desc").textContent = desc; // kept for reading without the explainer
     const order = Object.keys(values).sort((a, b) =>
       higher ? values[b][state.by] - values[a][state.by] : values[a][state.by] - values[b][state.by]);
     const nums = order.map((e) => values[e][state.by]);
@@ -120,10 +120,59 @@
       render(false);
     });
   });
-  document.getElementById("rank-by").addEventListener("change", (ev) => {
-    state.by = ev.target.value;
+  // The explanation of the measure in use, and a card for every measure.
+  const X = window.TryptifyMeasures;
+  let explained = null;
+  const explain = () => {
+    if (!X || explained === state.by) return;
+    explained = state.by;
+    const t = X.TEXT[state.by];
+    document.getElementById("explain-kicker").textContent = `Ranking by · ${t.better}`;
+    document.getElementById("explain-title").textContent = t.title;
+    document.getElementById("explain-what").textContent = t.what;
+    document.getElementById("explain-why").textContent = t.why;
+    document.getElementById("explain-good").textContent = t.good;
+    X.draw(state.by, document.getElementById("explain-visual"), moving ? M : null);
+    if (moving) M.animate("#explain .explain-text > *", { opacity: [0, 1], y: [8, 0] }, { duration: 0.4, delay: M.stagger(0.05) });
+    document.querySelectorAll(".measure").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.measure === state.by)));
+  };
+  const rankBy = (key) => {
+    state.by = key;
+    document.getElementById("rank-by").value = key;
+    explain();
     if (data) render(false);
-  });
+  };
+  document.getElementById("rank-by").addEventListener("change", (ev) => rankBy(ev.target.value));
+
+  const cards = document.getElementById("measure-cards");
+  if (X && cards) {
+    for (const key of Object.keys(MEASURES)) {
+      const t = X.TEXT[key];
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "measure";
+      b.dataset.measure = key;
+      b.setAttribute("aria-pressed", String(key === state.by));
+      const viz = document.createElement("div");
+      viz.className = "measure-viz";
+      const h = document.createElement("strong");
+      h.textContent = t.title;
+      const p = document.createElement("span");
+      p.textContent = t.what;
+      const g = document.createElement("small");
+      g.textContent = t.better;
+      b.append(viz, h, p, g);
+      cards.append(b);
+      // Draw each diagram as its card scrolls into view, so it animates then.
+      if (moving) M.inView(b, () => { X.draw(key, viz, M); }, { amount: 0.4 });
+      else X.draw(key, viz, null);
+      b.addEventListener("click", () => {
+        rankBy(key);
+        document.getElementById("ranking").scrollIntoView({ behavior: moving ? "smooth" : "auto" });
+      });
+    }
+  }
+  explain();
 
   fetch("/data/autoeq-bench.json")
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))

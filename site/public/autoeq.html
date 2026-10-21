@@ -87,10 +87,27 @@
           </select>
         </div>
       </div>
-      <p class="rank-desc muted" id="rank-desc">How far measurement + EQ lands from the target, 20 Hz to 16 kHz. Lower is better.</p>
+      <div class="explain card" id="explain" aria-live="polite">
+        <div class="explain-visual" id="explain-visual"></div>
+        <div class="explain-text">
+          <p class="explain-kicker" id="explain-kicker"></p>
+          <h3 id="explain-title"></h3>
+          <p id="explain-what"></p>
+          <p class="muted" id="explain-why"></p>
+          <p class="explain-good" id="explain-good"></p>
+        </div>
+      </div>
+      <p class="rank-desc muted" id="rank-desc" hidden></p>
       <ol class="rank-list" id="rank-list" aria-live="polite"><li class="muted">Loading the ranking…</li></ol>
       <p class="muted small" id="rank-baseline"></p>
       <p class="muted small">Bench results from <a href="https://seapengine.lol/">SeapEngine</a>, which runs each engine's real code: Tryptify's compiled from the app's Kotlin, AutoEq's own Python and squig.link's optimizer. Want your own headphone ranked? <a href="https://seapengine.lol/" target="_blank" rel="noopener">Rank it in SeapEngine</a>; files stay in your browser.</p>
+    </section>
+
+    <section id="measures">
+      <p class="eyebrow">The seven measures</p>
+      <h2>What each score means.</h2>
+      <p class="muted">An EQ can match a target on average and still sound wrong. Each measure catches a different way it can go wrong. Tap one to rank by it.</p>
+      <div class="measures" id="measure-cards"></div>
     </section>
   </main>
 
@@ -111,6 +128,7 @@
   </footer>
   <script src="/js/motion-12.23.12.js"></script>
   <script src="/js/site.js"></script>
+  <script src="/js/measures.js"></script>
   <script src="/js/autoeq.js"></script>
 </body>
 </html>
