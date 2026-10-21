@@ -355,8 +355,7 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                             // Only do this for alts that match our
                             // requested channels/bits, otherwise an
                             // unrelated 5.1 alt would pollute the list.
-                            if (len >= 8 && altChannels == channels
-                                && altBits == bitsPerSample) {
+                            if (len >= 8 && altChannels == channels) {
                                 int kind = p[7];
                                 int reqRate = sampleRateHz;
                                 if (kind == 0 && len >= 14) {
@@ -367,9 +366,11 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                                     };
                                     uint32_t lo = rd24(p + 8);
                                     uint32_t hi = rd24(p + 11);
-                                    rateSupportedByDescriptor =
-                                        (static_cast<uint32_t>(reqRate) >= lo &&
-                                         static_cast<uint32_t>(reqRate) <= hi);
+                                    if (altBits == bitsPerSample) {
+                                        rateSupportedByDescriptor =
+                                            (static_cast<uint32_t>(reqRate) >= lo &&
+                                             static_cast<uint32_t>(reqRate) <= hi);
+                                    }
                                     std::lock_guard<std::mutex> elock(errorMutex_);
                                     bool dup = false;
                                     for (const auto& e : supportedRates_) {
@@ -379,7 +380,7 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                                     }
                                     if (!dup) supportedRates_.push_back({0, lo, hi, 0});
                                 } else if (kind > 0) {
-                                    rateSupportedByDescriptor = false;
+                                    if (altBits == bitsPerSample) rateSupportedByDescriptor = false;
                                     std::lock_guard<std::mutex> elock(errorMutex_);
                                     for (int k = 0; k < kind; ++k) {
                                         int off = 8 + k * 3;
@@ -388,7 +389,7 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                                             static_cast<uint32_t>(p[off]) |
                                             (static_cast<uint32_t>(p[off + 1]) << 8) |
                                             (static_cast<uint32_t>(p[off + 2]) << 16);
-                                        if (static_cast<int>(hz) == reqRate) {
+                                        if (altBits == bitsPerSample && static_cast<int>(hz) == reqRate) {
                                             rateSupportedByDescriptor = true;
                                         }
                                         bool dup = false;
@@ -398,38 +399,6 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                                             }
                                         }
                                         if (!dup) supportedRates_.push_back({0, hz, hz, 0});
-                                    }
-                                }
-                            } else if (len >= 8) {
-                                // Channels/bits don't match — keep the
-                                // rate-supported check working without
-                                // polluting the inventory.
-                                int kind = p[7];
-                                int reqRate = sampleRateHz;
-                                if (kind == 0 && len >= 14) {
-                                    auto rd24 = [](const uint8_t* q) {
-                                        return static_cast<uint32_t>(q[0]) |
-                                               (static_cast<uint32_t>(q[1]) << 8) |
-                                               (static_cast<uint32_t>(q[2]) << 16);
-                                    };
-                                    uint32_t lo = rd24(p + 8);
-                                    uint32_t hi = rd24(p + 11);
-                                    rateSupportedByDescriptor =
-                                        (static_cast<uint32_t>(reqRate) >= lo &&
-                                         static_cast<uint32_t>(reqRate) <= hi);
-                                } else if (kind > 0) {
-                                    rateSupportedByDescriptor = false;
-                                    for (int k = 0; k < kind; ++k) {
-                                        int off = 8 + k * 3;
-                                        if (off + 3 > len) break;
-                                        uint32_t hz =
-                                            static_cast<uint32_t>(p[off]) |
-                                            (static_cast<uint32_t>(p[off + 1]) << 8) |
-                                            (static_cast<uint32_t>(p[off + 2]) << 16);
-                                        if (static_cast<int>(hz) == reqRate) {
-                                            rateSupportedByDescriptor = true;
-                                            break;
-                                        }
                                     }
                                 }
                             }
@@ -482,19 +451,21 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                 ? microframesPerSecond / microframesPerInterval
                 : microframesPerSecond;
             int frameStride = (altSubslot ? altSubslot : bitsPerSample / 8) * channels;
-            // Required packet bytes = ceil(rate / packetsPerSec) * stride,
-            // plus one frame of headroom for fractional-rate jitter.
-            int reqBytesPerPacket = ((sampleRateHz + packetsPerSec - 1)
-                                     / packetsPerSec + 1) * frameStride;
+            // Required packet bytes = ceil(rate / packetsPerSec) * stride.
+            // Fractional-rate jitter headroom (+1 frame) is desirable when mps allows it,
+            // but must not reject an alt whose descriptor advertises exactly nominal mps
+            // (e.g. 96 kHz * 6 bytes = 576 bytes on Full-Speed UAC1).
+            int minBytesPerPacket = ((sampleRateHz + packetsPerSec - 1)
+                                     / packetsPerSec) * frameStride;
             int actualMps = iso->wMaxPacketSize & 0x07FF;
             int extraTransactions = ((iso->wMaxPacketSize >> 11) & 0x3) + 1;
             int realMps = actualMps * extraTransactions;
-            if (reqBytesPerPacket > realMps) {
+            if (minBytesPerPacket > realMps) {
                 LOGW("alt %u (mps=%d, bInterval=%u) can't fit %dHz/%dch/%db "
                      "(needs %d bytes/packet) — skipping",
                      alt.bAlternateSetting, realMps, iso->bInterval,
                      sampleRateHz, channels, bitsPerSample,
-                     reqBytesPerPacket);
+                     minBytesPerPacket);
                 continue;
             }
 
@@ -1049,9 +1020,8 @@ bool LibusbUacDriver::startIsoPump() {
     framesPerUframe_q16_.store(seed_q16, std::memory_order_relaxed);
     fracAccumulator_q16_ = 0;
     isoCallbacks_ = 0;
-    maxFramesPerPacket_ = baseFrames + (rateRemainder > 0 ? 1 : 0)
-                          // +1 headroom for feedback over-asks.
-                          + 1;
+    int nominalMaxFrames = baseFrames + (rateRemainder > 0 ? 1 : 0);
+    maxFramesPerPacket_ = nominalMaxFrames + 1;
 
     int frameStride = format_.channels * format_.bytesPerSample;
     int maxBytesPerPacket = maxFramesPerPacket_ * frameStride;
@@ -1059,9 +1029,16 @@ bool LibusbUacDriver::startIsoPump() {
     // Hard-cap at the endpoint's max packet size to stay spec-legal.
     int maxPacket = libusb_get_max_iso_packet_size(
         libusb_get_device(device_), format_.endpointAddress);
+    if (maxPacket <= 0) {
+        maxPacket = format_.maxPacketSize & 0x07FF;
+    }
     if (maxPacket > 0 && maxBytesPerPacket > maxPacket) {
-        LOGE("computed packet %d > endpoint max %d",
-             maxBytesPerPacket, maxPacket);
+        maxBytesPerPacket = maxPacket;
+        maxFramesPerPacket_ = maxBytesPerPacket / frameStride;
+    }
+    if (maxFramesPerPacket_ < nominalMaxFrames) {
+        LOGE("endpoint max %d cannot hold nominal max frames %d (needs %d bytes)",
+             maxPacket, nominalMaxFrames, nominalMaxFrames * frameStride);
         return false;
     }
 

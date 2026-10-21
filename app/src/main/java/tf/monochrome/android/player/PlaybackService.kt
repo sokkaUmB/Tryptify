@@ -105,6 +105,9 @@ class PlaybackService : MediaSessionService() {
     @Inject lateinit var atmosAudioProcessor: tf.monochrome.android.audio.atmos.AtmosAudioProcessor
     @Inject lateinit var atmosFrameBuffer: tf.monochrome.android.audio.atmos.AtmosFrameBuffer
 
+    @Volatile private var currentTrackSampleRate: Int = 0
+    @Volatile private var currentTrackEncoding: Int = 0
+
     /** Shared Atmos tap — used both as the player's factory and to wrap the
      *  directly-built DASH/progressive sources. Built via an annotated helper:
      *  an @OptIn on the property itself does not reach the lazy {} lambda as
@@ -236,6 +239,33 @@ class PlaybackService : MediaSessionService() {
         player.addAnalyticsListener(audioPipelineAnalytics())
 
         player.addListener(object : Player.Listener {
+            override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                val audioFormat = tracks.groups
+                    .firstOrNull { it.type == C.TRACK_TYPE_AUDIO && it.isSelected }
+                    ?.let { it.getTrackFormat(0) }
+
+                if (audioFormat != null) {
+                    currentTrackSampleRate = audioFormat.sampleRate
+                    currentTrackEncoding = when (audioFormat.pcmEncoding) {
+                        C.ENCODING_PCM_FLOAT -> android.media.AudioFormat.ENCODING_PCM_FLOAT
+                        C.ENCODING_PCM_24BIT -> android.media.AudioFormat.ENCODING_PCM_24BIT_PACKED
+                        C.ENCODING_PCM_32BIT -> android.media.AudioFormat.ENCODING_PCM_32BIT
+                        else -> android.media.AudioFormat.ENCODING_PCM_16BIT
+                    }
+                    val device = usbAudioRouter.usbOutputDevice.value
+                    if (device != null) {
+                        serviceScope.launch {
+                            if (preferences.usbBitPerfectEnabled.first()) {
+                                usbAudioRouter.applyBitPerfectAttributes(
+                                    device,
+                                    currentTrackSampleRate,
+                                    currentTrackEncoding,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             // Keep the home-screen now-playing widget live: the widget uses
             // updatePeriodMillis=0 (no polling), so it only refreshes when the
             // service pushes an update on a real playback change.
@@ -470,8 +500,9 @@ class PlaybackService : MediaSessionService() {
 
         // Bit-perfect USB DAC routing — when the user has the toggle on
         // and a USB Audio Class device is attached, pin ExoPlayer's
-        // output to it via setPreferredAudioDevice. Reverts to system
-        // default whenever the toggle goes off or the DAC is unplugged.
+        // output to it via setPreferredAudioDevice. On Android 14+ (API 34+),
+        // also activates AudioMixerAttributes.MIXER_BEHAVIOR_BIT_PERFECT.
+        // Reverts to system default whenever the toggle goes off or the DAC is unplugged.
         serviceScope.launch {
             preferences.usbBitPerfectEnabled
                 .combine(usbAudioRouter.usbOutputDevice) { enabled, device ->
@@ -479,6 +510,15 @@ class PlaybackService : MediaSessionService() {
                 }
                 .collect { preferred ->
                     runCatching { player.setPreferredAudioDevice(preferred) }
+                    if (preferred != null) {
+                        usbAudioRouter.applyBitPerfectAttributes(
+                            preferred,
+                            currentTrackSampleRate,
+                            currentTrackEncoding,
+                        )
+                    } else {
+                        usbAudioRouter.clearBitPerfectAttributes()
+                    }
                 }
         }
 
@@ -1248,6 +1288,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        usbAudioRouter.clearBitPerfectAttributes()
         outputDeviceCallback?.let {
             getSystemService(android.media.AudioManager::class.java)?.unregisterAudioDeviceCallback(it)
         }

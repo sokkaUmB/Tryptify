@@ -6,12 +6,13 @@ everywhere, or the app sends people looking for a word that is not on screen.
 Add a row here before using a new recurring term, and reuse the row after.
 
 Languages: Simplified Chinese (zh-CN), Japanese, French, Spanish (neutral,
-not Spain-only), Turkish, German.
+not Spain-only), Turkish, German, Italian (it).
 
 ## Register
 
 | Language | Address | Notes |
 |---|---|---|
+| it | *tu* (o infinito/neutro nei pulsanti) | Apostrofo tipografico ’ o standard '. Spaziature e punteggiatura convenzionali. |
 | zh-CN | neutral, no 您/你 where avoidable | Full-width punctuation （），、：“” around Chinese text. Space between Chinese and Latin/numbers (`导出 CSV`). |
 | ja | です/ます for sentences, noun phrases for labels | 「」 for UI names. No space between Japanese and Latin except around product names. |
 | fr | *vous* | Typographic apostrophe ’. A space before : ; ? ! — non-breaking; the generator turns a typed space into U+00A0, so a mark never wraps onto its own line. Guillemets « » with non-breaking spaces inside. |

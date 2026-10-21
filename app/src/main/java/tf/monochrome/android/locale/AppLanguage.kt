@@ -49,6 +49,7 @@ object AppLanguage {
      */
     val OPTIONS: List<Option> = listOf(
         Option("en", "English"),
+        Option("it", "Italiano"),
         Option("zh-CN", "简体中文"),
         Option("ja", "日本語"),
         Option("fr", "Français"),

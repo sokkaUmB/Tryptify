@@ -20,14 +20,14 @@ from xml.sax.saxutils import escape
 HERE = os.path.dirname(os.path.abspath(__file__))
 RES = os.path.join(HERE, '..', 'src', 'main', 'res')
 LANGS = {  # column -> values folder
-    'en': 'values', 'zh': 'values-zh-rCN', 'ja': 'values-ja', 'fr': 'values-fr',
+    'en': 'values', 'it': 'values-it', 'zh': 'values-zh-rCN', 'ja': 'values-ja', 'fr': 'values-fr',
     'es': 'values-es', 'tr': 'values-tr', 'de': 'values-de',
 }
 # Plural categories each language actually distinguishes (CLDR). A <plurals>
 # must give exactly these: an English-style one/other pair in Japanese is
 # harmless but a missing "many" in French or Spanish is a wrong number.
 PLURAL_FORMS = {
-    'en': ['one', 'other'], 'zh': ['other'], 'ja': ['other'], 'tr': ['one', 'other'],
+    'en': ['one', 'other'], 'it': ['one', 'many', 'other'], 'zh': ['other'], 'ja': ['other'], 'tr': ['one', 'other'],
     'fr': ['one', 'many', 'other'], 'es': ['one', 'many', 'other'], 'de': ['one', 'other'],
 }
 NON_TRANSLATABLE = {'app_name'}
