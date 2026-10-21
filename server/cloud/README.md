@@ -62,6 +62,25 @@ What the service does with it:
 6. To go live, repeat 2 to 4 in live mode with the live key, secret and
    product ids, and remove `CREEM_API_BASE`.
 
+### Test mode, as set up on 2026-10-21
+
+The six products exist in Creem's **test** mode (USD, tax included in the
+price, tax category SaaS), created through the API, and the service's own
+adapter made a checkout link with them against `test-api.creem.io`. Product
+ids are not secrets:
+
+| Variable | Test-mode product |
+| --- | --- |
+| `CREEM_PRODUCT_LITE_MONTHLY` | `prod_6eEoCud9ol0vn8H4OyJpt5` ($3.99) |
+| `CREEM_PRODUCT_LITE_YEARLY` | `prod_2JlQubP2pnowVTuzXkfiGu` ($39.99) |
+| `CREEM_PRODUCT_PLUS_MONTHLY` | `prod_5pm12qQ3N2KCCG6qtZ3dtV` ($9.99) |
+| `CREEM_PRODUCT_PLUS_YEARLY` | `prod_1TGw8qSxCjKxq0MSiLuyI0` ($99.99) |
+| `CREEM_PRODUCT_MAX_MONTHLY` | `prod_21MRJ0oZMS7dusCMGBLX0l` ($19.99) |
+| `CREEM_PRODUCT_MAX_YEARLY` | `prod_7TtInxGK5fNOs0VKHHpdY3` ($199.99) |
+
+Live mode has none yet: going live means creating the same six there, which
+get new ids.
+
 ## The rule it enforces
 
 A listener can never cost more than they pay. Access comes only from the date
