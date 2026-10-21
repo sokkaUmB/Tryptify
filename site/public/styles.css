@@ -663,3 +663,43 @@ footer { font-size: 13.5px; }
 .measure span { color: var(--muted); font-size: 14px; line-height: 1.5; }
 .measure small { color: var(--text); font-size: 12px; font-weight: 600; opacity: 0.8; }
 @media (max-width: 720px) { .explain { grid-template-columns: 1fr; } }
+
+/* ── The AutoEQ graphs (js/graphs.js) ──────────────────────────────────── */
+:root {
+  --c-ts: #2fe0b3; --c-tp: #a6e22e; --c-ap: #ff4f8b; --c-as: #ffb02e; --c-sq: #5aa9ff;
+}
+[data-design="white"] { --c-ts: #0ca678; --c-tp: #5c940d; --c-ap: #d6336c; --c-as: #e67700; --c-sq: #1c7ed6; }
+.g-legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 14px; }
+.g-key {
+  display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  color: var(--text); background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); border-radius: 999px; padding: 6px 12px;
+}
+.g-key[aria-pressed="false"] { opacity: 0.4; text-decoration: line-through; }
+.g-key i, .g-tip i { width: 14px; height: 3px; border-radius: 2px; background: currentColor; display: inline-block; }
+.s-target { color: var(--text); } .s-raw { color: var(--muted); }
+.s-ts { color: var(--c-ts); } .s-tp { color: var(--c-tp); } .s-ap { color: var(--c-ap); } .s-as { color: var(--c-as); } .s-sq { color: var(--c-sq); }
+.g-key.s-target i { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); }
+.g-card { background: color-mix(in srgb, var(--panel) 80%, transparent); border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); border-radius: 18px; padding: 18px 18px 10px; margin-bottom: 14px; }
+.g-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; margin-bottom: 8px; }
+.g-head h3 { margin: 0; }
+.g-box { position: relative; }
+.graph { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.graph .g-h, .graph .g-v { stroke: color-mix(in srgb, var(--text) 7%, transparent); stroke-width: 1; }
+.graph .g-v.major { stroke: color-mix(in srgb, var(--text) 13%, transparent); }
+.graph .g-zero { stroke: color-mix(in srgb, var(--text) 35%, transparent); stroke-width: 1.2; }
+.graph .g-tick { font-family: var(--display); font-size: 13px; fill: var(--muted); }
+.graph .g-line { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.graph .g-line.s-target { stroke-dasharray: 7 6; stroke-width: 2; opacity: 0.75; }
+.graph .g-line.s-raw { stroke-width: 2; opacity: 0.7; }
+.graph .g-cursor { stroke: var(--text); stroke-width: 1; opacity: 0.45; }
+.g-tip {
+  position: absolute; top: 10px; z-index: 2; pointer-events: none; display: grid; grid-template-columns: auto auto; gap: 3px 12px; align-items: center;
+  font-size: 12px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.g-tip strong { grid-column: 1 / -1; font-size: 12.5px; }
+.g-tip span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.g-tip b { color: var(--text); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .graph .g-tick { font-size: 20px; } .g-card { padding: 12px 8px 6px; } }

@@ -51,7 +51,7 @@ values, then delete the others, the picker and `designs.html`.
   signed in to the Subsonic API. Google sign-in needs
   `https://tryptify.com/account` in Supabase's Auth › URL Configuration ›
   Redirect URLs.
-- `/autoeq` (`js/autoeq.js`): the AutoEQ ranking, from a snapshot of
+- `/autoeq` (`js/autoeq.js`, `js/measures.js`, `js/graphs.js`): the AutoEQ ranking, the measures explained, and the frequency-response and EQ graphs (curves in `data/autoeq-curves.json`), from a snapshot of
   SeapEngine's bench results in `data/autoeq-bench.json` (SeapEngine sends no
   CORS header, so it cannot be read live). Refresh it from
   `https://seapengine.lol/rankings/bench.json` keeping only the metrics.

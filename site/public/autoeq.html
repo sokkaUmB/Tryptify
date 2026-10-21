@@ -103,6 +103,21 @@
       <p class="muted small">Bench results from <a href="https://seapengine.lol/">SeapEngine</a>, which runs each engine's real code: Tryptify's compiled from the app's Kotlin, AutoEq's own Python and squig.link's optimizer. Want your own headphone ranked? <a href="https://seapengine.lol/" target="_blank" rel="noopener">Rank it in SeapEngine</a>; files stay in your browser.</p>
     </section>
 
+    <section id="graphs">
+      <p class="eyebrow">Truthear Nova → SEAP target</p>
+      <h2>The curves.</h2>
+      <p class="muted">Where each engine lands after its EQ, and the EQ it applies. They follow the frequency limit and band count above. Tap a name to hide or show it; point at a graph to read it. Curves are level-matched to the target from 20 Hz to 16 kHz.</p>
+      <div class="g-legend" id="graph-legend"></div>
+      <div class="g-card">
+        <div class="g-head"><h3>Frequency response</h3><span class="muted small" id="graph-caption"></span></div>
+        <div class="g-box" id="graph-fr"></div>
+      </div>
+      <div class="g-card">
+        <div class="g-head"><h3>EQ curves, no preamp</h3><span class="muted small">EQ only</span></div>
+        <div class="g-box" id="graph-eq"></div>
+      </div>
+    </section>
+
     <section id="measures">
       <p class="eyebrow">The seven measures</p>
       <h2>What each score means.</h2>
@@ -130,5 +145,6 @@
   <script src="/js/site.js"></script>
   <script src="/js/measures.js"></script>
   <script src="/js/autoeq.js"></script>
+  <script src="/js/graphs.js"></script>
 </body>
 </html>

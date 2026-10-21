@@ -68,6 +68,7 @@
     const values = valuesFor();
     const [, , , higher, desc] = MEASURES[state.by];
     document.getElementById("rank-desc").textContent = desc; // kept for reading without the explainer
+    document.dispatchEvent(new CustomEvent("rank-change", { detail: { limit: state.limit, bands: state.bands, by: state.by } }));
     const order = Object.keys(values).sort((a, b) =>
       higher ? values[b][state.by] - values[a][state.by] : values[a][state.by] - values[b][state.by]);
     const nums = order.map((e) => values[e][state.by]);
