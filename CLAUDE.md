@@ -58,8 +58,6 @@ is unverified or did not work.
 
 ## Keeping sessions small
 
-- One feature per session. When a feature is done and the APK works, start a
-  new session (or `/clear`) rather than carrying on in a long one.
 - Hand big searches and investigations to subagents so only their conclusion
   enters the conversation.
 

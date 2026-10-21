@@ -2,8 +2,8 @@
 
 Agreed with the owner on 2026-10-21; not started. A paid subscription that
 stores a listener's own music and streams it anywhere, for people who do not
-want to host a server. Build it in its own session, one phase per session
-(CLAUDE.md: one feature per session).
+want to host a server. Build it one phase at a time, each
+finished against its gate before the next starts.
 
 ## What it is
 
