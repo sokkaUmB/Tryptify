@@ -104,6 +104,7 @@ class PlaybackService : MediaSessionService() {
     @Inject lateinit var audioPipelineMonitor: tf.monochrome.android.audio.pipeline.AudioPipelineMonitor
     @Inject lateinit var qobuzCache: tf.monochrome.android.data.cache.QobuzStreamCacheManager
     @Inject lateinit var deezerCache: tf.monochrome.android.data.cache.DeezerStreamCacheManager
+    @Inject lateinit var usbAudioRouter: tf.monochrome.android.audio.UsbAudioRouter
     @Inject lateinit var libusbDriver: tf.monochrome.android.audio.usb.LibusbUacDriver
     @Inject lateinit var bypassVolumeController: tf.monochrome.android.audio.usb.BypassVolumeController
     // Atmos: the sample tap preserves raw E-AC-3 frames (which carry the JOC/OAMD
@@ -111,6 +112,9 @@ class PlaybackService : MediaSessionService() {
     // pairs each with the decoded bed PCM and renders objects to binaural stereo.
     @Inject lateinit var atmosAudioProcessor: tf.monochrome.android.audio.atmos.AtmosAudioProcessor
     @Inject lateinit var atmosFrameBuffer: tf.monochrome.android.audio.atmos.AtmosFrameBuffer
+
+    @Volatile private var currentTrackSampleRate: Int = 0
+    @Volatile private var currentTrackEncoding: Int = 0
 
     /** Shared Atmos tap — used both as the player's factory and to wrap the
      *  directly-built DASH/progressive sources. Built via an annotated helper:
@@ -248,6 +252,35 @@ class PlaybackService : MediaSessionService() {
         player.addAnalyticsListener(audioPipelineAnalytics())
 
         player.addListener(object : Player.Listener {
+            override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                val audioFormat = tracks.groups
+                    .firstOrNull { it.type == C.TRACK_TYPE_AUDIO && it.isSelected }
+                    ?.let { it.getTrackFormat(0) }
+
+                if (audioFormat != null) {
+                    currentTrackSampleRate = audioFormat.sampleRate
+                    currentTrackEncoding = when (audioFormat.pcmEncoding) {
+                        C.ENCODING_PCM_FLOAT -> android.media.AudioFormat.ENCODING_PCM_FLOAT
+                        C.ENCODING_PCM_24BIT -> android.media.AudioFormat.ENCODING_PCM_24BIT_PACKED
+                        C.ENCODING_PCM_32BIT -> android.media.AudioFormat.ENCODING_PCM_32BIT
+                        else -> android.media.AudioFormat.ENCODING_PCM_16BIT
+                    }
+                    val device = usbAudioRouter.usbOutputDevice.value
+                    if (device != null && !libusbDriver.isOpen.value) {
+                        serviceScope.launch {
+                            val applied = usbAudioRouter.applyBitPerfectAttributes(
+                                device,
+                                currentTrackSampleRate,
+                                currentTrackEncoding,
+                            )
+                            if (!applied && player.isPlaying) {
+                                runCatching { player.seekTo(player.currentPosition) }
+                            }
+                        }
+                    }
+                }
+            }
+
             // Keep the home-screen now-playing widget live: the widget uses
             // updatePeriodMillis=0 (no polling), so it only refreshes when the
             // service pushes an update on a real playback change.
@@ -476,6 +509,29 @@ class PlaybackService : MediaSessionService() {
                 }
             }
         })
+
+        // Pin the player to the external USB DAC and activate Android 14+
+        // AudioMixerAttributes.MIXER_BEHAVIOR_BIT_PERFECT whenever a USB device is connected
+        // and libusb direct bypass is NOT active.
+        serviceScope.launch {
+            combine(usbAudioRouter.usbOutputDevice, libusbDriver.isOpen) { device, libusbOpen ->
+                if (device != null && !libusbOpen) device else null
+            }.collect { preferred ->
+                runCatching { player.setPreferredAudioDevice(preferred) }
+                if (preferred != null) {
+                    val applied = usbAudioRouter.applyBitPerfectAttributes(
+                        preferred,
+                        currentTrackSampleRate,
+                        currentTrackEncoding,
+                    )
+                    if (!applied && player.isPlaying) {
+                        runCatching { player.seekTo(player.currentPosition) }
+                    }
+                } else if (!libusbDriver.isOpen.value) {
+                    usbAudioRouter.clearBitPerfectAttributes()
+                }
+            }
+        }
 
         // Wrap the ExoPlayer so Media3's notification + lock-screen surface
         // working next / previous controls. The wrapper routes those commands
@@ -947,11 +1003,18 @@ class PlaybackService : MediaSessionService() {
                 return try {
                     val defaultSink = DefaultAudioSink.Builder(context)
                         // Puts the Atmos speaker layout's real channel mask on
-                        // the track (Media3 derives masks from the count only).
+                        // the track (Media3 derives masks from the count only), and
+                        // configures bit-perfect mixer attributes before AudioTrack is built.
                         .setAudioTrackProvider(
-                            tf.monochrome.android.audio.atmos.AtmosAudioTrackProvider {
-                                atmosAudioProcessor.activeLayout
-                            }
+                            tf.monochrome.android.audio.atmos.AtmosAudioTrackProvider(
+                                activeLayout = { atmosAudioProcessor.activeLayout },
+                                onBeforeAudioTrackCreated = { sampleRate, encoding ->
+                                    val dev = usbAudioRouter.usbOutputDevice.value
+                                    if (dev != null && !libusbDriver.isOpen.value) {
+                                        usbAudioRouter.applyBitPerfectAttributes(dev, sampleRate, encoding)
+                                    }
+                                },
+                            )
                         )
                         // Float output: on, but DefaultAudioSink never gets to
                         // act on it by itself.
@@ -1274,6 +1337,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        usbAudioRouter.clearBitPerfectAttributes()
         outputDeviceCallback?.let {
             getSystemService(android.media.AudioManager::class.java)?.unregisterAudioDeviceCallback(it)
         }
