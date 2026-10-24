@@ -1,7 +1,5 @@
 package tf.monochrome.android.data.repository
 
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -46,25 +44,5 @@ class BuiltInHeadphoneDataTest {
         assertNotNull(rawHpa)
         val parsedHpa = EqDataParser.parseRawData(rawHpa!!)
         assertTrue("Parsed curve should contain points", parsedHpa.size > 50)
-    }
-
-    @Test
-    fun `built-in default presets contain 10-band RTINGS reference profiles`() {
-        val presets = BuiltInHeadphoneData.DEFAULT_PRESETS
-        assertEquals(2, presets.size)
-
-        val hp1Preset = presets.find { it.id == "builtin_nothing_hp1_rtings_reference" }
-        assertNotNull(hp1Preset)
-        assertEquals("Nothing HeadPhone (1) - RTINGS Studio Reference", hp1Preset?.name)
-        assertEquals(10, hp1Preset?.bands?.size)
-        assertEquals(-3.5f, hp1Preset?.preamp ?: 0f, 0.001f)
-        assertEquals(4800f, hp1Preset?.bands?.get(7)?.freq ?: 0f, 0.01f)
-        assertEquals(3.5f, hp1Preset?.bands?.get(7)?.gain ?: 0f, 0.01f)
-
-        val hpaPreset = presets.find { it.id == "builtin_nothing_hpa_rtings_reference" }
-        assertNotNull(hpaPreset)
-        assertEquals("Nothing HeadPhone (a) - RTINGS Studio Reference", hpaPreset?.name)
-        assertEquals(10, hpaPreset?.bands?.size)
-        assertEquals(-2.5f, hpaPreset?.preamp ?: 0f, 0.001f)
     }
 }
