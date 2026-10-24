@@ -464,15 +464,12 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                             // values are the discrete rate count.
                             //
                             // Also push every advertised rate into
-                            // supportedRates_ so the UI can list what
-                            // this UAC1 device supports — UAC1 has no
-                            // clock entities, so we use clockId=0 as
-                            // the synthetic "endpoint clock" marker.
+                            // supportedRates_ so the UI and clock fallback
+                            // can discover what this UAC1 device supports.
                             // Only do this for alts that match our
-                            // requested channels/bits, otherwise an
-                            // unrelated 5.1 alt would pollute the list.
-                            if (len >= 8 && altChannels == channels
-                                && altBits == bitsPerSample) {
+                            // requested channels, so an unrelated surround
+                            // alt doesn't pollute the inventory.
+                            if (len >= 8 && altChannels == channels) {
                                 int kind = p[7];
                                 int reqRate = sampleRateHz;
                                 if (kind == 0 && len >= 14) {
@@ -483,9 +480,11 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                                     };
                                     uint32_t lo = rd24(p + 8);
                                     uint32_t hi = rd24(p + 11);
-                                    rateSupportedByDescriptor =
-                                        (static_cast<uint32_t>(reqRate) >= lo &&
-                                         static_cast<uint32_t>(reqRate) <= hi);
+                                    if (altBits == bitsPerSample) {
+                                        rateSupportedByDescriptor =
+                                            (static_cast<uint32_t>(reqRate) >= lo &&
+                                             static_cast<uint32_t>(reqRate) <= hi);
+                                    }
                                     std::lock_guard<std::mutex> elock(errorMutex_);
                                     bool dup = false;
                                     for (const auto& e : supportedRates_) {
@@ -495,7 +494,7 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                                     }
                                     if (!dup) supportedRates_.push_back({0, lo, hi, 0});
                                 } else if (kind > 0) {
-                                    rateSupportedByDescriptor = false;
+                                    if (altBits == bitsPerSample) rateSupportedByDescriptor = false;
                                     std::lock_guard<std::mutex> elock(errorMutex_);
                                     for (int k = 0; k < kind; ++k) {
                                         int off = 8 + k * 3;
@@ -504,7 +503,7 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                                             static_cast<uint32_t>(p[off]) |
                                             (static_cast<uint32_t>(p[off + 1]) << 8) |
                                             (static_cast<uint32_t>(p[off + 2]) << 16);
-                                        if (static_cast<int>(hz) == reqRate) {
+                                        if (altBits == bitsPerSample && static_cast<int>(hz) == reqRate) {
                                             rateSupportedByDescriptor = true;
                                         }
                                         bool dup = false;
@@ -514,38 +513,6 @@ bool LibusbUacDriver::selectAltSetting(int sampleRateHz, int bitsPerSample,
                                             }
                                         }
                                         if (!dup) supportedRates_.push_back({0, hz, hz, 0});
-                                    }
-                                }
-                            } else if (len >= 8) {
-                                // Channels/bits don't match — keep the
-                                // rate-supported check working without
-                                // polluting the inventory.
-                                int kind = p[7];
-                                int reqRate = sampleRateHz;
-                                if (kind == 0 && len >= 14) {
-                                    auto rd24 = [](const uint8_t* q) {
-                                        return static_cast<uint32_t>(q[0]) |
-                                               (static_cast<uint32_t>(q[1]) << 8) |
-                                               (static_cast<uint32_t>(q[2]) << 16);
-                                    };
-                                    uint32_t lo = rd24(p + 8);
-                                    uint32_t hi = rd24(p + 11);
-                                    rateSupportedByDescriptor =
-                                        (static_cast<uint32_t>(reqRate) >= lo &&
-                                         static_cast<uint32_t>(reqRate) <= hi);
-                                } else if (kind > 0) {
-                                    rateSupportedByDescriptor = false;
-                                    for (int k = 0; k < kind; ++k) {
-                                        int off = 8 + k * 3;
-                                        if (off + 3 > len) break;
-                                        uint32_t hz =
-                                            static_cast<uint32_t>(p[off]) |
-                                            (static_cast<uint32_t>(p[off + 1]) << 8) |
-                                            (static_cast<uint32_t>(p[off + 2]) << 16);
-                                        if (static_cast<int>(hz) == reqRate) {
-                                            rateSupportedByDescriptor = true;
-                                            break;
-                                        }
                                     }
                                 }
                             }
