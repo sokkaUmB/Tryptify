@@ -28,9 +28,9 @@ class HeadphoneRepository @Inject constructor(
         try {
             val auto = autoEqApi.fetchHeadphones().getOrDefault(emptyList())
             val squig = squiglinkApi.fetchHeadphones().getOrDefault(emptyList())
-            emit(mergeByName(auto + squig))
+            emit(mergeByName(BuiltInHeadphoneData.BUILT_IN_HEADPHONES + auto + squig))
         } catch (_: Exception) {
-            emit(emptyList())
+            emit(BuiltInHeadphoneData.BUILT_IN_HEADPHONES)
         }
     }
 
@@ -39,6 +39,7 @@ class HeadphoneRepository @Inject constructor(
      * Dispatches by `target` to the appropriate API; returns null on miss.
      */
     suspend fun fetchMeasurementText(measurement: AutoEqMeasurement): String? = when (measurement.target) {
+        "builtin" -> BuiltInHeadphoneData.getMeasurementRawData(measurement.fileName)
         "squiglink" -> squiglinkApi.fetchMeasurementText(measurement.host, measurement.fileName)
         // Fetch the exact source folder the user picked so a headphone's
         // Rtings entry loads Rtings data even when oratory1990/crinacle also
@@ -111,14 +112,19 @@ class HeadphoneRepository @Inject constructor(
                 return@flow
             }
 
+            val builtIn = BuiltInHeadphoneData.BUILT_IN_HEADPHONES.filter {
+                it.name.contains(query, ignoreCase = true)
+            }
             val result = autoEqApi.searchHeadphones(query)
             result.onSuccess { headphones ->
-                emit(headphones)
+                emit(mergeByName(builtIn + headphones))
             }.onFailure {
-                emit(emptyList())
+                emit(builtIn)
             }
         } catch (_: Exception) {
-            emit(emptyList())
+            emit(BuiltInHeadphoneData.BUILT_IN_HEADPHONES.filter {
+                it.name.contains(query, ignoreCase = true)
+            })
         }
     }
 
@@ -129,14 +135,15 @@ class HeadphoneRepository @Inject constructor(
      */
     fun getHeadphonesByType(type: String): Flow<List<Headphone>> = flow {
         try {
+            val builtIn = BuiltInHeadphoneData.BUILT_IN_HEADPHONES.filter { it.type == type }
             val result = autoEqApi.getHeadphonesByType(type)
             result.onSuccess { headphones ->
-                emit(headphones)
+                emit(mergeByName(builtIn + headphones))
             }.onFailure {
-                emit(emptyList())
+                emit(builtIn)
             }
         } catch (_: Exception) {
-            emit(emptyList())
+            emit(BuiltInHeadphoneData.BUILT_IN_HEADPHONES.filter { it.type == type })
         }
     }
 

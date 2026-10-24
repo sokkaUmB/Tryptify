@@ -1,0 +1,365 @@
+package tf.monochrome.android.data.repository
+
+import tf.monochrome.android.domain.model.AutoEqMeasurement
+import tf.monochrome.android.domain.model.EqBand
+import tf.monochrome.android.domain.model.EqPreset
+import tf.monochrome.android.domain.model.FilterType
+import tf.monochrome.android.domain.model.Headphone
+import tf.monochrome.android.domain.model.MeasurementRig
+
+/**
+ * Built-in headphone acoustic profiles and presets.
+ * Includes calibrated measurements derived from RTINGS B&K 5128 test bench.
+ */
+object BuiltInHeadphoneData {
+
+    private const val NOTHING_HP1_RAW_CSV = """frequency,raw
+20.00,78.31
+21.11,78.24
+22.29,78.16
+23.52,78.07
+24.83,77.96
+26.21,77.84
+27.67,77.71
+29.21,77.58
+30.83,77.46
+32.55,77.35
+34.36,77.26
+36.27,77.20
+38.28,77.17
+40.41,77.15
+42.66,77.14
+45.03,77.13
+47.53,77.11
+50.18,77.08
+52.97,77.03
+55.91,76.98
+59.02,76.91
+62.30,76.84
+65.77,76.78
+69.42,76.71
+73.28,76.65
+77.36,76.59
+81.66,76.52
+86.20,76.44
+90.99,76.35
+96.05,76.24
+101.39,76.13
+107.03,76.01
+112.98,75.90
+119.26,75.80
+125.89,75.71
+132.89,75.64
+140.28,75.57
+148.07,75.50
+156.31,75.40
+165.00,75.27
+174.17,75.10
+183.86,74.92
+194.08,74.75
+204.87,74.61
+216.26,74.49
+228.28,74.42
+240.97,74.37
+254.37,74.33
+268.51,74.31
+283.44,74.30
+299.20,74.29
+315.84,74.28
+333.40,74.28
+351.93,74.28
+371.50,74.27
+392.16,74.26
+413.96,74.25
+436.97,74.25
+461.27,74.26
+486.91,74.29
+513.99,74.32
+542.56,74.36
+572.73,74.40
+604.57,74.44
+638.18,74.48
+673.67,74.50
+711.12,74.52
+750.66,74.51
+792.39,74.49
+836.45,74.46
+882.96,74.41
+932.05,74.37
+983.87,74.35
+1038.57,74.35
+1096.31,74.39
+1157.26,74.49
+1221.60,74.65
+1289.52,74.87
+1361.22,75.16
+1436.90,75.52
+1516.79,75.95
+1601.12,76.46
+1690.14,77.04
+1784.11,77.67
+1883.30,78.33
+1988.01,78.97
+2098.54,79.57
+2215.22,80.08
+2338.38,80.51
+2468.39,80.69
+2605.63,81.13
+2750.50,81.12
+2903.42,80.89
+3064.85,80.56
+3235.25,80.13
+3415.12,79.57
+3605.00,78.98
+3805.43,78.41
+4017.00,77.85
+4240.34,77.31
+4476.10,76.84
+4724.96,76.55
+4987.66,76.58
+5264.97,76.90
+5557.69,77.36
+5866.69,77.86
+6192.87,78.39
+6537.18,78.91
+6900.63,79.42
+7284.30,79.98
+7689.29,80.60
+8116.80,81.05
+8568.09,80.90
+9044.46,80.05
+9547.31,79.03
+10078.13,78.09
+10638.45,77.19
+11229.94,76.27
+11854.30,75.37
+12513.38,74.47
+13209.10,73.63
+13943.51,72.93
+14718.74,72.38
+15537.08,71.91
+16400.92,71.47
+17312.78,71.02
+18275.34,70.53
+19291.42,69.95
+20000.00,69.51"""
+
+    private const val NOTHING_HPA_RAW_CSV = """frequency,raw
+20.00,78.35
+21.11,78.29
+22.29,78.23
+23.52,78.17
+24.83,78.09
+26.21,78.02
+27.67,77.96
+29.21,77.91
+30.83,77.87
+32.55,77.85
+34.36,77.84
+36.27,77.83
+38.28,77.82
+40.41,77.81
+42.66,77.79
+45.03,77.74
+47.53,77.68
+50.18,77.60
+52.97,77.50
+55.91,77.38
+59.02,77.26
+62.30,77.12
+65.77,76.99
+69.42,76.86
+73.28,76.73
+77.36,76.61
+81.66,76.49
+86.20,76.36
+90.99,76.22
+96.05,76.08
+101.39,75.91
+107.03,75.75
+112.98,75.58
+119.26,75.41
+125.89,75.26
+132.89,75.12
+140.28,75.00
+148.07,74.90
+156.31,74.81
+165.00,74.72
+174.17,74.61
+183.86,74.48
+194.08,74.34
+204.87,74.21
+216.26,74.11
+228.28,74.05
+240.97,74.04
+254.37,74.07
+268.51,74.13
+283.44,74.20
+299.20,74.27
+315.84,74.32
+333.40,74.34
+351.93,74.34
+371.50,74.31
+392.16,74.27
+413.96,74.23
+436.97,74.18
+461.27,74.14
+486.91,74.12
+513.99,74.10
+542.56,74.09
+572.73,74.08
+604.57,74.08
+638.18,74.08
+673.67,74.07
+711.12,74.06
+750.66,74.05
+792.39,74.03
+836.45,74.01
+882.96,73.99
+932.05,73.98
+983.87,73.98
+1038.57,74.01
+1096.31,74.08
+1157.26,74.19
+1221.60,74.36
+1289.52,74.57
+1361.22,74.84
+1436.90,75.17
+1516.79,75.58
+1601.12,76.07
+1690.14,76.65
+1784.11,77.29
+1883.30,77.97
+1988.01,78.65
+2098.54,79.27
+2215.22,79.81
+2338.38,80.26
+2468.39,80.46
+2605.63,80.92
+2750.50,80.93
+2903.42,80.74
+3064.85,80.50
+3235.25,80.20
+3415.12,79.84
+3605.00,79.51
+3805.43,79.20
+4017.00,78.89
+4240.34,78.54
+4476.10,78.14
+4724.96,77.77
+4987.66,77.55
+5264.97,77.56
+5557.69,77.76
+5866.69,78.08
+6192.87,78.52
+6537.18,79.02
+6900.63,79.53
+7284.30,80.08
+7689.29,80.64
+8116.80,80.83
+8568.09,80.36
+9044.46,79.53
+9547.31,78.71
+10078.13,77.96
+10638.45,77.19
+11229.94,76.39
+11854.30,75.61
+12513.38,74.85
+13209.10,74.14
+13943.51,73.53
+14718.74,72.99
+15537.08,72.45
+16400.92,71.91
+17312.78,71.34
+18275.34,70.74
+19291.42,70.08
+20000.00,69.60"""
+
+    val BUILT_IN_HEADPHONES: List<Headphone> = listOf(
+        Headphone(
+            id = "nothing_headphone_1",
+            name = "Nothing HeadPhone (1)",
+            type = "over-ear",
+            measurements = listOf(
+                AutoEqMeasurement(
+                    source = "RTINGS",
+                    target = "builtin",
+                    path = "builtin/nothing_headphone_1",
+                    fileName = "Nothing HeadPhone (1)",
+                    rig = MeasurementRig.BK_5128
+                )
+            )
+        ),
+        Headphone(
+            id = "nothing_headphone_a",
+            name = "Nothing HeadPhone (a)",
+            type = "over-ear",
+            measurements = listOf(
+                AutoEqMeasurement(
+                    source = "RTINGS",
+                    target = "builtin",
+                    path = "builtin/nothing_headphone_a",
+                    fileName = "Nothing HeadPhone (a)",
+                    rig = MeasurementRig.BK_5128
+                )
+            )
+        )
+    )
+
+    fun getMeasurementRawData(identifier: String): String? = when {
+        identifier.contains("HeadPhone (1)", ignoreCase = true) || identifier.contains("headphone_1", ignoreCase = true) -> NOTHING_HP1_RAW_CSV
+        identifier.contains("HeadPhone (a)", ignoreCase = true) || identifier.contains("headphone_a", ignoreCase = true) -> NOTHING_HPA_RAW_CSV
+        else -> null
+    }
+
+    val DEFAULT_PRESETS: List<EqPreset> = listOf(
+        EqPreset(
+            id = "builtin_nothing_hp1_rtings_reference",
+            name = "Nothing HeadPhone (1) - RTINGS Studio Reference",
+            description = "Target Reference neutrale 10 bande basato su misurazioni RTINGS (B&K 5128)",
+            bands = listOf(
+                EqBand(id = 0, type = FilterType.PEAKING, freq = 35f, gain = 1.5f, q = 1.0f),
+                EqBand(id = 1, type = FilterType.PEAKING, freq = 65f, gain = 0.5f, q = 1.2f),
+                EqBand(id = 2, type = FilterType.PEAKING, freq = 160f, gain = -1.2f, q = 1.4f),
+                EqBand(id = 3, type = FilterType.PEAKING, freq = 240f, gain = -1.0f, q = 1.2f),
+                EqBand(id = 4, type = FilterType.PEAKING, freq = 600f, gain = 0.0f, q = 1.0f),
+                EqBand(id = 5, type = FilterType.PEAKING, freq = 1400f, gain = 1.0f, q = 1.2f),
+                EqBand(id = 6, type = FilterType.PEAKING, freq = 3600f, gain = 1.5f, q = 1.5f),
+                EqBand(id = 7, type = FilterType.PEAKING, freq = 4800f, gain = 3.5f, q = 1.6f),
+                EqBand(id = 8, type = FilterType.PEAKING, freq = 8500f, gain = -2.0f, q = 3.0f),
+                EqBand(id = 9, type = FilterType.PEAKING, freq = 13500f, gain = 1.5f, q = 1.0f)
+            ),
+            bandsR = null,
+            preamp = -3.5f,
+            targetId = "rtings_bk5128",
+            targetName = "Studio Reference",
+            isCustom = false,
+            createdAt = 0L,
+            updatedAt = 0L
+        ),
+        EqPreset(
+            id = "builtin_nothing_hpa_rtings_reference",
+            name = "Nothing HeadPhone (a) - RTINGS Studio Reference",
+            description = "Target Reference neutrale 10 bande basato su misurazioni RTINGS (B&K 5128)",
+            bands = listOf(
+                EqBand(id = 0, type = FilterType.PEAKING, freq = 30f, gain = 1.0f, q = 1.0f),
+                EqBand(id = 1, type = FilterType.PEAKING, freq = 70f, gain = 0.5f, q = 1.2f),
+                EqBand(id = 2, type = FilterType.PEAKING, freq = 180f, gain = -1.0f, q = 1.4f),
+                EqBand(id = 3, type = FilterType.PEAKING, freq = 300f, gain = -0.8f, q = 1.2f),
+                EqBand(id = 4, type = FilterType.PEAKING, freq = 750f, gain = 0.5f, q = 1.0f),
+                EqBand(id = 5, type = FilterType.PEAKING, freq = 1500f, gain = 1.2f, q = 1.2f),
+                EqBand(id = 6, type = FilterType.PEAKING, freq = 3400f, gain = 1.8f, q = 1.5f),
+                EqBand(id = 7, type = FilterType.PEAKING, freq = 5200f, gain = 2.5f, q = 1.6f),
+                EqBand(id = 8, type = FilterType.PEAKING, freq = 8200f, gain = -1.5f, q = 2.8f),
+                EqBand(id = 9, type = FilterType.PEAKING, freq = 12500f, gain = 1.0f, q = 1.0f)
+            ),
+            bandsR = null,
+            preamp = -2.5f,
+            targetId = "rtings_bk5128",
+            targetName = "Studio Reference",
+            isCustom = false,
+            createdAt = 0L,
+            updatedAt = 0L
+        )
+    )
+}

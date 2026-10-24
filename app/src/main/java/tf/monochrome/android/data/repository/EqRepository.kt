@@ -145,8 +145,7 @@ class EqRepository @Inject constructor(
      * These can be expanded later or loaded from files
      */
     private fun getDefaultPresets(): List<EqPreset> {
-        return emptyList()  // Start empty, can be populated later
-        // TODO: Add default presets for Harman, Diffuse Field, etc.
+        return BuiltInHeadphoneData.DEFAULT_PRESETS
     }
 
     // ===== Conversion Helpers =====
