@@ -145,7 +145,7 @@ class EqRepository @Inject constructor(
      * These can be expanded later or loaded from files
      */
     private fun getDefaultPresets(): List<EqPreset> {
-        return BuiltInHeadphoneData.DEFAULT_PRESETS
+        return emptyList()
     }
 
     // ===== Conversion Helpers =====

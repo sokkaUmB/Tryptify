@@ -1,14 +1,11 @@
 package tf.monochrome.android.data.repository
 
 import tf.monochrome.android.domain.model.AutoEqMeasurement
-import tf.monochrome.android.domain.model.EqBand
-import tf.monochrome.android.domain.model.EqPreset
-import tf.monochrome.android.domain.model.FilterType
 import tf.monochrome.android.domain.model.Headphone
 import tf.monochrome.android.domain.model.MeasurementRig
 
 /**
- * Built-in headphone acoustic profiles and presets.
+ * Built-in headphone acoustic profiles.
  * Includes calibrated measurements derived from RTINGS B&K 5128 test bench.
  */
 object BuiltInHeadphoneData {
@@ -311,55 +308,4 @@ object BuiltInHeadphoneData {
         identifier.contains("HeadPhone (a)", ignoreCase = true) || identifier.contains("headphone_a", ignoreCase = true) -> NOTHING_HPA_RAW_CSV
         else -> null
     }
-
-    val DEFAULT_PRESETS: List<EqPreset> = listOf(
-        EqPreset(
-            id = "builtin_nothing_hp1_rtings_reference",
-            name = "Nothing HeadPhone (1) - RTINGS Studio Reference",
-            description = "Target Reference neutrale 10 bande basato su misurazioni RTINGS (B&K 5128)",
-            bands = listOf(
-                EqBand(id = 0, type = FilterType.PEAKING, freq = 35f, gain = 1.5f, q = 1.0f),
-                EqBand(id = 1, type = FilterType.PEAKING, freq = 65f, gain = 0.5f, q = 1.2f),
-                EqBand(id = 2, type = FilterType.PEAKING, freq = 160f, gain = -1.2f, q = 1.4f),
-                EqBand(id = 3, type = FilterType.PEAKING, freq = 240f, gain = -1.0f, q = 1.2f),
-                EqBand(id = 4, type = FilterType.PEAKING, freq = 600f, gain = 0.0f, q = 1.0f),
-                EqBand(id = 5, type = FilterType.PEAKING, freq = 1400f, gain = 1.0f, q = 1.2f),
-                EqBand(id = 6, type = FilterType.PEAKING, freq = 3600f, gain = 1.5f, q = 1.5f),
-                EqBand(id = 7, type = FilterType.PEAKING, freq = 4800f, gain = 3.5f, q = 1.6f),
-                EqBand(id = 8, type = FilterType.PEAKING, freq = 8500f, gain = -2.0f, q = 3.0f),
-                EqBand(id = 9, type = FilterType.PEAKING, freq = 13500f, gain = 1.5f, q = 1.0f)
-            ),
-            bandsR = null,
-            preamp = -3.5f,
-            targetId = "rtings_bk5128",
-            targetName = "Studio Reference",
-            isCustom = false,
-            createdAt = 0L,
-            updatedAt = 0L
-        ),
-        EqPreset(
-            id = "builtin_nothing_hpa_rtings_reference",
-            name = "Nothing HeadPhone (a) - RTINGS Studio Reference",
-            description = "Target Reference neutrale 10 bande basato su misurazioni RTINGS (B&K 5128)",
-            bands = listOf(
-                EqBand(id = 0, type = FilterType.PEAKING, freq = 30f, gain = 1.0f, q = 1.0f),
-                EqBand(id = 1, type = FilterType.PEAKING, freq = 70f, gain = 0.5f, q = 1.2f),
-                EqBand(id = 2, type = FilterType.PEAKING, freq = 180f, gain = -1.0f, q = 1.4f),
-                EqBand(id = 3, type = FilterType.PEAKING, freq = 300f, gain = -0.8f, q = 1.2f),
-                EqBand(id = 4, type = FilterType.PEAKING, freq = 750f, gain = 0.5f, q = 1.0f),
-                EqBand(id = 5, type = FilterType.PEAKING, freq = 1500f, gain = 1.2f, q = 1.2f),
-                EqBand(id = 6, type = FilterType.PEAKING, freq = 3400f, gain = 1.8f, q = 1.5f),
-                EqBand(id = 7, type = FilterType.PEAKING, freq = 5200f, gain = 2.5f, q = 1.6f),
-                EqBand(id = 8, type = FilterType.PEAKING, freq = 8200f, gain = -1.5f, q = 2.8f),
-                EqBand(id = 9, type = FilterType.PEAKING, freq = 12500f, gain = 1.0f, q = 1.0f)
-            ),
-            bandsR = null,
-            preamp = -2.5f,
-            targetId = "rtings_bk5128",
-            targetName = "Studio Reference",
-            isCustom = false,
-            createdAt = 0L,
-            updatedAt = 0L
-        )
-    )
 }
