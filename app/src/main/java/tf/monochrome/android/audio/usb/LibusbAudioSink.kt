@@ -157,8 +157,14 @@ class LibusbAudioSink(
      */
     private var sourceIs16Widened = false
 
+    /**
+     * A 24-bit chain on a 4-byte subslot DAC alt: each sample is packed from
+     * 3 bytes into 4 bytes (see [int24ToSubslotSample]).
+     */
+    private var sourceIs24Widened = false
+
     /** Whether the chain's PCM is packed for the DAC (gain, crossfade, width) rather than sent as it is. */
-    private val packsForUsb: Boolean get() = sourceIsFloat || sourceIs16Widened
+    private val packsForUsb: Boolean get() = sourceIsFloat || sourceIs16Widened || sourceIs24Widened
 
     /**
      * Subslot size the driver negotiated, from the device's own descriptor —
@@ -428,7 +434,7 @@ class LibusbAudioSink(
                 TAG,
                 "configured: bypass active (chain ${out.sampleRate}/" +
                     "${encodingLabel(out.encoding)}/${out.channelCount}ch -> DAC " +
-                    "${out.sampleRate}/${outBitsPerSample}b in " +
+                    "${outSampleRate}/${outBitsPerSample}b in " +
                     "${usbBytesPerSample}-byte subslots)",
             )
             resetStreamAccounting()
@@ -446,7 +452,38 @@ class LibusbAudioSink(
      * which is what a single failed start() would have done. A 16-bit chain
      * asks the same, for the headroom the level needs (see [sourceIs16Widened]).
      */
+    /**
+     * Attempts to start streaming to the DAC with its native sample rate,
+     * or adapts to the closest hardware rate via clock fallback.
+     */
     private fun engageDriver(rate: Int, channels: Int, encoding: Int): Boolean {
+        if (tryEngageAtRate(rate, channels, encoding)) {
+            resampler?.setRatio(1.0f)
+            chain.refreshActive()
+            return true
+        }
+
+        // Clock fallback: if the hardware DAC does not support `rate` (e.g. 44.1 kHz on a 48/96 kHz DAC),
+        // adapt to the best rate supported by the DAC and set the resampler ratio so VariRateAudioProcessor converts.
+        val supported = driver.supportedRates.value
+        val fallbackRate = if (supported.isNotEmpty()) {
+            findBestSupportedRate(rate, supported)
+        } else {
+            if (rate % 44100 == 0) 48000 else 44100
+        }
+        if (fallbackRate != null && fallbackRate != rate) {
+            Log.i(TAG, "DAC does not support $rate Hz; adapting to hardware rate $fallbackRate Hz")
+            if (tryEngageAtRate(fallbackRate, channels, encoding)) {
+                val ratio = (rate.toDouble() / fallbackRate).toFloat()
+                resampler?.setRatio(ratio)
+                chain.refreshActive()
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun tryEngageAtRate(rate: Int, channels: Int, encoding: Int): Boolean {
         for (bits in usbBitDepthLadder(encoding)) {
             val reused = driver.isStreamingFormat(rate, bits, channels)
             if (reused) Log.i(TAG, "reused active stream ($rate/${bits}b/${channels}ch)")
@@ -478,12 +515,31 @@ class LibusbAudioSink(
         return false
     }
 
+    private fun findBestSupportedRate(requestedRate: Int, supported: List<ClockRateRange>): Int? {
+        val discrete = mutableListOf<Int>()
+        for (range in supported) {
+            if (range.minHz == range.maxHz) {
+                discrete.add(range.minHz.toInt())
+            } else {
+                if (requestedRate.toLong() in range.minHz..range.maxHz) return requestedRate
+                discrete.add(range.minHz.toInt())
+                discrete.add(range.maxHz.toInt())
+            }
+        }
+        if (discrete.isEmpty()) return null
+        if (requestedRate in discrete) return requestedRate
+        val sameFamily = discrete.filter { it % (if (requestedRate % 44100 == 0) 44100 else 48000) == 0 }
+        if (sameFamily.isNotEmpty()) {
+            return sameFamily.minByOrNull { kotlin.math.abs(it - requestedRate) }
+        }
+        return discrete.minByOrNull { kotlin.math.abs(it - requestedRate) }
+    }
+
     private fun adoptNegotiatedFormat(bits: Int, channels: Int, encoding: Int) {
         outBitsPerSample = bits
         outChannels = channels
         sourceIsFloat = encoding == C.ENCODING_PCM_FLOAT
         sourceIs16Widened = encoding == C.ENCODING_PCM_16BIT && bits > 16
-        sourceBytesPerFrame = sourceBytesPerSample(encoding) * channels
         // Ask the driver what it actually negotiated rather than assuming
         // bits / 8 — see the note on [usbBytesPerSample]. The guard keeps a
         // stale snapshot from a previous stream out of the arithmetic.
@@ -492,6 +548,8 @@ class LibusbAudioSink(
             ?.bytesPerSample
             ?.takeIf { it > 0 }
             ?: (bits / 8)
+        sourceIs24Widened = encoding == C.ENCODING_PCM_24BIT && usbBytesPerSample > 3
+        sourceBytesPerFrame = sourceBytesPerSample(encoding) * channels
     }
 
     override fun handleBuffer(
@@ -966,7 +1024,7 @@ class LibusbAudioSink(
             Log.i(
                 TAG,
                 "lazy-engaged bypass mid-stream (chain $rate/${encodingLabel(encoding)}/" +
-                    "${channels}ch -> DAC ${outBitsPerSample}b)",
+                    "${channels}ch -> DAC ${outSampleRate}/${outBitsPerSample}b)",
             )
         } else {
             lastEngageFailHash = fmtHash
@@ -1405,6 +1463,7 @@ class LibusbAudioSink(
         var notAudio = false
 
         val widen16 = sourceIs16Widened
+        val widen24 = sourceIs24Widened
         var o = 0
         var gain = startGain
         var channel = 0
@@ -1419,17 +1478,28 @@ class LibusbAudioSink(
             val rawTail = if (mixing) tailScratch[i] else 0f
             if (mixing && !looksLikeAudio(rawTail, SOURCE_HEADROOM)) notAudio = true
             val tail = if (mixing) safeSourceSample(rawTail) * tailGain else 0f
-            val sample = if (widen16) {
-                // Little-endian by hand, like applyGainPcmInt: with no DSP
-                // running, src is the renderer's own buffer, whose ByteBuffer
-                // order is not promised to be native.
-                val at = srcPos + (i shl 1)
-                val s16 = (src.get(at).toInt() and 0xFF) or (src.get(at + 1).toInt() shl 8)
-                int16ToSubslotSample(s16, gain, tail, bytesPerSample)
-            } else {
-                val raw = src.getFloat(srcPos + (i shl 2))
-                if (!looksLikeAudio(raw, SOURCE_HEADROOM)) notAudio = true
-                floatToSubslotSample(safeSourceSample(raw) * gain + tail, bytesPerSample)
+            val sample = when {
+                widen16 -> {
+                    // Little-endian by hand, like applyGainPcmInt: with no DSP
+                    // running, src is the renderer's own buffer, whose ByteBuffer
+                    // order is not promised to be native.
+                    val at = srcPos + (i shl 1)
+                    val s16 = (src.get(at).toInt() and 0xFF) or (src.get(at + 1).toInt() shl 8)
+                    int16ToSubslotSample(s16, gain, tail, bytesPerSample)
+                }
+                widen24 -> {
+                    val at = srcPos + i * 3
+                    val b0 = src.get(at).toInt() and 0xFF
+                    val b1 = src.get(at + 1).toInt() and 0xFF
+                    val b2 = src.get(at + 2).toInt() // sign-extends
+                    val s24 = (b2 shl 16) or (b1 shl 8) or b0
+                    int24ToSubslotSample(s24, gain, tail, bytesPerSample)
+                }
+                else -> {
+                    val raw = src.getFloat(srcPos + (i shl 2))
+                    if (!looksLikeAudio(raw, SOURCE_HEADROOM)) notAudio = true
+                    floatToSubslotSample(safeSourceSample(raw) * gain + tail, bytesPerSample)
+                }
             }
             out.put(o, sample.toByte())
             if (bytesPerSample > 1) out.put(o + 1, (sample shr 8).toByte())
@@ -1622,5 +1692,21 @@ internal fun int16ToSubslotSample(sample: Int, gain: Float, mixed: Float, bytesP
     // truncated, so a level below 0 dB is not biased towards zero.
     val v = Math.round(sample * 256f * gain + mixed * 8_388_607f)
         .coerceIn(-8_388_608, 8_388_607)
+    return if (bytesPerSample >= 4) v shl 8 else v
+}
+
+/**
+ * A 24-bit [sample] as the subslot integer of a 4-byte subslot alt (left-justified),
+ * with [gain] applied and a crossfade tail [mixed] in.
+ * At unity gain with nothing mixed in, the result is the sample shifted up 8 bits,
+ * perfectly preserving all 24 bits bit-for-bit into the high 24 bits of the 32-bit container.
+ */
+internal fun int24ToSubslotSample(sample: Int, gain: Float, mixed: Float, bytesPerSample: Int): Int {
+    val v = if (gain >= 1f && mixed == 0f) {
+        sample
+    } else {
+        Math.round(sample.toFloat() * gain + mixed * 8_388_607f)
+            .coerceIn(-8_388_608, 8_388_607)
+    }
     return if (bytesPerSample >= 4) v shl 8 else v
 }
