@@ -15,7 +15,7 @@ import tf.monochrome.android.domain.model.ChannelLayout
 
 /**
  * Builds the AudioTrack for the Atmos speaker render with the layout's real
- * channel mask.
+ * channel mask, and hooks pre-creation configuration for Android 14+ bit-perfect USB routing.
  *
  * Media3 1.5 derives a track's mask from the channel COUNT alone
  * (Util.getAudioTrackChannelConfig), so 8 channels always become 7.1 and 10
@@ -32,6 +32,7 @@ import tf.monochrome.android.domain.model.ChannelLayout
 @OptIn(UnstableApi::class)
 class AtmosAudioTrackProvider(
     private val activeLayout: () -> ChannelLayout,
+    private val onBeforeAudioTrackCreated: ((sampleRate: Int, encoding: Int) -> Unit)? = null,
 ) : DefaultAudioSink.AudioTrackProvider {
 
     private val fallback = DefaultAudioTrackProvider()
@@ -41,6 +42,11 @@ class AtmosAudioTrackProvider(
         audioAttributes: AudioAttributes,
         audioSessionId: Int,
     ): AudioTrack {
+        onBeforeAudioTrackCreated?.invoke(
+            audioTrackConfig.sampleRate,
+            audioTrackConfig.encoding,
+        )
+
         val layout = activeLayout()
         val pcm = audioTrackConfig.encoding == C.ENCODING_PCM_16BIT ||
             audioTrackConfig.encoding == C.ENCODING_PCM_FLOAT
